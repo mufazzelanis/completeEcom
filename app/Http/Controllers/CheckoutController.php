@@ -8,6 +8,7 @@ use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Payment;
 use App\Models\PaymentMethod;
+use App\Services\Notifications\NotificationDispatcher;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\RateLimiter;
@@ -189,6 +190,19 @@ class CheckoutController extends Controller
         });
 
         session()->forget('coupon');
+
+        // Fire order_placed notifications for customer + admin
+        $user = auth()->user();
+        NotificationDispatcher::customer('order_placed', $user, [
+            'order_number' => $order->order_number,
+            'total'        => '৳' . number_format($order->total, 2),
+            'url'          => route('account.orders.show', $order),
+        ]);
+        NotificationDispatcher::admin('new_order', [
+            'order_number' => $order->order_number,
+            'customer'     => $user->name,
+            'total'        => '৳' . number_format($order->total, 2),
+        ]);
 
         return redirect()->route('checkout.success', $order->id);
     }

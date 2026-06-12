@@ -11,14 +11,18 @@ class Order extends Model
         'coupon_code', 'payment_method', 'payment_status', 'payment_charge',
         'shipping_name', 'shipping_phone', 'shipping_address', 'shipping_city',
         'shipping_state', 'shipping_zip', 'shipping_country', 'notes',
+        'fraud_score', 'fraud_flags', 'is_fraud_flagged', 'fraud_checked_at',
     ];
 
     protected $casts = [
-        'subtotal' => 'decimal:2',
-        'discount' => 'decimal:2',
-        'shipping' => 'decimal:2',
-        'tax' => 'decimal:2',
-        'total' => 'decimal:2',
+        'subtotal'          => 'decimal:2',
+        'discount'          => 'decimal:2',
+        'shipping'          => 'decimal:2',
+        'tax'               => 'decimal:2',
+        'total'             => 'decimal:2',
+        'fraud_flags'       => 'array',
+        'is_fraud_flagged'  => 'boolean',
+        'fraud_checked_at'  => 'datetime',
     ];
 
     public function user()

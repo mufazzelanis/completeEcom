@@ -9,8 +9,12 @@ class OrderController extends Controller
 {
     public function index()
     {
-        $orders = Order::where('user_id', auth()->id())->with('items')->latest()->paginate(10);
-        return view('orders.index', compact('orders'));
+        $query = Order::where('user_id', auth()->id())->with('items.product');
+        if ($status = request('status')) {
+            $query->where('status', $status);
+        }
+        $orders = $query->latest()->paginate(10);
+        return view('account.orders.index', compact('orders'));
     }
 
     public function show(Order $order)

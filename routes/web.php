@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\HomeController;
+use App\Http\Controllers\SearchController;
 use App\Http\Controllers\ShopController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\CartController;
@@ -37,7 +38,46 @@ use App\Http\Controllers\Admin\LowStockController as AdminLowStockController;
 use App\Http\Controllers\Admin\BatchController as AdminBatchController;
 use App\Http\Controllers\Admin\BarcodeController as AdminBarcodeController;
 use App\Http\Controllers\Admin\SkuManagementController as AdminSkuManagementController;
+use App\Http\Controllers\Admin\ReportController as AdminReportController;
+use App\Http\Controllers\Admin\BlogCategoryController as AdminBlogCategoryController;
+use App\Http\Controllers\Admin\BlogPostController as AdminBlogPostController;
+use App\Http\Controllers\Admin\BannerController as AdminBannerController;
+use App\Http\Controllers\Admin\PageController as AdminPageController;
+use App\Http\Controllers\Admin\FaqController as AdminFaqController;
+use App\Http\Controllers\Admin\AuditLogController as AdminAuditLogController;
+use App\Http\Controllers\Admin\FlashSaleController as AdminFlashSaleController;
+use App\Http\Controllers\Admin\PromoCodeController as AdminPromoCodeController;
+use App\Http\Controllers\Admin\BundleController as AdminBundleController;
+use App\Http\Controllers\Admin\CrossSellController as AdminCrossSellController;
+use App\Http\Controllers\Admin\ReferralProgramController as AdminReferralProgramController;
+use App\Http\Controllers\Admin\EmailCampaignController as AdminEmailCampaignController;
+use App\Http\Controllers\Admin\NotificationController as AdminNotificationController;
+use App\Http\Controllers\Admin\NotificationSeederController as AdminNotificationSeederController;
+use App\Http\Controllers\Admin\SettingController as AdminSettingController;
+use App\Http\Controllers\AccountController;
+use App\Http\Controllers\AddressController;
+use App\Http\Controllers\CustomerReviewController;
+use App\Http\Controllers\SupportTicketController;
+use App\Http\Controllers\SecurityController;
+use App\Http\Controllers\CustomerNotificationController;
+use App\Http\Controllers\CustomerReferralController;
+use App\Http\Controllers\BlogController;
+use App\Http\Controllers\PageController;
 use Illuminate\Support\Facades\Route;
+
+// Search suggest (public)
+Route::get('/search/suggest', [SearchController::class, 'suggest'])->name('search.suggest');
+
+// Blog (public)
+Route::get('/blog', [BlogController::class, 'index'])->name('blog.index');
+Route::get('/blog/category/{blogCategory}', [BlogController::class, 'category'])->name('blog.category');
+Route::get('/blog/{blogPost}', [BlogController::class, 'show'])->name('blog.show');
+
+// Pages (public)
+Route::get('/faq', [PageController::class, 'faq'])->name('faq');
+Route::get('/contact', [PageController::class, 'contact'])->name('contact');
+Route::post('/contact', [PageController::class, 'sendContact'])->name('contact.send');
+Route::get('/pages/{page}', [PageController::class, 'show'])->name('pages.show');
 
 // Frontend Routes
 Route::get('/', [HomeController::class, 'index'])->name('home');
@@ -73,15 +113,62 @@ Route::middleware('auth')->group(function () {
     Route::post('/wishlist/toggle/{product}', [WishlistController::class, 'toggle'])->name('wishlist.toggle');
     Route::get('/wishlist', [WishlistController::class, 'index'])->name('wishlist.index');
 
-    // Profile
+    // Profile (legacy — keep for compatibility)
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+
+    // ── Customer Account Panel ─────────────────────────────────────────────────
+    Route::prefix('account')->name('account.')->group(function () {
+        Route::get('/', [AccountController::class, 'dashboard'])->name('dashboard');
+        Route::get('/profile', [AccountController::class, 'profileEdit'])->name('profile');
+        Route::patch('/profile', [AccountController::class, 'profileUpdate'])->name('profile.update');
+        Route::patch('/password', [AccountController::class, 'passwordUpdate'])->name('password.update');
+
+        // Addresses
+        Route::get('/addresses', [AddressController::class, 'index'])->name('addresses.index');
+        Route::get('/addresses/create', [AddressController::class, 'create'])->name('addresses.create');
+        Route::post('/addresses', [AddressController::class, 'store'])->name('addresses.store');
+        Route::get('/addresses/{address}/edit', [AddressController::class, 'edit'])->name('addresses.edit');
+        Route::put('/addresses/{address}', [AddressController::class, 'update'])->name('addresses.update');
+        Route::delete('/addresses/{address}', [AddressController::class, 'destroy'])->name('addresses.destroy');
+        Route::patch('/addresses/{address}/default', [AddressController::class, 'setDefault'])->name('addresses.default');
+
+        // Reviews
+        Route::get('/reviews', [CustomerReviewController::class, 'index'])->name('reviews.index');
+        Route::get('/reviews/{review}/edit', [CustomerReviewController::class, 'edit'])->name('reviews.edit');
+        Route::put('/reviews/{review}', [CustomerReviewController::class, 'update'])->name('reviews.update');
+        Route::delete('/reviews/{review}', [CustomerReviewController::class, 'destroy'])->name('reviews.destroy');
+
+        // Support Tickets
+        Route::get('/support', [SupportTicketController::class, 'index'])->name('support.index');
+        Route::get('/support/create', [SupportTicketController::class, 'create'])->name('support.create');
+        Route::post('/support', [SupportTicketController::class, 'store'])->name('support.store');
+        Route::get('/support/{ticket}', [SupportTicketController::class, 'show'])->name('support.show');
+        Route::post('/support/{ticket}/reply', [SupportTicketController::class, 'reply'])->name('support.reply');
+        Route::patch('/support/{ticket}/close', [SupportTicketController::class, 'close'])->name('support.close');
+
+        // Notifications
+        Route::get('/notifications', [CustomerNotificationController::class, 'index'])->name('notifications');
+        Route::patch('/notifications/read-all', [CustomerNotificationController::class, 'markAllRead'])->name('notifications.read-all');
+        Route::patch('/notifications/{notification}/read', [CustomerNotificationController::class, 'markRead'])->name('notifications.read');
+        Route::get('/notifications/preferences', [CustomerNotificationController::class, 'preferences'])->name('notifications.preferences');
+        Route::patch('/notifications/preferences', [CustomerNotificationController::class, 'updatePreferences'])->name('notifications.preferences.update');
+
+        // Referral
+        Route::get('/referral', [CustomerReferralController::class, 'index'])->name('referral');
+
+        // Security / Login Activity
+        Route::get('/security', [SecurityController::class, 'index'])->name('security');
+    });
 });
 
 // Admin Routes
 Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(function () {
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
+
+    // Admin search suggest
+    Route::get('search/suggest', [SearchController::class, 'adminSuggest'])->name('search.suggest');
 
     Route::resource('categories', AdminCategoryController::class);
     // Subcategories — manual routes (bypass slug-based route model binding)
@@ -189,6 +276,118 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::get('sku-management', [AdminSkuManagementController::class, 'index'])->name('sku-management.index');
     Route::post('sku-management', [AdminSkuManagementController::class, 'update'])->name('sku-management.update');
     Route::post('sku-management/generate', [AdminSkuManagementController::class, 'generate'])->name('sku-management.generate');
+
+    // Reports & Analytics
+    Route::prefix('reports')->name('reports.')->group(function () {
+        Route::get('/',          [AdminReportController::class, 'index'])->name('index');
+        Route::get('/sales',     [AdminReportController::class, 'sales'])->name('sales');
+        Route::get('/revenue',   [AdminReportController::class, 'revenue'])->name('revenue');
+        Route::get('/products',  [AdminReportController::class, 'products'])->name('products');
+        Route::get('/customers', [AdminReportController::class, 'customers'])->name('customers');
+        Route::get('/inventory', [AdminReportController::class, 'inventory'])->name('inventory');
+        // Excel downloads
+        Route::get('/sales/download',     [AdminReportController::class, 'downloadSales'])->name('sales.download');
+        Route::get('/revenue/download',   [AdminReportController::class, 'downloadRevenue'])->name('revenue.download');
+        Route::get('/products/download',  [AdminReportController::class, 'downloadProducts'])->name('products.download');
+        Route::get('/customers/download', [AdminReportController::class, 'downloadCustomers'])->name('customers.download');
+        Route::get('/inventory/download', [AdminReportController::class, 'downloadInventory'])->name('inventory.download');
+    });
+
+    // Order invoice PDF + fraud re-check
+    Route::get('orders/{order}/invoice', [AdminOrderController::class, 'invoice'])->name('orders.invoice');
+    Route::patch('orders/{order}/fraud-recheck', [AdminOrderController::class, 'recheckFraud'])->name('orders.fraud-recheck');
+
+    // Audit Logs
+    Route::get('audit-logs', [AdminAuditLogController::class, 'index'])->name('audit-logs.index');
+
+    // CMS — Blog
+    Route::resource('blog/categories', AdminBlogCategoryController::class)->except(['show'])->names([
+        'index'   => 'blog.categories.index',
+        'create'  => 'blog.categories.create',
+        'store'   => 'blog.categories.store',
+        'edit'    => 'blog.categories.edit',
+        'update'  => 'blog.categories.update',
+        'destroy' => 'blog.categories.destroy',
+    ]);
+    Route::resource('blog/posts', AdminBlogPostController::class)->except(['show'])->names([
+        'index'   => 'blog.posts.index',
+        'create'  => 'blog.posts.create',
+        'store'   => 'blog.posts.store',
+        'edit'    => 'blog.posts.edit',
+        'update'  => 'blog.posts.update',
+        'destroy' => 'blog.posts.destroy',
+    ]);
+
+    // CMS — Banners
+    Route::resource('banners', AdminBannerController::class)->except(['show']);
+    Route::patch('banners/{banner}/toggle', [AdminBannerController::class, 'toggle'])->name('banners.toggle');
+
+    // CMS — Pages
+    Route::resource('pages', AdminPageController::class)->except(['show']);
+
+    // CMS — FAQs
+    Route::get('faqs', [AdminFaqController::class, 'index'])->name('faqs.index');
+    Route::post('faqs', [AdminFaqController::class, 'store'])->name('faqs.store');
+    Route::put('faqs/{faq}', [AdminFaqController::class, 'update'])->name('faqs.update');
+    Route::delete('faqs/{faq}', [AdminFaqController::class, 'destroy'])->name('faqs.destroy');
+    Route::patch('faqs/{faq}/toggle', [AdminFaqController::class, 'toggle'])->name('faqs.toggle');
+
+    // Marketing — Overview
+    Route::get('marketing', fn() => view('admin.marketing.index'))->name('marketing.index');
+
+    // Marketing — Flash Sales
+    Route::resource('flash-sales', AdminFlashSaleController::class)->except(['show']);
+    Route::post('flash-sales/{flashSale}/products', [AdminFlashSaleController::class, 'addProduct'])->name('flash-sales.products.add');
+    Route::delete('flash-sales/{flashSale}/products/{product}', [AdminFlashSaleController::class, 'removeProduct'])->name('flash-sales.products.remove');
+
+    // Marketing — Promo Code Batches
+    Route::get('promo-codes', [AdminPromoCodeController::class, 'index'])->name('promo-codes.index');
+    Route::get('promo-codes/create', [AdminPromoCodeController::class, 'create'])->name('promo-codes.create');
+    Route::post('promo-codes', [AdminPromoCodeController::class, 'store'])->name('promo-codes.store');
+    Route::get('promo-codes/{promoCode}', [AdminPromoCodeController::class, 'show'])->name('promo-codes.show');
+    Route::delete('promo-codes/{promoCode}', [AdminPromoCodeController::class, 'destroy'])->name('promo-codes.destroy');
+    Route::get('promo-codes/{promoCode}/download', [AdminPromoCodeController::class, 'download'])->name('promo-codes.download');
+    Route::patch('promo-codes/{promoCode}/toggle', [AdminPromoCodeController::class, 'toggle'])->name('promo-codes.toggle');
+
+    // Marketing — Bundle Products
+    Route::get('bundles', [AdminBundleController::class, 'index'])->name('bundles.index');
+    Route::get('bundles/{product}/manage', [AdminBundleController::class, 'manage'])->name('bundles.manage');
+    Route::post('bundles/{product}/items', [AdminBundleController::class, 'addItem'])->name('bundles.items.add');
+    Route::delete('bundles/{product}/items/{item}', [AdminBundleController::class, 'removeItem'])->name('bundles.items.remove');
+    Route::patch('bundles/{product}/items/{item}', [AdminBundleController::class, 'updateItem'])->name('bundles.items.update');
+
+    // Marketing — Cross-Sell / Upsell
+    Route::get('cross-sell', [AdminCrossSellController::class, 'index'])->name('cross-sell.index');
+    Route::get('cross-sell/{product}/manage', [AdminCrossSellController::class, 'manage'])->name('cross-sell.manage');
+    Route::post('cross-sell/{product}', [AdminCrossSellController::class, 'store'])->name('cross-sell.store');
+    Route::delete('cross-sell/{product}/{recommendation}', [AdminCrossSellController::class, 'destroy'])->name('cross-sell.destroy');
+
+    // Marketing — Referral Program
+    Route::get('referrals', [AdminReferralProgramController::class, 'index'])->name('referrals.index');
+    Route::patch('referrals/rewards/{reward}', [AdminReferralProgramController::class, 'updateReward'])->name('referrals.reward');
+
+    // Marketing — Email Campaigns
+    Route::resource('email-campaigns', AdminEmailCampaignController::class)->except(['show']);
+    Route::get('email-campaigns/{emailCampaign}', [AdminEmailCampaignController::class, 'show'])->name('email-campaigns.show');
+    Route::post('email-campaigns/{emailCampaign}/send', [AdminEmailCampaignController::class, 'send'])->name('email-campaigns.send');
+
+    // Notifications
+    Route::get('notifications', [AdminNotificationController::class, 'index'])->name('notifications.index');
+    Route::get('notifications/settings', [AdminNotificationController::class, 'settings'])->name('notifications.settings');
+    Route::get('notifications/logs', [AdminNotificationController::class, 'logs'])->name('notifications.logs');
+    Route::get('notifications/templates', [AdminNotificationController::class, 'templates'])->name('notifications.templates');
+    Route::get('notifications/templates/create', [AdminNotificationController::class, 'createTemplate'])->name('notifications.templates.create');
+    Route::post('notifications/templates', [AdminNotificationController::class, 'storeTemplate'])->name('notifications.templates.store');
+    Route::get('notifications/templates/{template}/edit', [AdminNotificationController::class, 'editTemplate'])->name('notifications.templates.edit');
+    Route::put('notifications/templates/{template}', [AdminNotificationController::class, 'updateTemplate'])->name('notifications.templates.update');
+    Route::delete('notifications/templates/{template}', [AdminNotificationController::class, 'destroyTemplate'])->name('notifications.templates.destroy');
+    Route::get('notifications/seed', [AdminNotificationSeederController::class, 'seed'])->name('notifications.seed');
+
+    // Settings
+    Route::get('settings', fn() => redirect()->route('admin.settings.show', 'general'))->name('settings');
+    Route::get('settings/{group}', [AdminSettingController::class, 'show'])->name('settings.show');
+    Route::patch('settings/{group}', [AdminSettingController::class, 'update'])->name('settings.update');
+    Route::post('settings/test-email', [AdminSettingController::class, 'testEmail'])->name('settings.test-email');
 
 });
 

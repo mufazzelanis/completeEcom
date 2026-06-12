@@ -25,7 +25,12 @@ class ProductController extends Controller
 
         if ($request->filled('search')) {
             $q = $request->search;
-            $query->where(fn($qr) => $qr->where('name', 'like', "%$q%")->orWhere('sku', 'like', "%$q%"));
+            $query->where(fn($qr) => $qr
+                ->where('name', 'like', "%$q%")
+                ->orWhere('sku', 'like', "%$q%")
+                ->orWhere('barcode', 'like', "%$q%")
+                ->orWhere('short_description', 'like', "%$q%")
+            );
         }
         if ($request->filled('category')) {
             $query->where('category_id', $request->category);
@@ -36,8 +41,37 @@ class ProductController extends Controller
         if ($request->filled('brand')) {
             $query->where('brand_id', $request->brand);
         }
+        if ($request->filled('status')) {
+            $query->where('is_active', $request->status === 'active');
+        }
+        if ($request->boolean('featured')) {
+            $query->where('is_featured', true);
+        }
+        if ($request->boolean('on_sale')) {
+            $query->whereNotNull('sale_price');
+        }
+        if ($request->filled('stock_status')) {
+            match($request->stock_status) {
+                'out' => $query->where('stock', 0),
+                'low' => $query->where('stock', '>', 0)->whereRaw('stock <= COALESCE(low_stock_threshold, 5)'),
+                'in'  => $query->where('stock', '>', 0),
+                default => null,
+            };
+        }
 
-        $products   = $query->latest()->paginate(15);
+        $sortBy = $request->get('sort_by', 'latest');
+        match($sortBy) {
+            'oldest'     => $query->oldest(),
+            'name_asc'   => $query->orderBy('name', 'asc'),
+            'name_desc'  => $query->orderBy('name', 'desc'),
+            'price_asc'  => $query->orderBy('price', 'asc'),
+            'price_desc' => $query->orderBy('price', 'desc'),
+            'stock_asc'  => $query->orderBy('stock', 'asc'),
+            'stock_desc' => $query->orderBy('stock', 'desc'),
+            default      => $query->latest(),
+        };
+
+        $products   = $query->paginate(15)->withQueryString();
         $categories = $this->categoryTree();
         $brands     = Brand::where('is_active', true)->orderBy('name')->get(['id', 'name']);
 

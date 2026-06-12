@@ -83,6 +83,21 @@ class Product extends Model
         return $this->hasMany(BundleItem::class, 'bundle_product_id')->with('itemProduct')->orderBy('sort_order');
     }
 
+    public function recommendations()
+    {
+        return $this->hasMany(ProductRecommendation::class);
+    }
+
+    public function crossSells()
+    {
+        return $this->hasMany(ProductRecommendation::class)->where('type', 'cross_sell')->with('recommended');
+    }
+
+    public function upsells()
+    {
+        return $this->hasMany(ProductRecommendation::class)->where('type', 'upsell')->with('recommended');
+    }
+
     public function warehouseStock()
     {
         return $this->hasMany(WarehouseStock::class);

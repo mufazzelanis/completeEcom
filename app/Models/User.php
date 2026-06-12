@@ -13,6 +13,7 @@ class User extends Authenticatable
 
     protected $fillable = [
         'name', 'email', 'password', 'role', 'phone', 'avatar', 'is_active',
+        'date_of_birth', 'gender', 'bio',
     ];
 
     protected $hidden = ['password', 'remember_token'];
@@ -23,6 +24,7 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password'          => 'hashed',
             'is_active'         => 'boolean',
+            'date_of_birth'     => 'date',
         ];
     }
 
@@ -159,5 +161,39 @@ class User extends Authenticatable
     public function userPermissions()
     {
         return $this->hasMany(UserPermission::class);
+    }
+
+    public function supportTickets()
+    {
+        return $this->hasMany(SupportTicket::class);
+    }
+
+    public function loginActivities()
+    {
+        return $this->hasMany(LoginActivity::class)->latest('created_at');
+    }
+
+    public function notifications()
+    {
+        return $this->hasMany(UserNotification::class)->latest();
+    }
+
+    public function unreadNotificationsCount(): int
+    {
+        return $this->notifications()->where('is_read', false)->count();
+    }
+
+    public function referralCode()
+    {
+        return $this->hasOne(ReferralCode::class);
+    }
+
+    public function getAvatarUrlAttribute(): string
+    {
+        if ($this->avatar) {
+            return \Illuminate\Support\Facades\Storage::url($this->avatar);
+        }
+        $initial = strtoupper(substr($this->name, 0, 1));
+        return "https://ui-avatars.com/api/?name={$initial}&background=6366f1&color=ffffff&size=128";
     }
 }
