@@ -108,8 +108,27 @@ class ProductController extends Controller
 
         $data = $request->only([
             'type', 'name', 'category_id', 'short_description', 'description',
-            'sku', 'price', 'weight', 'meta_title', 'meta_description',
+            'sku', 'price', 'weight',
+            'meta_title', 'meta_description', 'focus_keyword', 'canonical_url', 'robots_meta',
+            'sitemap_priority', 'sitemap_changefreq', 'redirect_url', 'breadcrumb_title',
+            'og_title', 'og_description', 'og_image',
+            'twitter_card', 'twitter_title', 'twitter_description', 'twitter_image',
+            'schema_type', 'schema_condition', 'schema_availability', 'price_valid_until',
+            'gtin', 'mpn', 'country_of_origin',
+            'google_category', 'google_product_type', 'age_group', 'gender',
+            'color_description', 'size_description', 'material',
+            'image_alt', 'image_title',
+            'ai_summary', 'ai_overview', 'ai_comparison',
         ]);
+        $data['noindex']      = $request->boolean('noindex');
+        $data['nofollow']     = $request->boolean('nofollow');
+        $data['nosnippet']    = $request->boolean('nosnippet');
+        $data['noimageindex'] = $request->boolean('noimageindex');
+        $data['ai_key_features'] = array_values(array_filter($request->input('ai_key_features', []), fn($v) => trim($v ?? '') !== ''));
+        $data['ai_benefits']     = array_values(array_filter($request->input('ai_benefits', []),     fn($v) => trim($v ?? '') !== ''));
+        $data['ai_use_cases']    = array_values(array_filter($request->input('ai_use_cases', []),     fn($v) => trim($v ?? '') !== ''));
+        $data['seo_score']       = $this->computeSeoScore($data);
+
         $data['subcategory_id']       = $request->filled('subcategory_id') ? $request->subcategory_id : null;
         $data['brand_id']             = $request->filled('brand_id') ? $request->brand_id : null;
         $data['slug']                 = $this->uniqueSlug(Str::slug($request->name));
@@ -176,8 +195,27 @@ class ProductController extends Controller
 
         $data = $request->only([
             'type', 'name', 'category_id', 'short_description', 'description',
-            'sku', 'price', 'weight', 'meta_title', 'meta_description',
+            'sku', 'price', 'weight',
+            'meta_title', 'meta_description', 'focus_keyword', 'canonical_url', 'robots_meta',
+            'sitemap_priority', 'sitemap_changefreq', 'redirect_url', 'breadcrumb_title',
+            'og_title', 'og_description', 'og_image',
+            'twitter_card', 'twitter_title', 'twitter_description', 'twitter_image',
+            'schema_type', 'schema_condition', 'schema_availability', 'price_valid_until',
+            'gtin', 'mpn', 'country_of_origin',
+            'google_category', 'google_product_type', 'age_group', 'gender',
+            'color_description', 'size_description', 'material',
+            'image_alt', 'image_title',
+            'ai_summary', 'ai_overview', 'ai_comparison',
         ]);
+        $data['noindex']      = $request->boolean('noindex');
+        $data['nofollow']     = $request->boolean('nofollow');
+        $data['nosnippet']    = $request->boolean('nosnippet');
+        $data['noimageindex'] = $request->boolean('noimageindex');
+        $data['ai_key_features'] = array_values(array_filter($request->input('ai_key_features', []), fn($v) => trim($v ?? '') !== ''));
+        $data['ai_benefits']     = array_values(array_filter($request->input('ai_benefits', []),     fn($v) => trim($v ?? '') !== ''));
+        $data['ai_use_cases']    = array_values(array_filter($request->input('ai_use_cases', []),     fn($v) => trim($v ?? '') !== ''));
+        $data['seo_score']       = $this->computeSeoScore($data);
+
         $data['subcategory_id']       = $request->filled('subcategory_id') ? $request->subcategory_id : null;
         $data['brand_id']             = $request->filled('brand_id') ? $request->brand_id : null;
         $data['slug']                 = $product->name !== $request->name ? $this->uniqueSlug(Str::slug($request->name), $product->id) : $product->slug;
@@ -359,5 +397,26 @@ class ProductController extends Controller
                 'sort_order'        => $i,
             ]);
         }
+    }
+
+    private function computeSeoScore(array $data): int
+    {
+        $score = 0;
+        $mt  = trim($data['meta_title']    ?? '');
+        $md  = trim($data['meta_description'] ?? '');
+        $fk  = trim($data['focus_keyword'] ?? '');
+        $ogi = trim($data['og_image']      ?? '');
+        $alt = trim($data['image_alt']     ?? '');
+        $des = trim($data['description']   ?? '');
+
+        if (strlen($mt) >= 30 && strlen($mt) <= 70) $score += 20; elseif ($mt !== '') $score += 5;
+        if (strlen($md) >= 100 && strlen($md) <= 160) $score += 20; elseif ($md !== '') $score += 5;
+        if ($fk !== '') $score += 15;
+        if ($ogi !== '') $score += 10;
+        if ($alt !== '') $score += 10;
+        if (strlen($des) > 200) $score += 15; elseif ($des !== '') $score += 5;
+        if ($fk !== '' && $mt !== '' && str_contains(strtolower($mt), strtolower($fk))) $score += 10;
+
+        return min($score, 100);
     }
 }

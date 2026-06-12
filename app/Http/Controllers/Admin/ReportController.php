@@ -363,6 +363,252 @@ class ReportController extends Controller
         ));
     }
 
+    // ── orders report ────────────────────────────────────────────────────
+    public function orders(Request $request)
+    {
+        [$from, $to] = $this->dateRange($request);
+        $groupBy = $request->get('group_by', 'day');
+
+        $dateFormat = match($groupBy) {
+            'month' => '%Y-%m',
+            'week'  => '%Y-%u',
+            default => '%Y-%m-%d',
+        };
+
+        $orderTrend = Order::select(
+                DB::raw("DATE_FORMAT(created_at, '$dateFormat') as period"),
+                DB::raw('COUNT(*) as total_orders'),
+                DB::raw("SUM(CASE WHEN status='pending' THEN 1 ELSE 0 END) as pending"),
+                DB::raw("SUM(CASE WHEN status='processing' THEN 1 ELSE 0 END) as processing"),
+                DB::raw("SUM(CASE WHEN status='shipped' THEN 1 ELSE 0 END) as shipped"),
+                DB::raw("SUM(CASE WHEN status='delivered' THEN 1 ELSE 0 END) as delivered"),
+                DB::raw("SUM(CASE WHEN status='cancelled' THEN 1 ELSE 0 END) as cancelled"),
+                DB::raw("SUM(CASE WHEN status='refunded' THEN 1 ELSE 0 END) as refunded"),
+                DB::raw('AVG(total) as avg_order_value')
+            )
+            ->whereBetween('created_at', [$from, $to])
+            ->groupBy('period')->orderBy('period')->get();
+
+        $summary = Order::whereBetween('created_at', [$from, $to])
+            ->selectRaw("COUNT(*) as total,
+                SUM(CASE WHEN status='pending' THEN 1 ELSE 0 END) as pending,
+                SUM(CASE WHEN status='processing' THEN 1 ELSE 0 END) as processing,
+                SUM(CASE WHEN status='shipped' THEN 1 ELSE 0 END) as shipped,
+                SUM(CASE WHEN status='delivered' THEN 1 ELSE 0 END) as delivered,
+                SUM(CASE WHEN status='cancelled' THEN 1 ELSE 0 END) as cancelled,
+                SUM(CASE WHEN status='refunded' THEN 1 ELSE 0 END) as refunded,
+                AVG(total) as avg_order_value,
+                SUM(total) as total_revenue")
+            ->first();
+
+        $byStatus = Order::whereBetween('created_at', [$from, $to])
+            ->select('status', DB::raw('COUNT(*) as count'), DB::raw('SUM(total) as revenue'))
+            ->groupBy('status')->orderByDesc('count')->get();
+
+        $byPayment = Order::whereBetween('created_at', [$from, $to])
+            ->select('payment_method', DB::raw('COUNT(*) as count'), DB::raw('SUM(total) as revenue'))
+            ->groupBy('payment_method')->orderByDesc('count')->get();
+
+        $byCity = Order::whereBetween('created_at', [$from, $to])
+            ->select('shipping_city', DB::raw('COUNT(*) as count'), DB::raw('SUM(total) as revenue'))
+            ->groupBy('shipping_city')->orderByDesc('count')->take(10)->get();
+
+        $recentPending = Order::where('status', 'pending')
+            ->with('user:id,name,email')->latest()->take(10)->get();
+
+        return view('admin.reports.orders', compact(
+            'orderTrend','summary','byStatus','byPayment','byCity','recentPending','from','to','groupBy'
+        ));
+    }
+
+    // ── payments report ───────────────────────────────────────────────────
+    public function payments(Request $request)
+    {
+        [$from, $to] = $this->dateRange($request);
+
+        $summary = Order::whereBetween('created_at', [$from, $to])
+            ->selectRaw("COUNT(*) as total_orders,
+                SUM(total) as total_collected,
+                SUM(CASE WHEN payment_status='paid' THEN total ELSE 0 END) as paid_amount,
+                SUM(CASE WHEN payment_status='pending' THEN total ELSE 0 END) as pending_amount,
+                SUM(CASE WHEN payment_status='failed' THEN total ELSE 0 END) as failed_amount,
+                SUM(CASE WHEN payment_status='refunded' THEN total ELSE 0 END) as refunded_amount")
+            ->first();
+
+        $byMethod = Order::whereBetween('created_at', [$from, $to])
+            ->select('payment_method',
+                DB::raw('COUNT(*) as count'),
+                DB::raw('SUM(total) as revenue'),
+                DB::raw("SUM(CASE WHEN payment_status='paid' THEN 1 ELSE 0 END) as paid_count"),
+                DB::raw("SUM(CASE WHEN payment_status='pending' THEN 1 ELSE 0 END) as pending_count"),
+                DB::raw("SUM(CASE WHEN payment_status='failed' THEN 1 ELSE 0 END) as failed_count")
+            )
+            ->groupBy('payment_method')->orderByDesc('revenue')->get();
+
+        $byStatus = Order::whereBetween('created_at', [$from, $to])
+            ->select('payment_status', DB::raw('COUNT(*) as count'), DB::raw('SUM(total) as amount'))
+            ->groupBy('payment_status')->orderByDesc('amount')->get();
+
+        $monthlyTrend = Order::select(
+                DB::raw('DATE_FORMAT(created_at, "%Y-%m") as month'),
+                DB::raw("SUM(CASE WHEN payment_method='cod' THEN total ELSE 0 END) as cod"),
+                DB::raw("SUM(CASE WHEN payment_method='card' THEN total ELSE 0 END) as card"),
+                DB::raw("SUM(CASE WHEN payment_method='bkash' THEN total ELSE 0 END) as bkash"),
+                DB::raw("SUM(CASE WHEN payment_method='nagad' THEN total ELSE 0 END) as nagad")
+            )
+            ->where('created_at', '>=', Carbon::now()->subMonths(11)->startOfMonth())
+            ->groupBy('month')->orderBy('month')->get();
+
+        $pendingPayments = Order::whereBetween('created_at', [$from, $to])
+            ->where('payment_status', 'pending')
+            ->with('user:id,name,email')->latest()->take(15)->get();
+
+        $failedPayments = Order::whereBetween('created_at', [$from, $to])
+            ->where('payment_status', 'failed')
+            ->with('user:id,name,email')->latest()->take(10)->get();
+
+        return view('admin.reports.payments', compact(
+            'summary','byMethod','byStatus','monthlyTrend','pendingPayments','failedPayments','from','to'
+        ));
+    }
+
+    // ── marketing report ──────────────────────────────────────────────────
+    public function marketing(Request $request)
+    {
+        [$from, $to] = $this->dateRange($request);
+
+        $withCoupon    = Order::whereBetween('created_at', [$from, $to])->whereNotNull('coupon_code')->where('discount', '>', 0);
+        $withoutCoupon = Order::whereBetween('created_at', [$from, $to])->where(fn($q) => $q->whereNull('coupon_code')->orWhere('discount', 0));
+
+        $couponSummary = (object)[
+            'orders_with_coupon'    => (clone $withCoupon)->count(),
+            'orders_without_coupon' => (clone $withoutCoupon)->count(),
+            'total_discount'        => (clone $withCoupon)->sum('discount'),
+            'avg_discount'          => (clone $withCoupon)->avg('discount') ?? 0,
+            'revenue_with_coupon'   => (clone $withCoupon)->sum('total'),
+            'revenue_without_coupon'=> (clone $withoutCoupon)->sum('total'),
+            'avg_order_with_coupon' => (clone $withCoupon)->avg('total') ?? 0,
+            'avg_order_without'     => (clone $withoutCoupon)->avg('total') ?? 0,
+        ];
+
+        $totalOrders = Order::whereBetween('created_at', [$from, $to])->count();
+        $couponRate  = $totalOrders > 0 ? round(($couponSummary->orders_with_coupon / $totalOrders) * 100, 1) : 0;
+
+        $topCoupons = Order::whereBetween('created_at', [$from, $to])
+            ->whereNotNull('coupon_code')->where('discount', '>', 0)
+            ->select('coupon_code', DB::raw('COUNT(*) as uses'), DB::raw('SUM(discount) as total_discount'), DB::raw('SUM(total) as revenue'), DB::raw('AVG(discount) as avg_discount'))
+            ->groupBy('coupon_code')->orderByDesc('uses')->take(15)->get();
+
+        $discountTrend = Order::select(
+                DB::raw('DATE_FORMAT(created_at, "%Y-%m") as month'),
+                DB::raw('COUNT(*) as total_orders'),
+                DB::raw("SUM(CASE WHEN coupon_code IS NOT NULL AND discount > 0 THEN 1 ELSE 0 END) as coupon_orders"),
+                DB::raw('SUM(discount) as total_discount'),
+                DB::raw('SUM(total) as revenue')
+            )
+            ->where('created_at', '>=', Carbon::now()->subMonths(11)->startOfMonth())
+            ->groupBy('month')->orderBy('month')->get();
+
+        return view('admin.reports.marketing', compact(
+            'couponSummary','couponRate','topCoupons','discountTrend','totalOrders','from','to'
+        ));
+    }
+
+    // ── shipping report ───────────────────────────────────────────────────
+    public function shipping(Request $request)
+    {
+        [$from, $to] = $this->dateRange($request);
+
+        $summary = Order::whereBetween('created_at', [$from, $to])
+            ->selectRaw("COUNT(*) as total_orders,
+                SUM(shipping) as total_shipping_revenue,
+                AVG(shipping) as avg_shipping,
+                SUM(CASE WHEN shipping=0 THEN 1 ELSE 0 END) as free_shipping_count,
+                SUM(CASE WHEN shipping>0 THEN 1 ELSE 0 END) as paid_shipping_count,
+                SUM(CASE WHEN status='delivered' THEN 1 ELSE 0 END) as delivered_count,
+                SUM(CASE WHEN status='shipped' THEN 1 ELSE 0 END) as shipped_count")
+            ->first();
+
+        $deliveryRate = ($summary->total_orders ?? 0) > 0
+            ? round(($summary->delivered_count / $summary->total_orders) * 100, 1) : 0;
+
+        $byCity = Order::whereBetween('created_at', [$from, $to])
+            ->select('shipping_city',
+                DB::raw('COUNT(*) as orders'),
+                DB::raw('SUM(total) as revenue'),
+                DB::raw('SUM(shipping) as shipping_revenue'),
+                DB::raw("SUM(CASE WHEN status='delivered' THEN 1 ELSE 0 END) as delivered"),
+                DB::raw("SUM(CASE WHEN status='cancelled' THEN 1 ELSE 0 END) as cancelled")
+            )
+            ->groupBy('shipping_city')->orderByDesc('orders')->take(15)->get();
+
+        $byCountry = Order::whereBetween('created_at', [$from, $to])
+            ->select('shipping_country', DB::raw('COUNT(*) as orders'), DB::raw('SUM(total) as revenue'), DB::raw('SUM(shipping) as shipping_revenue'))
+            ->groupBy('shipping_country')->orderByDesc('orders')->get();
+
+        $shippingTrend = Order::select(
+                DB::raw('DATE_FORMAT(created_at, "%Y-%m") as month'),
+                DB::raw('COUNT(*) as orders'),
+                DB::raw('SUM(shipping) as shipping_revenue'),
+                DB::raw("SUM(CASE WHEN status='delivered' THEN 1 ELSE 0 END) as delivered")
+            )
+            ->where('created_at', '>=', Carbon::now()->subMonths(11)->startOfMonth())
+            ->groupBy('month')->orderBy('month')->get();
+
+        $freeShippingRevenue = Order::whereBetween('created_at', [$from, $to])
+            ->where('shipping', 0)->whereNotIn('status', ['cancelled','refunded'])->sum('total');
+
+        return view('admin.reports.shipping', compact(
+            'summary','deliveryRate','byCity','byCountry','shippingTrend','freeShippingRevenue','from','to'
+        ));
+    }
+
+    // ── returns & refunds report ──────────────────────────────────────────
+    public function returns(Request $request)
+    {
+        [$from, $to] = $this->dateRange($request);
+
+        $summary = Order::whereBetween('created_at', [$from, $to])
+            ->selectRaw("COUNT(*) as total_orders,
+                SUM(CASE WHEN status IN ('cancelled','refunded') THEN 1 ELSE 0 END) as returned_count,
+                SUM(CASE WHEN status='cancelled' THEN 1 ELSE 0 END) as cancelled_count,
+                SUM(CASE WHEN status='refunded' THEN 1 ELSE 0 END) as refunded_count,
+                SUM(CASE WHEN status IN ('cancelled','refunded') THEN total ELSE 0 END) as lost_revenue,
+                SUM(CASE WHEN status='cancelled' THEN total ELSE 0 END) as cancelled_revenue,
+                SUM(CASE WHEN status='refunded' THEN total ELSE 0 END) as refunded_revenue")
+            ->first();
+
+        $returnRate = ($summary->total_orders ?? 0) > 0
+            ? round(($summary->returned_count / $summary->total_orders) * 100, 1) : 0;
+
+        $returnTrend = Order::select(
+                DB::raw('DATE_FORMAT(created_at, "%Y-%m") as month'),
+                DB::raw('COUNT(*) as total_orders'),
+                DB::raw("SUM(CASE WHEN status IN ('cancelled','refunded') THEN 1 ELSE 0 END) as returned"),
+                DB::raw("SUM(CASE WHEN status IN ('cancelled','refunded') THEN total ELSE 0 END) as lost_revenue")
+            )
+            ->where('created_at', '>=', Carbon::now()->subMonths(11)->startOfMonth())
+            ->groupBy('month')->orderBy('month')->get();
+
+        $returnsByPayment = Order::whereBetween('created_at', [$from, $to])
+            ->whereIn('status', ['cancelled','refunded'])
+            ->select('payment_method', DB::raw('COUNT(*) as count'), DB::raw('SUM(total) as amount'))
+            ->groupBy('payment_method')->orderByDesc('count')->get();
+
+        $returnsByCity = Order::whereBetween('created_at', [$from, $to])
+            ->whereIn('status', ['cancelled','refunded'])
+            ->select('shipping_city', DB::raw('COUNT(*) as count'), DB::raw('SUM(total) as amount'))
+            ->groupBy('shipping_city')->orderByDesc('count')->take(10)->get();
+
+        $recentReturns = Order::whereBetween('created_at', [$from, $to])
+            ->whereIn('status', ['cancelled','refunded'])
+            ->with('user:id,name,email')->latest()->take(20)->get();
+
+        return view('admin.reports.returns', compact(
+            'summary','returnRate','returnTrend','returnsByPayment','returnsByCity','recentReturns','from','to'
+        ));
+    }
+
     // ── excel downloads ───────────────────────────────────────────────────
     public function downloadSales(Request $request)
     {

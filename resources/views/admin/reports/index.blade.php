@@ -1,17 +1,7 @@
-@extends('layouts.admin')
-@section('title', 'Analytics Overview')
+@extends('admin.reports.layout')
+@section('report-title', 'Analytics Overview')
 
-@push('scripts')
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-@endpush
-
-@section('content')
-{{-- Nav --}}
-<div class="flex gap-2 mb-6 flex-wrap">
-    @foreach([['reports.index','Overview'],['reports.sales','Sales'],['reports.revenue','Revenue'],['reports.products','Products'],['reports.customers','Customers'],['reports.inventory','Inventory']] as [$r,$l])
-    <a href="{{ route('admin.'.$r) }}" class="px-4 py-2 rounded-xl text-sm font-medium transition {{ request()->routeIs('admin.'.$r) ? 'bg-indigo-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50 shadow-sm' }}">{{ $l }}</a>
-    @endforeach
-</div>
+@section('report-content')
 
 {{-- Key Metrics --}}
 <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">

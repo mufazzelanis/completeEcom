@@ -285,6 +285,11 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
         Route::get('/products',  [AdminReportController::class, 'products'])->name('products');
         Route::get('/customers', [AdminReportController::class, 'customers'])->name('customers');
         Route::get('/inventory', [AdminReportController::class, 'inventory'])->name('inventory');
+        Route::get('/orders',    [AdminReportController::class, 'orders'])->name('orders');
+        Route::get('/payments',  [AdminReportController::class, 'payments'])->name('payments');
+        Route::get('/marketing', [AdminReportController::class, 'marketing'])->name('marketing');
+        Route::get('/shipping',  [AdminReportController::class, 'shipping'])->name('shipping');
+        Route::get('/returns',   [AdminReportController::class, 'returns'])->name('returns');
         // Excel downloads
         Route::get('/sales/download',     [AdminReportController::class, 'downloadSales'])->name('sales.download');
         Route::get('/revenue/download',   [AdminReportController::class, 'downloadRevenue'])->name('revenue.download');

@@ -412,23 +412,6 @@
                     </div>
                 </div>
 
-                {{-- SEO --}}
-                <div class="bg-white rounded-2xl shadow-sm p-6">
-                    <h3 class="font-semibold text-gray-800 mb-4">SEO</h3>
-                    <div class="space-y-3">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Meta Title</label>
-                            <input type="text" name="meta_title" value="{{ old('meta_title', $product->meta_title) }}" maxlength="70"
-                                class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Meta Description</label>
-                            <textarea name="meta_description" rows="3" maxlength="160"
-                                class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none">{{ old('meta_description', $product->meta_description) }}</textarea>
-                        </div>
-                    </div>
-                </div>
-
                 {{-- Info summary --}}
                 <div class="bg-gray-50 rounded-2xl p-4 text-xs text-gray-500 space-y-1.5">
                     <div class="flex justify-between"><span>Slug</span><span class="font-mono text-gray-600 truncate max-w-32">{{ $product->slug }}</span></div>
@@ -446,6 +429,8 @@
                 </button>
             </div>
         </div>
+
+        @include('admin.products._seo_fields')
     </form>
 </div>
 @endsection

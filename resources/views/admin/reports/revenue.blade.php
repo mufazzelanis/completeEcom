@@ -1,13 +1,7 @@
-@extends('layouts.admin')
-@section('title', 'Revenue Report')
+@extends('admin.reports.layout')
+@section('report-title', 'Revenue Report')
 
-@section('content')
-{{-- Nav --}}
-<div class="flex gap-2 mb-6 flex-wrap">
-    @foreach([['reports.index','Overview'],['reports.sales','Sales'],['reports.revenue','Revenue'],['reports.products','Products'],['reports.customers','Customers'],['reports.inventory','Inventory']] as [$r,$l])
-    <a href="{{ route('admin.'.$r) }}" class="px-4 py-2 rounded-xl text-sm font-medium transition {{ request()->routeIs('admin.'.$r) ? 'bg-indigo-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50 shadow-sm' }}">{{ $l }}</a>
-    @endforeach
-</div>
+@section('report-content')
 
 {{-- Date filter --}}
 <div class="bg-white rounded-2xl shadow-sm p-4 mb-6">

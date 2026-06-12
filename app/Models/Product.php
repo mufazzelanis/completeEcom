@@ -12,15 +12,42 @@ class Product extends Model
         'short_description', 'description', 'sku', 'barcode', 'price', 'sale_price',
         'stock', 'low_stock_threshold', 'weight', 'image', 'download_file',
         'download_expiry_days', 'is_active', 'is_featured', 'views',
-        'meta_title', 'meta_description',
+        // Basic SEO
+        'meta_title', 'meta_description', 'focus_keyword', 'canonical_url', 'robots_meta',
+        'sitemap_priority', 'sitemap_changefreq', 'redirect_url', 'breadcrumb_title',
+        // Social sharing
+        'og_title', 'og_description', 'og_image',
+        'twitter_card', 'twitter_title', 'twitter_description', 'twitter_image',
+        // Search visibility
+        'noindex', 'nofollow', 'nosnippet', 'noimageindex',
+        // Schema markup
+        'schema_type', 'schema_condition', 'schema_availability', 'price_valid_until',
+        'gtin', 'mpn', 'country_of_origin',
+        // Merchant Center
+        'google_category', 'google_product_type', 'age_group', 'gender',
+        'color_description', 'size_description', 'material',
+        // Image SEO
+        'image_alt', 'image_title',
+        // AI SEO
+        'ai_summary', 'ai_overview', 'ai_key_features', 'ai_benefits', 'ai_use_cases', 'ai_comparison',
+        'seo_score',
     ];
 
     protected $casts = [
-        'price'      => 'decimal:2',
-        'sale_price' => 'decimal:2',
-        'weight'     => 'decimal:2',
-        'is_active'  => 'boolean',
-        'is_featured'=> 'boolean',
+        'price'             => 'decimal:2',
+        'sale_price'        => 'decimal:2',
+        'weight'            => 'decimal:2',
+        'sitemap_priority'  => 'decimal:2',
+        'is_active'         => 'boolean',
+        'is_featured'       => 'boolean',
+        'noindex'           => 'boolean',
+        'nofollow'          => 'boolean',
+        'nosnippet'         => 'boolean',
+        'noimageindex'      => 'boolean',
+        'price_valid_until' => 'date',
+        'ai_key_features'   => 'array',
+        'ai_benefits'       => 'array',
+        'ai_use_cases'      => 'array',
     ];
 
     protected static function boot()
