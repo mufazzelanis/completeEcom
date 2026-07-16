@@ -63,7 +63,7 @@
                     </script>
                 </div>
                 @error('content')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
-                <p class="text-xs text-gray-400 mt-1">Write HTML email content. Use <code>{{ '{{$name}}' }}</code> for recipient name.</p>
+                <p class="text-xs text-gray-400 mt-1">Write HTML email content. Use <code>@{{ $name }}</code> for recipient name.</p>
             </div>
         </div>
     </div>

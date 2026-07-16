@@ -167,7 +167,12 @@
                                 <p class="text-xs text-gray-400">{{ $pm->description }}</p>
                                 @if($pm->charge_type !== 'none')
                                     <p class="text-xs text-orange-500 mt-0.5">
-                                        + @if($pm->charge_type === 'percent'){{ $pm->charge_value }}% fee@else৳{{ number_format($pm->charge_value, 2) }} fee@endif
+                                        +
+                                        @if($pm->charge_type === 'percent')
+                                            {{ $pm->charge_value }}% fee
+                                        @else
+                                            ৳{{ number_format($pm->charge_value, 2) }} fee
+                                        @endif
                                     </p>
                                 @endif
                             </div>

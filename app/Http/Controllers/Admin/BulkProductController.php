@@ -3,10 +3,10 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\ImportProductsCsvJob;
+use App\Models\BulkImport;
 use App\Models\Category;
-use App\Models\Product;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
 
 class BulkProductController extends Controller
 {
@@ -43,83 +43,42 @@ class BulkProductController extends Controller
     public function import(Request $request)
     {
         $request->validate([
-            'csv_file' => 'required|file|mimes:csv,txt|max:5120',
+            // 512000 KB = 500MB — actually enforceable now that upload_max_filesize/post_max_size
+            // are raised to 512M/520M (see public/.user.ini and the server's php.ini).
+            'csv_file' => 'required|file|mimes:csv,txt|max:512000',
         ]);
 
-        $file   = $request->file('csv_file');
-        $handle = fopen($file->getRealPath(), 'r');
+        $file       = $request->file('csv_file');
+        $storedPath = $file->store('imports', 'local');
 
-        $header  = fgetcsv($handle); // skip header row
-        $results = ['created' => 0, 'skipped' => 0, 'errors' => []];
-        $row     = 1;
+        $import = BulkImport::create([
+            'type'              => 'products',
+            'original_filename' => $file->getClientOriginalName(),
+            'stored_path'       => $storedPath,
+            'status'            => 'queued',
+            'user_id'           => auth()->id(),
+        ]);
 
-        // Cache category name → id map
-        $catMap = Category::whereNull('parent_id')
-            ->get(['id', 'name'])
-            ->keyBy(fn($c) => strtolower(trim($c->name)))
-            ->map(fn($c) => $c->id)
-            ->toArray();
+        ImportProductsCsvJob::dispatch($import->id);
 
-        while (($data = fgetcsv($handle)) !== false) {
-            $row++;
-            if (count($data) < 4) {
-                $results['errors'][] = "Row {$row}: too few columns.";
-                $results['skipped']++;
-                continue;
-            }
+        return redirect()->route('admin.products.bulk-upload.status', $import);
+    }
 
-            [$name, $sku, $catName, $price, $salePrice, $stock, $shortDesc, $desc, $isActive, $isFeatured]
-                = array_pad($data, 10, '');
+    public function status(BulkImport $bulkImport)
+    {
+        return view('admin.products.bulk_upload_status', ['import' => $bulkImport]);
+    }
 
-            $name  = trim($name);
-            $price = trim($price);
-
-            if (empty($name) || !is_numeric($price)) {
-                $results['errors'][] = "Row {$row}: name or price missing/invalid.";
-                $results['skipped']++;
-                continue;
-            }
-
-            $catId = $catMap[strtolower(trim($catName))] ?? null;
-            if (!$catId) {
-                $results['errors'][] = "Row {$row}: category '{$catName}' not found — skipped.";
-                $results['skipped']++;
-                continue;
-            }
-
-            $slug = Str::slug($name);
-            $base = $slug;
-            $i    = 1;
-            while (Product::where('slug', $slug)->exists()) {
-                $slug = $base . '-' . $i++;
-            }
-
-            Product::create([
-                'name'              => $name,
-                'slug'              => $slug,
-                'sku'               => $sku ?: null,
-                'category_id'       => $catId,
-                'price'             => $price,
-                'sale_price'        => is_numeric(trim($salePrice)) && trim($salePrice) !== '' ? trim($salePrice) : null,
-                'stock'             => is_numeric(trim($stock)) ? (int) trim($stock) : 0,
-                'short_description' => trim($shortDesc) ?: null,
-                'description'       => trim($desc) ?: null,
-                'is_active'         => trim($isActive) !== '0',
-                'is_featured'       => trim($isFeatured) === '1',
-            ]);
-
-            $results['created']++;
-        }
-
-        fclose($handle);
-
-        $msg = "Import complete: {$results['created']} created, {$results['skipped']} skipped.";
-        if ($results['errors']) {
-            return redirect()->route('admin.products.bulk-upload')
-                ->with('warning', $msg)
-                ->with('import_errors', $results['errors']);
-        }
-
-        return redirect()->route('admin.products.index')->with('success', $msg);
+    public function statusData(BulkImport $bulkImport)
+    {
+        return response()->json([
+            'status'          => $bulkImport->status,
+            'total_rows'      => $bulkImport->total_rows,
+            'processed_rows'  => $bulkImport->processed_rows,
+            'created_count'   => $bulkImport->created_count,
+            'skipped_count'   => $bulkImport->skipped_count,
+            'progress_percent'=> $bulkImport->progressPercent(),
+            'errors'          => $bulkImport->errors ?? [],
+        ]);
     }
 }

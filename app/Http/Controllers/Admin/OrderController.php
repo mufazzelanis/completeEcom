@@ -25,8 +25,8 @@ class OrderController extends Controller
         }
 
         if ($request->filled('search')) {
-            $query->where('order_number', 'like', '%' . $request->search . '%')
-                ->orWhereHas('user', fn($q) => $q->where('name', 'like', '%' . $request->search . '%'));
+            $query->where('order_number', 'like', '%'.$request->search.'%')
+                ->orWhereHas('user', fn ($q) => $q->where('name', 'like', '%'.$request->search.'%'));
         }
 
         $orders = $query->latest()->paginate(15);
@@ -43,9 +43,9 @@ class OrderController extends Controller
         if (! $order->fraud_checked_at) {
             $fraud = app(FraudDetectionService::class)->analyze($order);
             $order->update([
-                'fraud_score'      => $fraud['score'],
-                'fraud_flags'      => $fraud['flags'],
-                'is_fraud_flagged' => $fraud['score'] >= 40,
+                'fraud_score' => $fraud['score'],
+                'fraud_flags' => $fraud['flags'],
+                'is_fraud_flagged' => $fraud['score'] >= 50,
                 'fraud_checked_at' => now(),
             ]);
             $order->refresh();
@@ -94,9 +94,9 @@ class OrderController extends Controller
         if ($order->user) {
             NotificationDispatcher::customer('order_status_changed', $order->user, [
                 'order_number' => $order->order_number,
-                'old_status'   => ucfirst($old),
-                'new_status'   => ucfirst($request->status),
-                'url'          => route('account.orders.show', $order),
+                'old_status' => ucfirst($old),
+                'new_status' => ucfirst($request->status),
+                'url' => route('orders.show', $order),
             ]);
         }
 
@@ -108,9 +108,9 @@ class OrderController extends Controller
         $order->load('user', 'items');
         $fraud = app(FraudDetectionService::class)->analyze($order);
         $order->update([
-            'fraud_score'      => $fraud['score'],
-            'fraud_flags'      => $fraud['flags'],
-            'is_fraud_flagged' => $fraud['score'] >= 40,
+            'fraud_score' => $fraud['score'],
+            'fraud_flags' => $fraud['flags'],
+            'is_fraud_flagged' => $fraud['score'] >= 50,
             'fraud_checked_at' => now(),
         ]);
 
@@ -122,7 +122,7 @@ class OrderController extends Controller
             ['score' => $fraud['score'], 'risk_level' => $fraud['risk_level'], 'flags' => $fraud['flags']]
         );
 
-        return back()->with('success', 'Fraud check complete. Score: ' . $fraud['score'] . ' (' . ucfirst($fraud['risk_level']) . ')');
+        return back()->with('success', 'Fraud check complete. Score: '.$fraud['score'].' ('.ucfirst($fraud['risk_level']).')');
     }
 
     public function destroy(Order $order)
@@ -135,6 +135,7 @@ class OrderController extends Controller
         );
 
         $order->delete();
+
         return redirect()->route('admin.orders.index')->with('success', 'Order deleted.');
     }
 
@@ -143,10 +144,13 @@ class OrderController extends Controller
         $order->load('user', 'items.product');
         $pdf = Pdf::loadView('admin.orders.invoice', compact('order'))
             ->setPaper('a4', 'portrait');
+
         return $pdf->download("invoice-{$order->order_number}.pdf");
     }
 
     public function create() {}
+
     public function store(Request $request) {}
+
     public function edit(string $id) {}
 }

@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 class User extends Authenticatable
 {
@@ -22,9 +23,9 @@ class User extends Authenticatable
     {
         return [
             'email_verified_at' => 'datetime',
-            'password'          => 'hashed',
-            'is_active'         => 'boolean',
-            'date_of_birth'     => 'date',
+            'password' => 'hashed',
+            'is_active' => 'boolean',
+            'date_of_birth' => 'date',
         ];
     }
 
@@ -33,6 +34,16 @@ class User extends Authenticatable
     public function isAdmin(): bool
     {
         return $this->role === 'admin';
+    }
+
+    public function isVendor(): bool
+    {
+        return $this->role === 'vendor';
+    }
+
+    public function canAccessVendorPanel(): bool
+    {
+        return $this->isVendor() && $this->vendor?->status === 'approved';
     }
 
     public function canAccessAdmin(): bool
@@ -44,6 +55,7 @@ class User extends Authenticatable
         if ($this->role === 'customer') {
             return false;
         }
+
         // Custom roles: check the roles table
         return DB::table('roles')->where('name', $this->role)->where('can_access_admin', true)->exists();
     }
@@ -56,17 +68,18 @@ class User extends Authenticatable
     public static function roleLabel(string $role): string
     {
         $label = DB::table('roles')->where('name', $role)->value('display_name');
+
         return $label ?? ucfirst($role);
     }
 
     public static function roleBadgeClass(string $role): string
     {
-        return match($role) {
-            'admin'    => 'bg-red-100 text-red-700',
-            'manager'  => 'bg-purple-100 text-purple-700',
-            'staff'    => 'bg-blue-100 text-blue-700',
+        return match ($role) {
+            'admin' => 'bg-red-100 text-red-700',
+            'manager' => 'bg-purple-100 text-purple-700',
+            'staff' => 'bg-blue-100 text-blue-700',
             'customer' => 'bg-gray-100 text-gray-600',
-            default    => 'bg-indigo-100 text-indigo-700',
+            default => 'bg-indigo-100 text-indigo-700',
         };
     }
 
@@ -188,12 +201,18 @@ class User extends Authenticatable
         return $this->hasOne(ReferralCode::class);
     }
 
+    public function vendor()
+    {
+        return $this->hasOne(Vendor::class);
+    }
+
     public function getAvatarUrlAttribute(): string
     {
         if ($this->avatar) {
-            return \Illuminate\Support\Facades\Storage::url($this->avatar);
+            return Storage::url($this->avatar);
         }
         $initial = strtoupper(substr($this->name, 0, 1));
+
         return "https://ui-avatars.com/api/?name={$initial}&background=6366f1&color=ffffff&size=128";
     }
 }

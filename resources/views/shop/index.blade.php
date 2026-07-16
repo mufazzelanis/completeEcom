@@ -19,7 +19,7 @@
     @php
         $activeFilters = collect([
             'search'   => request('search') ? 'Search: "'.request('search').'"' : null,
-            'category' => request('category') ? 'Category: '.request('category') : null,
+            'category' => request()->query('category') ? 'Category: '.request()->query('category') : null,
             'brand'    => request('brand') ? 'Brand: '.request('brand') : null,
             'tag'      => request('tag') ? 'Tag: '.request('tag') : null,
             'min_price'=> request('min_price') ? 'Min ৳'.request('min_price') : null,
@@ -81,19 +81,19 @@
                         </button>
                         <div x-show="expanded" class="space-y-1.5 max-h-56 overflow-y-auto pr-1">
                             <label class="flex items-center gap-2 cursor-pointer py-0.5">
-                                <input type="radio" name="category" value="" {{ !request('category') ? 'checked' : '' }} class="text-indigo-600">
+                                <input type="radio" name="category" value="" {{ !request()->query('category') ? 'checked' : '' }} class="text-indigo-600">
                                 <span class="text-sm text-gray-600">All Categories</span>
                             </label>
                             @foreach($categories as $cat)
                                 <label class="flex items-center gap-2 cursor-pointer py-0.5">
                                     <input type="radio" name="category" value="{{ $cat->slug }}"
-                                        {{ request('category') === $cat->slug ? 'checked' : '' }} class="text-indigo-600">
+                                        {{ request()->query('category') === $cat->slug ? 'checked' : '' }} class="text-indigo-600">
                                     <span class="text-sm text-gray-600">{{ $cat->name }} <span class="text-gray-400 text-xs">({{ $cat->products_count }})</span></span>
                                 </label>
                                 @foreach($cat->children as $child)
                                     <label class="flex items-center gap-2 cursor-pointer py-0.5 pl-4">
                                         <input type="radio" name="category" value="{{ $child->slug }}"
-                                            {{ request('category') === $child->slug ? 'checked' : '' }} class="text-indigo-600">
+                                            {{ request()->query('category') === $child->slug ? 'checked' : '' }} class="text-indigo-600">
                                         <span class="text-sm text-gray-500">{{ $child->name }} <span class="text-gray-400 text-xs">({{ $child->products_count }})</span></span>
                                     </label>
                                 @endforeach
@@ -195,9 +195,9 @@
                         <a href="{{ request()->fullUrlWithQuery(['search' => null, 'page' => null]) }}" class="hover:text-indigo-900">&times;</a>
                     </span>
                 @endif
-                @if(request('category'))
+                @if(request()->query('category'))
                     <span class="inline-flex items-center gap-1 px-2.5 py-1 bg-indigo-50 text-indigo-700 rounded-full text-xs font-medium">
-                        {{ request('category') }}
+                        {{ request()->query('category') }}
                         <a href="{{ request()->fullUrlWithQuery(['category' => null, 'page' => null]) }}" class="hover:text-indigo-900">&times;</a>
                     </span>
                 @endif

@@ -47,6 +47,11 @@ class PermissionSeeder extends Seeder
             ['name' => 'reviews.view',        'display_name' => 'View Reviews',        'group' => 'Reviews'],
             ['name' => 'reviews.approve',     'display_name' => 'Approve Reviews',     'group' => 'Reviews'],
             ['name' => 'reviews.delete',      'display_name' => 'Delete Reviews',      'group' => 'Reviews'],
+
+            // Vendors
+            ['name' => 'vendors.view',        'display_name' => 'View Vendors',        'group' => 'Vendors'],
+            ['name' => 'vendors.approve',     'display_name' => 'Approve Vendors',     'group' => 'Vendors'],
+            ['name' => 'vendors.suspend',     'display_name' => 'Suspend Vendors',     'group' => 'Vendors'],
         ];
 
         foreach ($permissions as $perm) {
@@ -69,6 +74,7 @@ class PermissionSeeder extends Seeder
                 'orders.view', 'orders.update',
                 'coupons.view', 'coupons.create', 'coupons.edit', 'coupons.delete',
                 'reviews.view', 'reviews.approve', 'reviews.delete',
+                'vendors.view',
             ],
             'staff' => [
                 'dashboard.view',
@@ -84,7 +90,7 @@ class PermissionSeeder extends Seeder
             foreach ($names as $name) {
                 if (isset($allIds[$name])) {
                     DB::table('role_permissions')->insertOrIgnore([
-                        'role'          => $role,
+                        'role' => $role,
                         'permission_id' => $allIds[$name],
                     ]);
                 }

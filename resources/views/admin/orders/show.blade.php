@@ -11,7 +11,7 @@ $riskColors = [
 ];
 $riskLevel = match(true) {
     ($order->fraud_score ?? 0) >= 60 => 'critical',
-    ($order->fraud_score ?? 0) >= 40 => 'high',
+    ($order->fraud_score ?? 0) >= 50 => 'high',
     ($order->fraud_score ?? 0) >= 20 => 'medium',
     default => 'low',
 };

@@ -108,7 +108,7 @@
                 <p class="text-sm text-gray-500 mb-3">Select a CSV file to import products</p>
                 <input type="file" name="csv_file" accept=".csv,.txt" required
                     class="block mx-auto text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-medium file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 cursor-pointer">
-                <p class="text-xs text-gray-400 mt-2">Max file size: 5MB. CSV format only.</p>
+                <p class="text-xs text-gray-400 mt-2">Max file size: 500MB. CSV format only.</p>
             </div>
             <div class="flex justify-end mt-6">
                 <button type="submit" class="px-6 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-medium hover:bg-indigo-700 transition flex items-center space-x-2">

@@ -12,7 +12,7 @@ class StockManagementController extends Controller
     public function index(Request $request)
     {
         $query = Product::with('category')
-            ->orderBy('stock_quantity', 'asc');
+            ->orderBy('stock', 'asc');
 
         if ($request->filled('search')) {
             $q = $request->search;
@@ -23,9 +23,9 @@ class StockManagementController extends Controller
         }
         if ($request->filled('stock_filter')) {
             match($request->stock_filter) {
-                'out'  => $query->where('stock_quantity', 0),
-                'low'  => $query->where('stock_quantity', '>', 0)->where('stock_quantity', '<=', 5),
-                'ok'   => $query->where('stock_quantity', '>', 5),
+                'out'  => $query->where('stock', 0),
+                'low'  => $query->where('stock', '>', 0)->where('stock', '<=', 5),
+                'ok'   => $query->where('stock', '>', 5),
                 default => null,
             };
         }
@@ -60,7 +60,7 @@ class StockManagementController extends Controller
             $diff = $newQty - $before;
             $type = $diff > 0 ? 'manual_in' : 'manual_out';
 
-            $product->update(['stock_quantity' => $newQty]);
+            $product->update(['stock' => $newQty]);
 
             StockAdjustment::create([
                 'product_id'  => $product->id,

@@ -1,68 +1,70 @@
 <?php
 
-use App\Http\Controllers\HomeController;
-use App\Http\Controllers\SearchController;
-use App\Http\Controllers\ShopController;
-use App\Http\Controllers\ProductController;
-use App\Http\Controllers\CartController;
-use App\Http\Controllers\CheckoutController;
-use App\Http\Controllers\OrderController;
-use App\Http\Controllers\WishlistController;
-use App\Http\Controllers\ProfileController;
-use App\Http\Controllers\Admin\DashboardController;
-use App\Http\Controllers\Admin\CategoryController as AdminCategoryController;
-use App\Http\Controllers\Admin\ProductController as AdminProductController;
-use App\Http\Controllers\Admin\OrderController as AdminOrderController;
-use App\Http\Controllers\Admin\UserController as AdminUserController;
-use App\Http\Controllers\Admin\CouponController as AdminCouponController;
-use App\Http\Controllers\Admin\ReviewController as AdminReviewController;
-use App\Http\Controllers\Admin\RoleController as AdminRoleController;
-use App\Http\Controllers\Admin\SubcategoryController as AdminSubcategoryController;
-use App\Http\Controllers\Admin\SupplierController as AdminSupplierController;
-use App\Http\Controllers\Admin\PurchaseController as AdminPurchaseController;
-use App\Http\Controllers\Admin\StockAdjustmentController as AdminStockAdjustmentController;
-use App\Http\Controllers\Admin\BulkProductController as AdminBulkProductController;
-use App\Http\Controllers\Admin\PaymentMethodController as AdminPaymentMethodController;
-use App\Http\Controllers\Admin\PaymentController as AdminPaymentController;
-use App\Http\Controllers\Admin\StockManagementController as AdminStockManagementController;
-use App\Http\Controllers\Admin\SaleProductController as AdminSaleProductController;
-use App\Http\Controllers\Admin\ReturnController as AdminReturnController;
-use App\Http\Controllers\ReturnRequestController;
-use App\Http\Controllers\Admin\BrandController as AdminBrandController;
-use App\Http\Controllers\Admin\AttributeController as AdminAttributeController;
-use App\Http\Controllers\Admin\TagController as AdminTagController;
-use App\Http\Controllers\Admin\WarehouseController as AdminWarehouseController;
-use App\Http\Controllers\Admin\WarehouseStockController as AdminWarehouseStockController;
-use App\Http\Controllers\Admin\StockTransferController as AdminStockTransferController;
-use App\Http\Controllers\Admin\LowStockController as AdminLowStockController;
-use App\Http\Controllers\Admin\BatchController as AdminBatchController;
-use App\Http\Controllers\Admin\BarcodeController as AdminBarcodeController;
-use App\Http\Controllers\Admin\SkuManagementController as AdminSkuManagementController;
-use App\Http\Controllers\Admin\ReportController as AdminReportController;
-use App\Http\Controllers\Admin\BlogCategoryController as AdminBlogCategoryController;
-use App\Http\Controllers\Admin\BlogPostController as AdminBlogPostController;
-use App\Http\Controllers\Admin\BannerController as AdminBannerController;
-use App\Http\Controllers\Admin\PageController as AdminPageController;
-use App\Http\Controllers\Admin\FaqController as AdminFaqController;
-use App\Http\Controllers\Admin\AuditLogController as AdminAuditLogController;
-use App\Http\Controllers\Admin\FlashSaleController as AdminFlashSaleController;
-use App\Http\Controllers\Admin\PromoCodeController as AdminPromoCodeController;
-use App\Http\Controllers\Admin\BundleController as AdminBundleController;
-use App\Http\Controllers\Admin\CrossSellController as AdminCrossSellController;
-use App\Http\Controllers\Admin\ReferralProgramController as AdminReferralProgramController;
-use App\Http\Controllers\Admin\EmailCampaignController as AdminEmailCampaignController;
-use App\Http\Controllers\Admin\NotificationController as AdminNotificationController;
-use App\Http\Controllers\Admin\NotificationSeederController as AdminNotificationSeederController;
-use App\Http\Controllers\Admin\SettingController as AdminSettingController;
 use App\Http\Controllers\AccountController;
 use App\Http\Controllers\AddressController;
-use App\Http\Controllers\CustomerReviewController;
-use App\Http\Controllers\SupportTicketController;
-use App\Http\Controllers\SecurityController;
+use App\Http\Controllers\Admin\AttributeController as AdminAttributeController;
+use App\Http\Controllers\Admin\AuditLogController as AdminAuditLogController;
+use App\Http\Controllers\Admin\BannerController as AdminBannerController;
+use App\Http\Controllers\Admin\BarcodeController as AdminBarcodeController;
+use App\Http\Controllers\Admin\BatchController as AdminBatchController;
+use App\Http\Controllers\Admin\BlogCategoryController as AdminBlogCategoryController;
+use App\Http\Controllers\Admin\BlogPostController as AdminBlogPostController;
+use App\Http\Controllers\Admin\BrandController as AdminBrandController;
+use App\Http\Controllers\Admin\BulkProductController as AdminBulkProductController;
+use App\Http\Controllers\Admin\BundleController as AdminBundleController;
+use App\Http\Controllers\Admin\CategoryController as AdminCategoryController;
+use App\Http\Controllers\Admin\CouponController as AdminCouponController;
+use App\Http\Controllers\Admin\CrossSellController as AdminCrossSellController;
+use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\EmailCampaignController as AdminEmailCampaignController;
+use App\Http\Controllers\Admin\FaqController as AdminFaqController;
+use App\Http\Controllers\Admin\FlashSaleController as AdminFlashSaleController;
+use App\Http\Controllers\Admin\LowStockController as AdminLowStockController;
+use App\Http\Controllers\Admin\NotificationController as AdminNotificationController;
+use App\Http\Controllers\Admin\NotificationSeederController as AdminNotificationSeederController;
+use App\Http\Controllers\Admin\OrderController as AdminOrderController;
+use App\Http\Controllers\Admin\PageController as AdminPageController;
+use App\Http\Controllers\Admin\PaymentController as AdminPaymentController;
+use App\Http\Controllers\Admin\PaymentMethodController as AdminPaymentMethodController;
+use App\Http\Controllers\Admin\ProductController as AdminProductController;
+use App\Http\Controllers\Admin\PromoCodeController as AdminPromoCodeController;
+use App\Http\Controllers\Admin\PurchaseController as AdminPurchaseController;
+use App\Http\Controllers\Admin\ReferralProgramController as AdminReferralProgramController;
+use App\Http\Controllers\Admin\ReportController as AdminReportController;
+use App\Http\Controllers\Admin\ReturnController as AdminReturnController;
+use App\Http\Controllers\Admin\ReviewController as AdminReviewController;
+use App\Http\Controllers\Admin\RoleController as AdminRoleController;
+use App\Http\Controllers\Admin\SaleProductController as AdminSaleProductController;
+use App\Http\Controllers\Admin\SettingController as AdminSettingController;
+use App\Http\Controllers\Admin\SkuManagementController as AdminSkuManagementController;
+use App\Http\Controllers\Admin\StockAdjustmentController as AdminStockAdjustmentController;
+use App\Http\Controllers\Admin\StockManagementController as AdminStockManagementController;
+use App\Http\Controllers\Admin\StockTransferController as AdminStockTransferController;
+use App\Http\Controllers\Admin\SubcategoryController as AdminSubcategoryController;
+use App\Http\Controllers\Admin\SupplierController as AdminSupplierController;
+use App\Http\Controllers\Admin\TagController as AdminTagController;
+use App\Http\Controllers\Admin\UserController as AdminUserController;
+use App\Http\Controllers\Admin\VendorController as AdminVendorController;
+use App\Http\Controllers\Admin\WarehouseController as AdminWarehouseController;
+use App\Http\Controllers\Admin\WarehouseStockController as AdminWarehouseStockController;
+use App\Http\Controllers\BlogController;
+use App\Http\Controllers\CartController;
+use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\CustomerNotificationController;
 use App\Http\Controllers\CustomerReferralController;
-use App\Http\Controllers\BlogController;
+use App\Http\Controllers\CustomerReviewController;
+use App\Http\Controllers\HomeController;
+use App\Http\Controllers\OrderController;
 use App\Http\Controllers\PageController;
+use App\Http\Controllers\ProductController;
+use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\ReturnRequestController;
+use App\Http\Controllers\SearchController;
+use App\Http\Controllers\SecurityController;
+use App\Http\Controllers\ShopController;
+use App\Http\Controllers\SupportTicketController;
+use App\Http\Controllers\VendorRegistrationController;
+use App\Http\Controllers\WishlistController;
 use Illuminate\Support\Facades\Route;
 
 // Search suggest (public)
@@ -99,6 +101,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/checkout', [CheckoutController::class, 'index'])->name('checkout.index');
     Route::post('/checkout', [CheckoutController::class, 'store'])->name('checkout.store');
     Route::get('/checkout/success/{order}', [CheckoutController::class, 'success'])->name('checkout.success');
+    Route::post('/buy-now', [CheckoutController::class, 'buyNow'])->name('checkout.buy-now');
 
     // Orders
     Route::get('/orders', [OrderController::class, 'index'])->name('orders.index');
@@ -161,6 +164,10 @@ Route::middleware('auth')->group(function () {
         // Security / Login Activity
         Route::get('/security', [SecurityController::class, 'index'])->name('security');
     });
+
+    // Become a Seller
+    Route::get('/sell', [VendorRegistrationController::class, 'create'])->name('vendor.apply');
+    Route::post('/sell', [VendorRegistrationController::class, 'store'])->name('vendor.apply.store');
 });
 
 // Admin Routes
@@ -172,16 +179,18 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
 
     Route::resource('categories', AdminCategoryController::class);
     // Subcategories — manual routes (bypass slug-based route model binding)
-    Route::get('subcategories',           [AdminSubcategoryController::class, 'index'])->name('subcategories.index');
-    Route::get('subcategories/create',    [AdminSubcategoryController::class, 'create'])->name('subcategories.create');
-    Route::post('subcategories',          [AdminSubcategoryController::class, 'store'])->name('subcategories.store');
+    Route::get('subcategories', [AdminSubcategoryController::class, 'index'])->name('subcategories.index');
+    Route::get('subcategories/create', [AdminSubcategoryController::class, 'create'])->name('subcategories.create');
+    Route::post('subcategories', [AdminSubcategoryController::class, 'store'])->name('subcategories.store');
     Route::get('subcategories/{id}/edit', [AdminSubcategoryController::class, 'edit'])->name('subcategories.edit');
-    Route::put('subcategories/{id}',      [AdminSubcategoryController::class, 'update'])->name('subcategories.update');
-    Route::delete('subcategories/{id}',   [AdminSubcategoryController::class, 'destroy'])->name('subcategories.destroy');
+    Route::put('subcategories/{id}', [AdminSubcategoryController::class, 'update'])->name('subcategories.update');
+    Route::delete('subcategories/{id}', [AdminSubcategoryController::class, 'destroy'])->name('subcategories.destroy');
     // Bulk upload must be before resource to prevent slug binding conflict
     Route::get('products/bulk-upload', [AdminBulkProductController::class, 'index'])->name('products.bulk-upload');
     Route::get('products/bulk-upload/template', [AdminBulkProductController::class, 'template'])->name('products.bulk-upload.template');
     Route::post('products/bulk-upload', [AdminBulkProductController::class, 'import'])->name('products.bulk-upload.import');
+    Route::get('products/bulk-upload/{bulkImport}/status', [AdminBulkProductController::class, 'status'])->name('products.bulk-upload.status');
+    Route::get('products/bulk-upload/{bulkImport}/status-data', [AdminBulkProductController::class, 'statusData'])->name('products.bulk-upload.status-data');
     Route::resource('products', AdminProductController::class);
 
     // Brands
@@ -204,6 +213,12 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::get('reviews', [AdminReviewController::class, 'index'])->name('reviews.index');
     Route::patch('reviews/{review}/approve', [AdminReviewController::class, 'approve'])->name('reviews.approve');
     Route::delete('reviews/{review}', [AdminReviewController::class, 'destroy'])->name('reviews.destroy');
+
+    // Vendors
+    Route::resource('vendors', AdminVendorController::class)->only(['index', 'show']);
+    Route::post('vendors/{vendor}/approve', [AdminVendorController::class, 'approve'])->name('vendors.approve');
+    Route::post('vendors/{vendor}/reject', [AdminVendorController::class, 'reject'])->name('vendors.reject');
+    Route::post('vendors/{vendor}/suspend', [AdminVendorController::class, 'suspend'])->name('vendors.suspend');
 
     // Suppliers
     Route::resource('suppliers', AdminSupplierController::class)->except(['show']);
@@ -279,21 +294,21 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
 
     // Reports & Analytics
     Route::prefix('reports')->name('reports.')->group(function () {
-        Route::get('/',          [AdminReportController::class, 'index'])->name('index');
-        Route::get('/sales',     [AdminReportController::class, 'sales'])->name('sales');
-        Route::get('/revenue',   [AdminReportController::class, 'revenue'])->name('revenue');
-        Route::get('/products',  [AdminReportController::class, 'products'])->name('products');
+        Route::get('/', [AdminReportController::class, 'index'])->name('index');
+        Route::get('/sales', [AdminReportController::class, 'sales'])->name('sales');
+        Route::get('/revenue', [AdminReportController::class, 'revenue'])->name('revenue');
+        Route::get('/products', [AdminReportController::class, 'products'])->name('products');
         Route::get('/customers', [AdminReportController::class, 'customers'])->name('customers');
         Route::get('/inventory', [AdminReportController::class, 'inventory'])->name('inventory');
-        Route::get('/orders',    [AdminReportController::class, 'orders'])->name('orders');
-        Route::get('/payments',  [AdminReportController::class, 'payments'])->name('payments');
+        Route::get('/orders', [AdminReportController::class, 'orders'])->name('orders');
+        Route::get('/payments', [AdminReportController::class, 'payments'])->name('payments');
         Route::get('/marketing', [AdminReportController::class, 'marketing'])->name('marketing');
-        Route::get('/shipping',  [AdminReportController::class, 'shipping'])->name('shipping');
-        Route::get('/returns',   [AdminReportController::class, 'returns'])->name('returns');
+        Route::get('/shipping', [AdminReportController::class, 'shipping'])->name('shipping');
+        Route::get('/returns', [AdminReportController::class, 'returns'])->name('returns');
         // Excel downloads
-        Route::get('/sales/download',     [AdminReportController::class, 'downloadSales'])->name('sales.download');
-        Route::get('/revenue/download',   [AdminReportController::class, 'downloadRevenue'])->name('revenue.download');
-        Route::get('/products/download',  [AdminReportController::class, 'downloadProducts'])->name('products.download');
+        Route::get('/sales/download', [AdminReportController::class, 'downloadSales'])->name('sales.download');
+        Route::get('/revenue/download', [AdminReportController::class, 'downloadRevenue'])->name('revenue.download');
+        Route::get('/products/download', [AdminReportController::class, 'downloadProducts'])->name('products.download');
         Route::get('/customers/download', [AdminReportController::class, 'downloadCustomers'])->name('customers.download');
         Route::get('/inventory/download', [AdminReportController::class, 'downloadInventory'])->name('inventory.download');
     });
@@ -307,19 +322,19 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
 
     // CMS — Blog
     Route::resource('blog/categories', AdminBlogCategoryController::class)->except(['show'])->names([
-        'index'   => 'blog.categories.index',
-        'create'  => 'blog.categories.create',
-        'store'   => 'blog.categories.store',
-        'edit'    => 'blog.categories.edit',
-        'update'  => 'blog.categories.update',
+        'index' => 'blog.categories.index',
+        'create' => 'blog.categories.create',
+        'store' => 'blog.categories.store',
+        'edit' => 'blog.categories.edit',
+        'update' => 'blog.categories.update',
         'destroy' => 'blog.categories.destroy',
     ]);
     Route::resource('blog/posts', AdminBlogPostController::class)->except(['show'])->names([
-        'index'   => 'blog.posts.index',
-        'create'  => 'blog.posts.create',
-        'store'   => 'blog.posts.store',
-        'edit'    => 'blog.posts.edit',
-        'update'  => 'blog.posts.update',
+        'index' => 'blog.posts.index',
+        'create' => 'blog.posts.create',
+        'store' => 'blog.posts.store',
+        'edit' => 'blog.posts.edit',
+        'update' => 'blog.posts.update',
         'destroy' => 'blog.posts.destroy',
     ]);
 
@@ -338,7 +353,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::patch('faqs/{faq}/toggle', [AdminFaqController::class, 'toggle'])->name('faqs.toggle');
 
     // Marketing — Overview
-    Route::get('marketing', fn() => view('admin.marketing.index'))->name('marketing.index');
+    Route::get('marketing', fn () => view('admin.marketing.index'))->name('marketing.index');
 
     // Marketing — Flash Sales
     Route::resource('flash-sales', AdminFlashSaleController::class)->except(['show']);
@@ -389,7 +404,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::get('notifications/seed', [AdminNotificationSeederController::class, 'seed'])->name('notifications.seed');
 
     // Settings
-    Route::get('settings', fn() => redirect()->route('admin.settings.show', 'general'))->name('settings');
+    Route::get('settings', fn () => redirect()->route('admin.settings.show', 'general'))->name('settings');
     Route::get('settings/{group}', [AdminSettingController::class, 'show'])->name('settings.show');
     Route::patch('settings/{group}', [AdminSettingController::class, 'update'])->name('settings.update');
     Route::post('settings/test-email', [AdminSettingController::class, 'testEmail'])->name('settings.test-email');

@@ -14,8 +14,8 @@ return new class extends Migration
             $table->string('description')->nullable();
             $table->string('banner_text')->nullable();
             $table->string('banner_color', 20)->default('#ef4444');
-            $table->timestamp('starts_at');
-            $table->timestamp('ends_at');
+            $table->dateTime('starts_at');
+            $table->dateTime('ends_at');
             $table->boolean('is_active')->default(true);
             $table->timestamps();
 
