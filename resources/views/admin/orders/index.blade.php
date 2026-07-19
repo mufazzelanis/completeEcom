@@ -51,7 +51,7 @@
                             @endif
                         </div>
                     </td>
-                    <td class="px-6 py-4 text-sm text-gray-700">{{ $order->user->name }}</td>
+                    <td class="px-6 py-4 text-sm text-gray-700">{{ $order->user->name ?? 'Guest' }}</td>
                     <td class="px-6 py-4 text-right font-semibold text-gray-900 text-sm">৳{{ number_format($order->total) }}</td>
                     <td class="px-6 py-4 text-center">
                         <span class="px-2 py-1 rounded-full text-xs font-medium capitalize {{ $order->payment_status === 'paid' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700' }}">

@@ -30,13 +30,13 @@
     <div>
         <label class="block text-sm font-medium text-gray-700 mb-1">Maintenance Message</label>
         <textarea name="maintenance_message" rows="3"
-                  class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500"
+                  class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-orange-500"
                   placeholder="We'll be back shortly. Thank you for your patience.">{{ setting('maintenance_message', 'We are currently performing scheduled maintenance. We\'ll be back shortly!') }}</textarea>
     </div>
     <div>
         <label class="block text-sm font-medium text-gray-700 mb-1">Expected Back Time</label>
         <input type="text" name="maintenance_back_time" value="{{ setting('maintenance_back_time', '') }}"
-               class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500"
+               class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-orange-500"
                placeholder="e.g. 2 hours, 30 minutes, Sunday 10:00 PM">
     </div>
     <div>
@@ -46,19 +46,19 @@
         <img src="{{ $bannerUrl }}" alt="Banner" class="h-24 rounded-lg mb-2 object-cover">
         @endif
         <input type="file" name="maintenance_banner" accept="image/*"
-               class="block w-full text-xs text-gray-600 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-medium file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
+               class="block w-full text-xs text-gray-600 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-medium file:bg-orange-50 file:text-orange-700 hover:file:bg-orange-100">
     </div>
     <div>
         <label class="block text-sm font-medium text-gray-700 mb-1">Allowed IPs (bypass maintenance)</label>
         <textarea name="maintenance_allowed_ips" rows="2"
-                  class="w-full border rounded-lg px-3 py-2 text-sm font-mono focus:ring-2 focus:ring-indigo-500"
+                  class="w-full border rounded-lg px-3 py-2 text-sm font-mono focus:ring-2 focus:ring-orange-500"
                   placeholder="One IP per line. Leave blank to block all.">{{ setting('maintenance_allowed_ips', '') }}</textarea>
         <p class="text-xs text-gray-400 mt-1">Your IP: {{ request()->ip() }}</p>
     </div>
 </div>
 
 <div class="flex justify-end">
-    <button type="submit" class="px-6 py-2 {{ $isOn ? 'bg-amber-500 hover:bg-amber-600' : 'bg-indigo-600 hover:bg-indigo-700' }} text-white rounded-lg text-sm font-semibold transition">
+    <button type="submit" class="px-6 py-2 {{ $isOn ? 'bg-amber-500 hover:bg-amber-600' : 'bg-orange-600 hover:bg-orange-700' }} text-white rounded-lg text-sm font-semibold transition">
         {{ $isOn ? 'Update Maintenance Settings' : 'Save Maintenance Settings' }}
     </button>
 </div>

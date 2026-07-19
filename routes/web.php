@@ -97,11 +97,17 @@ Route::post('/cart/coupon', [CartController::class, 'applyCoupon'])->name('cart.
 Route::delete('/cart/coupon/remove', [CartController::class, 'removeCoupon'])->name('cart.coupon.remove');
 
 // Checkout Routes
+Route::get('/checkout', [CheckoutController::class, 'index'])->name('checkout.index');
+Route::post('/checkout', [CheckoutController::class, 'store'])->name('checkout.store');
+Route::get('/checkout/success/{order}', [CheckoutController::class, 'success'])->name('checkout.success');
+Route::post('/buy-now', [CheckoutController::class, 'buyNow'])->name('checkout.buy-now');
+
+// Guest Order Tracking
+Route::get('/track-order', [CheckoutController::class, 'guestTrackForm'])->name('guest.order.track.form');
+Route::post('/track-order', [CheckoutController::class, 'guestTrackLookup'])->name('guest.order.track.lookup');
+Route::get('/track-order/{order_number}/{token}', [CheckoutController::class, 'guestTrack'])->name('guest.order.track');
+
 Route::middleware('auth')->group(function () {
-    Route::get('/checkout', [CheckoutController::class, 'index'])->name('checkout.index');
-    Route::post('/checkout', [CheckoutController::class, 'store'])->name('checkout.store');
-    Route::get('/checkout/success/{order}', [CheckoutController::class, 'success'])->name('checkout.success');
-    Route::post('/buy-now', [CheckoutController::class, 'buyNow'])->name('checkout.buy-now');
 
     // Orders
     Route::get('/orders', [OrderController::class, 'index'])->name('orders.index');

@@ -16,7 +16,7 @@ $channels = [
 
 <div class="bg-white rounded-xl shadow-sm border p-6 space-y-4">
     <h2 class="text-base font-semibold text-gray-900 pb-2 border-b">Global Channel Toggles</h2>
-    <p class="text-sm text-gray-500">These master switches control whether a channel is used at all. Individual notification types can be configured in the <a href="{{ route('admin.notifications.index') }}" class="text-indigo-600 hover:underline">Notifications</a> section.</p>
+    <p class="text-sm text-gray-500">These master switches control whether a channel is used at all. Individual notification types can be configured in the <a href="{{ route('admin.notifications.index') }}" class="text-orange-600 hover:underline">Notifications</a> section.</p>
     <div class="space-y-3">
         @foreach($channels as $key => $ch)
         <div class="flex items-start justify-between p-4 rounded-xl border bg-gray-50">
@@ -52,7 +52,7 @@ $channels = [
         @foreach($events as $key => $label)
         <label class="flex items-center gap-2 cursor-pointer">
             <input type="hidden" name="{{ $key }}" value="0">
-            <input type="checkbox" name="{{ $key }}" value="1" class="rounded text-indigo-600"
+            <input type="checkbox" name="{{ $key }}" value="1" class="rounded text-orange-600"
                    @checked(setting($key,'1') == '1')>
             <span class="text-sm text-gray-700">{{ $label }}</span>
         </label>
@@ -60,8 +60,8 @@ $channels = [
     </div>
 </div>
 
-<div class="bg-indigo-50 border border-indigo-200 rounded-xl p-5">
-    <p class="text-sm text-indigo-700">
+<div class="bg-orange-50 border border-orange-200 rounded-xl p-5">
+    <p class="text-sm text-orange-700">
         <strong>Manage Templates:</strong>
         Customize the content of each notification in the
         <a href="{{ route('admin.notifications.templates') }}" class="underline font-medium">Notification Templates</a> section.
@@ -71,7 +71,7 @@ $channels = [
 </div>
 
 <div class="flex justify-end">
-    <button type="submit" class="px-6 py-2 bg-indigo-600 text-white rounded-lg text-sm font-semibold hover:bg-indigo-700 transition">Save Notification Settings</button>
+    <button type="submit" class="px-6 py-2 bg-orange-600 text-white rounded-lg text-sm font-semibold hover:bg-orange-700 transition">Save Notification Settings</button>
 </div>
 </form>
 @endsection

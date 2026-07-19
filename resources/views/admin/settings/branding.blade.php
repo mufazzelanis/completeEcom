@@ -5,21 +5,42 @@
 <form method="POST" action="{{ route('admin.settings.update', 'branding') }}" enctype="multipart/form-data">
 @csrf @method('PATCH')
 
+{{-- Brand Name --}}
+<div class="bg-white rounded-xl shadow-sm border p-6 space-y-4">
+    <h2 class="text-base font-semibold text-gray-900 pb-3 border-b">Brand Identity</h2>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+        <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Brand Name / Site Name</label>
+            <input type="text" name="site_name" value="{{ setting('site_name', 'ShopVista') }}"
+                   class="w-full border rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                   placeholder="Your Brand Name">
+            <p class="text-xs text-gray-400 mt-1">Displayed in header, footer, browser tab, and emails.</p>
+        </div>
+        <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Tagline</label>
+            <input type="text" name="site_tagline" value="{{ setting('site_tagline', '') }}"
+                   class="w-full border rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                   placeholder="Your one-stop shop">
+            <p class="text-xs text-gray-400 mt-1">Short slogan shown below or near the brand name.</p>
+        </div>
+    </div>
+</div>
+
+{{-- Logos --}}
 @php
 $logos = [
-    'site_logo'    => ['label' => 'Site Logo',        'desc' => 'Main logo used in the header (recommended: 200×60 px)'],
-    'dark_logo'    => ['label' => 'Dark Logo',         'desc' => 'Logo for dark backgrounds (recommended: 200×60 px)'],
-    'favicon'      => ['label' => 'Favicon',           'desc' => '16×16 or 32×32 px .ico or .png file'],
-    'footer_logo'  => ['label' => 'Footer Logo',       'desc' => 'Logo shown in the footer (recommended: 160×50 px)'],
-    'email_logo'   => ['label' => 'Email Logo',        'desc' => 'Logo used in email templates (recommended: 180×55 px)'],
-    'invoice_logo' => ['label' => 'Invoice Logo',      'desc' => 'Logo printed on PDF invoices (recommended: 200×60 px)'],
-    'login_logo'   => ['label' => 'Login Page Logo',   'desc' => 'Logo on the login/register page (recommended: 160×50 px)'],
+    'site_logo'    => ['label' => 'Main Logo',        'desc' => 'Header logo (200×60 px)',       'h' => 'h-12', 'max' => 'max-w-[140px]'],
+    'favicon'      => ['label' => 'Favicon',           'desc' => 'Browser tab icon (32×32 px)',   'h' => 'h-8',  'max' => 'max-w-[32px]'],
+    'footer_logo'  => ['label' => 'Footer Logo',       'desc' => 'Footer logo (160×50 px)',       'h' => 'h-10', 'max' => 'max-w-[120px]'],
+    'login_logo'   => ['label' => 'Login Page Logo',   'desc' => 'Login/register page (160×50 px)','h' => 'h-10', 'max' => 'max-w-[120px]'],
+    'email_logo'   => ['label' => 'Email Logo',        'desc' => 'Email templates (180×55 px)',   'h' => 'h-10', 'max' => 'max-w-[120px]'],
+    'invoice_logo' => ['label' => 'Invoice Logo',      'desc' => 'PDF invoices (200×60 px)',      'h' => 'h-12', 'max' => 'max-w-[140px]'],
 ];
 @endphp
 
 <div class="bg-white rounded-xl shadow-sm border p-6">
-    <h2 class="text-base font-semibold text-gray-900 pb-3 border-b mb-5">Logo & Favicon</h2>
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <h2 class="text-base font-semibold text-gray-900 pb-3 border-b mb-5">Logos</h2>
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
         @foreach($logos as $key => $meta)
         @php $currentUrl = setting_file_url($key); @endphp
         <div class="border rounded-xl p-4 space-y-3">
@@ -30,48 +51,104 @@ $logos = [
             @if($currentUrl)
             <div class="flex items-center gap-3">
                 <img src="{{ $currentUrl }}" alt="{{ $meta['label'] }}"
-                     class="h-12 max-w-[140px] object-contain rounded border bg-gray-50 p-1">
+                     class="{{ $meta['h'] }} {{ $meta['max'] }} object-contain rounded border bg-gray-50 p-1">
                 <span class="text-xs text-green-600 font-medium">Uploaded</span>
             </div>
             @else
-            <div class="h-12 flex items-center justify-center rounded border border-dashed border-gray-200 bg-gray-50">
-                <span class="text-xs text-gray-400">No file uploaded</span>
+            <div class="{{ $meta['h'] }} flex items-center justify-center rounded border border-dashed border-gray-200 bg-gray-50">
+                <span class="text-xs text-gray-400">No logo uploaded</span>
             </div>
             @endif
-            <input type="file" name="{{ $key }}" accept="image/*"
-                   class="block w-full text-xs text-gray-600 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-medium file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
+            <div>
+                <input type="file" name="{{ $key }}" accept="image/*"
+                       class="block w-full text-xs text-gray-600 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-medium file:bg-orange-50 file:text-orange-700 hover:file:bg-orange-100">
+                @if($currentUrl)
+                <label class="inline-flex items-center gap-1.5 mt-2">
+                    <input type="checkbox" name="delete_{{ $key }}" value="1" class="rounded border-gray-300 text-red-600 focus:ring-red-500">
+                    <span class="text-xs text-red-500">Remove logo</span>
+                </label>
+                @endif
+            </div>
         </div>
         @endforeach
     </div>
 </div>
 
+{{-- Brand Colors --}}
 <div class="bg-white rounded-xl shadow-sm border p-6 space-y-4">
-    <h2 class="text-base font-semibold text-gray-900 pb-2 border-b">Brand Colors</h2>
-    <p class="text-sm text-gray-500">Use the Theme & Design section for full color customization. Quick presets here:</p>
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+    <h2 class="text-base font-semibold text-gray-900 pb-3 border-b">Brand Colors</h2>
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-5">
         <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Primary Color</label>
             <div class="flex items-center gap-2">
-                <input type="color" name="primary_color" value="{{ setting('primary_color', '#6366f1') }}"
+                <input type="color" name="primary_color" value="{{ setting('primary_color', '#ea580c') }}"
                        class="h-9 w-16 rounded border cursor-pointer">
-                <input type="text" value="{{ setting('primary_color', '#6366f1') }}" readonly
-                       class="flex-1 border rounded px-2 py-1.5 text-xs text-gray-600">
+                <input type="text" value="{{ setting('primary_color', '#ea580c') }}" readonly
+                       class="flex-1 border rounded px-2 py-1.5 text-xs text-gray-600 font-mono bg-gray-50">
             </div>
         </div>
         <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Secondary Color</label>
             <div class="flex items-center gap-2">
-                <input type="color" name="secondary_color" value="{{ setting('secondary_color', '#ec4899') }}"
+                <input type="color" name="secondary_color" value="{{ setting('secondary_color', '#f97316') }}"
                        class="h-9 w-16 rounded border cursor-pointer">
-                <input type="text" value="{{ setting('secondary_color', '#ec4899') }}" readonly
-                       class="flex-1 border rounded px-2 py-1.5 text-xs text-gray-600">
+                <input type="text" value="{{ setting('secondary_color', '#f97316') }}" readonly
+                       class="flex-1 border rounded px-2 py-1.5 text-xs text-gray-600 font-mono bg-gray-50">
+            </div>
+        </div>
+        <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Accent Color</label>
+            <div class="flex items-center gap-2">
+                <input type="color" name="accent_color" value="{{ setting('accent_color', '#dc2626') }}"
+                       class="h-9 w-16 rounded border cursor-pointer">
+                <input type="text" value="{{ setting('accent_color', '#dc2626') }}" readonly
+                       class="flex-1 border rounded px-2 py-1.5 text-xs text-gray-600 font-mono bg-gray-50">
+            </div>
+        </div>
+        <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Text Color</label>
+            <div class="flex items-center gap-2">
+                <input type="color" name="text_color" value="{{ setting('text_color', '#1f2937') }}"
+                       class="h-9 w-16 rounded border cursor-pointer">
+                <input type="text" value="{{ setting('text_color', '#1f2937') }}" readonly
+                       class="flex-1 border rounded px-2 py-1.5 text-xs text-gray-600 font-mono bg-gray-50">
+            </div>
+        </div>
+    </div>
+
+    {{-- Live Preview --}}
+    <div class="border-t pt-4 mt-2">
+        <p class="text-xs font-medium text-gray-500 mb-2">Preview:</p>
+        <div class="rounded-xl border p-4 bg-gray-50">
+            <div class="flex items-center gap-3 mb-3">
+                @if(setting_file_url('site_logo'))
+                    <img src="{{ setting_file_url('site_logo') }}" class="h-8 object-contain">
+                @else
+                    <div class="w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold text-sm"
+                         :style="'background-color:' + (document.querySelector('[name=primary_color]')?.value || '#ea580c')">
+                        {{ strtoupper(substr(setting('site_name', 'S'), 0, 1)) }}
+                    </div>
+                @endif
+                <span class="font-bold text-lg" style="color: {{ setting('primary_color', '#ea580c') }}">
+                    {{ setting('site_name', 'ShopVista') }}
+                </span>
+            </div>
+            <div class="flex gap-2">
+                <button type="button" class="px-4 py-1.5 rounded-lg text-white text-xs font-semibold"
+                        :style="'background-color:' + (document.querySelector('[name=primary_color]')?.value || '#ea580c')">
+                    Primary Button
+                </button>
+                <button type="button" class="px-4 py-1.5 rounded-lg text-white text-xs font-semibold"
+                        :style="'background-color:' + (document.querySelector('[name=accent_color]')?.value || '#dc2626')">
+                    Accent Button
+                </button>
             </div>
         </div>
     </div>
 </div>
 
 <div class="flex justify-end">
-    <button type="submit" class="px-6 py-2 bg-indigo-600 text-white rounded-lg text-sm font-semibold hover:bg-indigo-700 transition">Save Branding</button>
+    <button type="submit" class="px-6 py-2.5 bg-orange-600 text-white rounded-lg text-sm font-semibold hover:bg-orange-700 transition">Save Branding</button>
 </div>
 </form>
 @endsection

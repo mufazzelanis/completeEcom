@@ -64,9 +64,9 @@ $rc = $riskColors[$riskLevel];
         <div class="grid grid-cols-2 gap-6">
             <div class="bg-white rounded-2xl shadow-sm p-6">
                 <h2 class="font-semibold text-gray-800 mb-3">Customer</h2>
-                <p class="font-medium text-gray-800 text-sm">{{ $order->user->name }}</p>
-                <p class="text-sm text-gray-500">{{ $order->user->email }}</p>
-                <p class="text-sm text-gray-500">{{ $order->user->phone }}</p>
+                <p class="font-medium text-gray-800 text-sm">{{ $order->user->name ?? 'Guest' }}</p>
+                <p class="text-sm text-gray-500">{{ $order->user->email ?? $order->guest_email ?? 'N/A' }}</p>
+                <p class="text-sm text-gray-500">{{ $order->user->phone ?? 'N/A' }}</p>
             </div>
             <div class="bg-white rounded-2xl shadow-sm p-6">
                 <h2 class="font-semibold text-gray-800 mb-3">Shipping Address</h2>

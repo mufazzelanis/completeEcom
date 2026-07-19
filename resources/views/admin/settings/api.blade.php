@@ -33,13 +33,13 @@
     <div>
         <label class="block text-sm font-medium text-gray-700 mb-1">Webhook Secret (for incoming webhooks)</label>
         <input type="text" name="webhook_secret" value="{{ setting('webhook_secret', '') }}"
-               class="w-full border rounded-lg px-3 py-2 text-sm font-mono focus:ring-2 focus:ring-indigo-500"
+               class="w-full border rounded-lg px-3 py-2 text-sm font-mono focus:ring-2 focus:ring-orange-500"
                placeholder="Leave blank to auto-generate" autocomplete="off">
     </div>
     <div>
         <label class="block text-sm font-medium text-gray-700 mb-1">Order Webhook URL (POST new orders to)</label>
         <input type="url" name="order_webhook_url" value="{{ setting('order_webhook_url', '') }}"
-               class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500"
+               class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-orange-500"
                placeholder="https://your-erp.com/webhook/orders">
     </div>
 </div>
@@ -50,30 +50,30 @@
         <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Mailchimp API Key</label>
             <input type="password" name="mailchimp_api_key" value="{{ setting('mailchimp_api_key', '') }}"
-                   class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500"
+                   class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-orange-500"
                    placeholder="••••••••" autocomplete="new-password">
         </div>
         <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Mailchimp Audience ID</label>
             <input type="text" name="mailchimp_audience_id" value="{{ setting('mailchimp_audience_id', '') }}"
-                   class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500">
+                   class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-orange-500">
         </div>
         <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Google Maps API Key</label>
             <input type="text" name="google_maps_key" value="{{ setting('google_maps_key', '') }}"
-                   class="w-full border rounded-lg px-3 py-2 text-sm font-mono focus:ring-2 focus:ring-indigo-500"
+                   class="w-full border rounded-lg px-3 py-2 text-sm font-mono focus:ring-2 focus:ring-orange-500"
                    placeholder="AIzaXXXXXX...">
         </div>
         <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Intercom App ID</label>
             <input type="text" name="intercom_app_id" value="{{ setting('intercom_app_id', '') }}"
-                   class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500">
+                   class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-orange-500">
         </div>
     </div>
 </div>
 
 <div class="flex justify-end">
-    <button type="submit" class="px-6 py-2 bg-indigo-600 text-white rounded-lg text-sm font-semibold hover:bg-indigo-700 transition">Save API Settings</button>
+    <button type="submit" class="px-6 py-2 bg-orange-600 text-white rounded-lg text-sm font-semibold hover:bg-orange-700 transition">Save API Settings</button>
 </div>
 </form>
 @endsection

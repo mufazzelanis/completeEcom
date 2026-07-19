@@ -33,7 +33,7 @@
     <div class="lg:col-span-2 bg-white rounded-2xl shadow-sm">
         <div class="flex items-center justify-between p-6 border-b border-gray-100">
             <h2 class="font-semibold text-gray-800">Recent Orders</h2>
-            <a href="{{ route('admin.orders.index') }}" class="text-indigo-600 text-sm hover:text-indigo-700">View All</a>
+            <a href="{{ route('admin.orders.index') }}" class="text-orange-600 text-sm hover:text-orange-700">View All</a>
         </div>
         <div class="overflow-x-auto">
             <table class="w-full">
@@ -49,10 +49,10 @@
                     @foreach($recentOrders as $order)
                         <tr class="hover:bg-gray-50 transition">
                             <td class="px-6 py-4">
-                                <a href="{{ route('admin.orders.show', $order->id) }}" class="font-medium text-indigo-600 text-sm hover:text-indigo-700">{{ $order->order_number }}</a>
+                                <a href="{{ route('admin.orders.show', $order->id) }}" class="font-medium text-orange-600 text-sm hover:text-orange-700">{{ $order->order_number }}</a>
                                 <p class="text-xs text-gray-400">{{ $order->created_at->diffForHumans() }}</p>
                             </td>
-                            <td class="px-6 py-4 text-sm text-gray-600">{{ $order->user->name }}</td>
+                            <td class="px-6 py-4 text-sm text-gray-600">{{ $order->user->name ?? 'Guest' }}</td>
                             <td class="px-6 py-4 text-sm font-semibold text-gray-900">৳{{ number_format($order->total) }}</td>
                             <td class="px-6 py-4">
                                 <span class="px-2 py-1 rounded-full text-xs font-medium capitalize {{ $order->status_badge }}">{{ $order->status }}</span>
@@ -68,7 +68,7 @@
     <div class="bg-white rounded-2xl shadow-sm">
         <div class="flex items-center justify-between p-6 border-b border-gray-100">
             <h2 class="font-semibold text-gray-800">Top Products</h2>
-            <a href="{{ route('admin.products.index') }}" class="text-indigo-600 text-sm hover:text-indigo-700">View All</a>
+                <a href="{{ route('admin.products.index') }}" class="text-orange-600 text-sm hover:text-orange-700">View All</a>
         </div>
         <div class="p-6 space-y-4">
             @foreach($topProducts as $product)

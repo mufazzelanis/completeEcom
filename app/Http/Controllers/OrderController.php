@@ -19,9 +19,14 @@ class OrderController extends Controller
 
     public function show(Order $order)
     {
-        if ($order->user_id !== auth()->id()) {
+        if (auth()->check()) {
+            if ($order->user_id !== auth()->id()) {
+                abort(403);
+            }
+        } else {
             abort(403);
         }
+
         $order->load('items.product');
         $existingReturn = $order->returns()->where('status', '!=', 'rejected')->first();
         return view('orders.show', compact('order', 'existingReturn'));
@@ -29,7 +34,11 @@ class OrderController extends Controller
 
     public function cancel(Order $order)
     {
-        if ($order->user_id !== auth()->id()) {
+        if (auth()->check()) {
+            if ($order->user_id !== auth()->id()) {
+                abort(403);
+            }
+        } else {
             abort(403);
         }
 

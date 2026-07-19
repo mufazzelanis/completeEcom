@@ -54,7 +54,7 @@ $currentGroup = request()->route('group', 'general');
             @foreach($items as $item)
             <a href="{{ route('admin.settings.show', $item['group']) }}"
                class="flex items-center gap-2.5 px-3 py-2 text-sm transition
-                      {{ $currentGroup === $item['group'] ? 'bg-indigo-600 text-white' : 'text-gray-600 hover:bg-gray-50 hover:text-indigo-600' }}">
+                      {{ $currentGroup === $item['group'] ? 'bg-orange-600 text-white' : 'text-gray-600 hover:bg-gray-50 hover:text-orange-600' }}">
                 <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="{{ $item['icon'] }}"/>
                 </svg>

@@ -9,10 +9,14 @@ use App\Models\OrderItem;
 use App\Models\Payment;
 use App\Models\PaymentMethod;
 use App\Models\Product;
+use App\Models\User;
 use App\Services\Notifications\NotificationDispatcher;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Str;
 
 class CheckoutController extends Controller
 {
@@ -54,7 +58,19 @@ class CheckoutController extends Controller
             return collect([$item]);
         }
 
-        return Cart::where('user_id', auth()->id())->with('product')->get();
+        if (auth()->check()) {
+            return Cart::where('user_id', auth()->id())->with('product')->get();
+        }
+
+        return Cart::where('session_id', session()->getId())->with('product')->get();
+    }
+
+    private function resolveCartCount()
+    {
+        if (auth()->check()) {
+            return Cart::where('user_id', auth()->id())->count();
+        }
+        return Cart::where('session_id', session()->getId())->count();
     }
 
     public function index()
@@ -70,15 +86,14 @@ class CheckoutController extends Controller
         $discount = $this->computeDiscount($subtotal, $coupon);
         $shipping = 60;
         $paymentMethods = PaymentMethod::where('is_active', true)->orderBy('sort_order')->get();
-        $addresses = auth()->user()->addresses;
+        $addresses = auth()->check() ? auth()->user()->addresses : collect();
 
-        // Per-method charges so Alpine.js can show live total
         $methodCharges = $paymentMethods->mapWithKeys(fn ($m) => [
             $m->slug => $m->calculateCharge($subtotal - $discount + $shipping),
         ]);
 
         $base = $subtotal - $discount + $shipping;
-        $total = $base; // updated client-side per selected method
+        $total = $base;
 
         return view('checkout.index', compact(
             'cartItems', 'subtotal', 'discount', 'shipping', 'total',
@@ -88,34 +103,33 @@ class CheckoutController extends Controller
 
     public function store(Request $request)
     {
-        // Rate-limit: 10 checkout attempts per minute per user
-        $key = 'checkout:'.auth()->id();
-        if (RateLimiter::tooManyAttempts($key, 10)) {
+        $guestIdentifier = auth()->check() ? 'checkout:'.auth()->id() : 'checkout:'.session()->getId();
+        if (RateLimiter::tooManyAttempts($guestIdentifier, 10)) {
             return back()->withErrors(['error' => 'Too many requests. Please wait a moment.']);
         }
-        RateLimiter::hit($key, 60);
+        RateLimiter::hit($guestIdentifier, 60);
 
-        // Validate payment method against DB — never trust hardcoded ENUM
         $activeMethodSlugs = PaymentMethod::where('is_active', true)->pluck('slug')->implode(',');
 
-        $request->validate([
+        $validationRules = [
             'shipping_name' => 'required|string|max:255',
             'shipping_phone' => 'required|string|max:20',
             'shipping_address' => 'required|string|max:500',
             'shipping_city' => 'required|string|max:100',
             'shipping_state' => 'nullable|string|max:100',
             'shipping_zip' => 'nullable|string|max:20',
+            'shipping_email' => 'nullable|email|max:255',
             'payment_method' => 'required|exists:payment_methods,slug',
-            // Mobile banking fields validated conditionally below
             'transaction_id' => 'nullable|string|max:100',
             'sender_number' => 'nullable|string|max:20',
-        ]);
+        ];
+
+        $request->validate($validationRules);
 
         $paymentMethod = PaymentMethod::where('slug', $request->payment_method)
             ->where('is_active', true)
             ->firstOrFail();
 
-        // Require TXN ID for mobile banking / bank transfer
         if ($paymentMethod->requiresVerification()) {
             $request->validate([
                 'transaction_id' => 'required|string|min:6|max:100',
@@ -130,7 +144,6 @@ class CheckoutController extends Controller
             return redirect()->route('cart.index')->with('error', 'Your cart is empty.');
         }
 
-        // Server-side amount calculation — never take totals from the request
         $subtotal = $cartItems->sum('subtotal');
         $coupon = session('coupon');
         $discount = 0;
@@ -150,7 +163,6 @@ class CheckoutController extends Controller
         $paymentCharge = $paymentMethod->calculateCharge($base);
         $total = $base + $paymentCharge;
 
-        // Enforce method amount limits
         if ($paymentMethod->min_amount && $total < $paymentMethod->min_amount) {
             return back()->withErrors(['payment_method' => "Minimum order amount for {$paymentMethod->name} is ৳{$paymentMethod->min_amount}."]);
         }
@@ -158,20 +170,44 @@ class CheckoutController extends Controller
             return back()->withErrors(['payment_method' => "Maximum order amount for {$paymentMethod->name} is ৳{$paymentMethod->max_amount}."]);
         }
 
+        // ── Auto-create / find account by phone ──────────────────────────────
+        $accountCreated = false;
+        if (! auth()->check()) {
+            $phone = preg_replace('/[^0-9]/', '', $request->shipping_phone);
+            $existingUser = User::where('phone', $phone)->first();
+
+            if ($existingUser) {
+                Auth::login($existingUser);
+            } else {
+                $user = User::create([
+                    'name' => $request->shipping_name,
+                    'phone' => $phone,
+                    'email' => $request->shipping_email ?: null,
+                    'password' => Hash::make(Str::random(32)),
+                    'role' => 'customer',
+                    'is_active' => true,
+                ]);
+                Auth::login($user);
+                $accountCreated = true;
+            }
+        }
+
+        $guestToken = null;
+
         $order = DB::transaction(function () use (
             $request, $cartItems, $subtotal, $discount, $shipping,
-            $paymentCharge, $total, $couponCode, $paymentMethod, $isBuyNow
+            $paymentCharge, $total, $couponCode, $paymentMethod, $isBuyNow,
+            $guestToken
         ) {
-            // Determine initial payment status
             $paymentStatus = match ($paymentMethod->type) {
                 'cod' => 'pending',
-                'mobile_banking', 'bank_transfer' => 'pending',
-                'card' => 'pending',
                 default => 'pending',
             };
 
             $order = Order::create([
                 'user_id' => auth()->id(),
+                'guest_email' => null,
+                'guest_token' => $guestToken,
                 'order_number' => Order::generateOrderNumber(),
                 'status' => 'pending',
                 'subtotal' => $subtotal,
@@ -205,10 +241,9 @@ class CheckoutController extends Controller
                 $item->product->decrement('stock', $item->quantity);
             }
 
-            // Create payment record
             $initialStatus = $paymentMethod->requiresVerification()
                 ? 'pending_verification'
-                : ($paymentMethod->type === 'cod' ? 'pending' : 'pending');
+                : 'pending';
 
             $payment = Payment::create([
                 'order_id' => $order->id,
@@ -224,13 +259,14 @@ class CheckoutController extends Controller
                 'user_agent' => substr(request()->userAgent() ?? '', 0, 255),
             ]);
 
-            // Link payment to order
             $order->update(['payment_id' => $payment->id]);
 
             if ($isBuyNow) {
                 session()->forget('buy_now');
-            } else {
+            } elseif (auth()->check()) {
                 Cart::where('user_id', auth()->id())->delete();
+            } else {
+                Cart::where('session_id', session()->getId())->delete();
             }
 
             return $order;
@@ -238,20 +274,21 @@ class CheckoutController extends Controller
 
         session()->forget('coupon');
 
-        // Fire order_placed notifications for customer + admin
         $user = auth()->user();
         NotificationDispatcher::customer('order_placed', $user, [
             'order_number' => $order->order_number,
             'total' => '৳'.number_format($order->total, 2),
             'url' => route('orders.show', $order),
         ]);
+
         NotificationDispatcher::admin('new_order', [
             'order_number' => $order->order_number,
-            'customer' => $user->name,
+            'customer' => $request->shipping_name,
             'total' => '৳'.number_format($order->total, 2),
         ]);
 
-        return redirect()->route('checkout.success', $order->id);
+        return redirect()->route('checkout.success', $order->id)
+            ->with('account_created', $accountCreated);
     }
 
     public function success(Order $order)
@@ -261,7 +298,65 @@ class CheckoutController extends Controller
         }
         $order->load('payment');
 
-        return view('checkout.success', compact('order'));
+        $accountCreated = session('account_created') ?? false;
+
+        return view('checkout.success', compact('order', 'accountCreated'));
+    }
+
+    public function guestTrack(Request $request)
+    {
+        $request->validate([
+            'order_number' => 'required|string',
+            'token' => 'required|string',
+        ]);
+
+        $order = Order::where('order_number', $request->order_number)
+            ->where('guest_token', $request->token)
+            ->firstOrFail();
+
+        $order->load('items.product', 'payment');
+
+        return view('orders.guest-track', compact('order'));
+    }
+
+    public function guestTrackForm()
+    {
+        return view('orders.guest-track-form');
+    }
+
+    public function guestTrackLookup(Request $request)
+    {
+        $request->validate([
+            'order_number' => 'required|string',
+            'shipping_email' => 'nullable|email',
+        ]);
+
+        $query = Order::where('order_number', $request->order_number);
+
+        if ($request->filled('shipping_email')) {
+            $email = $request->shipping_email;
+            $query->where(function ($q) use ($email) {
+                $q->where('guest_email', $email)
+                  ->orWhereHas('user', function ($q2) use ($email) {
+                      $q2->where('email', $email);
+                  });
+            });
+        }
+
+        $order = $query->first();
+
+        if (!$order) {
+            return back()->withErrors(['order_number' => 'No order found with this order number.']);
+        }
+
+        if ($order->guest_token) {
+            return redirect()->route('guest.order.track', [
+                'order_number' => $order->order_number,
+                'token' => $order->guest_token,
+            ]);
+        }
+
+        return redirect()->route('orders.show', $order);
     }
 
     private function computeDiscount(float $subtotal, ?string $coupon): float

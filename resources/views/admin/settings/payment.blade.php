@@ -59,13 +59,13 @@ $gateways = [
             <span class="text-sm font-semibold text-gray-900">{{ $gw['name'] }}</span>
         </div>
         <div class="flex items-center gap-3">
-            <button type="button" @click="open = !open" class="text-xs text-indigo-600 hover:underline" x-text="open ? 'Collapse' : 'Configure'"></button>
+            <button type="button" @click="open = !open" class="text-xs text-orange-600 hover:underline" x-text="open ? 'Collapse' : 'Configure'"></button>
             <label class="relative inline-flex items-center cursor-pointer">
                 <input type="hidden" name="{{ $slug }}_enabled" value="0">
                 <input type="checkbox" name="{{ $slug }}_enabled" value="1" class="sr-only peer"
                        @checked(setting("{$slug}_enabled",'0') == '1')
                        @change="open = $event.target.checked">
-                <div class="w-10 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition peer-checked:bg-indigo-600"></div>
+                <div class="w-10 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition peer-checked:bg-orange-600"></div>
             </label>
         </div>
     </div>
@@ -77,7 +77,7 @@ $gateways = [
             @if($field['type'] === 'checkbox')
             <label class="flex items-center gap-2 cursor-pointer col-span-2">
                 <input type="hidden" name="{{ $field['key'] }}" value="0">
-                <input type="checkbox" name="{{ $field['key'] }}" value="1" class="rounded text-indigo-600"
+                <input type="checkbox" name="{{ $field['key'] }}" value="1" class="rounded text-orange-600"
                        @checked(setting($field['key'],'0') == '1')>
                 <span class="text-sm text-gray-700">{{ $field['label'] }}</span>
             </label>
@@ -85,14 +85,14 @@ $gateways = [
             <div class="md:col-span-2">
                 <label class="block text-sm font-medium text-gray-700 mb-1">{{ $field['label'] }}</label>
                 <textarea name="{{ $field['key'] }}" rows="3"
-                          class="w-full border rounded-lg px-3 py-2 text-xs font-mono focus:ring-2 focus:ring-indigo-500"
+                          class="w-full border rounded-lg px-3 py-2 text-xs font-mono focus:ring-2 focus:ring-orange-500"
                           placeholder="{{ $field['ph'] }}">{{ setting($field['key'], '') }}</textarea>
             </div>
             @else
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">{{ $field['label'] }}</label>
                 <input type="{{ $field['type'] }}" name="{{ $field['key'] }}" value="{{ setting($field['key'], '') }}"
-                       class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500"
+                       class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-orange-500"
                        placeholder="{{ $field['ph'] }}" autocomplete="off">
             </div>
             @endif
@@ -104,7 +104,7 @@ $gateways = [
 @endforeach
 
 <div class="flex justify-end">
-    <button type="submit" class="px-6 py-2 bg-indigo-600 text-white rounded-lg text-sm font-semibold hover:bg-indigo-700 transition">Save Payment Settings</button>
+    <button type="submit" class="px-6 py-2 bg-orange-600 text-white rounded-lg text-sm font-semibold hover:bg-orange-700 transition">Save Payment Settings</button>
 </div>
 </form>
 @endsection

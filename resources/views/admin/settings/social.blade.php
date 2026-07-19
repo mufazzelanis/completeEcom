@@ -27,7 +27,7 @@
                 {{ $social['label'] }}
             </label>
             <input type="url" name="{{ $key }}" value="{{ setting($key, '') }}"
-                   class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500"
+                   class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-orange-500"
                    placeholder="{{ $social['ph'] }}">
         </div>
         @endforeach
@@ -35,7 +35,7 @@
 </div>
 
 <div class="flex justify-end">
-    <button type="submit" class="px-6 py-2 bg-indigo-600 text-white rounded-lg text-sm font-semibold hover:bg-indigo-700 transition">Save Social Links</button>
+    <button type="submit" class="px-6 py-2 bg-orange-600 text-white rounded-lg text-sm font-semibold hover:bg-orange-700 transition">Save Social Links</button>
 </div>
 </form>
 @endsection

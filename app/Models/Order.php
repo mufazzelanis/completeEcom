@@ -3,11 +3,12 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Str;
 
 class Order extends Model
 {
     protected $fillable = [
-        'user_id', 'payment_id', 'order_number', 'status', 'subtotal', 'discount', 'shipping', 'tax', 'total',
+        'user_id', 'guest_email', 'guest_token', 'payment_id', 'order_number', 'status', 'subtotal', 'discount', 'shipping', 'tax', 'total',
         'coupon_code', 'payment_method', 'payment_status', 'payment_charge',
         'shipping_name', 'shipping_phone', 'shipping_address', 'shipping_city',
         'shipping_state', 'shipping_zip', 'shipping_country', 'notes',
@@ -24,6 +25,16 @@ class Order extends Model
         'is_fraud_flagged'  => 'boolean',
         'fraud_checked_at'  => 'datetime',
     ];
+
+    protected static function boot()
+    {
+        parent::boot();
+        static::creating(function ($order) {
+            if (empty($order->guest_token) && !$order->user_id) {
+                $order->guest_token = Str::random(64);
+            }
+        });
+    }
 
     public function user()
     {
@@ -50,9 +61,30 @@ class Order extends Model
         return $this->hasMany(\App\Models\ProductReturn::class);
     }
 
+    public function isGuest(): bool
+    {
+        return is_null($this->user_id);
+    }
+
+    public function accessibleBy(?int $userId, ?string $token = null): bool
+    {
+        if ($this->user_id && $userId === $this->user_id) {
+            return true;
+        }
+        if ($this->guest_token && $token === $this->guest_token) {
+            return true;
+        }
+        return false;
+    }
+
     public static function generateOrderNumber(): string
     {
         return 'ORD-' . strtoupper(uniqid());
+    }
+
+    public static function generateGuestToken(): string
+    {
+        return Str::random(64);
     }
 
     public function getStatusBadgeAttribute(): string

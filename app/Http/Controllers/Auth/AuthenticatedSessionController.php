@@ -31,6 +31,11 @@ class AuthenticatedSessionController extends Controller
 
         $this->mergeGuestCart($request);
 
+        $user = Auth::user();
+        if ($user && $user->canAccessAdmin()) {
+            return redirect()->intended(route('admin.dashboard'));
+        }
+
         return redirect()->intended(route('home', absolute: false));
     }
 

@@ -31,16 +31,29 @@ class SettingController extends Controller
             abort(404);
         }
 
-        // Save regular fields (skip Laravel internals)
+        // Save regular fields (skip Laravel internals, delete_ prefixed keys, and _hex companions)
         $skip = ['_token', '_method'];
         foreach ($request->except($skip) as $key => $value) {
-            if (!$request->hasFile($key)) {
-                Setting::set($key, $value, $group);
+            if (str_starts_with($key, 'delete_') || str_ends_with($key, '_hex') || $request->hasFile($key)) {
+                continue;
             }
+            Setting::set($key, $value, $group);
         }
 
         // Handle boolean fields that may be absent when unchecked
         // (they send hidden "0" before each checkbox in the view, so this is fine)
+
+        // Handle logo deletions (fields named delete_<logo_key>)
+        foreach ($request->input() as $inputKey => $inputVal) {
+            if (str_starts_with($inputKey, 'delete_') && $inputVal) {
+                $logoKey = substr($inputKey, 7); // remove 'delete_' prefix
+                $old = Setting::get($logoKey);
+                if ($old && Storage::disk('public')->exists($old)) {
+                    Storage::disk('public')->delete($old);
+                }
+                Setting::set($logoKey, '', $group);
+            }
+        }
 
         // Handle file uploads
         foreach ($request->allFiles() as $key => $file) {

@@ -15,22 +15,22 @@
 <nav class="bg-white shadow-sm sticky top-0 z-50 border-b border-gray-100">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between">
         <a href="{{ route('home') }}" class="flex items-center gap-2">
-            <div class="w-7 h-7 bg-indigo-600 rounded-lg flex items-center justify-center">
+            <div class="w-7 h-7 bg-orange-500 rounded-lg flex items-center justify-center">
                 <span class="text-white font-bold text-sm">S</span>
             </div>
-            <span class="font-bold text-indigo-600">ShopVista</span>
+            <span class="font-bold text-orange-600">ShopVista</span>
         </a>
 
         <div class="flex items-center gap-4">
             @php $unread = \App\Models\UserNotification::where('user_id', auth()->id())->where('is_read', false)->count(); @endphp
-            <a href="{{ route('account.notifications') }}" class="relative text-gray-500 hover:text-indigo-600 transition">
+            <a href="{{ route('account.notifications') }}" class="relative text-gray-500 hover:text-orange-600 transition">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
                 @if($unread > 0)<span class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center font-bold">{{ $unread > 9 ? '9+' : $unread }}</span>@endif
             </a>
-            <a href="{{ route('cart.index') }}" class="relative text-gray-500 hover:text-indigo-600 transition">
+            <a href="{{ route('cart.index') }}" class="relative text-gray-500 hover:text-orange-600 transition">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
             </a>
-            <a href="{{ route('shop.index') }}" class="text-sm text-gray-500 hover:text-indigo-600 transition">Store</a>
+            <a href="{{ route('shop.index') }}" class="text-sm text-gray-500 hover:text-orange-600 transition">Store</a>
         </div>
     </div>
 </nav>
@@ -95,7 +95,7 @@
                                 $isActive = request()->routeIs($item['match']);
                             @endphp
                             <a href="{{ route($item['route']) }}"
-                                class="flex items-center gap-3 px-4 py-2.5 text-sm font-medium transition {{ $isActive ? 'bg-indigo-50 text-indigo-600 border-r-2 border-indigo-600' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' }}">
+                                class="flex items-center gap-3 px-4 py-2.5 text-sm font-medium transition {{ $isActive ? 'bg-orange-50 text-orange-600 border-r-2 border-orange-600' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' }}">
                                 <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="{{ $item['icon'] }}"/>
                                 </svg>
