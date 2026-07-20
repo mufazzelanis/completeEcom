@@ -510,4 +510,4 @@
 </div>
 
 </body>
-</html><?php /**PATH C:\xampp\htdocs\completeEcom\resources\views/layouts/admin.blade.php ENDPATH**/ ?>
+</html><?php /**PATH C:\xampp\htdocs\azad-ecom\resources\views/layouts/admin.blade.php ENDPATH**/ ?>

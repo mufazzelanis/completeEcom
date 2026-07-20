@@ -40,4 +40,13 @@ class Category extends Model
     {
         return 'slug';
     }
+
+    public function resolveRouteBinding($value, $field = null)
+    {
+        if ($field === null && ctype_digit((string) $value)) {
+            return $this->where('id', $value)->first();
+        }
+
+        return parent::resolveRouteBinding($value, $field);
+    }
 }

@@ -3,29 +3,35 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 
 class Setting extends Model
 {
     protected $fillable = ['key', 'value', 'group'];
 
-    protected static ?Collection $cache = null;
+    /**
+     * No cross-request cache — every request reads settings straight from the
+     * database. This is only a per-request reuse so a single page load that calls
+     * setting() dozens of times doesn't run dozens of identical queries; it is
+     * reset (see boot()) at the start of every request and never persisted.
+     */
+    protected static ?array $requestCache = null;
+
+    protected static function booted(): void
+    {
+        static::created(fn () => static::$requestCache = null);
+        static::updated(fn () => static::$requestCache = null);
+        static::deleted(fn () => static::$requestCache = null);
+    }
 
     public static function get(string $key, mixed $default = null): mixed
     {
-        try {
-            return static::getAllCached()->get($key, $default);
-        } catch (\Throwable) {
-            return $default;
-        }
+        return static::allFresh()[$key] ?? $default;
     }
 
     public static function set(string $key, mixed $value, string $group = 'general'): void
     {
         static::updateOrCreate(['key' => $key], ['value' => $value, 'group' => $group]);
-        static::bust();
     }
 
     public static function setMany(array $data, string $group = 'general'): void
@@ -33,13 +39,11 @@ class Setting extends Model
         foreach ($data as $key => $value) {
             static::set($key, $value, $group);
         }
-        static::bust();
     }
 
     public static function bust(): void
     {
-        static::$cache = null;
-        Cache::forget('settings.all');
+        static::$requestCache = null;
     }
 
     public static function fileUrl(string $key, ?string $default = null): ?string
@@ -51,14 +55,12 @@ class Setting extends Model
         return $default;
     }
 
-    protected static function getAllCached(): Collection
+    private static function allFresh(): array
     {
-        if (static::$cache === null) {
-            static::$cache = Cache::rememberForever(
-                'settings.all',
-                fn() => static::pluck('value', 'key')
-            );
+        if (static::$requestCache === null) {
+            static::$requestCache = static::query()->pluck('value', 'key')->all();
         }
-        return static::$cache;
+
+        return static::$requestCache;
     }
 }

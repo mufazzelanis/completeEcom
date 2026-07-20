@@ -35,4 +35,4 @@
             </p>
         </div>
     </body>
-</html><?php /**PATH C:\xampp\htdocs\completeEcom\resources\views/layouts/guest.blade.php ENDPATH**/ ?>
+</html><?php /**PATH C:\xampp\htdocs\azad-ecom\resources\views/layouts/guest.blade.php ENDPATH**/ ?>

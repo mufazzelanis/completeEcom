@@ -9,7 +9,7 @@
     </a>
 
     <div class="bg-white rounded-2xl shadow-sm p-8">
-        <form action="{{ route('admin.categories.update', $category->id) }}" method="POST" enctype="multipart/form-data">
+        <form action="{{ route('admin.categories.update', $category) }}" method="POST" enctype="multipart/form-data">
             @csrf @method('PUT')
             <div class="space-y-5">
                 <div>

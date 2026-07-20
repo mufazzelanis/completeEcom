@@ -102,5 +102,17 @@
             </div>
         </div>
     </a>
+
+    {{-- Newsletter Subscribers --}}
+    <a href="{{ route('admin.newsletter.index') }}" class="bg-white rounded-2xl shadow-sm p-6 hover:shadow-md transition group">
+        <div class="flex items-start justify-between mb-4">
+            <div class="w-12 h-12 bg-pink-100 rounded-2xl flex items-center justify-center group-hover:bg-pink-200 transition">
+                <svg class="w-6 h-6 text-pink-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+            </div>
+            <span class="text-2xl font-bold text-gray-800">{{ \App\Models\NewsletterSubscriber::where('is_active', true)->count() }}</span>
+        </div>
+        <h3 class="font-semibold text-gray-800">Newsletter Subscribers</h3>
+        <p class="text-sm text-gray-500 mt-1">Emails collected from the storefront footer signup</p>
+    </a>
 </div>
 @endsection

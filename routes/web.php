@@ -20,6 +20,7 @@ use App\Http\Controllers\Admin\EmailCampaignController as AdminEmailCampaignCont
 use App\Http\Controllers\Admin\FaqController as AdminFaqController;
 use App\Http\Controllers\Admin\FlashSaleController as AdminFlashSaleController;
 use App\Http\Controllers\Admin\LowStockController as AdminLowStockController;
+use App\Http\Controllers\Admin\NewsletterController as AdminNewsletterController;
 use App\Http\Controllers\Admin\NotificationController as AdminNotificationController;
 use App\Http\Controllers\Admin\NotificationSeederController as AdminNotificationSeederController;
 use App\Http\Controllers\Admin\OrderController as AdminOrderController;
@@ -54,6 +55,7 @@ use App\Http\Controllers\CustomerNotificationController;
 use App\Http\Controllers\CustomerReferralController;
 use App\Http\Controllers\CustomerReviewController;
 use App\Http\Controllers\HomeController;
+use App\Http\Controllers\NewsletterSubscriptionController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\ProductController;
@@ -80,6 +82,10 @@ Route::get('/faq', [PageController::class, 'faq'])->name('faq');
 Route::get('/contact', [PageController::class, 'contact'])->name('contact');
 Route::post('/contact', [PageController::class, 'sendContact'])->name('contact.send');
 Route::get('/pages/{page}', [PageController::class, 'show'])->name('pages.show');
+
+// Newsletter (public)
+Route::post('/newsletter/subscribe', [NewsletterSubscriptionController::class, 'subscribe'])->name('newsletter.subscribe');
+Route::get('/newsletter/unsubscribe/{token}', [NewsletterSubscriptionController::class, 'unsubscribe'])->name('newsletter.unsubscribe');
 
 // Frontend Routes
 Route::get('/', [HomeController::class, 'index'])->name('home');
@@ -396,6 +402,10 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::resource('email-campaigns', AdminEmailCampaignController::class)->except(['show']);
     Route::get('email-campaigns/{emailCampaign}', [AdminEmailCampaignController::class, 'show'])->name('email-campaigns.show');
     Route::post('email-campaigns/{emailCampaign}/send', [AdminEmailCampaignController::class, 'send'])->name('email-campaigns.send');
+
+    // Marketing — Newsletter Subscribers
+    Route::get('newsletter', [AdminNewsletterController::class, 'index'])->name('newsletter.index');
+    Route::delete('newsletter/{subscriber}', [AdminNewsletterController::class, 'destroy'])->name('newsletter.destroy');
 
     // Notifications
     Route::get('notifications', [AdminNotificationController::class, 'index'])->name('notifications.index');

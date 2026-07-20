@@ -1,7 +1,7 @@
 <?php $attributes ??= new \Illuminate\View\ComponentAttributeBag;
 
 $__newAttributes = [];
-$__propNames = \Illuminate\View\ComponentAttributeBag::extractPropNames((['disabled' => false]));
+$__propNames = \Illuminate\View\ComponentAttributeBag::extractPropNames((['status']));
 
 foreach ($attributes->all() as $__key => $__value) {
     if (in_array($__key, $__propNames)) {
@@ -16,7 +16,7 @@ $attributes = new \Illuminate\View\ComponentAttributeBag($__newAttributes);
 unset($__propNames);
 unset($__newAttributes);
 
-foreach (array_filter((['disabled' => false]), 'is_string', ARRAY_FILTER_USE_KEY) as $__key => $__value) {
+foreach (array_filter((['status']), 'is_string', ARRAY_FILTER_USE_KEY) as $__key => $__value) {
     $$__key = $$__key ?? $__value;
 }
 
@@ -28,5 +28,10 @@ foreach ($attributes->all() as $__key => $__value) {
 
 unset($__defined_vars, $__key, $__value); ?>
 
-<input <?php if($disabled): echo 'disabled'; endif; ?> <?php echo e($attributes->merge(['class' => 'border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-orange-500 dark:focus:border-orange-600 focus:ring-orange-500 dark:focus:ring-orange-600 rounded-md shadow-sm'])); ?>>
-<?php /**PATH C:\xampp\htdocs\completeEcom\resources\views/components/text-input.blade.php ENDPATH**/ ?>
+<?php if($status): ?>
+    <div <?php echo e($attributes->merge(['class' => 'font-medium text-sm text-green-600 dark:text-green-400'])); ?>>
+        <?php echo e($status); ?>
+
+    </div>
+<?php endif; ?>
+<?php /**PATH C:\xampp\htdocs\azad-ecom\resources\views/components/auth-session-status.blade.php ENDPATH**/ ?>

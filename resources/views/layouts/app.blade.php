@@ -391,10 +391,14 @@ $navCategories = \App\Models\Category::with(['children' => fn($q) => $q->where('
                     <h3 class="text-white text-lg font-bold">Subscribe to Our Newsletter</h3>
                     <p class="text-gray-400 text-sm mt-1">Get updates on new arrivals, deals, and exclusive offers.</p>
                 </div>
-                <form class="flex w-full md:w-auto" onsubmit="event.preventDefault(); this.querySelector('input').value=''; alert('Thank you for subscribing!');">
-                    <input type="email" placeholder="Enter your email" required class="flex-1 md:w-72 px-4 py-2.5 rounded-l-lg bg-gray-700 text-white border border-gray-600 focus:outline-none focus:border-orange-500 text-sm placeholder-gray-500">
-                    <button type="submit" class="bg-orange-500 text-white px-6 py-2.5 rounded-r-lg font-medium text-sm hover:bg-orange-600 transition whitespace-nowrap">Subscribe</button>
-                </form>
+                <div class="w-full md:w-auto">
+                    <form action="{{ route('newsletter.subscribe') }}" method="POST" class="flex w-full md:w-auto">
+                        @csrf
+                        <input type="email" name="email" value="{{ old('email') }}" placeholder="Enter your email" required class="flex-1 md:w-72 px-4 py-2.5 rounded-l-lg bg-gray-700 text-white border border-gray-600 focus:outline-none focus:border-orange-500 text-sm placeholder-gray-500">
+                        <button type="submit" class="bg-orange-500 text-white px-6 py-2.5 rounded-r-lg font-medium text-sm hover:bg-orange-600 transition whitespace-nowrap">Subscribe</button>
+                    </form>
+                    @error('email')<p class="text-red-400 text-xs mt-1.5">{{ $message }}</p>@enderror
+                </div>
             </div>
         </div>
     </div>

@@ -32,4 +32,4 @@ unset($__defined_vars, $__key, $__value); ?>
     <?php echo e($value ?? $slot); ?>
 
 </label>
-<?php /**PATH C:\xampp\htdocs\completeEcom\resources\views/components/input-label.blade.php ENDPATH**/ ?>
+<?php /**PATH C:\xampp\htdocs\azad-ecom\resources\views/components/input-label.blade.php ENDPATH**/ ?>

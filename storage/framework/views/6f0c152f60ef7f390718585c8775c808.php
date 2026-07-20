@@ -394,10 +394,21 @@ $navCategories = \App\Models\Category::with(['children' => fn($q) => $q->where('
                     <h3 class="text-white text-lg font-bold">Subscribe to Our Newsletter</h3>
                     <p class="text-gray-400 text-sm mt-1">Get updates on new arrivals, deals, and exclusive offers.</p>
                 </div>
-                <form class="flex w-full md:w-auto" onsubmit="event.preventDefault(); this.querySelector('input').value=''; alert('Thank you for subscribing!');">
-                    <input type="email" placeholder="Enter your email" required class="flex-1 md:w-72 px-4 py-2.5 rounded-l-lg bg-gray-700 text-white border border-gray-600 focus:outline-none focus:border-orange-500 text-sm placeholder-gray-500">
-                    <button type="submit" class="bg-orange-500 text-white px-6 py-2.5 rounded-r-lg font-medium text-sm hover:bg-orange-600 transition whitespace-nowrap">Subscribe</button>
-                </form>
+                <div class="w-full md:w-auto">
+                    <form action="<?php echo e(route('newsletter.subscribe')); ?>" method="POST" class="flex w-full md:w-auto">
+                        <?php echo csrf_field(); ?>
+                        <input type="email" name="email" value="<?php echo e(old('email')); ?>" placeholder="Enter your email" required class="flex-1 md:w-72 px-4 py-2.5 rounded-l-lg bg-gray-700 text-white border border-gray-600 focus:outline-none focus:border-orange-500 text-sm placeholder-gray-500">
+                        <button type="submit" class="bg-orange-500 text-white px-6 py-2.5 rounded-r-lg font-medium text-sm hover:bg-orange-600 transition whitespace-nowrap">Subscribe</button>
+                    </form>
+                    <?php $__errorArgs = ['email'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?><p class="text-red-400 text-xs mt-1.5"><?php echo e($message); ?></p><?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
+                </div>
             </div>
         </div>
     </div>
@@ -535,4 +546,4 @@ async function toggleWishlist(productId, btn) {
 <?php if($customJs): ?><script><?php echo e($customJs); ?></script><?php endif; ?>
 </body>
 </html>
-<?php /**PATH C:\xampp\htdocs\completeEcom\resources\views/layouts/app.blade.php ENDPATH**/ ?>
+<?php /**PATH C:\xampp\htdocs\azad-ecom\resources\views/layouts/app.blade.php ENDPATH**/ ?>

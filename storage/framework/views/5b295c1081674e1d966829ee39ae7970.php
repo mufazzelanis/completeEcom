@@ -87,4 +87,4 @@
         <?php endif; ?>
     </div>
 </div>
-<?php /**PATH C:\xampp\htdocs\completeEcom\resources\views/partials/product-card.blade.php ENDPATH**/ ?>
+<?php /**PATH C:\xampp\htdocs\azad-ecom\resources\views/partials/product-card.blade.php ENDPATH**/ ?>

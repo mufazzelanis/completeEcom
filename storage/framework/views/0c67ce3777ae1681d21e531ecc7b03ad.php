@@ -66,4 +66,4 @@
 </form>
 <?php $__env->stopSection(); ?>
 
-<?php echo $__env->make('admin.settings.layout', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH C:\xampp\htdocs\completeEcom\resources\views/admin/settings/footer.blade.php ENDPATH**/ ?>
+<?php echo $__env->make('admin.settings.layout', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH C:\xampp\htdocs\azad-ecom\resources\views/admin/settings/footer.blade.php ENDPATH**/ ?>
