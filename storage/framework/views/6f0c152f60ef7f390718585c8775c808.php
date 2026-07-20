@@ -21,9 +21,18 @@ $announcementText    = setting('announcement_text', '');
     <title><?php echo $__env->yieldContent('title', setting('seo_meta_title', $siteName . ' – Online Store')); ?></title>
     <?php if($faviconUrl): ?><link rel="icon" href="<?php echo e($faviconUrl); ?>"><?php endif; ?>
     <?php if(setting('google_site_verification')): ?><meta name="google-site-verification" content="<?php echo e(setting('google_site_verification')); ?>"><?php endif; ?>
+    <script>
+        // Applied before first paint so there's never a flash of the wrong theme.
+        (function () {
+            var stored = localStorage.getItem('site-theme');
+            var isDark = stored ? stored === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
+            document.documentElement.classList.toggle('dark', isDark);
+        })();
+    </script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
+            darkMode: 'class',
             theme: {
                 extend: {
                     colors: {
@@ -34,6 +43,18 @@ $announcementText    = setting('announcement_text', '');
         }
     </script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script>
+        document.addEventListener('alpine:init', () => {
+            Alpine.store('theme', {
+                dark: document.documentElement.classList.contains('dark'),
+                toggle() {
+                    this.dark = !this.dark;
+                    localStorage.setItem('site-theme', this.dark ? 'dark' : 'light');
+                    document.documentElement.classList.toggle('dark', this.dark);
+                },
+            });
+        });
+    </script>
     <style>
         [x-cloak]{display:none!important}
         .scrollbar-hide::-webkit-scrollbar{display:none}
@@ -59,7 +80,7 @@ $announcementText    = setting('announcement_text', '');
     <script>!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');fbq('init','<?php echo e($pixelId); ?>');fbq('track','PageView');</script>
     <?php endif; ?>
 </head>
-<body class="bg-gray-100 font-sans antialiased">
+<body class="bg-gray-100 dark:bg-gray-950 font-sans antialiased transition-colors">
 <?php if($gtmId): ?><noscript><iframe src="https://www.googletagmanager.com/ns.html?id=<?php echo e($gtmId); ?>" height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript><?php endif; ?>
 
 <?php
@@ -93,7 +114,7 @@ $navCategories = \App\Models\Category::with(['children' => fn($q) => $q->where('
 <?php endif; ?>
 
 
-<header class="bg-white shadow-sm sticky top-0 z-50" x-data="{ mobileOpen: false }">
+<header class="bg-white dark:bg-gray-900 shadow-sm sticky top-0 z-50 transition-colors" x-data="{ mobileOpen: false }">
     <div class="max-w-[1200px] mx-auto px-4">
         <div class="flex items-center justify-between h-14 md:h-16 gap-4">
             
@@ -104,7 +125,7 @@ $navCategories = \App\Models\Category::with(['children' => fn($q) => $q->where('
                     <div class="w-8 h-8 bg-gradient-to-br from-orange-500 to-red-500 rounded-lg flex items-center justify-center">
                         <span class="text-white font-bold text-lg"><?php echo e(strtoupper(substr($siteName,0,1))); ?></span>
                     </div>
-                    <span class="text-lg md:text-xl font-extrabold text-gray-800 hidden sm:block"><?php echo e($siteName); ?></span>
+                    <span class="text-lg md:text-xl font-extrabold text-gray-800 dark:text-gray-100 hidden sm:block"><?php echo e($siteName); ?></span>
                 <?php endif; ?>
             </a>
 
@@ -138,13 +159,13 @@ $navCategories = \App\Models\Category::with(['children' => fn($q) => $q->where('
                     </form>
                     
                     <div x-show="open" x-cloak x-transition
-                         class="absolute top-full left-0 right-0 bg-white rounded-b-lg shadow-2xl border border-gray-100 z-[200] overflow-hidden fade-in">
+                         class="absolute top-full left-0 right-0 bg-white dark:bg-gray-800 rounded-b-lg shadow-2xl border border-gray-100 dark:border-gray-700 z-[200] overflow-hidden fade-in">
                         <template x-if="results.categories && results.categories.length > 0">
-                            <div class="border-b border-gray-100">
+                            <div class="border-b border-gray-100 dark:border-gray-700">
                                 <p class="px-4 pt-3 pb-1 text-[10px] font-bold text-orange-400 uppercase tracking-wider">Categories</p>
                                 <template x-for="cat in results.categories" :key="cat.url">
                                     <a :href="cat.url" @click="open = false"
-                                       class="flex items-center px-4 py-2 hover:bg-orange-50 gap-2 text-sm text-gray-700 hover:text-orange-600 transition">
+                                       class="flex items-center px-4 py-2 hover:bg-orange-50 dark:hover:bg-gray-700 gap-2 text-sm text-gray-700 dark:text-gray-200 hover:text-orange-600 transition">
                                         <svg class="w-3.5 h-3.5 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
                                         <span x-text="cat.name"></span>
                                     </a>
@@ -156,18 +177,18 @@ $navCategories = \App\Models\Category::with(['children' => fn($q) => $q->where('
                                 <p class="px-4 pt-3 pb-1 text-[10px] font-bold text-orange-400 uppercase tracking-wider">Products</p>
                                 <template x-for="product in results.products" :key="product.url">
                                     <a :href="product.url" @click="open = false"
-                                       class="flex items-center px-4 py-2.5 hover:bg-orange-50 gap-3 transition">
+                                       class="flex items-center px-4 py-2.5 hover:bg-orange-50 dark:hover:bg-gray-700 gap-3 transition">
                                         <div class="w-10 h-10 bg-gray-100 rounded overflow-hidden flex-shrink-0 flex items-center justify-center">
                                             <img x-show="product.image" :src="product.image" :alt="product.name" class="w-full h-full object-cover">
                                             <svg x-show="!product.image" class="w-5 h-5 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
                                         </div>
                                         <div class="flex-1 min-w-0">
-                                            <p class="text-sm font-medium text-gray-800 truncate" x-text="product.name"></p>
+                                            <p class="text-sm font-medium text-gray-800 dark:text-gray-100 truncate" x-text="product.name"></p>
                                             <p class="text-xs font-bold text-orange-500" x-text="product.price"></p>
                                         </div>
                                     </a>
                                 </template>
-                                <div class="px-4 py-2.5 border-t border-gray-100 bg-gray-50">
+                                <div class="px-4 py-2.5 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
                                     <a :href="'<?php echo e(route('shop.index')); ?>?search=' + encodeURIComponent(query)"
                                        class="text-xs text-orange-500 hover:text-orange-700 font-semibold">
                                         See all results for "<span x-text="query"></span>" →
@@ -182,12 +203,20 @@ $navCategories = \App\Models\Category::with(['children' => fn($q) => $q->where('
             
             <div class="flex items-center gap-1 md:gap-3">
                 
-                <a href="<?php echo e(route('shop.index')); ?>" class="md:hidden p-2 text-gray-600 hover:text-orange-500">
+                <button @click="$store.theme.toggle()" type="button"
+                    class="p-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition"
+                    :aria-label="$store.theme.dark ? 'Switch to light mode' : 'Switch to dark mode'">
+                    <svg x-show="!$store.theme.dark" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
+                    <svg x-show="$store.theme.dark" x-cloak class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+                </button>
+
+                
+                <a href="<?php echo e(route('shop.index')); ?>" class="md:hidden p-2 text-gray-600 dark:text-gray-300 hover:text-orange-500">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
                 </a>
 
                 
-                <a href="<?php echo e(route('cart.index')); ?>" class="relative p-2 text-gray-600 hover:text-orange-500 transition group">
+                <a href="<?php echo e(route('cart.index')); ?>" class="relative p-2 text-gray-600 dark:text-gray-300 hover:text-orange-500 transition group">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
                     <?php
                         $cartCount = auth()->check()
@@ -201,7 +230,7 @@ $navCategories = \App\Models\Category::with(['children' => fn($q) => $q->where('
 
                 
                 <?php if(auth()->guard()->check()): ?>
-                <a href="<?php echo e(route('wishlist.index')); ?>" class="hidden md:block p-2 text-gray-600 hover:text-red-500 transition">
+                <a href="<?php echo e(route('wishlist.index')); ?>" class="hidden md:block p-2 text-gray-600 dark:text-gray-300 hover:text-red-500 transition">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>
                 </a>
                 <?php endif; ?>
@@ -209,7 +238,7 @@ $navCategories = \App\Models\Category::with(['children' => fn($q) => $q->where('
                 
                 <?php if(auth()->guard()->check()): ?>
                     <div class="relative hidden md:block" x-data="{ open: false }">
-                        <button @click="open = !open" class="flex items-center gap-2 px-3 py-1.5 rounded-full hover:bg-gray-100 transition text-gray-700">
+                        <button @click="open = !open" class="flex items-center gap-2 px-3 py-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition text-gray-700 dark:text-gray-200">
                             <div class="w-7 h-7 bg-gradient-to-br from-orange-400 to-red-500 rounded-full flex items-center justify-center">
                                 <span class="text-white font-bold text-xs"><?php echo e(strtoupper(substr(auth()->user()->name, 0, 1))); ?></span>
                             </div>
@@ -217,35 +246,35 @@ $navCategories = \App\Models\Category::with(['children' => fn($q) => $q->where('
                             <svg class="w-3.5 h-3.5 transition-transform" :class="open ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
                         </button>
                         <div x-show="open" @click.outside="open = false" x-cloak x-transition
-                            class="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-xl py-2 z-50 border border-gray-100">
-                            <div class="px-4 py-3 border-b border-gray-100">
-                                <p class="text-sm font-bold text-gray-900"><?php echo e(auth()->user()->name); ?></p>
-                                <p class="text-xs text-gray-500 mt-0.5"><?php echo e(auth()->user()->email); ?></p>
+                            class="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-xl shadow-xl py-2 z-50 border border-gray-100 dark:border-gray-700">
+                            <div class="px-4 py-3 border-b border-gray-100 dark:border-gray-700">
+                                <p class="text-sm font-bold text-gray-900 dark:text-gray-100"><?php echo e(auth()->user()->name); ?></p>
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5"><?php echo e(auth()->user()->email); ?></p>
                             </div>
-                            <a href="<?php echo e(route('account.dashboard')); ?>" class="flex items-center px-4 py-2.5 text-sm text-gray-700 hover:bg-orange-50 hover:text-orange-600 transition gap-3">
+                            <a href="<?php echo e(route('account.dashboard')); ?>" class="flex items-center px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-orange-50 dark:hover:bg-gray-700 hover:text-orange-600 transition gap-3">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
                                 My Account
                             </a>
-                            <a href="<?php echo e(route('orders.index')); ?>" class="flex items-center px-4 py-2.5 text-sm text-gray-700 hover:bg-orange-50 hover:text-orange-600 transition gap-3">
+                            <a href="<?php echo e(route('orders.index')); ?>" class="flex items-center px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-orange-50 dark:hover:bg-gray-700 hover:text-orange-600 transition gap-3">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
                                 My Orders
                             </a>
-                            <a href="<?php echo e(route('wishlist.index')); ?>" class="flex items-center px-4 py-2.5 text-sm text-gray-700 hover:bg-orange-50 hover:text-orange-600 transition gap-3">
+                            <a href="<?php echo e(route('wishlist.index')); ?>" class="flex items-center px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-orange-50 dark:hover:bg-gray-700 hover:text-orange-600 transition gap-3">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>
                                 Wishlist
                             </a>
                             <?php if(auth()->user()->isAdmin()): ?>
-                                <div class="border-t border-gray-100 mt-1 pt-1">
-                                    <a href="<?php echo e(route('admin.dashboard')); ?>" class="flex items-center px-4 py-2.5 text-sm text-orange-600 hover:bg-orange-50 font-medium gap-3">
+                                <div class="border-t border-gray-100 dark:border-gray-700 mt-1 pt-1">
+                                    <a href="<?php echo e(route('admin.dashboard')); ?>" class="flex items-center px-4 py-2.5 text-sm text-orange-600 hover:bg-orange-50 dark:hover:bg-gray-700 font-medium gap-3">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
                                         Admin Panel
                                     </a>
                                 </div>
                             <?php endif; ?>
-                            <div class="border-t border-gray-100 mt-1 pt-1">
+                            <div class="border-t border-gray-100 dark:border-gray-700 mt-1 pt-1">
                                 <form method="POST" action="<?php echo e(route('logout')); ?>">
                                     <?php echo csrf_field(); ?>
-                                    <button type="submit" class="flex items-center w-full px-4 py-2.5 text-sm text-red-500 hover:bg-red-50 transition gap-3">
+                                    <button type="submit" class="flex items-center w-full px-4 py-2.5 text-sm text-red-500 hover:bg-red-50 dark:hover:bg-gray-700 transition gap-3">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
                                         Logout
                                     </button>
@@ -254,12 +283,12 @@ $navCategories = \App\Models\Category::with(['children' => fn($q) => $q->where('
                         </div>
                     </div>
                 <?php else: ?>
-                    <a href="<?php echo e(route('login')); ?>" class="hidden md:block text-gray-600 hover:text-orange-500 font-medium text-sm px-3 py-1.5 rounded hover:bg-gray-100 transition">Login</a>
+                    <a href="<?php echo e(route('login')); ?>" class="hidden md:block text-gray-600 dark:text-gray-300 hover:text-orange-500 font-medium text-sm px-3 py-1.5 rounded hover:bg-gray-100 dark:hover:bg-gray-800 transition">Login</a>
                     <a href="<?php echo e(route('register')); ?>" class="hidden md:block bg-orange-500 text-white px-4 py-1.5 rounded text-sm font-medium hover:bg-orange-600 transition">Sign Up</a>
                 <?php endif; ?>
 
                 
-                <button @click="mobileOpen = !mobileOpen" class="md:hidden p-2 text-gray-600" aria-label="Toggle menu">
+                <button @click="mobileOpen = !mobileOpen" class="md:hidden p-2 text-gray-600 dark:text-gray-300" aria-label="Toggle menu">
                     <svg x-show="!mobileOpen" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
                     <svg x-show="mobileOpen" x-cloak class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
                 </button>
@@ -299,7 +328,7 @@ $navCategories = \App\Models\Category::with(['children' => fn($q) => $q->where('
     </div>
 
     
-    <div x-show="mobileOpen" x-cloak x-transition class="md:hidden bg-white border-t border-gray-100 shadow-xl">
+    <div x-show="mobileOpen" x-cloak x-transition class="md:hidden bg-white dark:bg-gray-900 border-t border-gray-100 dark:border-gray-700 shadow-xl">
         <div class="p-4">
             <form action="<?php echo e(route('shop.index')); ?>" method="GET" class="flex mb-4">
                 <input type="text" name="search" placeholder="Search products..." class="flex-1 border-2 border-orange-400 rounded-l-md px-4 py-2 text-sm focus:outline-none focus:border-orange-500">
@@ -308,46 +337,46 @@ $navCategories = \App\Models\Category::with(['children' => fn($q) => $q->where('
                 </button>
             </form>
             <?php if(auth()->guard()->check()): ?>
-                <div class="flex items-center gap-3 pb-3 border-b border-gray-100 mb-3">
+                <div class="flex items-center gap-3 pb-3 border-b border-gray-100 dark:border-gray-700 mb-3">
                     <div class="w-10 h-10 bg-gradient-to-br from-orange-400 to-red-500 rounded-full flex items-center justify-center">
                         <span class="text-white font-bold"><?php echo e(strtoupper(substr(auth()->user()->name, 0, 1))); ?></span>
                     </div>
                     <div>
-                        <p class="font-bold text-sm text-gray-900"><?php echo e(auth()->user()->name); ?></p>
-                        <p class="text-xs text-gray-500"><?php echo e(auth()->user()->email); ?></p>
+                        <p class="font-bold text-sm text-gray-900 dark:text-gray-100"><?php echo e(auth()->user()->name); ?></p>
+                        <p class="text-xs text-gray-500 dark:text-gray-400"><?php echo e(auth()->user()->email); ?></p>
                     </div>
                 </div>
             <?php endif; ?>
             <nav class="space-y-1">
-                <a href="<?php echo e(route('home')); ?>" class="block px-3 py-2.5 text-sm text-gray-700 hover:bg-orange-50 hover:text-orange-600 rounded-lg transition">Home</a>
-                <a href="<?php echo e(route('shop.index')); ?>" class="block px-3 py-2.5 text-sm text-gray-700 hover:bg-orange-50 hover:text-orange-600 rounded-lg transition">Shop All</a>
+                <a href="<?php echo e(route('home')); ?>" class="block px-3 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-orange-50 dark:hover:bg-gray-800 hover:text-orange-600 rounded-lg transition">Home</a>
+                <a href="<?php echo e(route('shop.index')); ?>" class="block px-3 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-orange-50 dark:hover:bg-gray-800 hover:text-orange-600 rounded-lg transition">Shop All</a>
                 <?php
                     $mobileCategories = \App\Models\Category::whereNull('parent_id')->withCount('products')->orderBy('sort_order')->limit(8)->get();
                 ?>
                 <?php if($mobileCategories->count() > 0): ?>
                     <div x-data="{ showCats: false }">
-                        <button @click="showCats = !showCats" class="flex items-center justify-between w-full px-3 py-2.5 text-sm text-gray-700 hover:bg-orange-50 hover:text-orange-600 rounded-lg transition">
+                        <button @click="showCats = !showCats" class="flex items-center justify-between w-full px-3 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-orange-50 dark:hover:bg-gray-800 hover:text-orange-600 rounded-lg transition">
                             <span>Categories</span>
                             <svg class="w-4 h-4 transition-transform" :class="showCats ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
                         </button>
                         <div x-show="showCats" x-cloak class="pl-4 space-y-1 mt-1">
                             <?php $__currentLoopData = $mobileCategories; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $cat): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-                                <a href="<?php echo e(route('shop.category', $cat->slug)); ?>" class="block px-3 py-2 text-xs text-gray-600 hover:bg-orange-50 hover:text-orange-600 rounded-lg transition"><?php echo e($cat->name); ?></a>
+                                <a href="<?php echo e(route('shop.category', $cat->slug)); ?>" class="block px-3 py-2 text-xs text-gray-600 dark:text-gray-300 hover:bg-orange-50 dark:hover:bg-gray-800 hover:text-orange-600 rounded-lg transition"><?php echo e($cat->name); ?></a>
                             <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
-                            <a href="<?php echo e(route('shop.index')); ?>" class="block px-3 py-2 text-xs text-orange-500 font-medium hover:bg-orange-50 rounded-lg transition">View All Categories →</a>
+                            <a href="<?php echo e(route('shop.index')); ?>" class="block px-3 py-2 text-xs text-orange-500 font-medium hover:bg-orange-50 dark:hover:bg-gray-800 rounded-lg transition">View All Categories →</a>
                         </div>
                     </div>
                 <?php endif; ?>
                 <?php if(auth()->guard()->check()): ?>
-                    <a href="<?php echo e(route('orders.index')); ?>" class="block px-3 py-2.5 text-sm text-gray-700 hover:bg-orange-50 hover:text-orange-600 rounded-lg transition">My Orders</a>
-                    <a href="<?php echo e(route('wishlist.index')); ?>" class="block px-3 py-2.5 text-sm text-gray-700 hover:bg-orange-50 hover:text-orange-600 rounded-lg transition">Wishlist</a>
-                    <a href="<?php echo e(route('account.dashboard')); ?>" class="block px-3 py-2.5 text-sm text-gray-700 hover:bg-orange-50 hover:text-orange-600 rounded-lg transition">My Account</a>
+                    <a href="<?php echo e(route('orders.index')); ?>" class="block px-3 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-orange-50 dark:hover:bg-gray-800 hover:text-orange-600 rounded-lg transition">My Orders</a>
+                    <a href="<?php echo e(route('wishlist.index')); ?>" class="block px-3 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-orange-50 dark:hover:bg-gray-800 hover:text-orange-600 rounded-lg transition">Wishlist</a>
+                    <a href="<?php echo e(route('account.dashboard')); ?>" class="block px-3 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-orange-50 dark:hover:bg-gray-800 hover:text-orange-600 rounded-lg transition">My Account</a>
                     <form method="POST" action="<?php echo e(route('logout')); ?>">
                         <?php echo csrf_field(); ?>
-                        <button type="submit" class="block w-full text-left px-3 py-2.5 text-sm text-red-500 hover:bg-red-50 rounded-lg transition">Logout</button>
+                        <button type="submit" class="block w-full text-left px-3 py-2.5 text-sm text-red-500 hover:bg-red-50 dark:hover:bg-gray-800 rounded-lg transition">Logout</button>
                     </form>
                 <?php else: ?>
-                    <a href="<?php echo e(route('login')); ?>" class="block px-3 py-2.5 text-sm text-orange-600 font-medium hover:bg-orange-50 rounded-lg transition">Login</a>
+                    <a href="<?php echo e(route('login')); ?>" class="block px-3 py-2.5 text-sm text-orange-600 font-medium hover:bg-orange-50 dark:hover:bg-gray-800 rounded-lg transition">Login</a>
                     <a href="<?php echo e(route('register')); ?>" class="block px-3 py-2.5 text-sm text-white bg-orange-500 text-center font-medium rounded-lg hover:bg-orange-600 transition">Sign Up</a>
                 <?php endif; ?>
             </nav>

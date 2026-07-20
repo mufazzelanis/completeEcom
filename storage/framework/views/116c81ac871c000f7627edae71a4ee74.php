@@ -8,11 +8,32 @@
     <meta http-equiv="Expires" content="0">
     <meta name="csrf-token" content="<?php echo e(csrf_token()); ?>">
     <title>Admin - <?php echo $__env->yieldContent('title', 'Dashboard'); ?> | <?php echo e(setting('site_name', 'ShopVista')); ?></title>
+    <script>
+        // Applied before first paint so there's never a flash of the wrong theme.
+        (function () {
+            var stored = localStorage.getItem('admin-theme');
+            var isDark = stored ? stored === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
+            document.documentElement.classList.toggle('dark', isDark);
+        })();
+    </script>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>tailwind.config = { darkMode: 'class' };</script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script>
+        document.addEventListener('alpine:init', () => {
+            Alpine.store('theme', {
+                dark: document.documentElement.classList.contains('dark'),
+                toggle() {
+                    this.dark = !this.dark;
+                    localStorage.setItem('admin-theme', this.dark ? 'dark' : 'light');
+                    document.documentElement.classList.toggle('dark', this.dark);
+                },
+            });
+        });
+    </script>
     <style>[x-cloak]{display:none!important}</style>
 </head>
-<body class="bg-gray-100 font-sans antialiased">
+<body class="bg-gray-100 dark:bg-gray-950 font-sans antialiased transition-colors">
 
 <div class="flex h-screen overflow-hidden" x-data="{ sidebarOpen: false }">
     <!-- Mobile Sidebar Overlay -->
@@ -414,13 +435,13 @@
     <!-- Main Content -->
     <div class="flex-1 flex flex-col overflow-hidden min-w-0">
         <!-- Top Bar -->
-        <header class="bg-white shadow-sm px-4 sm:px-6 py-3 flex items-center gap-3 flex-shrink-0">
+        <header class="bg-white dark:bg-gray-900 shadow-sm px-4 sm:px-6 py-3 flex items-center gap-3 flex-shrink-0 transition-colors">
             <!-- Mobile hamburger -->
-            <button @click="sidebarOpen = true" class="lg:hidden text-gray-600 hover:text-gray-900 -ml-1 p-1">
+            <button @click="sidebarOpen = true" class="lg:hidden text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white -ml-1 p-1">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
             </button>
 
-            <h1 class="text-lg font-semibold text-gray-800 flex-shrink-0 hidden sm:block"><?php echo $__env->yieldContent('title', 'Dashboard'); ?></h1>
+            <h1 class="text-lg font-semibold text-gray-800 dark:text-gray-100 flex-shrink-0 hidden sm:block"><?php echo $__env->yieldContent('title', 'Dashboard'); ?></h1>
 
             <!-- Global Admin Quick Search -->
             <div class="relative flex-1 max-w-sm hidden sm:block" x-data="{
@@ -443,28 +464,28 @@
                         @focus="query.length > 1 && fetchSuggestions()"
                         @keydown.escape="open = false"
                         placeholder="Quick search products..."
-                        class="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 bg-gray-50"
+                        class="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 bg-gray-50 dark:bg-gray-800 text-gray-800 dark:text-gray-100"
                         autocomplete="off">
                 </div>
                 <div x-show="open" x-cloak
-                     class="absolute top-full left-0 right-0 bg-white shadow-xl rounded-xl border border-gray-100 z-50 mt-1 overflow-hidden">
+                     class="absolute top-full left-0 right-0 bg-white dark:bg-gray-800 shadow-xl rounded-xl border border-gray-100 dark:border-gray-700 z-50 mt-1 overflow-hidden">
                     <template x-for="product in results" :key="product.url">
                         <a :href="product.url" @click="open = false; query = ''"
-                           class="flex items-center px-3 py-2.5 hover:bg-orange-50 gap-3">
-                            <div class="w-9 h-9 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0 flex items-center justify-center">
+                           class="flex items-center px-3 py-2.5 hover:bg-orange-50 dark:hover:bg-gray-700 gap-3">
+                            <div class="w-9 h-9 bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden flex-shrink-0 flex items-center justify-center">
                                 <img x-show="product.image" :src="product.image" class="w-full h-full object-cover">
                                 <svg x-show="!product.image" class="w-4 h-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
                             </div>
                             <div class="flex-1 min-w-0">
-                                <p class="text-sm font-medium text-gray-800 truncate" x-text="product.name"></p>
-                                <p class="text-xs text-gray-500" x-text="product.sku + ' · ' + product.price"></p>
+                                <p class="text-sm font-medium text-gray-800 dark:text-gray-100 truncate" x-text="product.name"></p>
+                                <p class="text-xs text-gray-500 dark:text-gray-400" x-text="product.sku + ' · ' + product.price"></p>
                             </div>
                             <span :class="product.is_active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'"
                                   class="text-xs px-1.5 py-0.5 rounded-full flex-shrink-0"
                                   x-text="product.is_active ? 'Active' : 'Inactive'"></span>
                         </a>
                     </template>
-                    <div class="px-3 py-2 border-t border-gray-100 bg-gray-50">
+                    <div class="px-3 py-2 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
                         <a :href="'<?php echo e(route('admin.products.index')); ?>?search=' + encodeURIComponent(query)"
                            class="text-xs text-orange-600 hover:text-orange-800 font-medium">
                             Search all products for "<span x-text="query"></span>" &rarr;
@@ -476,16 +497,25 @@
             <div class="flex items-center gap-3 ml-auto flex-shrink-0">
                 
                 <?php if(session('success')): ?>
-                    <div class="bg-green-100 text-green-700 px-3 py-1 rounded-lg text-sm hidden md:block"><?php echo e(session('success')); ?></div>
+                    <div class="bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300 px-3 py-1 rounded-lg text-sm hidden md:block"><?php echo e(session('success')); ?></div>
                 <?php endif; ?>
                 <?php if(session('error')): ?>
-                    <div class="bg-red-100 text-red-700 px-3 py-1 rounded-lg text-sm hidden md:block"><?php echo e(session('error')); ?></div>
+                    <div class="bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300 px-3 py-1 rounded-lg text-sm hidden md:block"><?php echo e(session('error')); ?></div>
                 <?php endif; ?>
+
+                
+                <button @click="$store.theme.toggle()" type="button"
+                    class="p-2 rounded-lg text-gray-500 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition"
+                    :aria-label="$store.theme.dark ? 'Switch to light mode' : 'Switch to dark mode'">
+                    <svg x-show="!$store.theme.dark" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
+                    <svg x-show="$store.theme.dark" x-cloak class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+                </button>
+
                 <div class="flex items-center space-x-2">
-                    <div class="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center">
-                        <span class="text-orange-600 font-semibold text-sm"><?php echo e(strtoupper(substr(auth()->user()->name, 0, 1))); ?></span>
+                    <div class="w-8 h-8 bg-orange-100 dark:bg-orange-900/40 rounded-full flex items-center justify-center">
+                        <span class="text-orange-600 dark:text-orange-300 font-semibold text-sm"><?php echo e(strtoupper(substr(auth()->user()->name, 0, 1))); ?></span>
                     </div>
-                    <span class="text-sm font-medium text-gray-700 hidden sm:inline"><?php echo e(auth()->user()->name); ?></span>
+                    <span class="text-sm font-medium text-gray-700 dark:text-gray-200 hidden sm:inline"><?php echo e(auth()->user()->name); ?></span>
                 </div>
             </div>
         </header>
@@ -494,10 +524,10 @@
         <?php if(session('success') || session('error')): ?>
         <div class="sm:hidden px-4 pt-2">
             <?php if(session('success')): ?>
-                <div class="bg-green-100 text-green-700 px-3 py-2 rounded-lg text-sm"><?php echo e(session('success')); ?></div>
+                <div class="bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300 px-3 py-2 rounded-lg text-sm"><?php echo e(session('success')); ?></div>
             <?php endif; ?>
             <?php if(session('error')): ?>
-                <div class="bg-red-100 text-red-700 px-3 py-2 rounded-lg text-sm"><?php echo e(session('error')); ?></div>
+                <div class="bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300 px-3 py-2 rounded-lg text-sm"><?php echo e(session('error')); ?></div>
             <?php endif; ?>
         </div>
         <?php endif; ?>
