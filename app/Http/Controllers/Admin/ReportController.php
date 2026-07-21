@@ -41,13 +41,13 @@ class ReportController extends Controller
         $lastMonthEnd = Carbon::now()->subMonth()->endOfMonth();
 
         // Key metrics
-        $todayRevenue   = Order::whereDate('created_at', $today)->whereNotIn('status', ['cancelled','refunded'])->sum('total');
-        $monthRevenue   = Order::where('created_at', '>=', $thisMonth)->whereNotIn('status', ['cancelled','refunded'])->sum('total');
-        $lastMonthRev   = Order::whereBetween('created_at', [$lastMonth, $lastMonthEnd])->whereNotIn('status', ['cancelled','refunded'])->sum('total');
+        $todayRevenue   = Order::whereDate('created_at', $today)->whereNotIn('status', ['cancelled','refunded'])->where('payment_status', '!=', 'refunded')->sum('total');
+        $monthRevenue   = Order::where('created_at', '>=', $thisMonth)->whereNotIn('status', ['cancelled','refunded'])->where('payment_status', '!=', 'refunded')->sum('total');
+        $lastMonthRev   = Order::whereBetween('created_at', [$lastMonth, $lastMonthEnd])->whereNotIn('status', ['cancelled','refunded'])->where('payment_status', '!=', 'refunded')->sum('total');
         $revenueGrowth  = $lastMonthRev > 0 ? round((($monthRevenue - $lastMonthRev) / $lastMonthRev) * 100, 1) : 0;
 
-        $totalOrders    = Order::whereNotIn('status', ['cancelled','refunded'])->count();
-        $monthOrders    = Order::where('created_at', '>=', $thisMonth)->whereNotIn('status', ['cancelled','refunded'])->count();
+        $totalOrders    = Order::whereNotIn('status', ['cancelled','refunded'])->where('payment_status', '!=', 'refunded')->count();
+        $monthOrders    = Order::where('created_at', '>=', $thisMonth)->whereNotIn('status', ['cancelled','refunded'])->where('payment_status', '!=', 'refunded')->count();
         $pendingOrders  = Order::where('status', 'pending')->count();
         $totalCustomers = User::where('role', '!=', 'admin')->count();
         $newCustomers   = User::where('role', '!=', 'admin')->where('created_at', '>=', $thisMonth)->count();
@@ -57,7 +57,7 @@ class ReportController extends Controller
         // Revenue last 30 days (daily)
         $last30 = Order::select(DB::raw('DATE(created_at) as date'), DB::raw('SUM(total) as revenue'), DB::raw('COUNT(*) as orders'))
             ->where('created_at', '>=', Carbon::now()->subDays(29)->startOfDay())
-            ->whereNotIn('status', ['cancelled','refunded'])
+            ->whereNotIn('status', ['cancelled','refunded'])->where('payment_status', '!=', 'refunded')
             ->groupBy('date')->orderBy('date')->get();
 
         // Orders by status
@@ -66,7 +66,7 @@ class ReportController extends Controller
 
         // Top 5 products this month
         $topProducts = OrderItem::select('product_id', 'product_name', DB::raw('SUM(quantity) as qty_sold'), DB::raw('SUM(subtotal) as revenue'))
-            ->whereHas('order', fn($q) => $q->where('created_at', '>=', $thisMonth)->whereNotIn('status', ['cancelled','refunded']))
+            ->whereHas('order', fn($q) => $q->where('created_at', '>=', $thisMonth)->whereNotIn('status', ['cancelled','refunded'])->where('payment_status', '!=', 'refunded'))
             ->groupBy('product_id', 'product_name')->orderByDesc('revenue')->take(5)->get();
 
         // Recent orders
@@ -87,7 +87,7 @@ class ReportController extends Controller
 
         $dateFormat = match($groupBy) {
             'month' => '%Y-%m',
-            'week'  => '%Y-%u',
+            'week'  => '%x-%v',
             default => '%Y-%m-%d',
         };
 
@@ -100,11 +100,11 @@ class ReportController extends Controller
                 DB::raw('AVG(total) as avg_order')
             )
             ->whereBetween('created_at', [$from, $to])
-            ->whereNotIn('status', ['cancelled','refunded'])
+            ->whereNotIn('status', ['cancelled','refunded'])->where('payment_status', '!=', 'refunded')
             ->groupBy('period')->orderBy('period')->get();
 
         $summary = Order::whereBetween('created_at', [$from, $to])
-            ->whereNotIn('status', ['cancelled','refunded'])
+            ->whereNotIn('status', ['cancelled','refunded'])->where('payment_status', '!=', 'refunded')
             ->selectRaw('COUNT(*) as total_orders, SUM(total) as total_revenue, SUM(discount) as total_discounts, SUM(shipping) as total_shipping, AVG(total) as avg_order_value')
             ->first();
 
@@ -116,19 +116,22 @@ class ReportController extends Controller
             ->groupBy('status')->orderByDesc('count')->get();
 
         $byPayment = Order::whereBetween('created_at', [$from, $to])
-            ->whereNotIn('status', ['cancelled','refunded'])
+            ->whereNotIn('status', ['cancelled','refunded'])->where('payment_status', '!=', 'refunded')
             ->select('payment_method', DB::raw('COUNT(*) as count'), DB::raw('SUM(total) as revenue'))
             ->groupBy('payment_method')->orderByDesc('revenue')->get();
 
-        $byCategory = OrderItem::select('categories.name as category', DB::raw('SUM(order_items.subtotal) as revenue'), DB::raw('SUM(order_items.quantity) as qty'))
+        $byCategoryQuery = OrderItem::select('categories.name as category', DB::raw('SUM(order_items.subtotal) as revenue'), DB::raw('SUM(order_items.quantity) as qty'))
             ->join('products', 'order_items.product_id', '=', 'products.id')
             ->join('categories', 'products.category_id', '=', 'categories.id')
-            ->whereHas('order', fn($q) => $q->whereBetween('created_at', [$from, $to])->whereNotIn('status', ['cancelled','refunded']))
-            ->groupBy('categories.name')->orderByDesc('revenue')->take(10)->get();
+            ->whereHas('order', fn($q) => $q->whereBetween('created_at', [$from, $to])->whereNotIn('status', ['cancelled','refunded'])->where('payment_status', '!=', 'refunded'))
+            ->groupBy('categories.name')->orderByDesc('revenue');
+
+        $categoryRevenueTotal = (clone $byCategoryQuery)->get()->sum('revenue');
+        $byCategory = (clone $byCategoryQuery)->take(10)->get();
 
         return view('admin.reports.sales', compact(
             'salesTrend','summary','cancelledRevenue','byStatus','byPayment','byCategory',
-            'from','to','groupBy'
+            'categoryRevenueTotal','from','to','groupBy'
         ));
     }
 
@@ -138,7 +141,7 @@ class ReportController extends Controller
         [$from, $to] = $this->dateRange($request);
 
         $summary = Order::whereBetween('created_at', [$from, $to])
-            ->whereNotIn('status', ['cancelled','refunded'])
+            ->whereNotIn('status', ['cancelled','refunded'])->where('payment_status', '!=', 'refunded')
             ->selectRaw('SUM(total) as gross_revenue, SUM(discount) as total_discounts, SUM(shipping) as shipping_revenue, SUM(tax) as tax_collected, COUNT(*) as order_count')
             ->first();
 
@@ -147,7 +150,7 @@ class ReportController extends Controller
         $prevFrom = $from->copy()->subDays($diff);
         $prevTo   = $from->copy()->subDay();
         $prevSummary = Order::whereBetween('created_at', [$prevFrom, $prevTo])
-            ->whereNotIn('status', ['cancelled','refunded'])
+            ->whereNotIn('status', ['cancelled','refunded'])->where('payment_status', '!=', 'refunded')
             ->selectRaw('SUM(total) as gross_revenue, COUNT(*) as order_count')
             ->first();
 
@@ -159,14 +162,14 @@ class ReportController extends Controller
         $byCategory = OrderItem::select('categories.name as category', DB::raw('SUM(order_items.subtotal) as revenue'))
             ->join('products', 'order_items.product_id', '=', 'products.id')
             ->join('categories', 'products.category_id', '=', 'categories.id')
-            ->whereHas('order', fn($q) => $q->whereBetween('created_at', [$from, $to])->whereNotIn('status', ['cancelled','refunded']))
+            ->whereHas('order', fn($q) => $q->whereBetween('created_at', [$from, $to])->whereNotIn('status', ['cancelled','refunded'])->where('payment_status', '!=', 'refunded'))
             ->groupBy('categories.name')->orderByDesc('revenue')->get();
 
         // Revenue by brand
         $byBrand = OrderItem::select('brands.name as brand', DB::raw('SUM(order_items.subtotal) as revenue'))
             ->join('products', 'order_items.product_id', '=', 'products.id')
             ->join('brands', 'products.brand_id', '=', 'brands.id')
-            ->whereHas('order', fn($q) => $q->whereBetween('created_at', [$from, $to])->whereNotIn('status', ['cancelled','refunded']))
+            ->whereHas('order', fn($q) => $q->whereBetween('created_at', [$from, $to])->whereNotIn('status', ['cancelled','refunded'])->where('payment_status', '!=', 'refunded'))
             ->groupBy('brands.name')->orderByDesc('revenue')->take(10)->get();
 
         // Monthly trend (always 12 months)
@@ -177,7 +180,7 @@ class ReportController extends Controller
                 DB::raw('COUNT(*) as orders')
             )
             ->where('created_at', '>=', Carbon::now()->subMonths(11)->startOfMonth())
-            ->whereNotIn('status', ['cancelled','refunded'])
+            ->whereNotIn('status', ['cancelled','refunded'])->where('payment_status', '!=', 'refunded')
             ->groupBy('month')->orderBy('month')->get();
 
         // Coupon usage
@@ -204,12 +207,12 @@ class ReportController extends Controller
 
         // Top sellers by revenue
         $topByRevenue = OrderItem::select('product_id', 'product_name', DB::raw('SUM(subtotal) as revenue'), DB::raw('SUM(quantity) as qty_sold'), DB::raw('COUNT(DISTINCT order_id) as orders'))
-            ->whereHas('order', fn($q) => $q->whereBetween('created_at', [$from, $to])->whereNotIn('status', ['cancelled','refunded']))
+            ->whereHas('order', fn($q) => $q->whereBetween('created_at', [$from, $to])->whereNotIn('status', ['cancelled','refunded'])->where('payment_status', '!=', 'refunded'))
             ->groupBy('product_id', 'product_name')->orderByDesc('revenue')->take(20)->get();
 
         // Top by quantity
         $topByQty = OrderItem::select('product_id', 'product_name', DB::raw('SUM(quantity) as qty_sold'), DB::raw('SUM(subtotal) as revenue'))
-            ->whereHas('order', fn($q) => $q->whereBetween('created_at', [$from, $to])->whereNotIn('status', ['cancelled','refunded']))
+            ->whereHas('order', fn($q) => $q->whereBetween('created_at', [$from, $to])->whereNotIn('status', ['cancelled','refunded'])->where('payment_status', '!=', 'refunded'))
             ->groupBy('product_id', 'product_name')->orderByDesc('qty_sold')->take(10)->get();
 
         // Most viewed products
@@ -218,7 +221,7 @@ class ReportController extends Controller
 
         // Never sold products (active, in stock)
         $neverSold = Product::where('is_active', true)->where('stock', '>', 0)
-            ->whereNotIn('id', OrderItem::select('product_id')->distinct())
+            ->whereNotIn('id', OrderItem::whereNotNull('product_id')->select('product_id')->distinct())
             ->with('category')->orderByDesc('created_at')->take(10)->get();
 
         // Products with low stock
@@ -231,7 +234,7 @@ class ReportController extends Controller
         $categoryPerf = OrderItem::select('categories.name as category', DB::raw('SUM(order_items.subtotal) as revenue'), DB::raw('SUM(order_items.quantity) as qty_sold'), DB::raw('COUNT(DISTINCT order_items.order_id) as orders'))
             ->join('products', 'order_items.product_id', '=', 'products.id')
             ->join('categories', 'products.category_id', '=', 'categories.id')
-            ->whereHas('order', fn($q) => $q->whereBetween('created_at', [$from, $to])->whereNotIn('status', ['cancelled','refunded']))
+            ->whereHas('order', fn($q) => $q->whereBetween('created_at', [$from, $to])->whereNotIn('status', ['cancelled','refunded'])->where('payment_status', '!=', 'refunded'))
             ->groupBy('categories.name')->orderByDesc('revenue')->get();
 
         return view('admin.reports.products', compact(
@@ -254,27 +257,27 @@ class ReportController extends Controller
         $totalCustomers  = User::where('role', '!=', 'admin')->count();
         $newInRange      = User::where('role', '!=', 'admin')->whereBetween('created_at', [$from, $to])->count();
         $activeCustomers = Order::whereBetween('created_at', [$from, $to])
-            ->whereNotIn('status', ['cancelled','refunded'])
+            ->whereNotIn('status', ['cancelled','refunded'])->where('payment_status', '!=', 'refunded')
             ->distinct('user_id')->count('user_id');
 
         // Top customers by spend
         $topCustomers = Order::select('user_id', DB::raw('SUM(total) as total_spent'), DB::raw('COUNT(*) as order_count'), DB::raw('AVG(total) as avg_order'), DB::raw('MAX(created_at) as last_order'))
             ->with('user:id,name,email')
             ->whereBetween('created_at', [$from, $to])
-            ->whereNotIn('status', ['cancelled','refunded'])
+            ->whereNotIn('status', ['cancelled','refunded'])->where('payment_status', '!=', 'refunded')
             ->whereNotNull('user_id')
             ->groupBy('user_id')->orderByDesc('total_spent')->take(15)->get();
 
         // Returning vs new buyers
         $returningBuyers = Order::whereBetween('created_at', [$from, $to])
-            ->whereNotIn('status', ['cancelled','refunded'])
+            ->whereNotIn('status', ['cancelled','refunded'])->where('payment_status', '!=', 'refunded')
             ->whereNotNull('user_id')
             ->select('user_id', DB::raw('COUNT(*) as order_count'))
             ->groupBy('user_id')
             ->havingRaw('COUNT(*) > 1')
             ->count();
         $firstTimeBuyers = Order::whereBetween('created_at', [$from, $to])
-            ->whereNotIn('status', ['cancelled','refunded'])
+            ->whereNotIn('status', ['cancelled','refunded'])->where('payment_status', '!=', 'refunded')
             ->whereNotNull('user_id')
             ->select('user_id', DB::raw('COUNT(*) as order_count'))
             ->groupBy('user_id')
@@ -288,17 +291,17 @@ class ReportController extends Controller
 
         // Average order value by customer segment
         $avgOrderValue = Order::whereBetween('created_at', [$from, $to])
-            ->whereNotIn('status', ['cancelled','refunded'])
+            ->whereNotIn('status', ['cancelled','refunded'])->where('payment_status', '!=', 'refunded')
             ->avg('total');
 
         // Orders per customer
         $ordersPerCustomer = $activeCustomers > 0
-            ? round(Order::whereBetween('created_at', [$from, $to])->whereNotIn('status', ['cancelled','refunded'])->whereNotNull('user_id')->count() / $activeCustomers, 2)
+            ? round(Order::whereBetween('created_at', [$from, $to])->whereNotIn('status', ['cancelled','refunded'])->where('payment_status', '!=', 'refunded')->whereNotNull('user_id')->count() / $activeCustomers, 2)
             : 0;
 
         // Customers by city (shipping_city)
         $byCity = Order::whereBetween('created_at', [$from, $to])
-            ->whereNotIn('status', ['cancelled','refunded'])
+            ->whereNotIn('status', ['cancelled','refunded'])->where('payment_status', '!=', 'refunded')
             ->whereNotNull('shipping_city')
             ->select('shipping_city', DB::raw('COUNT(DISTINCT user_id) as customers'), DB::raw('SUM(total) as revenue'))
             ->groupBy('shipping_city')->orderByDesc('revenue')->take(10)->get();
@@ -339,7 +342,7 @@ class ReportController extends Controller
 
         // Most sold (30 days) for reorder priority
         $reorderPriority = OrderItem::select('product_id', 'product_name', DB::raw('SUM(quantity) as sold_30d'))
-            ->whereHas('order', fn($q) => $q->where('created_at', '>=', Carbon::now()->subDays(30))->whereNotIn('status', ['cancelled','refunded']))
+            ->whereHas('order', fn($q) => $q->where('created_at', '>=', Carbon::now()->subDays(30))->whereNotIn('status', ['cancelled','refunded'])->where('payment_status', '!=', 'refunded'))
             ->groupBy('product_id', 'product_name')->orderByDesc('sold_30d')
             ->with(['product:id,stock,price,low_stock_threshold'])
             ->take(15)->get();
@@ -371,7 +374,7 @@ class ReportController extends Controller
 
         $dateFormat = match($groupBy) {
             'month' => '%Y-%m',
-            'week'  => '%Y-%u',
+            'week'  => '%x-%v',
             default => '%Y-%m-%d',
         };
 
@@ -556,7 +559,7 @@ class ReportController extends Controller
             ->groupBy('month')->orderBy('month')->get();
 
         $freeShippingRevenue = Order::whereBetween('created_at', [$from, $to])
-            ->where('shipping', 0)->whereNotIn('status', ['cancelled','refunded'])->sum('total');
+            ->where('shipping', 0)->whereNotIn('status', ['cancelled','refunded'])->where('payment_status', '!=', 'refunded')->sum('total');
 
         return view('admin.reports.shipping', compact(
             'summary','deliveryRate','byCity','byCountry','shippingTrend','freeShippingRevenue','from','to'

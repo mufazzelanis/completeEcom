@@ -34,20 +34,20 @@
         {{-- Reply form --}}
         @if(in_array($ticket->status, ['open', 'pending']))
         <div class="bg-white rounded-2xl shadow-sm p-5">
-            <form action="{{ route('account.support.reply', $ticket) }}" method="POST" class="space-y-3">
+            <form id="ticket-reply-form" action="{{ route('account.support.reply', $ticket) }}" method="POST" class="space-y-3">
                 @csrf
                 <textarea name="message" rows="4" required minlength="5" maxlength="2000"
                     placeholder="Type your reply..."
                     class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"></textarea>
                 @error('message')<p class="text-red-500 text-xs">{{ $message }}</p>@enderror
-                <div class="flex items-center gap-3">
-                    <button type="submit" class="bg-indigo-600 text-white px-5 py-2 rounded-xl text-sm font-semibold hover:bg-indigo-700 transition">Send Reply</button>
-                    <form action="{{ route('account.support.close', $ticket) }}" method="POST">
-                        @csrf @method('PATCH')
-                        <button type="submit" class="text-gray-500 hover:text-gray-700 text-sm font-medium" onclick="return confirm('Close this ticket?')">Close Ticket</button>
-                    </form>
-                </div>
             </form>
+            <div class="flex items-center gap-3 mt-3">
+                <button type="submit" form="ticket-reply-form" class="bg-indigo-600 text-white px-5 py-2 rounded-xl text-sm font-semibold hover:bg-indigo-700 transition">Send Reply</button>
+                <form action="{{ route('account.support.close', $ticket) }}" method="POST">
+                    @csrf @method('PATCH')
+                    <button type="submit" class="text-gray-500 hover:text-gray-700 text-sm font-medium" onclick="return confirm('Close this ticket?')">Close Ticket</button>
+                </form>
+            </div>
         </div>
         @else
         <div class="bg-gray-50 rounded-2xl p-4 text-center text-sm text-gray-500">

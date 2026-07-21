@@ -16,7 +16,7 @@ class InventoryReportExport implements FromCollection, WithHeadings, WithTitle, 
 
     public function headings(): array
     {
-        return ['Product', 'SKU', 'Barcode', 'Category', 'Brand', 'Price ($)', 'Sale Price ($)', 'Stock', 'Low Stock Threshold', 'Status', 'Stock Value ($)', 'Active'];
+        return ['Product', 'SKU', 'Barcode', 'Category', 'Brand', 'Price (৳)', 'Sale Price (৳)', 'Stock', 'Low Stock Threshold', 'Status', 'Stock Value (৳)', 'Active'];
     }
 
     public function collection()

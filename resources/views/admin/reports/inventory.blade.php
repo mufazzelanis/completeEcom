@@ -26,7 +26,7 @@
         ['In Stock', number_format($inStockCount), 'text-green-700','bg-green-50'],
         ['Out of Stock', number_format($outOfStockCount), 'text-red-700','bg-red-50'],
         ['Low Stock', number_format($lowStockCount), 'text-orange-700','bg-orange-50'],
-        ['Total Stock Value', '$'.number_format($totalStockValue,0), 'text-indigo-700','bg-indigo-50'],
+        ['Total Stock Value', '৳'.number_format($totalStockValue,0), 'text-indigo-700','bg-indigo-50'],
     ];
     @endphp
     @foreach($cards as [$label,$value,$tc,$bg])
@@ -72,7 +72,7 @@
                         <td class="py-2.5 font-medium text-gray-700">{{ $cat->category }}</td>
                         <td class="py-2.5 text-right text-gray-600">{{ number_format($cat->product_count) }}</td>
                         <td class="py-2.5 text-right text-gray-600">{{ number_format($cat->total_stock) }}</td>
-                        <td class="py-2.5 text-right font-semibold text-gray-800">${{ number_format($cat->stock_value,0) }}</td>
+                        <td class="py-2.5 text-right font-semibold text-gray-800">৳{{ number_format($cat->stock_value,0) }}</td>
                         <td class="py-2.5 pl-4">
                             <div class="flex items-center gap-2">
                                 <div class="flex-1 bg-gray-100 rounded-full h-1.5 w-24">
@@ -125,9 +125,12 @@
                         <p class="text-xs text-gray-400">{{ number_format($item->sold_30d) }} sold in 30d · stock: {{ $item->product?->stock ?? '?' }}</p>
                     </div>
                 </div>
-                @php $stock = $item->product?->stock ?? 0; @endphp
-                <span class="text-xs font-semibold flex-shrink-0 ml-2 {{ $stock <= 5 ? 'text-red-600' : ($stock <= 20 ? 'text-orange-600' : 'text-green-600') }}">
-                    {{ $stock <= 5 ? 'CRITICAL' : ($stock <= 20 ? 'LOW' : 'OK') }}
+                @php
+                    $stock = $item->product?->stock ?? 0;
+                    $threshold = $item->product?->low_stock_threshold ?? 5;
+                @endphp
+                <span class="text-xs font-semibold flex-shrink-0 ml-2 {{ $stock <= $threshold ? 'text-red-600' : ($stock <= $threshold * 4 ? 'text-orange-600' : 'text-green-600') }}">
+                    {{ $stock <= $threshold ? 'CRITICAL' : ($stock <= $threshold * 4 ? 'LOW' : 'OK') }}
                 </span>
             </div>
             @empty
@@ -158,7 +161,7 @@
             <tr class="hover:bg-red-50 transition">
                 <td class="px-6 py-3 font-medium text-gray-800">{{ $p->name }}</td>
                 <td class="px-6 py-3 text-gray-500">{{ $p->category?->name }}</td>
-                <td class="px-6 py-3 text-right text-gray-700">${{ number_format($p->price,2) }}</td>
+                <td class="px-6 py-3 text-right text-gray-700">৳{{ number_format($p->price,2) }}</td>
                 <td class="px-6 py-3 text-center">
                     <a href="{{ route('admin.products.edit', $p) }}" class="text-indigo-600 hover:text-indigo-800 text-xs font-medium">Update Stock</a>
                 </td>

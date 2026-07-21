@@ -85,7 +85,7 @@
                 <span class="capitalize text-gray-600">{{ $p->payment_method }}</span>
                 <div class="text-right">
                     <span class="font-medium text-gray-800">{{ number_format($p->count) }} orders</span>
-                    <span class="text-gray-400 ml-2">${{ number_format($p->revenue,0) }}</span>
+                    <span class="text-gray-400 ml-2">৳{{ number_format($p->revenue,0) }}</span>
                 </div>
             </div>
             @endforeach
@@ -102,7 +102,7 @@
             <div>
                 <div class="flex justify-between text-sm mb-1">
                     <span class="text-gray-700">{{ $city->shipping_city }}</span>
-                    <span class="font-semibold text-gray-800">{{ number_format($city->count) }} <span class="text-gray-400 font-normal text-xs">${{ number_format($city->revenue,0) }}</span></span>
+                    <span class="font-semibold text-gray-800">{{ number_format($city->count) }} <span class="text-gray-400 font-normal text-xs">৳{{ number_format($city->revenue,0) }}</span></span>
                 </div>
                 <div class="w-full bg-gray-100 rounded-full h-1.5">
                     <div class="bg-indigo-500 h-1.5 rounded-full" style="width:{{ $pct }}%"></div>
@@ -119,12 +119,12 @@
 <div class="grid grid-cols-2 gap-6 mb-6">
     <div class="bg-white rounded-2xl shadow-sm p-6">
         <h3 class="font-semibold text-gray-800 mb-2">Average Order Value</h3>
-        <p class="text-3xl font-bold text-indigo-600 mb-1">${{ number_format($summary->avg_order_value ?? 0, 2) }}</p>
+        <p class="text-3xl font-bold text-indigo-600 mb-1">৳{{ number_format($summary->avg_order_value ?? 0, 2) }}</p>
         <p class="text-xs text-gray-400">Across all {{ number_format($summary->total ?? 0) }} orders in period</p>
     </div>
     <div class="bg-white rounded-2xl shadow-sm p-6">
         <h3 class="font-semibold text-gray-800 mb-2">Total Revenue (Period)</h3>
-        <p class="text-3xl font-bold text-green-600 mb-1">${{ number_format($summary->total_revenue ?? 0, 2) }}</p>
+        <p class="text-3xl font-bold text-green-600 mb-1">৳{{ number_format($summary->total_revenue ?? 0, 2) }}</p>
         <p class="text-xs text-gray-400">Excluding cancelled & refunded</p>
     </div>
 </div>
@@ -158,7 +158,7 @@
                     <td class="px-6 py-3 text-right text-purple-600">{{ number_format($row->shipped) }}</td>
                     <td class="px-6 py-3 text-right text-green-600">{{ number_format($row->delivered) }}</td>
                     <td class="px-6 py-3 text-right text-red-500">{{ number_format($row->cancelled + $row->refunded) }}</td>
-                    <td class="px-6 py-3 text-right text-gray-600">${{ number_format($row->avg_order_value, 2) }}</td>
+                    <td class="px-6 py-3 text-right text-gray-600">৳{{ number_format($row->avg_order_value, 2) }}</td>
                 </tr>
                 @empty
                 <tr><td colspan="8" class="px-6 py-10 text-center text-gray-400">No order data for this period.</td></tr>
@@ -183,7 +183,7 @@
                 <p class="text-xs text-gray-400">{{ $order->user?->name ?? 'Guest' }} · {{ $order->created_at->diffForHumans() }}</p>
             </div>
             <div class="text-right">
-                <p class="text-sm font-semibold text-gray-700">${{ number_format($order->total, 2) }}</p>
+                <p class="text-sm font-semibold text-gray-700">৳{{ number_format($order->total, 2) }}</p>
                 <span class="text-xs text-orange-600 font-medium">{{ ucfirst($order->payment_method) }}</span>
             </div>
         </div>

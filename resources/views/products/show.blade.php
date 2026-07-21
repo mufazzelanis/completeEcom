@@ -17,10 +17,12 @@
     <div class="bg-white rounded-2xl shadow-sm overflow-hidden">
         <div class="grid grid-cols-1 md:grid-cols-2 gap-8 p-8">
             <!-- Images -->
-            <div x-data="{ active: '{{ $product->image ? Storage::url($product->image) : '' }}' }">
-                <div class="aspect-square rounded-xl overflow-hidden bg-gray-100 mb-4">
+            <div x-data="{ active: '{{ $product->image ? Storage::url($product->image) : '' }}', zoomX: 50, zoomY: 50 }">
+                <div class="aspect-square rounded-xl overflow-hidden bg-gray-100 mb-4 relative group cursor-zoom-in"
+                     @mousemove="zoomX = (($event.offsetX / $event.currentTarget.offsetWidth) * 100).toFixed(2); zoomY = (($event.offsetY / $event.currentTarget.offsetHeight) * 100).toFixed(2)"
+                     @mouseleave="zoomX = 50; zoomY = 50">
                     <template x-if="active">
-                        <img :src="active" alt="{{ $product->name }}" class="w-full h-full object-cover">
+                        <img :src="active" :style="`transform-origin: ${zoomX}% ${zoomY}%`" alt="{{ $product->name }}" class="w-full h-full object-cover transition-transform duration-300 ease-out group-hover:scale-[2]">
                     </template>
                     <template x-if="!active">
                         <div class="w-full h-full flex items-center justify-center">
@@ -51,7 +53,13 @@
             <!-- Product Info -->
             <div>
                 <div class="flex items-center justify-between mb-2">
-                    <span class="text-indigo-600 text-sm font-medium">{{ $product->category->name }}</span>
+                    <span class="text-indigo-600 text-sm font-medium">
+                        {{ $product->category->name }}
+                        @if($product->brand)
+                            <span class="text-gray-300 mx-1">•</span>
+                            <span class="text-gray-500">{{ $product->brand->name }}</span>
+                        @endif
+                    </span>
                     @auth
                         <form action="{{ route('wishlist.toggle', $product->id) }}" method="POST">
                             @csrf
@@ -164,6 +172,11 @@
                 <button @click="tab = 'reviews'" :class="tab === 'reviews' ? 'border-b-2 border-indigo-600 text-indigo-600' : 'text-gray-500'" class="pb-3 font-medium text-sm">
                     Reviews ({{ $product->reviews->count() }})
                 </button>
+                @if($product->faqs->count() > 0)
+                    <button @click="tab = 'faq'" :class="tab === 'faq' ? 'border-b-2 border-indigo-600 text-indigo-600' : 'text-gray-500'" class="pb-3 font-medium text-sm">
+                        FAQs ({{ $product->faqs->count() }})
+                    </button>
+                @endif
             </div>
 
             <div x-show="tab === 'description'">
@@ -231,6 +244,26 @@
                     </div>
                 @endauth
             </div>
+
+            @if($product->faqs->count() > 0)
+                <div x-show="tab === 'faq'" x-cloak>
+                    <div class="space-y-3">
+                        @foreach($product->faqs as $faq)
+                            <div class="border border-gray-200 rounded-xl overflow-hidden" x-data="{ open: false }">
+                                <button @click="open = !open" type="button" class="w-full flex items-center justify-between gap-3 px-4 py-3 text-left hover:bg-gray-50 transition">
+                                    <span class="font-medium text-sm text-gray-800">{{ $faq->question }}</span>
+                                    <svg class="w-4 h-4 text-gray-400 flex-shrink-0 transition-transform" :class="open ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                                    </svg>
+                                </button>
+                                <div x-show="open" x-cloak x-transition class="px-4 pb-4 text-sm text-gray-600">
+                                    {{ $faq->answer }}
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+            @endif
         </div>
     </div>
 

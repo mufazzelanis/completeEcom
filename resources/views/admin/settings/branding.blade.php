@@ -2,7 +2,11 @@
 @section('settings-title', 'Branding')
 
 @section('settings-content')
-<form method="POST" action="{{ route('admin.settings.update', 'branding') }}" enctype="multipart/form-data">
+<form method="POST" action="{{ route('admin.settings.update', 'branding') }}" enctype="multipart/form-data"
+      x-data="{
+          primary: '{{ setting('primary_color', '#ea580c') }}',
+          accent: '{{ setting('accent_color', '#dc2626') }}',
+      }">
 @csrf @method('PATCH')
 
 {{-- Brand Name --}}
@@ -77,15 +81,17 @@ $logos = [
 {{-- Brand Colors --}}
 <div class="bg-white rounded-xl shadow-sm border p-6 space-y-4">
     <h2 class="text-base font-semibold text-gray-900 pb-3 border-b">Brand Colors</h2>
+    <p class="text-xs text-gray-400 -mt-2">Primary Color re-themes the storefront's buttons, links, and highlights (currently orange). Secondary, Accent, and Text Color are saved here for reference and reused in the preview below, but aren't applied elsewhere on the site yet.</p>
     <div class="grid grid-cols-2 md:grid-cols-4 gap-5">
         <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Primary Color</label>
             <div class="flex items-center gap-2">
-                <input type="color" name="primary_color" value="{{ setting('primary_color', '#ea580c') }}"
+                <input type="color" name="primary_color" x-model="primary"
                        class="h-9 w-16 rounded border cursor-pointer">
-                <input type="text" value="{{ setting('primary_color', '#ea580c') }}" readonly
+                <input type="text" x-model="primary"
                        class="flex-1 border rounded px-2 py-1.5 text-xs text-gray-600 font-mono bg-gray-50">
             </div>
+            <p class="text-xs text-gray-400 mt-1">Re-themes every button, link, and highlight across the storefront.</p>
         </div>
         <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Secondary Color</label>
@@ -99,9 +105,9 @@ $logos = [
         <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Accent Color</label>
             <div class="flex items-center gap-2">
-                <input type="color" name="accent_color" value="{{ setting('accent_color', '#dc2626') }}"
+                <input type="color" name="accent_color" x-model="accent"
                        class="h-9 w-16 rounded border cursor-pointer">
-                <input type="text" value="{{ setting('accent_color', '#dc2626') }}" readonly
+                <input type="text" x-model="accent"
                        class="flex-1 border rounded px-2 py-1.5 text-xs text-gray-600 font-mono bg-gray-50">
             </div>
         </div>
@@ -125,21 +131,21 @@ $logos = [
                     <img src="{{ setting_file_url('site_logo') }}" class="h-8 object-contain">
                 @else
                     <div class="w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold text-sm"
-                         :style="'background-color:' + (document.querySelector('[name=primary_color]')?.value || '#ea580c')">
+                         :style="{ backgroundColor: primary }">
                         {{ strtoupper(substr(setting('site_name', 'S'), 0, 1)) }}
                     </div>
                 @endif
-                <span class="font-bold text-lg" style="color: {{ setting('primary_color', '#ea580c') }}">
+                <span class="font-bold text-lg" :style="{ color: primary }">
                     {{ setting('site_name', 'ShopVista') }}
                 </span>
             </div>
             <div class="flex gap-2">
                 <button type="button" class="px-4 py-1.5 rounded-lg text-white text-xs font-semibold"
-                        :style="'background-color:' + (document.querySelector('[name=primary_color]')?.value || '#ea580c')">
+                        :style="{ backgroundColor: primary }">
                     Primary Button
                 </button>
                 <button type="button" class="px-4 py-1.5 rounded-lg text-white text-xs font-semibold"
-                        :style="'background-color:' + (document.querySelector('[name=accent_color]')?.value || '#dc2626')">
+                        :style="{ backgroundColor: accent }">
                     Accent Button
                 </button>
             </div>

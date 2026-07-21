@@ -35,7 +35,7 @@ class RevenueMonthlySheet implements FromCollection, WithHeadings, WithTitle, Wi
 {
     public function __construct(private Carbon $from, private Carbon $to) {}
     public function title(): string { return 'Monthly Revenue'; }
-    public function headings(): array { return ['Month', 'Orders', 'Gross Revenue ($)', 'Discounts ($)', 'Shipping ($)', 'Tax ($)', 'Net Revenue ($)']; }
+    public function headings(): array { return ['Month', 'Orders', 'Gross Revenue (৳)', 'Discounts (৳)', 'Shipping (৳)', 'Tax (৳)', 'Net Revenue (৳)']; }
 
     public function collection()
     {
@@ -48,7 +48,7 @@ class RevenueMonthlySheet implements FromCollection, WithHeadings, WithTitle, Wi
                 DB::raw('SUM(tax) as tax')
             )
             ->whereBetween('created_at', [$this->from, $this->to])
-            ->whereNotIn('status', ['cancelled','refunded'])
+            ->whereNotIn('status', ['cancelled','refunded'])->where('payment_status', '!=', 'refunded')
             ->groupBy('month')->orderBy('month')->get()
             ->map(fn($r) => [
                 $r->month, $r->orders,
@@ -56,7 +56,7 @@ class RevenueMonthlySheet implements FromCollection, WithHeadings, WithTitle, Wi
                 number_format($r->discounts,2),
                 number_format($r->shipping,2),
                 number_format($r->tax,2),
-                number_format($r->revenue - $r->discounts, 2),
+                number_format($r->revenue, 2),
             ]);
     }
 
@@ -70,14 +70,14 @@ class RevenueCategorySheet implements FromCollection, WithHeadings, WithTitle, W
 {
     public function __construct(private Carbon $from, private Carbon $to) {}
     public function title(): string { return 'By Category'; }
-    public function headings(): array { return ['Category', 'Revenue ($)', 'Units Sold', 'Orders']; }
+    public function headings(): array { return ['Category', 'Revenue (৳)', 'Units Sold', 'Orders']; }
 
     public function collection()
     {
         return OrderItem::select('categories.name as category', DB::raw('SUM(order_items.subtotal) as revenue'), DB::raw('SUM(order_items.quantity) as qty'), DB::raw('COUNT(DISTINCT order_items.order_id) as orders'))
             ->join('products', 'order_items.product_id', '=', 'products.id')
             ->join('categories', 'products.category_id', '=', 'categories.id')
-            ->whereHas('order', fn($q) => $q->whereBetween('created_at', [$this->from, $this->to])->whereNotIn('status', ['cancelled','refunded']))
+            ->whereHas('order', fn($q) => $q->whereBetween('created_at', [$this->from, $this->to])->whereNotIn('status', ['cancelled','refunded'])->where('payment_status', '!=', 'refunded'))
             ->groupBy('categories.name')->orderByDesc('revenue')->get()
             ->map(fn($r) => [$r->category, number_format($r->revenue,2), $r->qty, $r->orders]);
     }
@@ -92,14 +92,14 @@ class RevenueBrandSheet implements FromCollection, WithHeadings, WithTitle, With
 {
     public function __construct(private Carbon $from, private Carbon $to) {}
     public function title(): string { return 'By Brand'; }
-    public function headings(): array { return ['Brand', 'Revenue ($)', 'Units Sold', 'Orders']; }
+    public function headings(): array { return ['Brand', 'Revenue (৳)', 'Units Sold', 'Orders']; }
 
     public function collection()
     {
         return OrderItem::select('brands.name as brand', DB::raw('SUM(order_items.subtotal) as revenue'), DB::raw('SUM(order_items.quantity) as qty'), DB::raw('COUNT(DISTINCT order_items.order_id) as orders'))
             ->join('products', 'order_items.product_id', '=', 'products.id')
             ->join('brands', 'products.brand_id', '=', 'brands.id')
-            ->whereHas('order', fn($q) => $q->whereBetween('created_at', [$this->from, $this->to])->whereNotIn('status', ['cancelled','refunded']))
+            ->whereHas('order', fn($q) => $q->whereBetween('created_at', [$this->from, $this->to])->whereNotIn('status', ['cancelled','refunded'])->where('payment_status', '!=', 'refunded'))
             ->groupBy('brands.name')->orderByDesc('revenue')->get()
             ->map(fn($r) => [$r->brand, number_format($r->revenue,2), $r->qty, $r->orders]);
     }

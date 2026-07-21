@@ -29,9 +29,9 @@
     @php
     $cards = [
         ['Coupon Orders', number_format($couponSummary->orders_with_coupon), 'text-indigo-700', 'bg-indigo-50', 'Out of '.number_format($totalOrders).' total ('.$couponRate.'%)'],
-        ['Total Discounts', '$'.number_format($couponSummary->total_discount,2), 'text-orange-700', 'bg-orange-50', 'Avg $'.number_format($couponSummary->avg_discount,2).' per coupon order'],
-        ['Revenue w/ Coupon', '$'.number_format($couponSummary->revenue_with_coupon,2), 'text-purple-700', 'bg-purple-50', 'Avg order $'.number_format($couponSummary->avg_order_with_coupon,2)],
-        ['Revenue w/o Coupon', '$'.number_format($couponSummary->revenue_without_coupon,2), 'text-green-700', 'bg-green-50', 'Avg order $'.number_format($couponSummary->avg_order_without,2)],
+        ['Total Discounts', '৳'.number_format($couponSummary->total_discount,2), 'text-orange-700', 'bg-orange-50', 'Avg ৳'.number_format($couponSummary->avg_discount,2).' per coupon order'],
+        ['Revenue w/ Coupon', '৳'.number_format($couponSummary->revenue_with_coupon,2), 'text-purple-700', 'bg-purple-50', 'Avg order $'.number_format($couponSummary->avg_order_with_coupon,2)],
+        ['Revenue w/o Coupon', '৳'.number_format($couponSummary->revenue_without_coupon,2), 'text-green-700', 'bg-green-50', 'Avg order $'.number_format($couponSummary->avg_order_without,2)],
     ];
     @endphp
     @foreach($cards as [$label,$value,$tc,$bg,$sub])
@@ -71,12 +71,12 @@
 <div class="grid grid-cols-3 gap-6 mb-6">
     <div class="bg-white rounded-2xl shadow-sm p-6 flex flex-col items-center justify-center text-center">
         <p class="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">Avg Order — With Coupon</p>
-        <p class="text-3xl font-bold text-indigo-600">${{ number_format($couponSummary->avg_order_with_coupon,2) }}</p>
+        <p class="text-3xl font-bold text-indigo-600">৳{{ number_format($couponSummary->avg_order_with_coupon,2) }}</p>
         <p class="text-xs text-gray-400 mt-1">Including discount</p>
     </div>
     <div class="bg-white rounded-2xl shadow-sm p-6 flex flex-col items-center justify-center text-center">
         <p class="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">Avg Order — No Coupon</p>
-        <p class="text-3xl font-bold text-green-600">${{ number_format($couponSummary->avg_order_without,2) }}</p>
+        <p class="text-3xl font-bold text-green-600">৳{{ number_format($couponSummary->avg_order_without,2) }}</p>
         <p class="text-xs text-gray-400 mt-1">Full price</p>
     </div>
     <div class="bg-white rounded-2xl shadow-sm p-6 flex flex-col items-center justify-center text-center">
@@ -112,9 +112,9 @@
                     <td class="px-6 py-3 text-gray-400 text-xs">{{ $i+1 }}</td>
                     <td class="px-6 py-3 font-mono font-semibold text-indigo-700">{{ strtoupper($coupon->coupon_code) }}</td>
                     <td class="px-6 py-3 text-right font-medium text-gray-800">{{ number_format($coupon->uses) }}</td>
-                    <td class="px-6 py-3 text-right text-orange-600 font-semibold">-${{ number_format($coupon->total_discount,2) }}</td>
-                    <td class="px-6 py-3 text-right text-green-700 font-semibold">${{ number_format($coupon->revenue,2) }}</td>
-                    <td class="px-6 py-3 text-right text-gray-500">${{ number_format($coupon->avg_discount,2) }}</td>
+                    <td class="px-6 py-3 text-right text-orange-600 font-semibold">-৳{{ number_format($coupon->total_discount,2) }}</td>
+                    <td class="px-6 py-3 text-right text-green-700 font-semibold">৳{{ number_format($coupon->revenue,2) }}</td>
+                    <td class="px-6 py-3 text-right text-gray-500">৳{{ number_format($coupon->avg_discount,2) }}</td>
                 </tr>
                 @empty
                 <tr><td colspan="6" class="px-6 py-10 text-center text-gray-400">No coupon data for this period.</td></tr>
@@ -137,7 +137,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 { label: 'Coupon Orders', data: trend.map(m => m.coupon_orders), type: 'line', borderColor: '#ec4899', backgroundColor: 'rgba(236,72,153,0.1)', fill: false, tension: 0.4, pointRadius: 3, yAxisID: 'y2' },
             ]
         },
-        options: { responsive: true, plugins: { legend: { labels: { font: { size:11 } } } }, scales: { x: { grid: { display:false }, ticks: { font: { size:10 } } }, y: { ticks: { callback: v => '$'+v.toLocaleString(), font: { size:10 } } }, y2: { position: 'right', grid: { display:false }, ticks: { font: { size:10 } } } } }
+        options: { responsive: true, plugins: { legend: { labels: { font: { size:11 } } } }, scales: { x: { grid: { display:false }, ticks: { font: { size:10 } } }, y: { ticks: { callback: v => '৳'+v.toLocaleString(), font: { size:10 } } }, y2: { position: 'right', grid: { display:false }, ticks: { font: { size:10 } } } } }
     });
 
     const withC  = {{ $couponSummary->orders_with_coupon }};

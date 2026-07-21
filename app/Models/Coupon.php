@@ -30,8 +30,8 @@ class Coupon extends Model
     {
         if ($subtotal < $this->min_order_amount) return 0;
         if ($this->type === 'percentage') {
-            return round($subtotal * ($this->value / 100), 2);
+            return min($subtotal, round($subtotal * (min((float) $this->value, 100) / 100), 2));
         }
-        return min($this->value, $subtotal);
+        return min((float) $this->value, $subtotal);
     }
 }

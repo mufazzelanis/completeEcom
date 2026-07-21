@@ -90,13 +90,13 @@
 
             @if(in_array($order->status, ['delivered', 'completed']))
                 @if($existingReturn)
-                    <div class="bg-gray-50 rounded-xl p-4 text-center">
+                    <a href="{{ route('account.returns.show', $existingReturn) }}" class="block bg-gray-50 hover:bg-gray-100 transition rounded-xl p-4 text-center">
                         <p class="text-xs text-gray-500 mb-1">Return Request</p>
                         <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold {{ $existingReturn->statusBadge() }}">
                             {{ $existingReturn->statusLabel() }}
                         </span>
                         <p class="text-xs text-gray-400 mt-1">{{ $existingReturn->return_number }}</p>
-                    </div>
+                    </a>
                 @else
                     <a href="{{ route('orders.return.create', $order) }}"
                         class="flex items-center justify-center w-full border border-gray-300 text-gray-700 py-2.5 rounded-xl text-sm font-medium hover:bg-gray-50 transition">

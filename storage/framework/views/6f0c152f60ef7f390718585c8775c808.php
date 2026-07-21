@@ -3,7 +3,10 @@ $siteName     = setting('site_name', 'ShopVista');
 $siteTagline  = setting('site_tagline', 'Your one-stop shop for everything you need.');
 $logoUrl      = setting_file_url('site_logo');
 $faviconUrl   = setting_file_url('favicon');
-$primaryColor = setting('primary_color', '#f97316');
+$primaryColor = setting('primary_color', '#ea580c');
+// Only generate an override ramp when the admin actually picked a different brand color —
+// keeps the default look pixel-identical to the hand-tuned Tailwind orange palette.
+$brandShades  = $primaryColor !== '#ea580c' ? brand_color_shades($primaryColor) : null;
 $gaId         = setting('google_analytics_id', '');
 $gtmId        = setting('google_tag_manager_id', '');
 $pixelId      = setting('facebook_pixel_id', '');
@@ -21,6 +24,7 @@ $announcementText    = setting('announcement_text', '');
     <title><?php echo $__env->yieldContent('title', setting('seo_meta_title', $siteName . ' – Online Store')); ?></title>
     <?php if($faviconUrl): ?><link rel="icon" href="<?php echo e($faviconUrl); ?>"><?php endif; ?>
     <?php if(setting('google_site_verification')): ?><meta name="google-site-verification" content="<?php echo e(setting('google_site_verification')); ?>"><?php endif; ?>
+    <?php echo $__env->yieldPushContent('meta'); ?>
     <script>
         // Applied before first paint so there's never a flash of the wrong theme.
         (function () {
@@ -36,12 +40,34 @@ $announcementText    = setting('announcement_text', '');
             theme: {
                 extend: {
                     colors: {
-                        primary: { 50:'#fff7ed',100:'#ffedd5',200:'#fed7aa',300:'#fdba74',400:'#fb923c',500:'#f97316',600:'#ea580c',700:'#c2410c',800:'#9a3412',900:'#7c2d12' },
+                        primary: {
+                            <?php if($brandShades): ?>
+                                <?php $__currentLoopData = $brandShades; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $step => $hex): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?> <?php echo e($step); ?>:'<?php echo e($hex); ?>', <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                            <?php else: ?>
+                                50:'#fff7ed',100:'#ffedd5',200:'#fed7aa',300:'#fdba74',400:'#fb923c',500:'#f97316',600:'#ea580c',700:'#c2410c',800:'#9a3412',900:'#7c2d12',
+                            <?php endif; ?>
+                        },
                     }
                 }
             }
         }
     </script>
+    <?php if($brandShades): ?>
+    
+    <style>
+        <?php $__currentLoopData = $brandShades; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $step => $hex): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+        .bg-orange-<?php echo e($step); ?> { background-color: <?php echo e($hex); ?> !important; }
+        .text-orange-<?php echo e($step); ?> { color: <?php echo e($hex); ?> !important; }
+        .border-orange-<?php echo e($step); ?> { border-color: <?php echo e($hex); ?> !important; }
+        .ring-orange-<?php echo e($step); ?> { --tw-ring-color: <?php echo e($hex); ?> !important; }
+        .hover\:bg-orange-<?php echo e($step); ?>:hover { background-color: <?php echo e($hex); ?> !important; }
+        .hover\:text-orange-<?php echo e($step); ?>:hover { color: <?php echo e($hex); ?> !important; }
+        .hover\:border-orange-<?php echo e($step); ?>:hover { border-color: <?php echo e($hex); ?> !important; }
+        .focus\:ring-orange-<?php echo e($step); ?>:focus { --tw-ring-color: <?php echo e($hex); ?> !important; }
+        .focus\:border-orange-<?php echo e($step); ?>:focus { border-color: <?php echo e($hex); ?> !important; }
+        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+    </style>
+    <?php endif; ?>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <script>
         document.addEventListener('alpine:init', () => {
@@ -67,6 +93,9 @@ $announcementText    = setting('announcement_text', '');
         .pulse-badge{animation:pulse-badge 2s infinite}
         .fade-in{animation:fadeIn .3s ease-in}
         @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+        @keyframes marquee{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+        .animate-marquee{animation:marquee 45s linear infinite}
+        .marquee-pause:hover .animate-marquee{animation-play-state:paused}
     </style>
     <?php if($customCss): ?><style><?php echo e($customCss); ?></style><?php endif; ?>
     <?php if($gaId): ?>
@@ -300,7 +329,9 @@ $navCategories = \App\Models\Category::with(['children' => fn($q) => $q->where('
     <div class="bg-orange-500 hidden md:block border-t border-orange-400">
         <div class="max-w-[1200px] mx-auto px-4 flex items-center overflow-x-auto scrollbar-hide">
             <?php $__currentLoopData = $navCategories; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $navCat): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-                <div class="relative flex-shrink-0" x-data="{ open: false }" @mouseenter="open = true" @mouseleave="open = false">
+                <div class="relative flex-shrink-0" x-data="{ open: false, top: 0, left: 0 }"
+                     @mouseenter="open = true; const r = $el.getBoundingClientRect(); top = r.bottom; left = r.left;"
+                     @mouseleave="open = false">
                     <a href="<?php echo e(route('shop.category', $navCat->slug)); ?>"
                        class="inline-flex items-center gap-1 text-sm text-white whitespace-nowrap hover:bg-orange-600 px-3 py-2.5 transition font-medium">
                         <?php echo e($navCat->name); ?>
@@ -311,7 +342,8 @@ $navCategories = \App\Models\Category::with(['children' => fn($q) => $q->where('
                     </a>
                     <?php if($navCat->children->count() > 0): ?>
                         <div x-show="open" x-cloak x-transition
-                             class="absolute top-full left-0 bg-white text-gray-700 shadow-xl rounded-b-lg min-w-52 py-2 z-[150] border border-gray-100">
+                             x-bind:style="`position:fixed; top:${top}px; left:${left}px;`"
+                             class="bg-white text-gray-700 shadow-xl rounded-b-lg min-w-52 py-2 z-[150] border border-gray-100">
                             <?php $__currentLoopData = $navCat->children; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $child): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                                 <a href="<?php echo e(route('shop.category', $child->slug)); ?>"
                                    class="block px-4 py-2 text-sm hover:bg-orange-50 hover:text-orange-600 whitespace-nowrap transition">
@@ -411,6 +443,9 @@ $navCategories = \App\Models\Category::with(['children' => fn($q) => $q->where('
     $igUrl       = setting('instagram_url', '');
     $twUrl       = setting('twitter_url', '');
     $tkUrl       = setting('tiktok_url', '');
+    $liUrl       = setting('linkedin_url', '');
+    $ptUrl       = setting('pinterest_url', '');
+    $msgUrl      = setting('messenger_link', '');
     $waUrl       = setting('whatsapp_link', '');
     $copyright   = str_replace('{year}', date('Y'), setting('copyright_text', '© {year} ' . $siteName . '. All rights reserved.'));
     ?>
@@ -473,6 +508,10 @@ unset($__errorArgs, $__bag); ?>
                     <?php if($ytUrl): ?><a href="<?php echo e($ytUrl); ?>" target="_blank" rel="noopener" class="text-gray-500 hover:text-red-400 transition" title="YouTube"><svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M23.498 6.186a3.016 3.016 0 00-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 00.502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 002.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 002.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg></a><?php endif; ?>
                     <?php if($twUrl): ?><a href="<?php echo e($twUrl); ?>" target="_blank" rel="noopener" class="text-gray-500 hover:text-gray-200 transition" title="X"><svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg></a><?php endif; ?>
                     <?php if($waUrl): ?><a href="<?php echo e($waUrl); ?>" target="_blank" rel="noopener" class="text-gray-500 hover:text-green-400 transition" title="WhatsApp"><svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg></a><?php endif; ?>
+                    <?php if($msgUrl): ?><a href="<?php echo e($msgUrl); ?>" target="_blank" rel="noopener" class="text-gray-500 hover:text-blue-400 transition" title="Messenger"><svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0C5.373 0 0 4.974 0 11.111c0 3.498 1.744 6.614 4.469 8.652V24l4.088-2.242c1.092.301 2.246.464 3.443.464 6.627 0 12-4.975 12-11.111C24 4.974 18.627 0 12 0zm1.191 14.963l-3.055-3.26-5.963 3.26L10.732 8l3.131 3.259L19.752 8l-6.561 6.963z"/></svg></a><?php endif; ?>
+                    <?php if($tkUrl): ?><a href="<?php echo e($tkUrl); ?>" target="_blank" rel="noopener" class="text-gray-500 hover:text-gray-200 transition" title="TikTok"><svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.36-.63.41-1.11 1.04-1.36 1.75-.21.51-.15 1.07-.14 1.61.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.77-1.61.19-.33.4-.67.41-1.06.1-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07z"/></svg></a><?php endif; ?>
+                    <?php if($liUrl): ?><a href="<?php echo e($liUrl); ?>" target="_blank" rel="noopener" class="text-gray-500 hover:text-blue-500 transition" title="LinkedIn"><svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg></a><?php endif; ?>
+                    <?php if($ptUrl): ?><a href="<?php echo e($ptUrl); ?>" target="_blank" rel="noopener" class="text-gray-500 hover:text-red-500 transition" title="Pinterest"><svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12.017 0C5.396 0 .029 5.367.029 11.987c0 5.079 3.158 9.417 7.618 11.162-.105-.949-.199-2.403.041-3.439.219-.937 1.406-5.957 1.406-5.957s-.359-.72-.359-1.781c0-1.663.967-2.911 2.171-2.911 1.023 0 1.518.769 1.518 1.688 0 1.029-.653 2.567-.992 3.992-.285 1.193.6 2.165 1.775 2.165 2.128 0 3.768-2.245 3.768-5.487 0-2.861-2.063-4.869-5.008-4.869-3.41 0-5.409 2.562-5.409 5.199 0 1.033.394 2.143.889 2.741.099.12.112.225.085.345-.09.375-.293 1.199-.334 1.363-.053.225-.172.271-.402.165-1.495-.69-2.433-2.878-2.433-4.646 0-3.776 2.748-7.252 7.92-7.252 4.158 0 7.392 2.967 7.392 6.923 0 4.135-2.607 7.462-6.233 7.462-1.214 0-2.357-.629-2.75-1.378l-.748 2.853c-.271 1.043-1.004 2.352-1.494 3.146 1.126.345 2.317.535 3.554.535 6.607 0 11.985-5.365 11.985-11.987C23.97 5.39 18.592.026 11.985.026L12.017 0z"/></svg></a><?php endif; ?>
                 </div>
             </div>
 
@@ -494,7 +533,7 @@ unset($__errorArgs, $__bag); ?>
                     <li><a href="<?php echo e(route('contact')); ?>" class="hover:text-orange-400 transition">Contact Us</a></li>
                     <li><a href="<?php echo e(route('faq')); ?>" class="hover:text-orange-400 transition">FAQ</a></li>
                     <li><a href="<?php echo e(route('guest.order.track.form')); ?>" class="hover:text-orange-400 transition">Track Order</a></li>
-                    <li><a href="<?php echo e(route('shop.index')); ?>" class="hover:text-orange-400 transition">Return Policy</a></li>
+                    <li><a href="<?php echo e(route('pages.show', 'return-policy')); ?>" class="hover:text-orange-400 transition">Return Policy</a></li>
                 </ul>
             </div>
 
@@ -512,15 +551,13 @@ unset($__errorArgs, $__bag); ?>
                     <?php if(setting('company_phone')): ?>
                     <li class="flex items-center gap-2">
                         <svg class="w-4 h-4 flex-shrink-0 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>
-                        <?php echo e(setting('company_phone')); ?>
-
+                        <a href="tel:<?php echo e(preg_replace('/[^0-9+]/', '', setting('company_phone'))); ?>" class="hover:text-orange-400 transition"><?php echo e(setting('company_phone')); ?></a>
                     </li>
                     <?php endif; ?>
                     <?php if(setting('company_email') || setting('support_email')): ?>
                     <li class="flex items-center gap-2">
                         <svg class="w-4 h-4 flex-shrink-0 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
-                        <?php echo e(setting('support_email', setting('company_email'))); ?>
-
+                        <a href="mailto:<?php echo e(setting('support_email', setting('company_email'))); ?>" class="hover:text-orange-400 transition"><?php echo e(setting('support_email', setting('company_email'))); ?></a>
                     </li>
                     <?php endif; ?>
                 </ul>

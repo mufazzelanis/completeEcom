@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Payment;
+use App\Services\OrderStockService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -125,6 +126,8 @@ class PaymentController extends Controller
                 'payment_status' => 'refunded',
                 'status'         => 'refunded',
             ]);
+
+            OrderStockService::restoreIfNeeded($payment->order, 'refunded', auth()->id());
         });
 
         return back()->with('success', 'Payment marked as refunded and order updated.');

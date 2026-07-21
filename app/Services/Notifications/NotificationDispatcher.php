@@ -23,6 +23,7 @@ class NotificationDispatcher
         'low_stock'            => 'order',
         'fraud_flagged'        => 'order',
         'new_ticket'           => 'ticket',
+        'ticket_reply_received' => 'ticket',
         'new_return'           => 'return',
     ];
 

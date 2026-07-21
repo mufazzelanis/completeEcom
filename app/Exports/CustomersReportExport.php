@@ -31,7 +31,7 @@ class TopCustomersSheet implements FromCollection, WithHeadings, WithTitle, With
 {
     public function __construct(private Carbon $from, private Carbon $to) {}
     public function title(): string { return 'Top Customers'; }
-    public function headings(): array { return ['Name', 'Email', 'Orders', 'Total Spent ($)', 'Avg Order ($)', 'Last Order']; }
+    public function headings(): array { return ['Name', 'Email', 'Orders', 'Total Spent (৳)', 'Avg Order (৳)', 'Last Order']; }
 
     public function collection()
     {
@@ -39,6 +39,7 @@ class TopCustomersSheet implements FromCollection, WithHeadings, WithTitle, With
             ->with('user:id,name,email')
             ->whereBetween('created_at', [$this->from, $this->to])
             ->whereNotIn('status', ['cancelled','refunded'])
+            ->where('payment_status', '!=', 'refunded')
             ->whereNotNull('user_id')
             ->groupBy('user_id')->orderByDesc('total_spent')->get()
             ->map(fn($r) => [
@@ -59,13 +60,15 @@ class TopCustomersSheet implements FromCollection, WithHeadings, WithTitle, With
 class AllCustomersSheet implements FromCollection, WithHeadings, WithTitle, WithStyles, ShouldAutoSize
 {
     public function title(): string { return 'All Customers'; }
-    public function headings(): array { return ['Name', 'Email', 'Registered', 'Total Orders', 'Total Spent ($)']; }
+    public function headings(): array { return ['Name', 'Email', 'Registered', 'Total Orders', 'Total Spent (৳)']; }
 
     public function collection()
     {
+        $scope = fn($q) => $q->whereNotIn('status', ['cancelled', 'refunded'])->where('payment_status', '!=', 'refunded');
+
         return User::where('role', '!=', 'admin')
-            ->withCount('orders')
-            ->withSum('orders', 'total')
+            ->withCount(['orders' => $scope])
+            ->withSum(['orders' => $scope], 'total')
             ->orderByDesc('orders_sum_total')
             ->get()
             ->map(fn($u) => [

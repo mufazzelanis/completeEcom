@@ -31,13 +31,13 @@ class TopProductsSheet implements FromCollection, WithHeadings, WithTitle, WithS
 {
     public function __construct(private Carbon $from, private Carbon $to) {}
     public function title(): string { return 'Top Products'; }
-    public function headings(): array { return ['Product', 'Units Sold', 'Orders', 'Revenue ($)']; }
+    public function headings(): array { return ['Product', 'Units Sold', 'Orders', 'Revenue (৳)']; }
 
     public function collection()
     {
-        return OrderItem::select('product_name', DB::raw('SUM(quantity) as qty_sold'), DB::raw('COUNT(DISTINCT order_id) as orders'), DB::raw('SUM(subtotal) as revenue'))
-            ->whereHas('order', fn($q) => $q->whereBetween('created_at', [$this->from, $this->to])->whereNotIn('status', ['cancelled','refunded']))
-            ->groupBy('product_name')->orderByDesc('revenue')->get()
+        return OrderItem::select('product_id', 'product_name', DB::raw('SUM(quantity) as qty_sold'), DB::raw('COUNT(DISTINCT order_id) as orders'), DB::raw('SUM(subtotal) as revenue'))
+            ->whereHas('order', fn($q) => $q->whereBetween('created_at', [$this->from, $this->to])->whereNotIn('status', ['cancelled','refunded'])->where('payment_status', '!=', 'refunded'))
+            ->groupBy('product_id', 'product_name')->orderByDesc('revenue')->get()
             ->map(fn($r) => [$r->product_name, $r->qty_sold, $r->orders, number_format($r->revenue,2)]);
     }
 
@@ -50,7 +50,7 @@ class TopProductsSheet implements FromCollection, WithHeadings, WithTitle, WithS
 class InventoryStatusSheet implements FromCollection, WithHeadings, WithTitle, WithStyles, ShouldAutoSize
 {
     public function title(): string { return 'Inventory Status'; }
-    public function headings(): array { return ['Product', 'SKU', 'Category', 'Price ($)', 'Stock', 'Status', 'Stock Value ($)']; }
+    public function headings(): array { return ['Product', 'SKU', 'Category', 'Price (৳)', 'Stock', 'Status', 'Stock Value (৳)']; }
 
     public function collection()
     {

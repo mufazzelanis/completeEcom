@@ -53,7 +53,7 @@
                 @empty
                 <div class="col-span-2 py-16 text-center text-gray-400">
                     <p class="text-lg mb-2">No posts found.</p>
-                    @if(request('q') || request('tag'))<a href="{{ route('blog.index') }}" class="text-indigo-600 hover:underline text-sm">View all posts</a>@endif
+                    @if(request('search') || request('tag'))<a href="{{ route('blog.index') }}" class="text-indigo-600 hover:underline text-sm">View all posts</a>@endif
                 </div>
                 @endforelse
             </div>

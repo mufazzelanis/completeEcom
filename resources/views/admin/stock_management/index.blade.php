@@ -7,10 +7,21 @@
         <h1 class="text-2xl font-bold text-gray-900">Stock Management</h1>
         <p class="text-sm text-gray-500 mt-1">Update product stock levels and view history</p>
     </div>
-    <a href="{{ route('admin.stock-adjustments.index') }}" class="text-sm text-indigo-600 hover:text-indigo-800 font-medium">
-        View Stock History →
-    </a>
+    <div class="flex items-center gap-4">
+        <a href="{{ route('admin.stock-reasons.index') }}" class="text-sm text-indigo-600 hover:text-indigo-800 font-medium">
+            Manage Reasons
+        </a>
+        <a href="{{ route('admin.stock-adjustments.index') }}" class="text-sm text-indigo-600 hover:text-indigo-800 font-medium">
+            View Stock History →
+        </a>
+    </div>
 </div>
+
+<datalist id="stock-reason-options">
+    @foreach($reasons as $reason)
+        <option value="{{ $reason->label }}">
+    @endforeach
+</datalist>
 
 @if(session('success'))
 <div class="mb-4 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-xl text-sm">{{ session('success') }}</div>
@@ -86,7 +97,7 @@
                         :class="stock != {{ $product->stock }} ? 'border-indigo-400 bg-indigo-50' : ''">
                 </td>
                 <td class="px-6 py-3">
-                    <input type="text" name="products[{{ $index }}][reason]" placeholder="Optional note…"
+                    <input type="text" name="products[{{ $index }}][reason]" placeholder="Optional note…" list="stock-reason-options"
                         class="w-full border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 text-gray-700">
                 </td>
                 <td class="px-6 py-3 text-right">

@@ -17,6 +17,7 @@
         'tiktok_url'    => ['label' => 'TikTok',    'color' => '#010101', 'ph' => 'https://tiktok.com/@yourpage'],
         'pinterest_url' => ['label' => 'Pinterest', 'color' => '#E60023', 'ph' => 'https://pinterest.com/yourpage'],
         'whatsapp_link' => ['label' => 'WhatsApp (Chat Link)', 'color' => '#25D366', 'ph' => 'https://wa.me/8801700000000'],
+        'messenger_link' => ['label' => 'Messenger (Chat Link)', 'color' => '#0084FF', 'ph' => 'https://m.me/yourpage'],
     ];
     @endphp
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">

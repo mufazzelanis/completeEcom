@@ -36,6 +36,12 @@
     <form action="{{ route('checkout.store') }}" method="POST"
         x-data="{
             selected: '{{ old('payment_method', $paymentMethods->first()?->slug) }}',
+            zone: '{{ $defaultZone }}',
+            usesZones: {{ $usesZones ? 'true' : 'false' }},
+            subtotal: {{ $subtotal }},
+            discount: {{ $discount }},
+            shippingByZone: {{ Js::from($shippingByZone) }},
+            flatShipping: {{ $usesZones ? 0 : $shipping }},
             methods:  {{ Js::from($paymentMethods->map(fn($m) => [
                 'slug'           => $m->slug,
                 'name'           => $m->name,
@@ -47,8 +53,20 @@
                 'bank_name'      => $m->bank_name,
                 'charge'         => $methodCharges[$m->slug] ?? 0,
             ])) }},
-            base: {{ $base }},
-            get current() { return this.methods.find(m => m.slug === this.selected) || {} },
+            methodChargesByZone: {{ Js::from($usesZones ? [
+                'dhaka' => $methodChargesByZone['dhaka'],
+                'outside_dhaka' => $methodChargesByZone['outside_dhaka'],
+            ] : (object) []) }},
+            get shipping() { return this.usesZones ? (this.shippingByZone[this.zone] ?? 0) : this.flatShipping },
+            get base() { return this.subtotal - this.discount + this.shipping },
+            get current() {
+                const m = this.methods.find(m => m.slug === this.selected) || {};
+                if (this.usesZones) {
+                    const charges = this.methodChargesByZone[this.zone] || {};
+                    return { ...m, charge: charges[this.selected] ?? 0 };
+                }
+                return m;
+            },
             get total() { return this.base + (parseFloat(this.current.charge) || 0) },
             needsTxn(type) { return ['mobile_banking','bank_transfer'].includes(type) }
         }">
@@ -135,6 +153,30 @@
                                 class="w-full border rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 {{ $errors->has('shipping_city') ? 'border-red-400 bg-red-50' : 'border-gray-200' }}">
                             @error('shipping_city')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
                         </div>
+                        @if($usesZones)
+                        <div class="sm:col-span-2">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Delivery Area <span class="text-red-500">*</span></label>
+                            <div class="grid grid-cols-2 gap-3">
+                                <label class="flex items-center justify-between gap-2 border rounded-lg px-4 py-2.5 cursor-pointer transition"
+                                    :class="zone === 'dhaka' ? 'border-orange-500 bg-orange-50' : 'border-gray-200'">
+                                    <span class="text-sm font-medium text-gray-700">Inside Dhaka</span>
+                                    <span class="flex items-center gap-2">
+                                        <span class="text-xs text-gray-400">৳{{ number_format($shippingByZone['dhaka']) }}</span>
+                                        <input type="radio" name="shipping_zone" value="dhaka" x-model="zone" class="text-orange-500">
+                                    </span>
+                                </label>
+                                <label class="flex items-center justify-between gap-2 border rounded-lg px-4 py-2.5 cursor-pointer transition"
+                                    :class="zone === 'outside_dhaka' ? 'border-orange-500 bg-orange-50' : 'border-gray-200'">
+                                    <span class="text-sm font-medium text-gray-700">Outside Dhaka</span>
+                                    <span class="flex items-center gap-2">
+                                        <span class="text-xs text-gray-400">৳{{ number_format($shippingByZone['outside_dhaka']) }}</span>
+                                        <input type="radio" name="shipping_zone" value="outside_dhaka" x-model="zone" class="text-orange-500">
+                                    </span>
+                                </label>
+                            </div>
+                            @error('shipping_zone')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
+                        </div>
+                        @endif
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">District</label>
                             <input type="text" name="shipping_state" id="shipping_state"
@@ -284,8 +326,8 @@
                             </div>
                         @endif
                         <div class="flex justify-between text-gray-600">
-                            <span>Shipping</span>
-                            <span>৳{{ number_format($shipping) }}</span>
+                            <span x-text="usesZones ? (zone === 'outside_dhaka' ? 'Shipping (Outside Dhaka)' : 'Shipping (Inside Dhaka)') : 'Shipping'">Shipping</span>
+                            <span x-text="shipping > 0 ? '৳' + shipping.toLocaleString('en-US') : 'Free'">৳{{ number_format($shipping) }}</span>
                         </div>
                         <div class="flex justify-between text-orange-600" x-show="(current.charge||0) > 0" x-cloak>
                             <span x-text="(current.name || 'Payment') + ' Fee'"></span>

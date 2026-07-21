@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Order;
+use App\Services\OrderStockService;
 use Illuminate\Http\Request;
 
 class OrderController extends Controller
@@ -47,6 +48,8 @@ class OrderController extends Controller
         }
 
         $order->update(['status' => 'cancelled']);
+        OrderStockService::restoreIfNeeded($order, 'cancelled', auth()->id());
+
         return back()->with('success', 'Order cancelled successfully.');
     }
 }

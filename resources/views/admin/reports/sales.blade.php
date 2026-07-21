@@ -27,7 +27,7 @@
         </a>
         <div class="flex gap-2 ml-auto">
             @foreach([['7d','7 Days'],['30d','30 Days'],['90d','90 Days'],['ytd','Year to Date']] as [$preset,$label])
-            <a href="{{ route('admin.reports.sales', ['from' => match($preset){ '7d'=>now()->subDays(6)->toDateString(), '30d'=>now()->subDays(29)->toDateString(), '90d'=>now()->subDays(89)->toDateString(), 'ytd'=>now()->startOfYear()->toDateString() }, 'to' => now()->toDateString()]) }}"
+            <a href="{{ route('admin.reports.sales', ['from' => match($preset){ '7d'=>now()->subDays(6)->toDateString(), '30d'=>now()->subDays(29)->toDateString(), '90d'=>now()->subDays(89)->toDateString(), 'ytd'=>now()->startOfYear()->toDateString() }, 'to' => now()->toDateString(), 'group_by' => $groupBy]) }}"
                class="px-3 py-2 text-xs rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-50 transition">{{ $label }}</a>
             @endforeach
         </div>
@@ -38,10 +38,10 @@
 <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
     @php
     $cards = [
-        ['Total Revenue', '$'.number_format($summary->total_revenue ?? 0, 2), 'text-green-600', 'bg-green-50'],
+        ['Total Revenue', '৳'.number_format($summary->total_revenue ?? 0, 2), 'text-green-600', 'bg-green-50'],
         ['Total Orders', number_format($summary->total_orders ?? 0), 'text-indigo-600', 'bg-indigo-50'],
-        ['Avg Order Value', '$'.number_format($summary->avg_order_value ?? 0, 2), 'text-blue-600', 'bg-blue-50'],
-        ['Total Discounts', '$'.number_format($summary->total_discounts ?? 0, 2), 'text-orange-600', 'bg-orange-50'],
+        ['Avg Order Value', '৳'.number_format($summary->avg_order_value ?? 0, 2), 'text-blue-600', 'bg-blue-50'],
+        ['Total Discounts', '৳'.number_format($summary->total_discounts ?? 0, 2), 'text-orange-600', 'bg-orange-50'],
     ];
     @endphp
     @foreach($cards as [$label, $value, $tc, $bg])
@@ -67,7 +67,7 @@
             @foreach($byPayment as $p)
             <div class="flex items-center justify-between text-sm">
                 <span class="text-gray-600 capitalize">{{ $p->payment_method ?? 'Unknown' }}</span>
-                <span class="font-semibold text-gray-800">${{ number_format($p->revenue, 0) }}</span>
+                <span class="font-semibold text-gray-800">৳{{ number_format($p->revenue, 0) }}</span>
             </div>
             @endforeach
         </div>
@@ -85,27 +85,27 @@
                 <tr>
                     <td class="py-2"><span class="capitalize px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">{{ $s->status }}</span></td>
                     <td class="py-2 text-right font-medium">{{ number_format($s->count) }}</td>
-                    <td class="py-2 text-right text-gray-600">${{ number_format($s->revenue, 2) }}</td>
+                    <td class="py-2 text-right text-gray-600">৳{{ number_format($s->revenue, 2) }}</td>
                 </tr>
                 @endforeach
             </tbody>
         </table>
         @if($cancelledRevenue > 0)
-        <p class="text-xs text-red-500 mt-3">* ${{ number_format($cancelledRevenue,2) }} lost to cancelled/refunded orders</p>
+        <p class="text-xs text-red-500 mt-3">* ৳{{ number_format($cancelledRevenue,2) }} lost to cancelled/refunded orders</p>
         @endif
     </div>
 
     {{-- By Category --}}
     <div class="bg-white rounded-2xl shadow-sm p-6">
         <h3 class="font-semibold text-gray-800 mb-4">Revenue by Category</h3>
-        @php $totalCatRev = $byCategory->sum('revenue'); @endphp
+        @php $totalCatRev = $categoryRevenueTotal; @endphp
         <div class="space-y-3">
             @forelse($byCategory as $cat)
             @php $pct = $totalCatRev > 0 ? round(($cat->revenue / $totalCatRev) * 100) : 0; @endphp
             <div>
                 <div class="flex items-center justify-between text-sm mb-1">
                     <span class="text-gray-700">{{ $cat->category }}</span>
-                    <span class="font-semibold text-gray-800">${{ number_format($cat->revenue,0) }} <span class="text-gray-400 font-normal">({{ $pct }}%)</span></span>
+                    <span class="font-semibold text-gray-800">৳{{ number_format($cat->revenue,0) }} <span class="text-gray-400 font-normal">({{ $pct }}%)</span></span>
                 </div>
                 <div class="w-full bg-gray-100 rounded-full h-1.5">
                     <div class="bg-indigo-500 h-1.5 rounded-full" style="width:{{ $pct }}%"></div>
@@ -138,10 +138,10 @@
                 <tr class="hover:bg-gray-50">
                     <td class="px-6 py-3 font-medium text-gray-700">{{ $row->period }}</td>
                     <td class="px-6 py-3 text-right text-gray-600">{{ number_format($row->orders) }}</td>
-                    <td class="px-6 py-3 text-right font-semibold text-gray-800">${{ number_format($row->revenue,2) }}</td>
-                    <td class="px-6 py-3 text-right text-orange-600">-${{ number_format($row->discounts,2) }}</td>
-                    <td class="px-6 py-3 text-right text-gray-500">${{ number_format($row->shipping,2) }}</td>
-                    <td class="px-6 py-3 text-right text-gray-600">${{ number_format($row->avg_order,2) }}</td>
+                    <td class="px-6 py-3 text-right font-semibold text-gray-800">৳{{ number_format($row->revenue,2) }}</td>
+                    <td class="px-6 py-3 text-right text-orange-600">-৳{{ number_format($row->discounts,2) }}</td>
+                    <td class="px-6 py-3 text-right text-gray-500">৳{{ number_format($row->shipping,2) }}</td>
+                    <td class="px-6 py-3 text-right text-gray-600">৳{{ number_format($row->avg_order,2) }}</td>
                 </tr>
                 @empty
                 <tr><td colspan="6" class="px-6 py-10 text-center text-gray-400">No sales data for this period.</td></tr>
@@ -151,10 +151,10 @@
                 <tr>
                     <td class="px-6 py-3 text-gray-700">Total</td>
                     <td class="px-6 py-3 text-right text-gray-800">{{ number_format($summary->total_orders ?? 0) }}</td>
-                    <td class="px-6 py-3 text-right text-green-700">${{ number_format($summary->total_revenue ?? 0,2) }}</td>
-                    <td class="px-6 py-3 text-right text-orange-600">-${{ number_format($summary->total_discounts ?? 0,2) }}</td>
-                    <td class="px-6 py-3 text-right text-gray-600">${{ number_format($summary->total_shipping ?? 0,2) }}</td>
-                    <td class="px-6 py-3 text-right text-gray-700">${{ number_format($summary->avg_order_value ?? 0,2) }}</td>
+                    <td class="px-6 py-3 text-right text-green-700">৳{{ number_format($summary->total_revenue ?? 0,2) }}</td>
+                    <td class="px-6 py-3 text-right text-orange-600">-৳{{ number_format($summary->total_discounts ?? 0,2) }}</td>
+                    <td class="px-6 py-3 text-right text-gray-600">৳{{ number_format($summary->total_shipping ?? 0,2) }}</td>
+                    <td class="px-6 py-3 text-right text-gray-700">৳{{ number_format($summary->avg_order_value ?? 0,2) }}</td>
                 </tr>
             </tfoot>
         </table>
@@ -170,18 +170,18 @@ document.addEventListener('DOMContentLoaded', () => {
         data: {
             labels: trend.map(r => r.period),
             datasets: [{
-                label: 'Revenue ($)',
+                label: 'Revenue (৳)',
                 data: trend.map(r => parseFloat(r.revenue)),
                 backgroundColor: 'rgba(99,102,241,0.7)',
                 borderRadius: 4,
             },{
-                label: 'Discounts ($)',
+                label: 'Discounts (৳)',
                 data: trend.map(r => parseFloat(r.discounts)),
                 backgroundColor: 'rgba(249,115,22,0.7)',
                 borderRadius: 4,
             }]
         },
-        options: { responsive: true, plugins: { legend: { labels: { font: { size:11 } } } }, scales: { x: { grid: { display:false }, ticks: { font: { size:10 }, maxTicksLimit:15 } }, y: { ticks: { callback: v => '$'+v.toLocaleString(), font: { size:10 } } } } }
+        options: { responsive: true, plugins: { legend: { labels: { font: { size:11 } } } }, scales: { x: { grid: { display:false }, ticks: { font: { size:10 }, maxTicksLimit:15 } }, y: { ticks: { callback: v => '৳'+v.toLocaleString(), font: { size:10 } } } } }
     });
 
     const pm = @json($byPayment);

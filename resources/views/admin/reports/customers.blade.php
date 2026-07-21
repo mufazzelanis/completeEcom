@@ -43,7 +43,7 @@
     $cards = [
         ['Total Customers', number_format($totalCustomers), 'text-indigo-600','bg-indigo-50', 'New: '.number_format($newInRange).' in period'],
         ['Active Buyers', number_format($activeCustomers), 'text-green-600','bg-green-50', 'Placed order in period'],
-        ['Avg Order Value', '$'.number_format($avgOrderValue ?? 0,2), 'text-blue-600','bg-blue-50', number_format($ordersPerCustomer).' orders / customer'],
+        ['Avg Order Value', '৳'.number_format($avgOrderValue ?? 0,2), 'text-blue-600','bg-blue-50', number_format($ordersPerCustomer).' orders / customer'],
         ['Retention Rate', $retentionRate.'%', 'text-purple-600','bg-purple-50', number_format($returningBuyers).' returning buyers'],
     ];
     @endphp
@@ -109,8 +109,8 @@
                             </div>
                         </td>
                         <td class="py-2.5 text-right text-gray-600">{{ number_format($c->order_count) }}</td>
-                        <td class="py-2.5 text-right text-gray-600">${{ number_format($c->avg_order,0) }}</td>
-                        <td class="py-2.5 text-right font-semibold text-gray-800">${{ number_format($c->total_spent,2) }}</td>
+                        <td class="py-2.5 text-right text-gray-600">৳{{ number_format($c->avg_order,0) }}</td>
+                        <td class="py-2.5 text-right font-semibold text-gray-800">৳{{ number_format($c->total_spent,2) }}</td>
                     </tr>
                     @empty
                     <tr><td colspan="4" class="py-8 text-center text-gray-400">No data for this period.</td></tr>
@@ -130,7 +130,7 @@
             <div>
                 <div class="flex justify-between text-sm mb-1">
                     <span class="text-gray-700">{{ $city->shipping_city }}</span>
-                    <span class="text-gray-500">{{ number_format($city->customers) }} customers · <span class="font-medium text-gray-800">${{ number_format($city->revenue,0) }}</span></span>
+                    <span class="text-gray-500">{{ number_format($city->customers) }} customers · <span class="font-medium text-gray-800">৳{{ number_format($city->revenue,0) }}</span></span>
                 </div>
                 <div class="w-full bg-gray-100 rounded-full h-1.5">
                     <div class="bg-purple-500 h-1.5 rounded-full" style="width:{{ $pct }}%"></div>

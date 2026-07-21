@@ -85,6 +85,9 @@ class DatabaseSeeder extends Seeder
         // Permissions + role defaults
         $this->call(PermissionSeeder::class);
 
+        // Stock adjustment reason presets
+        $this->call(StockReasonSeeder::class);
+
         // Coupons
         Coupon::create([
             'code'             => 'SAVE10',

@@ -1,13 +1,7 @@
-@extends('layouts.admin')
-@section('title', 'Product Performance')
+@extends('admin.reports.layout')
+@section('report-title', 'Product Performance')
 
-@section('content')
-{{-- Nav --}}
-<div class="flex gap-2 mb-6 flex-wrap">
-    @foreach([['reports.index','Overview'],['reports.sales','Sales'],['reports.revenue','Revenue'],['reports.products','Products'],['reports.customers','Customers'],['reports.inventory','Inventory']] as [$r,$l])
-    <a href="{{ route('admin.'.$r) }}" class="px-4 py-2 rounded-xl text-sm font-medium transition {{ request()->routeIs('admin.'.$r) ? 'bg-indigo-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50 shadow-sm' }}">{{ $l }}</a>
-    @endforeach
-</div>
+@section('report-content')
 
 {{-- Date filter --}}
 <div class="bg-white rounded-2xl shadow-sm p-4 mb-6">
@@ -54,7 +48,7 @@
                         </td>
                         <td class="py-2.5 text-right text-gray-600">{{ number_format($p->qty_sold) }}</td>
                         <td class="py-2.5 text-right text-gray-600">{{ number_format($p->orders) }}</td>
-                        <td class="py-2.5 text-right font-semibold text-gray-800">${{ number_format($p->revenue,2) }}</td>
+                        <td class="py-2.5 text-right font-semibold text-gray-800">৳{{ number_format($p->revenue,2) }}</td>
                     </tr>
                     @empty
                     <tr><td colspan="5" class="py-8 text-center text-gray-400">No sales data for this period.</td></tr>
@@ -72,7 +66,7 @@
             @foreach($categoryPerf->take(6) as $cat)
             <div class="flex items-center justify-between text-xs">
                 <span class="text-gray-600">{{ $cat->category }}</span>
-                <span class="font-medium">${{ number_format($cat->revenue,0) }}</span>
+                <span class="font-medium">৳{{ number_format($cat->revenue,0) }}</span>
             </div>
             @endforeach
         </div>
@@ -128,7 +122,7 @@
                 <a href="{{ route('admin.products.edit', $p) }}" class="text-sm text-gray-700 hover:text-indigo-600 truncate block">{{ $p->name }}</a>
                 <p class="text-xs text-gray-400">{{ $p->category?->name }} · stock: {{ $p->stock }}</p>
             </div>
-            <span class="text-sm text-gray-500 ml-2">${{ number_format($p->price,2) }}</span>
+            <span class="text-sm text-gray-500 ml-2">৳{{ number_format($p->price,2) }}</span>
         </div>
         @empty
         <p class="text-green-600 text-sm text-center py-4">All products with stock have been sold!</p>

@@ -5,29 +5,8 @@
 <form method="POST" action="{{ route('admin.settings.update', 'theme') }}">
 @csrf @method('PATCH')
 
-<div class="bg-white rounded-xl shadow-sm border p-6 space-y-4">
-    <h2 class="text-base font-semibold text-gray-900 pb-2 border-b">Color Scheme</h2>
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-        @php
-        $colors = [
-            'primary_color'    => ['label' => 'Primary Color',    'default' => '#6366f1'],
-            'secondary_color'  => ['label' => 'Secondary Color',  'default' => '#ec4899'],
-            'accent_color'     => ['label' => 'Accent Color',     'default' => '#f59e0b'],
-            'text_color'       => ['label' => 'Body Text Color',  'default' => '#111827'],
-        ];
-        @endphp
-        @foreach($colors as $key => $meta)
-        <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">{{ $meta['label'] }}</label>
-            <div class="flex items-center gap-2">
-                <input type="color" name="{{ $key }}" value="{{ setting($key, $meta['default']) }}"
-                       class="h-9 w-14 rounded border cursor-pointer flex-shrink-0">
-                <input type="text" value="{{ setting($key, $meta['default']) }}" readonly
-                       class="flex-1 border rounded px-2 py-1.5 text-xs text-gray-600 font-mono">
-            </div>
-        </div>
-        @endforeach
-    </div>
+<div class="bg-blue-50 border border-blue-100 rounded-xl p-4 text-sm text-blue-700">
+    Brand colors (Primary, Secondary, Accent, Text) moved to <a href="{{ route('admin.settings.show', 'branding') }}" class="font-semibold underline">Settings → Branding</a> — edit them there.
 </div>
 
 <div class="bg-white rounded-xl shadow-sm border p-6 space-y-4">

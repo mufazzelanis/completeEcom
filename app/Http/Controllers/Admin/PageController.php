@@ -9,6 +9,8 @@ use Illuminate\Support\Str;
 
 class PageController extends Controller
 {
+    private const SYSTEM_SLUGS = ['faq', 'contact', 'return-policy'];
+
     public function index(Request $request)
     {
         $query = Page::query();
@@ -35,7 +37,7 @@ class PageController extends Controller
         $data = $request->only(['type', 'title', 'excerpt', 'content', 'template', 'sort_order',
             'meta_title', 'meta_description', 'meta_keywords', 'og_title', 'og_description', 'canonical_url']);
         $data['slug']       = $this->uniqueSlug(Str::slug($request->title));
-        $data['is_active']  = $request->boolean('is_active', true);
+        $data['is_active']  = $request->boolean('is_active');
         $data['sort_order'] = (int) ($request->sort_order ?? 0);
         $data['template']   = $request->filled('template') ? $request->template : 'default';
 
@@ -65,6 +67,10 @@ class PageController extends Controller
         $data['sort_order'] = (int) ($request->sort_order ?? 0);
         $data['template']   = $request->filled('template') ? $request->template : 'default';
 
+        if (in_array($page->slug, self::SYSTEM_SLUGS, true) && ! $data['is_active']) {
+            return back()->withInput()->with('error', "\"{$page->slug}\" is linked from the site (footer/nav) and cannot be deactivated. Edit its content instead, or delete the link elsewhere first.");
+        }
+
         if ($request->hasFile('image'))    $data['image']    = $request->file('image')->store('pages', 'public');
         if ($request->hasFile('og_image')) $data['og_image'] = $request->file('og_image')->store('pages/og', 'public');
 
@@ -74,6 +80,10 @@ class PageController extends Controller
 
     public function destroy(Page $page)
     {
+        if (in_array($page->slug, self::SYSTEM_SLUGS, true)) {
+            return back()->with('error', "\"{$page->slug}\" is linked from the site (footer/nav) and cannot be deleted.");
+        }
+
         $page->delete();
         return redirect()->route('admin.pages.index')->with('success', 'Page deleted.');
     }

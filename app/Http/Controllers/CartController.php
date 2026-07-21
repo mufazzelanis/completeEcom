@@ -99,6 +99,12 @@ class CartController extends Controller
             return back()->with('error', 'Invalid or expired coupon code.');
         }
 
+        $subtotal = $this->getCartQuery()->with('product')->get()->sum('subtotal');
+
+        if ($subtotal < $coupon->min_order_amount) {
+            return back()->with('error', 'This coupon requires a minimum order of ৳' . number_format((float) $coupon->min_order_amount) . '.');
+        }
+
         session(['coupon' => $coupon->code]);
 
         return back()->with('success', 'Coupon applied successfully!');

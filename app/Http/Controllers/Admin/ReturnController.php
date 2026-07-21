@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\ProductReturn;
 use App\Models\StockAdjustment;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class ReturnController extends Controller
 {
@@ -58,36 +59,38 @@ class ReturnController extends Controller
             'approved_qty.*' => 'required|integer|min:0',
         ]);
 
-        foreach ($return->items as $item) {
-            $approvedQty = (int) ($request->approved_qty[$item->id] ?? 0);
-            $item->update(['quantity_approved' => $approvedQty]);
+        DB::transaction(function () use ($return, $request) {
+            foreach ($return->items as $item) {
+                $approvedQty = min((int) ($request->approved_qty[$item->id] ?? 0), $item->quantity_requested);
+                $item->update(['quantity_approved' => $approvedQty]);
 
-            if ($approvedQty > 0 && $item->product) {
-                $product = $item->product;
-                $before  = $product->stock;
-                $after   = $before + $approvedQty;
-                $product->increment('stock', $approvedQty);
+                if ($approvedQty > 0 && $item->product) {
+                    $product = $item->product;
+                    $before  = $product->stock;
+                    $after   = $before + $approvedQty;
+                    $product->increment('stock', $approvedQty);
 
-                StockAdjustment::create([
-                    'product_id'   => $product->id,
-                    'order_id'     => $return->order_id,
-                    'type'         => 'return_in',
-                    'quantity'     => $approvedQty,
-                    'stock_before' => $before,
-                    'stock_after'  => $after,
-                    'reference'    => $return->return_number,
-                    'reason'       => 'Customer return approved',
-                    'adjusted_by'  => auth()->id(),
-                ]);
+                    StockAdjustment::create([
+                        'product_id'   => $product->id,
+                        'order_id'     => $return->order_id,
+                        'type'         => 'return_in',
+                        'quantity'     => $approvedQty,
+                        'stock_before' => $before,
+                        'stock_after'  => $after,
+                        'reference'    => $return->return_number,
+                        'reason'       => 'Customer return approved',
+                        'adjusted_by'  => auth()->id(),
+                    ]);
+                }
             }
-        }
 
-        $return->update([
-            'status'       => 'approved',
-            'admin_note'   => $request->admin_note,
-            'processed_by' => auth()->id(),
-            'processed_at' => now(),
-        ]);
+            $return->update([
+                'status'       => 'approved',
+                'admin_note'   => $request->admin_note,
+                'processed_by' => auth()->id(),
+                'processed_at' => now(),
+            ]);
+        });
 
         return back()->with('success', 'Return approved and stock updated.');
     }

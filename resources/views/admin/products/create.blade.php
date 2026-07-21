@@ -16,6 +16,7 @@
     </div>
     @endif
 
+    @php $oldSelectedTags = $allTags->whereIn('id', array_map('intval', old('tag_ids', [])))->values(); @endphp
     <form action="{{ route('admin.products.store') }}" method="POST" enctype="multipart/form-data"
         x-data="{
             productType: '{{ old('type','simple') }}',
@@ -24,9 +25,10 @@
             bundleItems: [],
             faqs: [],
             specs: [],
-            selectedTags: [],
+            selectedTags: {{ Js::from($oldSelectedTags) }},
             tagQuery: '',
             showTagDropdown: false,
+            creatingTag: false,
             allTags: {{ Js::from($allTags) }},
             allProducts: {{ Js::from($simpleProducts) }},
             attributeNames: {{ Js::from($attributeNames) }},
@@ -35,8 +37,33 @@
                 const q = this.tagQuery.toLowerCase();
                 return this.allTags.filter(t => t.name.toLowerCase().includes(q) && !this.selectedTags.find(s=>s.id===t.id));
             },
+            get exactTagMatch() {
+                const q = this.tagQuery.trim().toLowerCase();
+                return q ? this.allTags.find(t => t.name.toLowerCase() === q) : null;
+            },
             addTag(tag) { this.selectedTags.push(tag); this.tagQuery=''; this.showTagDropdown=false; },
             removeTag(id) { this.selectedTags = this.selectedTags.filter(t=>t.id!==id); },
+            async createTag() {
+                const name = this.tagQuery.trim();
+                if (!name || this.creatingTag) return;
+                const existing = this.exactTagMatch;
+                if (existing) { this.addTag(existing); return; }
+                this.creatingTag = true;
+                try {
+                    const res = await fetch('{{ route('admin.tags.quick-create') }}', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' },
+                        body: JSON.stringify({ name }),
+                    });
+                    if (res.ok) {
+                        const tag = await res.json();
+                        this.allTags.push(tag);
+                        this.addTag(tag);
+                    }
+                } finally {
+                    this.creatingTag = false;
+                }
+            },
             addVariant() { this.variants.push({ name:'', sku:'', price:'', stock:0, is_active:true }); },
             addColor() { this.colors.push({ name:'', hex_code:'#6366f1', stock:'', is_active:true }); },
             addBundleItem() { this.bundleItems.push({ product_id:'', quantity:1, discount_pct:0 }); },
@@ -318,18 +345,23 @@
                         </template>
                     </div>
                     <div class="relative">
-                        <input type="text" x-model="tagQuery" placeholder="Search or select tags…"
+                        <input type="text" x-model="tagQuery" placeholder="Search tags or type a new one and press Enter…"
                             @focus="showTagDropdown=true" @blur="setTimeout(()=>showTagDropdown=false,200)"
+                            @keydown.enter.prevent="createTag()"
                             class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                        <div x-show="showTagDropdown && tagSuggestions.length > 0" x-cloak
+                        <div x-show="showTagDropdown && (tagSuggestions.length > 0 || (tagQuery.trim() && !exactTagMatch))" x-cloak
                             class="absolute z-10 bg-white border border-gray-200 rounded-xl shadow-lg mt-1 w-full max-h-48 overflow-y-auto">
                             <template x-for="tag in tagSuggestions" :key="tag.id">
                                 <button type="button" @click="addTag(tag)"
                                     class="block w-full text-left px-4 py-2 text-sm hover:bg-indigo-50 text-gray-700" x-text="tag.name"></button>
                             </template>
+                            <button type="button" x-show="tagQuery.trim() && !exactTagMatch" @click="createTag()" :disabled="creatingTag"
+                                class="block w-full text-left px-4 py-2 text-sm text-indigo-600 hover:bg-indigo-50 font-medium border-t border-gray-100">
+                                + Create tag "<span x-text="tagQuery.trim()"></span>"
+                            </button>
                         </div>
                     </div>
-                    <p class="text-xs text-gray-400 mt-2">Select from existing tags. Manage tags at <a href="{{ route('admin.tags.index') }}" class="text-indigo-500 hover:underline">Admin → Tags</a>.</p>
+                    <p class="text-xs text-gray-400 mt-2">Select an existing tag, or type a new name and press Enter to create it.</p>
                 </div>
 
             </div>

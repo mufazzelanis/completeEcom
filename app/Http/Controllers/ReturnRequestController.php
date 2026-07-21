@@ -15,7 +15,7 @@ class ReturnRequestController extends Controller
         if ($order->user_id !== auth()->id()) {
             abort(403);
         }
-        if (!in_array($order->status, ['delivered', 'completed'])) {
+        if ($order->status !== 'delivered') {
             return back()->with('error', 'Returns are only available for delivered orders.');
         }
         if ($order->returns()->where('status', '!=', 'rejected')->exists()) {
@@ -31,7 +31,7 @@ class ReturnRequestController extends Controller
         if ($order->user_id !== auth()->id()) {
             abort(403);
         }
-        if (!in_array($order->status, ['delivered', 'completed'])) {
+        if ($order->status !== 'delivered') {
             abort(403);
         }
         if ($order->returns()->where('status', '!=', 'rejected')->exists()) {

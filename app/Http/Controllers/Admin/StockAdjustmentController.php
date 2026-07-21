@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\StockAdjustment;
+use App\Models\StockReason;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -42,7 +43,8 @@ class StockAdjustmentController extends Controller
         $orders   = Order::whereIn('status', ['delivered', 'completed'])
             ->latest()->limit(100)->get(['id', 'order_number']);
         $selectedType = $request->get('type', 'manual_in');
-        return view('admin.stock_adjustments.create', compact('products', 'orders', 'selectedType'));
+        $reasons = StockReason::active()->orderBy('sort_order')->get(['id', 'label', 'type']);
+        return view('admin.stock_adjustments.create', compact('products', 'orders', 'selectedType', 'reasons'));
     }
 
     public function store(Request $request)
@@ -52,6 +54,7 @@ class StockAdjustmentController extends Controller
             'type'       => 'required|in:return_in,damage_out,manual_in,manual_out',
             'quantity'   => 'required|integer|min:1',
             'reason'     => 'required|string|max:500',
+            'reason_id'  => 'nullable|exists:stock_reasons,id',
         ]);
 
         $product = Product::findOrFail($request->product_id);
@@ -69,6 +72,7 @@ class StockAdjustmentController extends Controller
             StockAdjustment::create([
                 'product_id'  => $product->id,
                 'order_id'    => $request->order_id ?: null,
+                'reason_id'   => $request->reason_id ?: null,
                 'type'        => $request->type,
                 'quantity'    => $isOut ? -$qty : $qty,
                 'stock_before'=> $before,

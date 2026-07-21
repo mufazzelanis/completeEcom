@@ -29,7 +29,7 @@
     @php
     $cards = [
         ['Total Orders', number_format($summary->total_orders ?? 0), 'text-gray-800', 'bg-gray-50'],
-        ['Shipping Revenue', '$'.number_format($summary->total_shipping_revenue ?? 0,2), 'text-blue-700', 'bg-blue-50'],
+        ['Shipping Revenue', '৳'.number_format($summary->total_shipping_revenue ?? 0,2), 'text-blue-700', 'bg-blue-50'],
         ['Delivery Rate', $deliveryRate.'%', 'text-green-700', 'bg-green-50'],
         ['Free Shipping', number_format($summary->free_shipping_count ?? 0).' orders', 'text-purple-700', 'bg-purple-50'],
     ];
@@ -54,7 +54,7 @@
         <h3 class="font-semibold text-gray-800">Shipping Stats</h3>
         <div class="flex items-center justify-between p-3 bg-blue-50 rounded-xl">
             <p class="text-sm font-medium text-blue-800">Avg Shipping Fee</p>
-            <p class="font-bold text-blue-700">${{ number_format($summary->avg_shipping ?? 0,2) }}</p>
+            <p class="font-bold text-blue-700">৳{{ number_format($summary->avg_shipping ?? 0,2) }}</p>
         </div>
         <div class="flex items-center justify-between p-3 bg-green-50 rounded-xl">
             <p class="text-sm font-medium text-green-800">Delivered Orders</p>
@@ -66,7 +66,7 @@
         </div>
         <div class="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
             <p class="text-sm font-medium text-gray-800">Free Shipping Revenue</p>
-            <p class="font-bold text-gray-700">${{ number_format($freeShippingRevenue,0) }}</p>
+            <p class="font-bold text-gray-700">৳{{ number_format($freeShippingRevenue,0) }}</p>
         </div>
     </div>
 </div>
@@ -95,8 +95,8 @@
                 <tr class="hover:bg-gray-50">
                     <td class="px-6 py-3 font-medium text-gray-700">{{ $city->shipping_city }}</td>
                     <td class="px-6 py-3 text-right text-gray-600">{{ number_format($city->orders) }}</td>
-                    <td class="px-6 py-3 text-right font-semibold text-gray-800">${{ number_format($city->revenue,0) }}</td>
-                    <td class="px-6 py-3 text-right text-blue-600">${{ number_format($city->shipping_revenue,0) }}</td>
+                    <td class="px-6 py-3 text-right font-semibold text-gray-800">৳{{ number_format($city->revenue,0) }}</td>
+                    <td class="px-6 py-3 text-right text-blue-600">৳{{ number_format($city->shipping_revenue,0) }}</td>
                     <td class="px-6 py-3 text-right text-green-600">{{ number_format($city->delivered) }}</td>
                     <td class="px-6 py-3 text-right text-red-500">{{ number_format($city->cancelled) }}</td>
                     <td class="px-6 py-3 text-right">
@@ -132,8 +132,8 @@
                 <tr class="hover:bg-gray-50">
                     <td class="px-6 py-3 font-medium text-gray-700">{{ $country->shipping_country }}</td>
                     <td class="px-6 py-3 text-right text-gray-600">{{ number_format($country->orders) }}</td>
-                    <td class="px-6 py-3 text-right font-semibold text-gray-800">${{ number_format($country->revenue,0) }}</td>
-                    <td class="px-6 py-3 text-right text-blue-600">${{ number_format($country->shipping_revenue,0) }}</td>
+                    <td class="px-6 py-3 text-right font-semibold text-gray-800">৳{{ number_format($country->revenue,0) }}</td>
+                    <td class="px-6 py-3 text-right text-blue-600">৳{{ number_format($country->shipping_revenue,0) }}</td>
                 </tr>
                 @endforeach
             </tbody>
@@ -155,7 +155,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 { label: 'Total Orders', data: trend.map(m => m.orders), type: 'line', borderColor: '#6366f1', backgroundColor: 'transparent', tension: 0.4, pointRadius: 3, yAxisID: 'y2' },
             ]
         },
-        options: { responsive: true, plugins: { legend: { labels: { font: { size:11 } } } }, scales: { x: { grid: { display:false }, ticks: { font: { size:10 } } }, y: { ticks: { callback: v => '$'+v.toLocaleString(), font: { size:10 } } }, y2: { position: 'right', grid: { display:false }, ticks: { font: { size:10 } } } } }
+        options: { responsive: true, plugins: { legend: { labels: { font: { size:11 } } } }, scales: { x: { grid: { display:false }, ticks: { font: { size:10 } } }, y: { ticks: { callback: v => '৳'+v.toLocaleString(), font: { size:10 } } }, y2: { position: 'right', grid: { display:false }, ticks: { font: { size:10 } } } } }
     });
 });
 </script>

@@ -51,7 +51,7 @@
                 <td class="px-6 py-4 text-center">
                     <div class="flex items-center justify-center gap-2">
                         <a href="{{ route('admin.blog.categories.edit', $cat) }}" class="text-indigo-600 hover:text-indigo-800 text-sm font-medium">Edit</a>
-                        <form action="{{ route('admin.blog.categories.destroy', $cat) }}" method="POST" onsubmit="return confirm('Delete this category?')">
+                        <form action="{{ route('admin.blog.categories.destroy', $cat) }}" method="POST" onsubmit="return confirm('Delete this category?{{ $cat->posts_count > 0 ? ' '.$cat->posts_count.' post(s) will become uncategorized.' : '' }}')">
                             @csrf @method('DELETE')
                             <button class="text-red-500 hover:text-red-700 text-sm font-medium">Delete</button>
                         </form>

@@ -11,6 +11,7 @@ use App\Models\PaymentMethod;
 use App\Models\Product;
 use App\Models\User;
 use App\Services\Notifications\NotificationDispatcher;
+use App\Services\ShippingCalculator;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -84,20 +85,33 @@ class CheckoutController extends Controller
         $subtotal = $cartItems->sum('subtotal');
         $coupon = session('coupon');
         $discount = $this->computeDiscount($subtotal, $coupon);
-        $shipping = 60;
+
+        $usesZones = ShippingCalculator::usesZones();
+        $shippingByZone = [
+            'dhaka'         => ShippingCalculator::calculate($subtotal, ShippingCalculator::ZONE_DHAKA),
+            'outside_dhaka' => ShippingCalculator::calculate($subtotal, ShippingCalculator::ZONE_OUTSIDE_DHAKA),
+        ];
+        $defaultZone = old('shipping_zone', 'dhaka');
+        $shipping = $usesZones ? $shippingByZone[$defaultZone] : ShippingCalculator::calculate($subtotal);
+
         $paymentMethods = PaymentMethod::where('is_active', true)->orderBy('sort_order')->get();
         $addresses = auth()->check() ? auth()->user()->addresses : collect();
 
         $methodCharges = $paymentMethods->mapWithKeys(fn ($m) => [
             $m->slug => $m->calculateCharge($subtotal - $discount + $shipping),
         ]);
+        $methodChargesByZone = $usesZones ? [
+            'dhaka'         => $paymentMethods->mapWithKeys(fn ($m) => [$m->slug => $m->calculateCharge($subtotal - $discount + $shippingByZone['dhaka'])]),
+            'outside_dhaka' => $paymentMethods->mapWithKeys(fn ($m) => [$m->slug => $m->calculateCharge($subtotal - $discount + $shippingByZone['outside_dhaka'])]),
+        ] : null;
 
         $base = $subtotal - $discount + $shipping;
         $total = $base;
 
         return view('checkout.index', compact(
             'cartItems', 'subtotal', 'discount', 'shipping', 'total',
-            'coupon', 'addresses', 'paymentMethods', 'methodCharges', 'base'
+            'coupon', 'addresses', 'paymentMethods', 'methodCharges', 'base',
+            'usesZones', 'shippingByZone', 'defaultZone', 'methodChargesByZone'
         ));
     }
 
@@ -119,6 +133,7 @@ class CheckoutController extends Controller
             'shipping_state' => 'nullable|string|max:100',
             'shipping_zip' => 'nullable|string|max:20',
             'shipping_email' => 'nullable|email|max:255',
+            'shipping_zone' => ShippingCalculator::usesZones() ? 'required|in:dhaka,outside_dhaka' : 'nullable|in:dhaka,outside_dhaka',
             'payment_method' => 'required|exists:payment_methods,slug',
             'transaction_id' => 'nullable|string|max:100',
             'sender_number' => 'nullable|string|max:20',
@@ -149,16 +164,18 @@ class CheckoutController extends Controller
         $discount = 0;
         $couponCode = null;
 
+        $couponId = null;
         if ($coupon) {
             $couponModel = Coupon::where('code', $coupon)->first();
             if ($couponModel && $couponModel->isValid()) {
                 $discount = $couponModel->calculateDiscount($subtotal);
                 $couponCode = $couponModel->code;
-                $couponModel->increment('used_count');
+                $couponId = $couponModel->id;
             }
         }
 
-        $shipping = 60;
+        $shippingZone = ShippingCalculator::usesZones() ? $request->shipping_zone : null;
+        $shipping = ShippingCalculator::calculate($subtotal, $shippingZone);
         $base = $subtotal - $discount + $shipping;
         $paymentCharge = $paymentMethod->calculateCharge($base);
         $total = $base + $paymentCharge;
@@ -195,14 +212,17 @@ class CheckoutController extends Controller
         $guestToken = null;
 
         $order = DB::transaction(function () use (
-            $request, $cartItems, $subtotal, $discount, $shipping,
-            $paymentCharge, $total, $couponCode, $paymentMethod, $isBuyNow,
+            $request, $cartItems, $subtotal, $discount, $shipping, $shippingZone,
+            $paymentCharge, $total, $couponCode, $couponId, $paymentMethod, $isBuyNow,
             $guestToken
         ) {
-            $paymentStatus = match ($paymentMethod->type) {
-                'cod' => 'pending',
-                default => 'pending',
-            };
+            if ($couponId) {
+                Coupon::where('id', $couponId)
+                    ->where(fn($q) => $q->whereNull('max_uses')->orWhereColumn('used_count', '<', 'max_uses'))
+                    ->increment('used_count');
+            }
+
+            $paymentStatus = 'pending';
 
             $order = Order::create([
                 'user_id' => auth()->id(),
@@ -223,6 +243,7 @@ class CheckoutController extends Controller
                 'shipping_phone' => $request->shipping_phone,
                 'shipping_address' => $request->shipping_address,
                 'shipping_city' => $request->shipping_city,
+                'shipping_zone' => $shippingZone,
                 'shipping_state' => $request->shipping_state,
                 'shipping_zip' => $request->shipping_zip,
                 'shipping_country' => $request->shipping_country ?? 'Bangladesh',

@@ -47,4 +47,13 @@ class TagController extends Controller
         $tag->delete();
         return back()->with('success', 'Tag deleted.');
     }
+
+    public function quickCreate(Request $request)
+    {
+        $request->validate(['name' => 'required|string|max:100']);
+
+        $tag = Tag::findOrCreateByName($request->name);
+
+        return response()->json(['id' => $tag->id, 'name' => $tag->name]);
+    }
 }

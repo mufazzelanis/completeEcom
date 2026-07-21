@@ -11,7 +11,7 @@ class ProductController extends Controller
     public function show(Product $product)
     {
         $product->increment('views');
-        $product->load(['category', 'images', 'reviews.user']);
+        $product->load(['category', 'brand', 'images', 'reviews.user', 'faqs']);
 
         $related = Product::active()
             ->where('category_id', $product->category_id)

@@ -33,7 +33,7 @@ class BlogController extends Controller
 
     public function show(BlogPost $blogPost)
     {
-        abort_if($blogPost->status !== 'published', 404);
+        abort_if($blogPost->status !== 'published' || $blogPost->published_at?->isFuture(), 404);
 
         $blogPost->increment('views');
         $blogPost->load(['category', 'author', 'tags']);

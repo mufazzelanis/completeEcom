@@ -17,14 +17,18 @@ class FaqController extends Controller
 
     public function store(Request $request)
     {
-        $request->validate(['question' => 'required|string', 'answer' => 'required|string']);
+        $request->validate([
+            'question' => 'required|string|max:255',
+            'answer'   => 'required|string',
+            'category' => 'nullable|string|max:255',
+        ]);
 
         Faq::create([
             'question'   => $request->question,
             'answer'     => $request->answer,
-            'category'   => $request->filled('category') ? $request->category : null,
+            'category'   => $request->filled('category') ? trim($request->category) : null,
             'sort_order' => (int) ($request->sort_order ?? 0),
-            'is_active'  => $request->boolean('is_active', true),
+            'is_active'  => $request->boolean('is_active'),
         ]);
 
         return redirect()->route('admin.faqs.index')->with('success', 'FAQ added.');
@@ -32,12 +36,16 @@ class FaqController extends Controller
 
     public function update(Request $request, Faq $faq)
     {
-        $request->validate(['question' => 'required|string', 'answer' => 'required|string']);
+        $request->validate([
+            'question' => 'required|string|max:255',
+            'answer'   => 'required|string',
+            'category' => 'nullable|string|max:255',
+        ]);
 
         $faq->update([
             'question'   => $request->question,
             'answer'     => $request->answer,
-            'category'   => $request->filled('category') ? $request->category : null,
+            'category'   => $request->filled('category') ? trim($request->category) : null,
             'sort_order' => (int) ($request->sort_order ?? 0),
             'is_active'  => $request->boolean('is_active'),
         ]);
@@ -54,6 +62,6 @@ class FaqController extends Controller
     public function toggle(Faq $faq)
     {
         $faq->update(['is_active' => !$faq->is_active]);
-        return back();
+        return back()->with('success', 'FAQ ' . ($faq->is_active ? 'activated' : 'deactivated') . '.');
     }
 }

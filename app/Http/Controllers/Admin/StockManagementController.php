@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Product;
 use App\Models\StockAdjustment;
+use App\Models\StockReason;
 use Illuminate\Http\Request;
 
 class StockManagementController extends Controller
@@ -35,8 +36,12 @@ class StockManagementController extends Controller
 
         $products   = $query->paginate(30)->withQueryString();
         $categories = \App\Models\Category::whereNull('parent_id')->orderBy('name')->get(['id', 'name']);
+        $reasons    = StockReason::active()
+            ->whereIn('type', ['any', 'manual_in', 'manual_out'])
+            ->orderBy('sort_order')
+            ->get(['id', 'label']);
 
-        return view('admin.stock_management.index', compact('products', 'categories'));
+        return view('admin.stock_management.index', compact('products', 'categories', 'reasons'));
     }
 
     public function update(Request $request)

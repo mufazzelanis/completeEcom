@@ -28,10 +28,10 @@
 <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
     @php
     $cards = [
-        ['Total Collected', '$'.number_format($summary->total_collected ?? 0,2), 'text-gray-800', 'bg-gray-50'],
-        ['Paid', '$'.number_format($summary->paid_amount ?? 0,2), 'text-green-700', 'bg-green-50'],
-        ['Pending', '$'.number_format($summary->pending_amount ?? 0,2), 'text-orange-700', 'bg-orange-50'],
-        ['Failed / Refunded', '$'.number_format(($summary->failed_amount ?? 0)+($summary->refunded_amount ?? 0),2), 'text-red-700', 'bg-red-50'],
+        ['Total Collected', '৳'.number_format($summary->total_collected ?? 0,2), 'text-gray-800', 'bg-gray-50'],
+        ['Paid', '৳'.number_format($summary->paid_amount ?? 0,2), 'text-green-700', 'bg-green-50'],
+        ['Pending', '৳'.number_format($summary->pending_amount ?? 0,2), 'text-orange-700', 'bg-orange-50'],
+        ['Failed / Refunded', '৳'.number_format(($summary->failed_amount ?? 0)+($summary->refunded_amount ?? 0),2), 'text-red-700', 'bg-red-50'],
     ];
     @endphp
     @foreach($cards as [$label,$value,$tc,$bg])
@@ -60,7 +60,7 @@
             @endphp
             <div class="flex items-center justify-between text-sm">
                 <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full {{ $sc[$s->payment_status] ?? 'bg-gray-300' }}"></span><span class="capitalize text-gray-600">{{ $s->payment_status }}</span></span>
-                <span class="font-medium text-gray-800">${{ number_format($s->amount,0) }}</span>
+                <span class="font-medium text-gray-800">৳{{ number_format($s->amount,0) }}</span>
             </div>
             @endforeach
         </div>
@@ -91,7 +91,7 @@
                 <tr class="hover:bg-gray-50">
                     <td class="px-6 py-3 font-medium text-gray-700 uppercase">{{ $m->payment_method }}</td>
                     <td class="px-6 py-3 text-right text-gray-600">{{ number_format($m->count) }}</td>
-                    <td class="px-6 py-3 text-right font-semibold text-gray-800">${{ number_format($m->revenue,2) }}</td>
+                    <td class="px-6 py-3 text-right font-semibold text-gray-800">৳{{ number_format($m->revenue,2) }}</td>
                     <td class="px-6 py-3 text-right text-green-600">{{ number_format($m->paid_count) }}</td>
                     <td class="px-6 py-3 text-right text-orange-500">{{ number_format($m->pending_count) }}</td>
                     <td class="px-6 py-3 text-right text-red-500">{{ number_format($m->failed_count) }}</td>
@@ -122,7 +122,7 @@
                     <p class="text-xs text-gray-400">{{ $order->user?->name ?? 'Guest' }} · {{ $order->created_at->diffForHumans() }}</p>
                 </div>
                 <div class="text-right">
-                    <p class="text-sm font-semibold text-gray-700">${{ number_format($order->total,2) }}</p>
+                    <p class="text-sm font-semibold text-gray-700">৳{{ number_format($order->total,2) }}</p>
                     <span class="text-xs uppercase text-gray-500">{{ $order->payment_method }}</span>
                 </div>
             </div>
@@ -146,7 +146,7 @@
                     <p class="text-xs text-gray-400">{{ $order->user?->name ?? 'Guest' }} · {{ $order->created_at->diffForHumans() }}</p>
                 </div>
                 <div class="text-right">
-                    <p class="text-sm font-semibold text-red-600">${{ number_format($order->total,2) }}</p>
+                    <p class="text-sm font-semibold text-red-600">৳{{ number_format($order->total,2) }}</p>
                     <span class="text-xs uppercase text-gray-500">{{ $order->payment_method }}</span>
                 </div>
             </div>
@@ -171,7 +171,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 { label: 'Nagad', data: monthly.map(m => parseFloat(m.nagad)), backgroundColor: 'rgba(16,185,129,0.75)', borderRadius: 3 },
             ]
         },
-        options: { responsive: true, plugins: { legend: { labels: { font: { size:11 } } } }, scales: { x: { stacked: true, grid: { display:false }, ticks: { font: { size:10 } } }, y: { stacked: true, ticks: { callback: v => '$'+v.toLocaleString(), font: { size:10 } } } } }
+        options: { responsive: true, plugins: { legend: { labels: { font: { size:11 } } } }, scales: { x: { stacked: true, grid: { display:false }, ticks: { font: { size:10 } } }, y: { stacked: true, ticks: { callback: v => '৳'+v.toLocaleString(), font: { size:10 } } } } }
     });
 
     const ps = @json($byStatus);

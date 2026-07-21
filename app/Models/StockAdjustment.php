@@ -7,13 +7,18 @@ use Illuminate\Database\Eloquent\Model;
 class StockAdjustment extends Model
 {
     protected $fillable = [
-        'product_id', 'order_id', 'type', 'quantity',
+        'product_id', 'order_id', 'reason_id', 'type', 'quantity',
         'stock_before', 'stock_after', 'reference', 'reason', 'adjusted_by',
     ];
 
     public function product()
     {
         return $this->belongsTo(Product::class);
+    }
+
+    public function stockReason()
+    {
+        return $this->belongsTo(StockReason::class, 'reason_id');
     }
 
     public function order()

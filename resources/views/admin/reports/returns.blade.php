@@ -30,8 +30,8 @@
     $cards = [
         ['Return Rate', $returnRate.'%', 'text-red-700', 'bg-red-50', 'Of '.(number_format($summary->total_orders ?? 0)).' total orders'],
         ['Returned Orders', number_format($summary->returned_count ?? 0), 'text-orange-700', 'bg-orange-50', 'Cancelled + Refunded'],
-        ['Revenue Lost', '$'.number_format($summary->lost_revenue ?? 0,2), 'text-red-700', 'bg-red-50', 'Total value of returns'],
-        ['Refunded', number_format($summary->refunded_count ?? 0).' orders', 'text-gray-700', 'bg-gray-50', '$'.number_format($summary->refunded_revenue ?? 0,2).' refunded'],
+        ['Revenue Lost', '৳'.number_format($summary->lost_revenue ?? 0,2), 'text-red-700', 'bg-red-50', 'Total value of returns'],
+        ['Refunded', number_format($summary->refunded_count ?? 0).' orders', 'text-gray-700', 'bg-gray-50', '৳'.number_format($summary->refunded_revenue ?? 0,2).' refunded'],
     ];
     @endphp
     @foreach($cards as [$label,$value,$tc,$bg,$sub])
@@ -60,14 +60,14 @@
                     <p class="text-sm font-medium text-orange-800">Cancelled</p>
                     <p class="text-xs text-orange-600">{{ number_format($summary->cancelled_count ?? 0) }} orders</p>
                 </div>
-                <p class="font-bold text-orange-700">-${{ number_format($summary->cancelled_revenue ?? 0,0) }}</p>
+                <p class="font-bold text-orange-700">-৳{{ number_format($summary->cancelled_revenue ?? 0,0) }}</p>
             </div>
             <div class="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
                 <div>
                     <p class="text-sm font-medium text-gray-700">Refunded</p>
                     <p class="text-xs text-gray-500">{{ number_format($summary->refunded_count ?? 0) }} orders</p>
                 </div>
-                <p class="font-bold text-gray-700">-${{ number_format($summary->refunded_revenue ?? 0,0) }}</p>
+                <p class="font-bold text-gray-700">-৳{{ number_format($summary->refunded_revenue ?? 0,0) }}</p>
             </div>
         </div>
     </div>
@@ -84,7 +84,7 @@
             <div>
                 <div class="flex justify-between text-sm mb-1">
                     <span class="uppercase text-gray-700 font-medium">{{ $pm->payment_method }}</span>
-                    <span class="font-semibold text-gray-800">{{ number_format($pm->count) }} <span class="text-gray-400 font-normal text-xs">(${{ number_format($pm->amount,0) }})</span></span>
+                    <span class="font-semibold text-gray-800">{{ number_format($pm->count) }} <span class="text-gray-400 font-normal text-xs">(৳{{ number_format($pm->amount,0) }})</span></span>
                 </div>
                 <div class="w-full bg-gray-100 rounded-full h-1.5">
                     <div class="bg-red-400 h-1.5 rounded-full" style="width:{{ $pct }}%"></div>
@@ -106,7 +106,7 @@
             <div>
                 <div class="flex justify-between text-sm mb-1">
                     <span class="text-gray-700">{{ $city->shipping_city }}</span>
-                    <span class="font-semibold text-gray-800">{{ number_format($city->count) }} <span class="text-gray-400 font-normal text-xs">(${{ number_format($city->amount,0) }})</span></span>
+                    <span class="font-semibold text-gray-800">{{ number_format($city->count) }} <span class="text-gray-400 font-normal text-xs">(৳{{ number_format($city->amount,0) }})</span></span>
                 </div>
                 <div class="w-full bg-gray-100 rounded-full h-1.5">
                     <div class="bg-orange-400 h-1.5 rounded-full" style="width:{{ $pct }}%"></div>
@@ -150,7 +150,7 @@
                         <span class="px-2 py-0.5 rounded-full text-xs font-medium {{ $order->status === 'refunded' ? 'bg-gray-100 text-gray-600' : 'bg-orange-100 text-orange-700' }}">{{ ucfirst($order->status) }}</span>
                     </td>
                     <td class="px-6 py-3 text-center text-xs uppercase text-gray-500">{{ $order->payment_method }}</td>
-                    <td class="px-6 py-3 text-right font-semibold text-red-600">-${{ number_format($order->total,2) }}</td>
+                    <td class="px-6 py-3 text-right font-semibold text-red-600">-৳{{ number_format($order->total,2) }}</td>
                     <td class="px-6 py-3 text-right text-xs text-gray-400">{{ $order->created_at->format('M d, Y') }}</td>
                 </tr>
                 @empty
@@ -174,7 +174,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 { label: 'Revenue Lost', data: trend.map(m => parseFloat(m.lost_revenue)), type: 'line', borderColor: '#ef4444', backgroundColor: 'transparent', tension: 0.4, pointRadius: 3, yAxisID: 'y2' },
             ]
         },
-        options: { responsive: true, plugins: { legend: { labels: { font: { size:11 } } } }, scales: { x: { grid: { display:false }, ticks: { font: { size:10 } } }, y: { ticks: { font: { size:10 } } }, y2: { position: 'right', grid: { display:false }, ticks: { callback: v => '$'+v.toLocaleString(), font: { size:10 } } } } }
+        options: { responsive: true, plugins: { legend: { labels: { font: { size:11 } } } }, scales: { x: { grid: { display:false }, ticks: { font: { size:10 } } }, y: { ticks: { font: { size:10 } } }, y2: { position: 'right', grid: { display:false }, ticks: { callback: v => '৳'+v.toLocaleString(), font: { size:10 } } } } }
     });
 
     new Chart(document.getElementById('returnTypePieChart'), {

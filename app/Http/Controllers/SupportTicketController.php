@@ -88,6 +88,12 @@ class SupportTicketController extends Controller
         $ticket->increment('reply_count');
         $ticket->update(['last_reply_at' => now(), 'status' => 'open']);
 
+        NotificationDispatcher::admin('ticket_reply_received', [
+            'ticket_number' => $ticket->ticket_number,
+            'subject'       => $ticket->subject,
+            'customer'      => auth()->user()->name,
+        ]);
+
         return back()->with('success', 'Reply sent.');
     }
 

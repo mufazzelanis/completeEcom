@@ -7,6 +7,7 @@ use App\Models\Brand;
 use App\Models\Category;
 use App\Models\FlashSale;
 use App\Models\Product;
+use App\Models\Review;
 
 class HomeController extends Controller
 {
@@ -54,25 +55,27 @@ class HomeController extends Controller
             ->get();
 
         $banners = Banner::active()
-            ->position('home_hero')
+            ->position('hero')
             ->orderBy('sort_order')
             ->get();
 
         $promoBanners = Banner::active()
-            ->position('home_promo')
+            ->position('top')
             ->orderBy('sort_order')
             ->take(4)
-            ->get();
-
-        $categoriesBanner = Banner::active()
-            ->position('home_categories')
-            ->orderBy('sort_order')
             ->get();
 
         $brands = Brand::where('is_active', true)
             ->withCount('products')
             ->orderBy('sort_order')
             ->take(20)
+            ->get();
+
+        $testimonials = Review::with('user', 'product')
+            ->where('is_approved', true)
+            ->whereHas('user')
+            ->latest()
+            ->take(15)
             ->get();
 
         $flashSale = FlashSale::current();
@@ -93,10 +96,10 @@ class HomeController extends Controller
             'onSale',
             'banners',
             'promoBanners',
-            'categoriesBanner',
             'brands',
             'flashSale',
             'flashSaleProducts',
+            'testimonials',
         ));
     }
 }

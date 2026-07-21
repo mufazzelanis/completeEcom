@@ -11,7 +11,7 @@ class Order extends Model
         'user_id', 'guest_email', 'guest_token', 'payment_id', 'order_number', 'status', 'subtotal', 'discount', 'shipping', 'tax', 'total',
         'coupon_code', 'payment_method', 'payment_status', 'payment_charge',
         'shipping_name', 'shipping_phone', 'shipping_address', 'shipping_city',
-        'shipping_state', 'shipping_zip', 'shipping_country', 'notes',
+        'shipping_state', 'shipping_zip', 'shipping_country', 'shipping_zone', 'notes',
         'fraud_score', 'fraud_flags', 'is_fraud_flagged', 'fraud_checked_at',
     ];
 

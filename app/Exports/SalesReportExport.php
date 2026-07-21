@@ -25,14 +25,14 @@ class SalesReportExport implements FromCollection, WithHeadings, WithTitle, With
 
     public function headings(): array
     {
-        return ['Period', 'Orders', 'Revenue ($)', 'Discounts ($)', 'Shipping ($)', 'Avg Order Value ($)'];
+        return ['Period', 'Orders', 'Revenue (৳)', 'Discounts (৳)', 'Shipping (৳)', 'Avg Order Value (৳)'];
     }
 
     public function collection()
     {
         $fmt = match($this->groupBy) {
             'month' => '%Y-%m',
-            'week'  => '%Y-%u',
+            'week'  => '%x-%v',
             default => '%Y-%m-%d',
         };
 
@@ -46,6 +46,7 @@ class SalesReportExport implements FromCollection, WithHeadings, WithTitle, With
             )
             ->whereBetween('created_at', [$this->from, $this->to])
             ->whereNotIn('status', ['cancelled', 'refunded'])
+            ->where('payment_status', '!=', 'refunded')
             ->groupBy('period')
             ->orderBy('period')
             ->get()

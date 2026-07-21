@@ -7,6 +7,7 @@ use App\Models\Order;
 use App\Services\AuditLogger;
 use App\Services\FraudDetectionService;
 use App\Services\Notifications\NotificationDispatcher;
+use App\Services\OrderStockService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 
@@ -63,6 +64,14 @@ class OrderController extends Controller
         $old = $order->payment_status;
         $order->update($request->only(['payment_status']));
 
+        if ($request->payment_status) {
+            $this->syncPaymentRecord($order, $request->payment_status);
+        }
+
+        if ($request->payment_status === 'refunded') {
+            OrderStockService::restoreIfNeeded($order, 'refunded', auth()->id());
+        }
+
         AuditLogger::log(
             'order.payment_updated',
             "Order {$order->order_number} payment status changed from {$old} to {$request->payment_status}",
@@ -81,7 +90,17 @@ class OrderController extends Controller
         ]);
 
         $old = $order->status;
+
         $order->update(['status' => $request->status]);
+
+        if ($request->status === 'refunded' && $order->payment_status !== 'refunded') {
+            $order->update(['payment_status' => 'refunded']);
+            $this->syncPaymentRecord($order, 'refunded');
+        }
+
+        if (in_array($request->status, ['cancelled', 'refunded'], true)) {
+            OrderStockService::restoreIfNeeded($order, $request->status, auth()->id());
+        }
 
         AuditLogger::log(
             'order.status_updated',
@@ -101,6 +120,30 @@ class OrderController extends Controller
         }
 
         return back()->with('success', 'Order status updated.');
+    }
+
+    private function syncPaymentRecord(Order $order, string $paymentStatus): void
+    {
+        $payment = $order->payment ?? $order->payments()->latest()->first();
+        if (! $payment) {
+            return;
+        }
+
+        $mapped = match ($paymentStatus) {
+            'paid'     => 'completed',
+            'failed'   => 'failed',
+            'refunded' => 'refunded',
+            default    => $payment->status,
+        };
+
+        if ($mapped !== $payment->status) {
+            $payment->update([
+                'status'      => $mapped,
+                'verified_by' => $payment->verified_by ?? auth()->id(),
+                'verified_at' => $payment->verified_at ?? now(),
+                'refunded_at' => $mapped === 'refunded' ? now() : $payment->refunded_at,
+            ]);
+        }
     }
 
     public function recheckFraud(Order $order)

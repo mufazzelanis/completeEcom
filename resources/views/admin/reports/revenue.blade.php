@@ -32,13 +32,15 @@
 {{-- Summary --}}
 <div class="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
     @php
-    $net = ($summary->gross_revenue ?? 0) - ($summary->total_discounts ?? 0);
+    // orders.total is already computed as subtotal - discount + shipping + tax,
+    // so gross_revenue is already net of discount — don't subtract it again.
+    $net = $summary->gross_revenue ?? 0;
     $cards = [
-        ['Gross Revenue', '$'.number_format($summary->gross_revenue ?? 0,2), 'text-green-700', 'bg-green-50'],
-        ['Total Discounts', '-$'.number_format($summary->total_discounts ?? 0,2), 'text-orange-700', 'bg-orange-50'],
-        ['Net Revenue', '$'.number_format($net,2), 'text-indigo-700', 'bg-indigo-50'],
-        ['Shipping Rev.', '$'.number_format($summary->shipping_revenue ?? 0,2), 'text-blue-700', 'bg-blue-50'],
-        ['Tax Collected', '$'.number_format($summary->tax_collected ?? 0,2), 'text-purple-700', 'bg-purple-50'],
+        ['Gross Revenue', '৳'.number_format(($summary->gross_revenue ?? 0) + ($summary->total_discounts ?? 0),2), 'text-green-700', 'bg-green-50'],
+        ['Total Discounts', '-৳'.number_format($summary->total_discounts ?? 0,2), 'text-orange-700', 'bg-orange-50'],
+        ['Net Revenue', '৳'.number_format($net,2), 'text-indigo-700', 'bg-indigo-50'],
+        ['Shipping Rev.', '৳'.number_format($summary->shipping_revenue ?? 0,2), 'text-blue-700', 'bg-blue-50'],
+        ['Tax Collected', '৳'.number_format($summary->tax_collected ?? 0,2), 'text-purple-700', 'bg-purple-50'],
     ];
     @endphp
     @foreach($cards as [$label,$value,$tc,$bg])
@@ -69,7 +71,7 @@
             @foreach($byCategory->take(8) as $cat)
             <div class="flex items-center justify-between text-xs">
                 <span class="text-gray-600 truncate">{{ $cat->category }}</span>
-                <span class="font-medium text-gray-800 ml-2">${{ number_format($cat->revenue,0) }}</span>
+                <span class="font-medium text-gray-800 ml-2">৳{{ number_format($cat->revenue,0) }}</span>
             </div>
             @endforeach
         </div>
@@ -87,7 +89,7 @@
             <div>
                 <div class="flex justify-between text-sm mb-1">
                     <span class="text-gray-700">{{ $brand->brand }}</span>
-                    <span class="font-semibold text-gray-800">${{ number_format($brand->revenue,0) }} <span class="text-gray-400 font-normal text-xs">({{ $pct }}%)</span></span>
+                    <span class="font-semibold text-gray-800">৳{{ number_format($brand->revenue,0) }} <span class="text-gray-400 font-normal text-xs">({{ $pct }}%)</span></span>
                 </div>
                 <div class="w-full bg-gray-100 rounded-full h-1.5">
                     <div class="bg-indigo-500 h-1.5 rounded-full" style="width:{{ $pct }}%"></div>
@@ -108,13 +110,13 @@
                     <p class="text-sm font-medium text-orange-800">Total Discounts Given</p>
                     <p class="text-xs text-orange-600 mt-0.5">{{ number_format($couponImpact->orders_with_coupon ?? 0) }} orders used coupons</p>
                 </div>
-                <p class="text-xl font-bold text-orange-700">-${{ number_format($couponImpact->total_discount ?? 0,2) }}</p>
+                <p class="text-xl font-bold text-orange-700">-৳{{ number_format($couponImpact->total_discount ?? 0,2) }}</p>
             </div>
             <div class="flex items-center justify-between p-3 bg-indigo-50 rounded-xl">
                 <div>
                     <p class="text-sm font-medium text-indigo-800">Avg Discount per Order</p>
                 </div>
-                <p class="text-xl font-bold text-indigo-700">${{ number_format($couponImpact->avg_discount ?? 0,2) }}</p>
+                <p class="text-xl font-bold text-indigo-700">৳{{ number_format($couponImpact->avg_discount ?? 0,2) }}</p>
             </div>
             <div class="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
                 <div>
@@ -124,7 +126,8 @@
                 <p class="text-xl font-bold text-gray-700">{{ $couponRate }}%</p>
             </div>
             @php
-            $discountPct = ($summary->gross_revenue ?? 0) > 0 ? round((($summary->total_discounts ?? 0) / $summary->gross_revenue) * 100, 1) : 0;
+            $preDiscountRevenue = ($summary->gross_revenue ?? 0) + ($summary->total_discounts ?? 0);
+            $discountPct = $preDiscountRevenue > 0 ? round((($summary->total_discounts ?? 0) / $preDiscountRevenue) * 100, 1) : 0;
             @endphp
             <div class="flex items-center justify-between p-3 bg-red-50 rounded-xl">
                 <div>
@@ -156,7 +159,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 borderRadius: 5,
             }]
         },
-        options: { responsive: true, plugins: { legend: { labels: { font: { size:11 } } } }, scales: { x: { grid: { display:false }, ticks: { font:{ size:10 } } }, y: { stacked: false, ticks: { callback: v => '$'+v.toLocaleString(), font: { size:10 } } } } }
+        options: { responsive: true, plugins: { legend: { labels: { font: { size:11 } } } }, scales: { x: { grid: { display:false }, ticks: { font:{ size:10 } } }, y: { stacked: false, ticks: { callback: v => '৳'+v.toLocaleString(), font: { size:10 } } } } }
     });
 
     const cats = @json($byCategory->take(8));

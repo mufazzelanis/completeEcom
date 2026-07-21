@@ -1,5 +1,5 @@
 @extends('layouts.app')
-@section('title', $category->name . ' — Blog')
+@section('title', $blogCategory->name . ' — Blog')
 
 @section('content')
 <div class="max-w-7xl mx-auto px-4 py-10">
@@ -8,8 +8,8 @@
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
             All Posts
         </a>
-        <h1 class="text-2xl font-bold text-gray-800">{{ $category->name }}</h1>
-        @if($category->description)<p class="text-gray-500 mt-1">{{ $category->description }}</p>@endif
+        <h1 class="text-2xl font-bold text-gray-800">{{ $blogCategory->name }}</h1>
+        @if($blogCategory->description)<p class="text-gray-500 mt-1">{{ $blogCategory->description }}</p>@endif
     </div>
 
     <div class="grid grid-cols-3 gap-6">

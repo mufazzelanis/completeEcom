@@ -10,7 +10,7 @@ class BannerController extends Controller
 {
     public function index()
     {
-        $banners = Banner::orderBy('position')->orderBy('sort_order')->get();
+        $banners = Banner::orderBy('position')->orderBy('sort_order')->paginate(20);
         return view('admin.banners.index', compact('banners'));
     }
 
@@ -28,7 +28,7 @@ class BannerController extends Controller
         ]);
 
         $data = $request->only(['title', 'subtitle', 'description', 'button_text', 'button_link', 'position', 'bg_color', 'text_color', 'sort_order']);
-        $data['is_active']  = $request->boolean('is_active', true);
+        $data['is_active']  = $request->boolean('is_active');
         $data['sort_order'] = (int) ($request->sort_order ?? 0);
         $data['starts_at']  = $request->filled('starts_at') ? $request->starts_at : null;
         $data['ends_at']    = $request->filled('ends_at') ? $request->ends_at : null;

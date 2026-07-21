@@ -20,11 +20,21 @@
                 type: '{{ old('type', $selectedType) }}',
                 productId: '{{ old('product_id') }}',
                 products: {{ Js::from($products) }},
+                reasons: {{ Js::from($reasons) }},
+                reasonId: '',
+                reason: '{{ old('reason') }}',
                 get currentStock() {
                     const p = this.products.find(p => p.id == this.productId);
                     return p ? p.stock : null;
                 },
-                get isOut() { return ['damage_out','manual_out'].includes(this.type) }
+                get isOut() { return ['damage_out','manual_out'].includes(this.type) },
+                get reasonOptions() {
+                    return this.reasons.filter(r => r.type === 'any' || r.type === this.type);
+                },
+                applyReasonPreset() {
+                    const picked = this.reasons.find(r => r.id == this.reasonId);
+                    if (picked) this.reason = picked.label;
+                }
             }">
             @csrf
             <div class="space-y-5">
@@ -96,9 +106,20 @@
 
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Reason *</label>
-                    <textarea name="reason" rows="3" placeholder="Explain why this adjustment is being made…"
-                        class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 @error('reason') border-red-400 @enderror">{{ old('reason') }}</textarea>
+                    <input type="hidden" name="reason_id" x-model="reasonId">
+                    <select x-model="reasonId" @change="applyReasonPreset()"
+                        class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm mb-2 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <option value="">— Pick a common reason (optional) —</option>
+                        <template x-for="r in reasonOptions" :key="r.id">
+                            <option :value="r.id" x-text="r.label"></option>
+                        </template>
+                    </select>
+                    <textarea name="reason" rows="3" placeholder="Explain why this adjustment is being made…" x-model="reason"
+                        class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 @error('reason') border-red-400 @enderror"></textarea>
                     @error('reason')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
+                    <p class="text-xs text-gray-400 mt-1">
+                        Manage the reason list in <a href="{{ route('admin.stock-reasons.index') }}" class="text-indigo-600 hover:underline" target="_blank">Stock Reasons</a>.
+                    </p>
                 </div>
 
                 <div class="flex justify-end space-x-3 pt-2">

@@ -76,6 +76,7 @@ return [
         'low_stock'             => ['recipient' => 'admin', 'channels' => ['email', 'push']],
         'fraud_flagged'         => ['recipient' => 'admin', 'channels' => ['email']],
         'new_ticket'            => ['recipient' => 'admin', 'channels' => ['email', 'push']],
+        'ticket_reply_received' => ['recipient' => 'admin', 'channels' => ['email', 'push']],
         'new_return'            => ['recipient' => 'admin', 'channels' => ['email']],
     ],
 

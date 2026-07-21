@@ -33,6 +33,7 @@ use App\Http\Controllers\Admin\PurchaseController as AdminPurchaseController;
 use App\Http\Controllers\Admin\ReferralProgramController as AdminReferralProgramController;
 use App\Http\Controllers\Admin\ReportController as AdminReportController;
 use App\Http\Controllers\Admin\ReturnController as AdminReturnController;
+use App\Http\Controllers\Admin\SupportTicketController as AdminSupportTicketController;
 use App\Http\Controllers\Admin\ReviewController as AdminReviewController;
 use App\Http\Controllers\Admin\RoleController as AdminRoleController;
 use App\Http\Controllers\Admin\SaleProductController as AdminSaleProductController;
@@ -40,6 +41,7 @@ use App\Http\Controllers\Admin\SettingController as AdminSettingController;
 use App\Http\Controllers\Admin\SkuManagementController as AdminSkuManagementController;
 use App\Http\Controllers\Admin\StockAdjustmentController as AdminStockAdjustmentController;
 use App\Http\Controllers\Admin\StockManagementController as AdminStockManagementController;
+use App\Http\Controllers\Admin\StockReasonController as AdminStockReasonController;
 use App\Http\Controllers\Admin\StockTransferController as AdminStockTransferController;
 use App\Http\Controllers\Admin\SubcategoryController as AdminSubcategoryController;
 use App\Http\Controllers\Admin\SupplierController as AdminSupplierController;
@@ -60,6 +62,7 @@ use App\Http\Controllers\OrderController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\AccountReturnController;
 use App\Http\Controllers\ReturnRequestController;
 use App\Http\Controllers\SearchController;
 use App\Http\Controllers\SecurityController;
@@ -90,6 +93,7 @@ Route::get('/newsletter/unsubscribe/{token}', [NewsletterSubscriptionController:
 // Frontend Routes
 Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::get('/shop', [ShopController::class, 'index'])->name('shop.index');
+Route::get('/categories', [ShopController::class, 'categories'])->name('categories.index');
 Route::get('/shop/category/{category}', [ShopController::class, 'category'])->name('shop.category');
 Route::get('/products/{product}', [ProductController::class, 'show'])->name('products.show');
 Route::post('/products/{product}/review', [ProductController::class, 'storeReview'])->middleware('auth')->name('products.review');
@@ -123,6 +127,8 @@ Route::middleware('auth')->group(function () {
     // Return requests
     Route::get('/orders/{order}/return', [ReturnRequestController::class, 'create'])->name('orders.return.create');
     Route::post('/orders/{order}/return', [ReturnRequestController::class, 'store'])->name('orders.return.store');
+    Route::get('/account/returns', [AccountReturnController::class, 'index'])->name('account.returns.index');
+    Route::get('/account/returns/{return}', [AccountReturnController::class, 'show'])->name('account.returns.show');
 
     // Wishlist
     Route::post('/wishlist/toggle/{product}', [WishlistController::class, 'toggle'])->name('wishlist.toggle');
@@ -217,6 +223,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
 
     // Tags
     Route::resource('tags', AdminTagController::class)->except(['show']);
+    Route::post('tags/quick-create', [AdminTagController::class, 'quickCreate'])->name('tags.quick-create');
     Route::resource('orders', AdminOrderController::class)->only(['index', 'show', 'update', 'destroy']);
     Route::patch('orders/{order}/status', [AdminOrderController::class, 'updateStatus'])->name('orders.status');
     Route::resource('users', AdminUserController::class);
@@ -260,6 +267,13 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::post('stock-management', [AdminStockManagementController::class, 'update'])->name('stock-management.update');
     Route::patch('products/{product}/quick-stock', [AdminStockManagementController::class, 'quickUpdate'])->name('products.quick-stock');
 
+    // Stock Reasons (manageable list used by Stock Adjustments/Management)
+    Route::get('stock-reasons', [AdminStockReasonController::class, 'index'])->name('stock-reasons.index');
+    Route::post('stock-reasons', [AdminStockReasonController::class, 'store'])->name('stock-reasons.store');
+    Route::put('stock-reasons/{stockReason}', [AdminStockReasonController::class, 'update'])->name('stock-reasons.update');
+    Route::delete('stock-reasons/{stockReason}', [AdminStockReasonController::class, 'destroy'])->name('stock-reasons.destroy');
+    Route::patch('stock-reasons/{stockReason}/toggle', [AdminStockReasonController::class, 'toggle'])->name('stock-reasons.toggle');
+
     // Sale Products
     Route::get('sale-products', [AdminSaleProductController::class, 'index'])->name('sale-products.index');
     Route::patch('sale-products/{product}', [AdminSaleProductController::class, 'update'])->name('sale-products.update');
@@ -270,6 +284,12 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::get('returns/{id}', [AdminReturnController::class, 'show'])->name('returns.show');
     Route::post('returns/{id}/approve', [AdminReturnController::class, 'approve'])->name('returns.approve');
     Route::post('returns/{id}/reject', [AdminReturnController::class, 'reject'])->name('returns.reject');
+
+    // Support Tickets
+    Route::get('support-tickets', [AdminSupportTicketController::class, 'index'])->name('support-tickets.index');
+    Route::get('support-tickets/{ticket}', [AdminSupportTicketController::class, 'show'])->name('support-tickets.show');
+    Route::post('support-tickets/{ticket}/reply', [AdminSupportTicketController::class, 'reply'])->name('support-tickets.reply');
+    Route::patch('support-tickets/{ticket}/status', [AdminSupportTicketController::class, 'updateStatus'])->name('support-tickets.status');
 
     // Warehouses
     Route::resource('warehouses', AdminWarehouseController::class)->except(['show']);

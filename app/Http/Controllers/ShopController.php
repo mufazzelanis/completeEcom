@@ -81,6 +81,18 @@ class ShopController extends Controller
         return view('shop.index', compact('products', 'categories', 'brands', 'tags'));
     }
 
+    public function categories()
+    {
+        $categories = Category::whereNull('parent_id')
+            ->where('is_active', true)
+            ->withCount('products')
+            ->with(['children' => fn($q) => $q->where('is_active', true)->withCount('products')->orderBy('sort_order')])
+            ->orderBy('sort_order')
+            ->get();
+
+        return view('shop.categories', compact('categories'));
+    }
+
     public function category(Category $category)
     {
         $products = Product::with(['category', 'brand'])

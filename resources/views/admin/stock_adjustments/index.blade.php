@@ -71,7 +71,7 @@
                 </td>
                 <td class="px-6 py-3 text-center text-sm text-gray-500">{{ $adj->stock_before }}</td>
                 <td class="px-6 py-3 text-center text-sm font-medium text-gray-800">{{ $adj->stock_after }}</td>
-                <td class="px-6 py-3 text-sm text-gray-600 max-w-xs truncate">{{ $adj->reason }}</td>
+                <td class="px-6 py-3 text-sm text-gray-600 max-w-xs truncate" title="{{ $adj->reason }}">{{ $adj->reason }}</td>
                 <td class="px-6 py-3 text-sm text-gray-500">{{ $adj->adjustedBy->name }}</td>
             </tr>
             @empty
