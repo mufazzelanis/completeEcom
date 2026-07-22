@@ -32,6 +32,7 @@
                 <th class="px-6 py-3 text-left">Email</th>
                 <th class="px-6 py-3 text-center">Role</th>
                 <th class="px-6 py-3 text-center">Orders</th>
+                <th class="px-6 py-3 text-center">Points</th>
                 <th class="px-6 py-3 text-center">Status</th>
                 <th class="px-6 py-3 text-center">Joined</th>
                 <th class="px-6 py-3 text-center">Actions</th>
@@ -55,6 +56,7 @@
                         </span>
                     </td>
                     <td class="px-6 py-4 text-center font-semibold text-gray-800">{{ $user->orders_count }}</td>
+                    <td class="px-6 py-4 text-center font-semibold text-purple-600">{{ number_format($user->points_balance) }}</td>
                     <td class="px-6 py-4 text-center">
                         <span class="px-2 py-1 rounded-full text-xs font-medium {{ $user->is_active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700' }}">
                             {{ $user->is_active ? 'Active' : 'Inactive' }}
@@ -73,7 +75,7 @@
                     </td>
                 </tr>
             @empty
-                <tr><td colspan="7" class="px-6 py-12 text-center text-gray-400">No users found.</td></tr>
+                <tr><td colspan="8" class="px-6 py-12 text-center text-gray-400">No users found.</td></tr>
             @endforelse
         </tbody>
     </table>

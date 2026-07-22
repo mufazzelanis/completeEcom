@@ -48,6 +48,70 @@
 </div>
 
 <div class="bg-white rounded-xl shadow-sm border p-6 space-y-4">
+    <h2 class="text-base font-semibold text-gray-900 pb-2 border-b">Checkout Form Fields</h2>
+    <p class="text-xs text-gray-500 -mt-2">Customize each field's label and placeholder text (e.g. translate to Bangla), and control whether it's required, optional, or hidden on the customer checkout form.</p>
+
+    @php
+    // key => [default label, default placeholder, mode options ('' key = no dropdown at all), default mode]
+    $checkoutFieldRows = [
+        'name'    => ['Full Name', '', null, 'required'],
+        'phone'   => ['Phone', '01XXXXXXXXX', ['required' => 'Required', 'optional' => 'Optional'], 'required'],
+        'address' => ['Address', 'Street address, house number, area...', ['required' => 'Required', 'optional' => 'Optional', 'hidden' => 'Hidden'], 'required'],
+        'city'    => ['City', 'Dhaka', ['required' => 'Required', 'optional' => 'Optional', 'hidden' => 'Hidden'], 'required'],
+        'state'   => ['District', 'Dhaka', ['required' => 'Required', 'optional' => 'Optional', 'hidden' => 'Hidden'], 'optional'],
+        'zip'     => ['ZIP Code', '1207', ['required' => 'Required', 'optional' => 'Optional', 'hidden' => 'Hidden'], 'optional'],
+        'country' => ['Country', '', ['required' => 'Required', 'optional' => 'Optional', 'hidden' => 'Hidden'], 'optional'],
+        'email'   => ['Email', '', ['required' => 'Required', 'optional' => 'Optional', 'hidden' => 'Hidden'], 'optional'],
+        'notes'   => ['Order Notes', 'Any special instructions...', ['required' => 'Required', 'optional' => 'Optional', 'hidden' => 'Hidden'], 'optional'],
+    ];
+    @endphp
+
+    <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+            <thead class="bg-gray-50"><tr class="text-xs text-gray-500 uppercase">
+                <th class="px-3 py-2 text-left">Field</th>
+                <th class="px-3 py-2 text-left">Custom Label</th>
+                <th class="px-3 py-2 text-left">Placeholder Text</th>
+                <th class="px-3 py-2 text-left w-40">Show As</th>
+            </tr></thead>
+            <tbody class="divide-y divide-gray-100">
+                @foreach($checkoutFieldRows as $key => [$defaultLabel, $defaultPlaceholder, $modeOptions, $defaultMode])
+                <tr>
+                    <td class="px-3 py-2 font-medium text-gray-600 whitespace-nowrap">{{ $defaultLabel }}</td>
+                    <td class="px-3 py-2">
+                        <input type="text" name="checkout_label_{{ $key }}" value="{{ setting('checkout_label_'.$key, $defaultLabel) }}"
+                               placeholder="{{ $defaultLabel }}"
+                               class="w-full border rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-orange-500">
+                    </td>
+                    <td class="px-3 py-2">
+                        @if($key === 'country')
+                            <span class="text-xs text-gray-300">— not editable (auto-filled)</span>
+                        @else
+                            <input type="text" name="checkout_placeholder_{{ $key }}" value="{{ setting('checkout_placeholder_'.$key, $defaultPlaceholder) }}"
+                                   placeholder="{{ $defaultPlaceholder ?: 'e.g. bilingual example text' }}"
+                                   class="w-full border rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-orange-500">
+                        @endif
+                    </td>
+                    <td class="px-3 py-2">
+                        @if($modeOptions === null)
+                            <span class="text-xs text-gray-400">Always required</span>
+                        @else
+                            <select name="checkout_field_{{ $key }}" class="w-full border rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-orange-500">
+                                @foreach($modeOptions as $val => $optLabel)
+                                <option value="{{ $val }}" @selected(setting('checkout_field_'.$key, $defaultMode) === $val)>{{ $optLabel }}</option>
+                                @endforeach
+                            </select>
+                        @endif
+                    </td>
+                </tr>
+                @endforeach
+            </tbody>
+        </table>
+    </div>
+    <p class="text-xs text-gray-400">Phone can't be hidden — guest checkout identifies/creates the customer's account by phone number, so "Show As" for Phone only applies once a customer is already logged in.</p>
+</div>
+
+<div class="bg-white rounded-xl shadow-sm border p-6 space-y-4">
     <h2 class="text-base font-semibold text-gray-900 pb-2 border-b">Policies</h2>
     <div>
         <label class="block text-sm font-medium text-gray-700 mb-1">Return Policy</label>

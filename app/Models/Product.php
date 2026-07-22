@@ -123,12 +123,16 @@ class Product extends Model
 
     public function crossSells()
     {
-        return $this->hasMany(ProductRecommendation::class)->where('type', 'cross_sell')->with('recommended');
+        return $this->hasMany(ProductRecommendation::class)->where('type', 'cross_sell')
+            ->whereHas('recommended', fn ($q) => $q->where('is_active', true))
+            ->with('recommended')->orderBy('sort_order');
     }
 
     public function upsells()
     {
-        return $this->hasMany(ProductRecommendation::class)->where('type', 'upsell')->with('recommended');
+        return $this->hasMany(ProductRecommendation::class)->where('type', 'upsell')
+            ->whereHas('recommended', fn ($q) => $q->where('is_active', true))
+            ->with('recommended')->orderBy('sort_order');
     }
 
     public function warehouseStock()
@@ -189,6 +193,38 @@ class Product extends Model
     public function getEffectivePriceAttribute()
     {
         return $this->sale_price ?? $this->price;
+    }
+
+    public function getAvailableStockAttribute()
+    {
+        if (! $this->isBundle()) {
+            return $this->stock;
+        }
+
+        if ($this->bundleItems->isEmpty()) {
+            return 0;
+        }
+
+        return $this->bundleItems->min(fn ($item) => intdiv($item->itemProduct->stock, $item->quantity));
+    }
+
+    public function activeFlashSaleProduct()
+    {
+        return $this->hasOne(FlashSaleProduct::class, 'product_id')
+            ->whereHas('flashSale', fn ($q) => $q->where('is_active', true)
+                ->where('starts_at', '<=', now())
+                ->where('ends_at', '>=', now()));
+    }
+
+    public function getFinalPriceAttribute()
+    {
+        $flash = $this->activeFlashSaleProduct;
+
+        if ($flash && $flash->isAvailable()) {
+            return $flash->sale_price;
+        }
+
+        return $this->effective_price;
     }
 
     public function getAverageRatingAttribute()

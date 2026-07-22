@@ -33,6 +33,7 @@
                 <label class="block text-sm font-medium text-gray-700 mb-1">Email Body (HTML)</label>
                 <textarea name="content" rows="18" required
                     class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500">{{ old('content', $emailCampaign->content) }}</textarea>
+                <p class="text-xs text-gray-400 mt-1">Use <code>@{{ $name }}</code> for recipient name and <code>@{{ $email }}</code> for recipient email — both are automatically replaced per recipient. An unsubscribe link is added to every email automatically.</p>
             </div>
         </div>
     </div>
@@ -61,6 +62,7 @@
                 <label class="block text-sm font-medium text-gray-700 mb-1">Schedule</label>
                 <input type="datetime-local" name="scheduled_at" value="{{ old('scheduled_at', $emailCampaign->scheduled_at?->format('Y-m-d\TH:i')) }}"
                     class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                <p class="text-xs text-gray-400 mt-1">Leave blank to save as draft. Scheduled campaigns start sending automatically within a minute of this time.</p>
             </div>
         </div>
         <button type="submit" class="w-full bg-indigo-600 text-white py-2.5 rounded-xl text-sm font-medium hover:bg-indigo-700 transition">Save Changes</button>

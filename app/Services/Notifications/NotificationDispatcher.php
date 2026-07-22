@@ -2,6 +2,7 @@
 
 namespace App\Services\Notifications;
 
+use App\Models\NotificationLog;
 use App\Models\NotificationPreference;
 use App\Models\NotificationTemplate;
 use App\Models\User;
@@ -60,12 +61,30 @@ class NotificationDispatcher
         foreach ($channels as $channel) {
             if ($recipient === 'customer' && $user && $prefs) {
                 if (!$prefs->allows($channel, $group)) {
+                    NotificationLog::create([
+                        'user_id' => $user->id,
+                        'channel' => $channel,
+                        'event_type' => $eventType,
+                        'recipient' => self::resolveAddress($channel, $recipient, $user),
+                        'status' => 'skipped',
+                        'error' => 'Customer has disabled this notification channel',
+                        'sent_at' => now(),
+                    ]);
                     continue;
                 }
             }
 
             $template = NotificationTemplate::render($eventType, $channel, $recipient, $vars);
             if (!$template) {
+                NotificationLog::create([
+                    'user_id' => $user?->id,
+                    'channel' => $channel,
+                    'event_type' => $eventType,
+                    'recipient' => self::resolveAddress($channel, $recipient, $user),
+                    'status' => 'skipped',
+                    'error' => 'No active template configured for this event/channel',
+                    'sent_at' => now(),
+                ]);
                 continue;
             }
 
@@ -169,5 +188,22 @@ class NotificationDispatcher
         }
 
         $ch->send($user?->id, $eventType, $to, $template['body']);
+    }
+
+    private static function resolveAddress(string $channel, string $recipient, ?User $user): string
+    {
+        if ($recipient === 'admin') {
+            return match ($channel) {
+                'email' => config('notifications.admin_email') ?? 'admin',
+                'sms', 'whatsapp' => config('notifications.admin_phone') ?? 'admin',
+                default => 'admin',
+            };
+        }
+
+        return match ($channel) {
+            'email' => $user?->email ?? 'customer',
+            'sms', 'whatsapp' => $user?->phone ?? 'customer',
+            default => $user ? "user #{$user->id}" : 'customer',
+        };
     }
 }

@@ -56,6 +56,7 @@ use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\CustomerNotificationController;
 use App\Http\Controllers\CustomerReferralController;
 use App\Http\Controllers\CustomerReviewController;
+use App\Http\Controllers\EmailUnsubscribeController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\NewsletterSubscriptionController;
 use App\Http\Controllers\OrderController;
@@ -89,6 +90,7 @@ Route::get('/pages/{page}', [PageController::class, 'show'])->name('pages.show')
 // Newsletter (public)
 Route::post('/newsletter/subscribe', [NewsletterSubscriptionController::class, 'subscribe'])->name('newsletter.subscribe');
 Route::get('/newsletter/unsubscribe/{token}', [NewsletterSubscriptionController::class, 'unsubscribe'])->name('newsletter.unsubscribe');
+Route::get('/email/unsubscribe/{token}', [EmailUnsubscribeController::class, 'unsubscribe'])->name('email.unsubscribe');
 
 // Frontend Routes
 Route::get('/', [HomeController::class, 'index'])->name('home');
@@ -105,6 +107,8 @@ Route::patch('/cart/{cart}', [CartController::class, 'update'])->name('cart.upda
 Route::delete('/cart/{cart}', [CartController::class, 'remove'])->name('cart.remove');
 Route::post('/cart/coupon', [CartController::class, 'applyCoupon'])->name('cart.coupon');
 Route::delete('/cart/coupon/remove', [CartController::class, 'removeCoupon'])->name('cart.coupon.remove');
+Route::post('/cart/points', [CartController::class, 'applyPoints'])->name('cart.points')->middleware('auth');
+Route::delete('/cart/points/remove', [CartController::class, 'removePoints'])->name('cart.points.remove')->middleware('auth');
 
 // Checkout Routes
 Route::get('/checkout', [CheckoutController::class, 'index'])->name('checkout.index');
@@ -417,6 +421,8 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     // Marketing — Referral Program
     Route::get('referrals', [AdminReferralProgramController::class, 'index'])->name('referrals.index');
     Route::patch('referrals/rewards/{reward}', [AdminReferralProgramController::class, 'updateReward'])->name('referrals.reward');
+    Route::get('referrals/settings', [AdminReferralProgramController::class, 'settings'])->name('referrals.settings');
+    Route::post('referrals/settings', [AdminReferralProgramController::class, 'updateSettings'])->name('referrals.settings.update');
 
     // Marketing — Email Campaigns
     Route::resource('email-campaigns', AdminEmailCampaignController::class)->except(['show']);

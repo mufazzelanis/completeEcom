@@ -46,11 +46,15 @@ class EmailCampaign extends Model
 
     public function resolveRecipients()
     {
-        return match ($this->recipient_type) {
-            'customers'     => User::whereHas('orders')->where('is_active', true)->get(),
-            'new_30d'       => User::where('created_at', '>=', now()->subDays(30))->where('is_active', true)->get(),
-            'never_ordered' => User::doesntHave('orders')->where('is_active', true)->get(),
-            default         => User::where('is_active', true)->get(),
+        $optedOut = NotificationPreference::where('email_promo', false)->pluck('user_id');
+
+        $query = match ($this->recipient_type) {
+            'customers'     => User::whereHas('orders')->where('is_active', true),
+            'new_30d'       => User::where('created_at', '>=', now()->subDays(30))->where('is_active', true),
+            'never_ordered' => User::doesntHave('orders')->where('is_active', true),
+            default         => User::where('is_active', true),
         };
+
+        return $query->whereNotIn('id', $optedOut)->get();
     }
 }

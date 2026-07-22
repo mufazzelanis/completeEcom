@@ -3,10 +3,16 @@ $siteName     = setting('site_name', 'ShopVista');
 $siteTagline  = setting('site_tagline', 'Your one-stop shop for everything you need.');
 $logoUrl      = setting_file_url('site_logo');
 $faviconUrl   = setting_file_url('favicon');
-$primaryColor = setting('primary_color', '#ea580c');
+$primaryColor   = setting('primary_color', '#ea580c');
+$secondaryColor = setting('secondary_color', '#ec4899');
+$accentColor    = setting('accent_color', '#dc2626');
+$textColor      = setting('text_color', '#1f2937');
 // Only generate an override ramp when the admin actually picked a different brand color —
-// keeps the default look pixel-identical to the hand-tuned Tailwind orange palette.
-$brandShades  = $primaryColor !== '#ea580c' ? brand_color_shades($primaryColor) : null;
+// keeps the default look pixel-identical to the hand-tuned Tailwind palette.
+$brandShades    = $primaryColor !== '#ea580c' ? brand_color_shades($primaryColor) : null;
+$secondaryShades = $secondaryColor !== '#ec4899' ? brand_color_shades($secondaryColor) : null;
+$accentShades   = $accentColor !== '#dc2626' ? brand_color_shades($accentColor) : null;
+$textColorChanged = $textColor !== '#1f2937';
 $gaId         = setting('google_analytics_id', '');
 $gtmId        = setting('google_tag_manager_id', '');
 $pixelId      = setting('facebook_pixel_id', '');
@@ -52,9 +58,10 @@ $announcementText    = setting('announcement_text', '');
             }
         }
     </script>
-    <?php if($brandShades): ?>
+    <?php if($brandShades || $secondaryShades || $accentShades || $textColorChanged): ?>
     
     <style>
+        <?php if($brandShades): ?>
         <?php $__currentLoopData = $brandShades; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $step => $hex): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
         .bg-orange-<?php echo e($step); ?> { background-color: <?php echo e($hex); ?> !important; }
         .text-orange-<?php echo e($step); ?> { color: <?php echo e($hex); ?> !important; }
@@ -66,6 +73,36 @@ $announcementText    = setting('announcement_text', '');
         .focus\:ring-orange-<?php echo e($step); ?>:focus { --tw-ring-color: <?php echo e($hex); ?> !important; }
         .focus\:border-orange-<?php echo e($step); ?>:focus { border-color: <?php echo e($hex); ?> !important; }
         <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+        <?php endif; ?>
+        <?php if($secondaryShades): ?>
+        <?php $__currentLoopData = $secondaryShades; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $step => $hex): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+        .bg-pink-<?php echo e($step); ?> { background-color: <?php echo e($hex); ?> !important; }
+        .text-pink-<?php echo e($step); ?> { color: <?php echo e($hex); ?> !important; }
+        .border-pink-<?php echo e($step); ?> { border-color: <?php echo e($hex); ?> !important; }
+        .ring-pink-<?php echo e($step); ?> { --tw-ring-color: <?php echo e($hex); ?> !important; }
+        .hover\:bg-pink-<?php echo e($step); ?>:hover { background-color: <?php echo e($hex); ?> !important; }
+        .hover\:text-pink-<?php echo e($step); ?>:hover { color: <?php echo e($hex); ?> !important; }
+        .hover\:border-pink-<?php echo e($step); ?>:hover { border-color: <?php echo e($hex); ?> !important; }
+        .focus\:ring-pink-<?php echo e($step); ?>:focus { --tw-ring-color: <?php echo e($hex); ?> !important; }
+        .focus\:border-pink-<?php echo e($step); ?>:focus { border-color: <?php echo e($hex); ?> !important; }
+        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+        <?php endif; ?>
+        <?php if($accentShades): ?>
+        <?php $__currentLoopData = $accentShades; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $step => $hex): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+        .bg-red-<?php echo e($step); ?> { background-color: <?php echo e($hex); ?> !important; }
+        .text-red-<?php echo e($step); ?> { color: <?php echo e($hex); ?> !important; }
+        .border-red-<?php echo e($step); ?> { border-color: <?php echo e($hex); ?> !important; }
+        .ring-red-<?php echo e($step); ?> { --tw-ring-color: <?php echo e($hex); ?> !important; }
+        .hover\:bg-red-<?php echo e($step); ?>:hover { background-color: <?php echo e($hex); ?> !important; }
+        .hover\:text-red-<?php echo e($step); ?>:hover { color: <?php echo e($hex); ?> !important; }
+        .hover\:border-red-<?php echo e($step); ?>:hover { border-color: <?php echo e($hex); ?> !important; }
+        .focus\:ring-red-<?php echo e($step); ?>:focus { --tw-ring-color: <?php echo e($hex); ?> !important; }
+        .focus\:border-red-<?php echo e($step); ?>:focus { border-color: <?php echo e($hex); ?> !important; }
+        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+        <?php endif; ?>
+        <?php if($textColorChanged): ?>
+        .text-gray-800 { color: <?php echo e($textColor); ?> !important; }
+        <?php endif; ?>
     </style>
     <?php endif; ?>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>

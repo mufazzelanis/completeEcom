@@ -11,9 +11,18 @@ class ProductController extends Controller
     public function show(Product $product)
     {
         $product->increment('views');
-        $product->load(['category', 'brand', 'images', 'reviews.user', 'faqs']);
+        $product->load([
+            'category', 'brand', 'images', 'reviews.user', 'faqs', 'activeFlashSaleProduct',
+            'crossSells.recommended.activeFlashSaleProduct',
+            'upsells.recommended.activeFlashSaleProduct',
+        ]);
+
+        if ($product->isBundle()) {
+            $product->load('bundleItems.itemProduct');
+        }
 
         $related = Product::active()
+            ->with('activeFlashSaleProduct')
             ->where('category_id', $product->category_id)
             ->where('id', '!=', $product->id)
             ->take(4)->get();

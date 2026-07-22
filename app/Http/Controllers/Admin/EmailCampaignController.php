@@ -6,8 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\EmailCampaign;
 use App\Models\EmailCampaignLog;
 use App\Services\AuditLogger;
+use App\Services\EmailCampaignSender;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Mail;
 
 class EmailCampaignController extends Controller
 {
@@ -99,53 +99,21 @@ class EmailCampaignController extends Controller
     {
         abort_unless(in_array($emailCampaign->status, ['draft', 'scheduled']), 403, 'Campaign already sent.');
 
-        $emailCampaign->update(['status' => 'sending']);
+        EmailCampaignSender::startSending($emailCampaign);
+        EmailCampaignSender::processBatch($emailCampaign);
+        $emailCampaign->refresh();
 
-        $recipients = $emailCampaign->resolveRecipients();
-        $sent = 0;
-        $failed = 0;
-        $fromEmail = $emailCampaign->from_email ?: config('mail.from.address');
-        $fromName  = $emailCampaign->from_name  ?: config('mail.from.name');
+        AuditLogger::log(
+            'email_campaign.sent',
+            "Campaign \"{$emailCampaign->name}\" started sending to {$emailCampaign->recipient_count} recipients",
+            $emailCampaign
+        );
 
-        foreach ($recipients as $user) {
-            try {
-                Mail::html($emailCampaign->content, function ($message) use ($user, $emailCampaign, $fromEmail, $fromName) {
-                    $message->to($user->email, $user->name)
-                        ->subject($emailCampaign->subject)
-                        ->from($fromEmail, $fromName);
-                });
-
-                EmailCampaignLog::create([
-                    'campaign_id' => $emailCampaign->id,
-                    'user_id'     => $user->id,
-                    'email'       => $user->email,
-                    'status'      => 'sent',
-                    'sent_at'     => now(),
-                ]);
-                $sent++;
-            } catch (\Throwable $e) {
-                EmailCampaignLog::create([
-                    'campaign_id' => $emailCampaign->id,
-                    'user_id'     => $user->id,
-                    'email'       => $user->email,
-                    'status'      => 'failed',
-                    'error'       => $e->getMessage(),
-                    'sent_at'     => now(),
-                ]);
-                $failed++;
-            }
+        if ($emailCampaign->status === 'sent') {
+            return back()->with('success', "Campaign sent! {$emailCampaign->sent_count} delivered, {$emailCampaign->failed_count} failed.");
         }
 
-        $emailCampaign->update([
-            'status'       => 'sent',
-            'sent_at'      => now(),
-            'sent_count'   => $sent,
-            'failed_count' => $failed,
-        ]);
-
-        AuditLogger::log('email_campaign.sent', "Campaign \"{$emailCampaign->name}\" sent to {$sent} recipients ({$failed} failed)", $emailCampaign);
-
-        return back()->with('success', "Campaign sent! {$sent} delivered, {$failed} failed.");
+        return back()->with('success', "Sending started — {$emailCampaign->sent_count} of {$emailCampaign->recipient_count} sent so far. The rest will go out automatically over the next few minutes.");
     }
 
     public function destroy(EmailCampaign $emailCampaign)

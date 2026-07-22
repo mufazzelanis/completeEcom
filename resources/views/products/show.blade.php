@@ -87,8 +87,17 @@
                 </div>
 
                 <!-- Price -->
+                @php $activeFlashSale = $product->activeFlashSaleProduct && $product->activeFlashSaleProduct->isAvailable() ? $product->activeFlashSaleProduct : null; @endphp
                 <div class="mb-6">
-                    @if($product->sale_price)
+                    @if($activeFlashSale)
+                        <div class="flex items-center space-x-3">
+                            <span class="text-3xl font-bold text-red-600">৳{{ number_format($product->final_price) }}</span>
+                            <span class="text-xl text-gray-400 line-through">৳{{ number_format($product->effective_price) }}</span>
+                            <span class="bg-red-100 text-red-600 text-sm px-2 py-1 rounded-full font-medium animate-pulse">
+                                ⚡ Flash Sale
+                            </span>
+                        </div>
+                    @elseif($product->sale_price)
                         <div class="flex items-center space-x-3">
                             <span class="text-3xl font-bold text-red-600">৳{{ number_format($product->sale_price) }}</span>
                             <span class="text-xl text-gray-400 line-through">৳{{ number_format($product->price) }}</span>
@@ -101,16 +110,36 @@
                     @endif
                 </div>
 
+                @if($product->isBundle() && $product->bundleItems->isNotEmpty())
+                    <div class="mb-6 border border-indigo-100 bg-indigo-50/50 rounded-xl p-4">
+                        <h3 class="font-semibold text-gray-800 mb-3 text-sm">This bundle includes:</h3>
+                        <ul class="space-y-2">
+                            @foreach($product->bundleItems as $bundleItem)
+                                <li class="flex items-center justify-between text-sm">
+                                    <span class="text-gray-600">{{ $bundleItem->quantity }}× {{ $bundleItem->itemProduct->name }}</span>
+                                    <span class="font-medium text-gray-800">৳{{ number_format($bundleItem->effective_price * $bundleItem->quantity) }}</span>
+                                </li>
+                            @endforeach
+                        </ul>
+                        @php $bundleValue = $product->bundleItems->sum(fn($bi) => $bi->effective_price * $bi->quantity); @endphp
+                        @if($bundleValue > $product->final_price)
+                            <p class="text-xs text-green-600 font-semibold mt-3">
+                                Bundle value ৳{{ number_format($bundleValue) }} — you save ৳{{ number_format($bundleValue - $product->final_price) }}
+                            </p>
+                        @endif
+                    </div>
+                @endif
+
                 @if($product->short_description)
                     <p class="text-gray-600 mb-6">{{ $product->short_description }}</p>
                 @endif
 
                 <!-- Stock -->
                 <div class="mb-6">
-                    @if($product->stock > 0)
+                    @if($product->available_stock > 0)
                         <span class="inline-flex items-center bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm font-medium">
                             <span class="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
-                            In Stock ({{ $product->stock }} available)
+                            In Stock ({{ $product->available_stock }} available)
                         </span>
                     @else
                         <span class="inline-flex items-center bg-red-100 text-red-700 px-3 py-1 rounded-full text-sm font-medium">
@@ -124,13 +153,13 @@
                 </div>
 
                 <!-- Add to Cart / Buy Now -->
-                @if($product->stock > 0)
+                @if($product->available_stock > 0)
                     <form action="{{ route('cart.add') }}" method="POST" class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 mb-6">
                         @csrf
                         <input type="hidden" name="product_id" value="{{ $product->id }}">
                         <div class="flex items-center border border-gray-200 rounded-xl overflow-hidden">
                             <button type="button" onclick="updateQty(-1)" class="px-4 py-3 text-gray-500 hover:bg-gray-100 text-lg font-bold">-</button>
-                            <input type="number" name="quantity" id="qty" value="1" min="1" max="{{ $product->stock }}"
+                            <input type="number" name="quantity" id="qty" value="1" min="1" max="{{ $product->available_stock }}"
                                 class="w-16 text-center py-3 border-0 focus:outline-none text-sm font-semibold">
                             <button type="button" onclick="updateQty(1)" class="px-4 py-3 text-gray-500 hover:bg-gray-100 text-lg font-bold">+</button>
                         </div>
@@ -266,6 +295,30 @@
             @endif
         </div>
     </div>
+
+    <!-- Cross-sells -->
+    @if($product->crossSells->isNotEmpty())
+        <div class="mt-12">
+            <h2 class="text-xl font-bold text-gray-900 mb-6">Frequently Bought Together</h2>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+                @foreach($product->crossSells as $rec)
+                    @include('partials.product-card', ['product' => $rec->recommended])
+                @endforeach
+            </div>
+        </div>
+    @endif
+
+    <!-- Upsells -->
+    @if($product->upsells->isNotEmpty())
+        <div class="mt-12">
+            <h2 class="text-xl font-bold text-gray-900 mb-6">You May Also Like</h2>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+                @foreach($product->upsells as $rec)
+                    @include('partials.product-card', ['product' => $rec->recommended])
+                @endforeach
+            </div>
+        </div>
+    @endif
 
     <!-- Related Products -->
     @if($related->isNotEmpty())

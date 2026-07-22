@@ -35,14 +35,14 @@
                             <div class="flex-1 min-w-0">
                                 <a href="{{ route('products.show', $item->product->slug) }}" class="font-semibold text-gray-800 hover:text-orange-500 text-sm block truncate">{{ $item->product->name }}</a>
                                 <p class="text-xs text-gray-400 mt-1">{{ $item->product->category->name }}</p>
-                                <p class="text-orange-500 font-bold mt-2">৳{{ number_format($item->product->effective_price) }}</p>
+                                <p class="text-orange-500 font-bold mt-2">৳{{ number_format($item->product->final_price) }}</p>
                             </div>
                             <div class="flex flex-col items-end space-y-3">
                                 <form action="{{ route('cart.update', $item->id) }}" method="POST" class="flex items-center border border-gray-200 rounded-lg overflow-hidden">
                                     @csrf @method('PATCH')
                                     <button type="button" onclick="this.form.quantity.value = Math.max(1, parseInt(this.form.quantity.value)-1); this.form.submit();" class="px-3 py-1 text-gray-500 hover:bg-gray-100">-</button>
-                                    <input type="number" name="quantity" value="{{ $item->quantity }}" min="1" max="{{ $item->product->stock }}" onchange="this.form.submit()" class="w-12 text-center text-sm border-0 focus:outline-none">
-                                    <button type="button" onclick="this.form.quantity.value = Math.min({{ $item->product->stock }}, parseInt(this.form.quantity.value)+1); this.form.submit();" class="px-3 py-1 text-gray-500 hover:bg-gray-100">+</button>
+                                    <input type="number" name="quantity" value="{{ $item->quantity }}" min="1" max="{{ $item->product->available_stock }}" onchange="this.form.submit()" class="w-12 text-center text-sm border-0 focus:outline-none">
+                                    <button type="button" onclick="this.form.quantity.value = Math.min({{ $item->product->available_stock }}, parseInt(this.form.quantity.value)+1); this.form.submit();" class="px-3 py-1 text-gray-500 hover:bg-gray-100">+</button>
                                 </form>
                                 <div class="flex items-center space-x-3">
                                     <span class="font-bold text-gray-900 text-sm">৳{{ number_format($item->subtotal) }}</span>
@@ -69,7 +69,7 @@
                                 </div>
                                 <div class="flex-1 min-w-0">
                                     <a href="{{ route('products.show', $item->product->slug) }}" class="font-semibold text-gray-800 text-sm line-clamp-2">{{ $item->product->name }}</a>
-                                    <p class="text-orange-500 font-bold mt-1">৳{{ number_format($item->product->effective_price) }}</p>
+                                    <p class="text-orange-500 font-bold mt-1">৳{{ number_format($item->product->final_price) }}</p>
                                 </div>
                                 <form action="{{ route('cart.remove', $item->id) }}" method="POST">
                                     @csrf @method('DELETE')
@@ -82,8 +82,8 @@
                                 <form action="{{ route('cart.update', $item->id) }}" method="POST" class="flex items-center border border-gray-200 rounded-lg overflow-hidden">
                                     @csrf @method('PATCH')
                                     <button type="button" onclick="this.form.quantity.value = Math.max(1, parseInt(this.form.quantity.value)-1); this.form.submit();" class="w-9 h-9 flex items-center justify-center text-gray-500 hover:bg-gray-100 text-lg">-</button>
-                                    <input type="number" name="quantity" value="{{ $item->quantity }}" min="1" max="{{ $item->product->stock }}" onchange="this.form.submit()" class="w-12 text-center text-sm border-0 focus:outline-none">
-                                    <button type="button" onclick="this.form.quantity.value = Math.min({{ $item->product->stock }}, parseInt(this.form.quantity.value)+1); this.form.submit();" class="w-9 h-9 flex items-center justify-center text-gray-500 hover:bg-gray-100 text-lg">+</button>
+                                    <input type="number" name="quantity" value="{{ $item->quantity }}" min="1" max="{{ $item->product->available_stock }}" onchange="this.form.submit()" class="w-12 text-center text-sm border-0 focus:outline-none">
+                                    <button type="button" onclick="this.form.quantity.value = Math.min({{ $item->product->available_stock }}, parseInt(this.form.quantity.value)+1); this.form.submit();" class="w-9 h-9 flex items-center justify-center text-gray-500 hover:bg-gray-100 text-lg">+</button>
                                 </form>
                                 <span class="font-bold text-gray-900">৳{{ number_format($item->subtotal) }}</span>
                             </div>
@@ -94,7 +94,7 @@
 
             <div class="space-y-4">
                 <div class="bg-white rounded-2xl shadow-sm p-6">
-                    <h3 class="font-semibold text-gray-800 mb-4">Coupon Code</h3>
+                    <h3 class="font-semibold text-gray-800 mb-4">Coupon / Promo Code</h3>
                     @if($coupon)
                         <div class="flex items-center justify-between bg-green-50 border border-green-200 rounded-xl px-4 py-3 mb-3">
                             <div>
@@ -109,12 +109,40 @@
                     @else
                         <form action="{{ route('cart.coupon') }}" method="POST" class="flex space-x-2">
                             @csrf
-                            <input type="text" name="code" placeholder="Enter coupon code"
+                            <input type="text" name="code" placeholder="Enter coupon or promo code"
                                 class="flex-1 min-w-0 border border-gray-200 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 uppercase">
                             <button type="submit" class="bg-orange-500 text-white px-4 py-2 rounded-xl text-sm font-medium hover:bg-orange-600 transition flex-shrink-0">Apply</button>
                         </form>
                     @endif
                 </div>
+
+                @auth
+                <div class="bg-white rounded-2xl shadow-sm p-6">
+                    <h3 class="font-semibold text-gray-800 mb-4">Use Your Points</h3>
+                    <p class="text-xs text-gray-400 mb-3">Balance: <span class="font-semibold text-gray-600">{{ number_format($pointsBalance) }} pts</span></p>
+                    @if($pointsRedeemed > 0)
+                        <div class="flex items-center justify-between bg-green-50 border border-green-200 rounded-xl px-4 py-3">
+                            <div>
+                                <p class="text-sm font-semibold text-green-700">{{ number_format($pointsRedeemed) }} pts applied</p>
+                                <p class="text-xs text-green-500">-৳{{ number_format($pointsDiscount) }} discount</p>
+                            </div>
+                            <form action="{{ route('cart.points.remove') }}" method="POST">
+                                @csrf @method('DELETE')
+                                <button type="submit" class="text-red-400 hover:text-red-600 text-xs">Remove</button>
+                            </form>
+                        </div>
+                    @elseif($pointsBalance > 0)
+                        <form action="{{ route('cart.points') }}" method="POST" class="flex space-x-2">
+                            @csrf
+                            <input type="number" name="points" min="1" max="{{ $pointsBalance }}" placeholder="Points to use"
+                                class="flex-1 min-w-0 border border-gray-200 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500">
+                            <button type="submit" class="bg-orange-500 text-white px-4 py-2 rounded-xl text-sm font-medium hover:bg-orange-600 transition flex-shrink-0">Apply</button>
+                        </form>
+                    @else
+                        <p class="text-xs text-gray-400">You don't have any points yet — earn points from purchases and referrals.</p>
+                    @endif
+                </div>
+                @endauth
 
                 <div class="bg-white rounded-2xl shadow-sm p-6">
                     <h3 class="font-semibold text-gray-800 mb-4">Order Summary</h3>
@@ -123,10 +151,16 @@
                             <span>Subtotal</span>
                             <span>৳{{ number_format($subtotal) }}</span>
                         </div>
-                        @if($discount > 0)
+                        @if(($discount - $pointsDiscount) > 0)
                             <div class="flex justify-between text-green-600">
                                 <span>Discount</span>
-                                <span>-৳{{ number_format($discount) }}</span>
+                                <span>-৳{{ number_format($discount - $pointsDiscount) }}</span>
+                            </div>
+                        @endif
+                        @if($pointsDiscount > 0)
+                            <div class="flex justify-between text-green-600">
+                                <span>Points Discount</span>
+                                <span>-৳{{ number_format($pointsDiscount) }}</span>
                             </div>
                         @endif
                         <div class="flex justify-between text-gray-600">
@@ -149,6 +183,17 @@
                 </div>
             </div>
         </div>
+
+        @if($crossSellProducts->isNotEmpty())
+            <div class="mt-10">
+                <h2 class="text-lg font-bold text-gray-900 mb-4">You may also like</h2>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+                    @foreach($crossSellProducts as $p)
+                        @include('partials.product-card', ['product' => $p])
+                    @endforeach
+                </div>
+            </div>
+        @endif
     @endif
 </div>
 @endsection

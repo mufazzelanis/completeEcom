@@ -68,11 +68,16 @@ class UserController extends Controller
     public function show(User $user)
     {
         $user->load('orders');
-        return view('admin.users.show', compact('user'));
+        $pointTransactions = $user->pointTransactions()->with('order')->latest()->paginate(15);
+        return view('admin.users.show', compact('user', 'pointTransactions'));
     }
 
     public function edit(User $user)
     {
+        if ($user->id === auth()->id()) {
+            return redirect()->route('profile.edit')->with('error', 'Manage your own account from your profile page.');
+        }
+
         $roles = Role::orderBy('is_system', 'desc')->orderBy('display_name')->get();
         $permissions = Permission::orderBy('group')->orderBy('display_name')->get()->groupBy('group');
         $userPermissions = $user->userPermissions()->with('permission')->get()->keyBy('permission_id');
@@ -82,10 +87,16 @@ class UserController extends Controller
 
     public function update(Request $request, User $user)
     {
+        // This tool manages OTHER users only — self-management (including role/permissions)
+        // happens via /profile, so this account can never grant itself extra access here.
+        if ($user->id === auth()->id()) {
+            return redirect()->route('profile.edit')->with('error', 'Manage your own account from your profile page.');
+        }
+
         $request->validate([
             'name'      => 'required|string|max:255',
             'email'     => 'required|email|unique:users,email,' . $user->id,
-            'role'      => 'required|in:admin,manager,staff,customer',
+            'role'      => 'required|exists:roles,name',
             'phone'     => 'nullable|string|max:20',
             'is_active' => 'boolean',
             'password'  => ['nullable', 'confirmed', Rules\Password::defaults()],

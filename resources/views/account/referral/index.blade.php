@@ -2,15 +2,16 @@
 @section('title', 'Referral Program')
 
 @section('content')
-<h1 class="text-xl font-bold text-gray-800 mb-5">Referral Program</h1>
+<h1 class="text-xl font-bold text-gray-800 mb-1">Referral Program</h1>
+<p class="text-sm text-gray-500 mb-5">Your points balance also includes points earned from your own purchases — use them for a discount at <a href="{{ route('cart.index') }}" class="text-indigo-600 hover:underline">checkout</a>.</p>
 
 {{-- Stats --}}
 <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-5">
     @foreach([
+        ['Points Balance', number_format($stats['points_balance']).' pts', 'text-purple-600', 'bg-purple-50'],
         ['Total Referrals', $stats['total_uses'], 'text-indigo-600', 'bg-indigo-50'],
-        ['Total Earned', '৳'.number_format($stats['total_earned']), 'text-green-600', 'bg-green-50'],
-        ['Pending Rewards', $stats['pending'], 'text-orange-600', 'bg-orange-50'],
-        ['Total Paid', '৳'.number_format($stats['paid']), 'text-blue-600', 'bg-blue-50'],
+        ['Points from Referrals', number_format($stats['total_earned']).' pts', 'text-green-600', 'bg-green-50'],
+        ['Points Redeemed', number_format($stats['points_redeemed']).' pts', 'text-blue-600', 'bg-blue-50'],
     ] as [$label, $value, $color, $bg])
     <div class="bg-white rounded-2xl shadow-sm p-4 text-center">
         <p class="text-xl font-bold {{ $color }}">{{ $value }}</p>
@@ -40,38 +41,45 @@
     </div>
 </div>
 
-{{-- Reward History --}}
+{{-- Points Activity --}}
 <div class="bg-white rounded-2xl shadow-sm overflow-hidden">
     <div class="px-5 py-4 border-b border-gray-100">
-        <h2 class="font-semibold text-gray-800">Referral History</h2>
+        <h2 class="font-semibold text-gray-800">Points Activity</h2>
     </div>
-    @if($rewards->isEmpty())
-    <div class="px-5 py-12 text-center text-gray-400 text-sm">No referrals yet. Start sharing your code!</div>
+    @if($pointTransactions->isEmpty())
+    <div class="px-5 py-12 text-center text-gray-400 text-sm">No points activity yet. Refer a friend or make a purchase to start earning!</div>
     @else
     <table class="w-full text-sm">
         <thead class="bg-gray-50"><tr class="text-xs text-gray-500 uppercase">
-            <th class="px-5 py-3 text-left">Friend</th>
-            <th class="px-5 py-3 text-right">Reward</th>
-            <th class="px-5 py-3 text-center">Status</th>
+            <th class="px-5 py-3 text-left">Type</th>
+            <th class="px-5 py-3 text-right">Points</th>
+            <th class="px-5 py-3 text-left">Description</th>
+            <th class="px-5 py-3 text-center">Order</th>
             <th class="px-5 py-3 text-center">Date</th>
         </tr></thead>
         <tbody class="divide-y divide-gray-50">
-            @foreach($rewards as $reward)
+            @foreach($pointTransactions as $tx)
             <tr class="hover:bg-gray-50">
                 <td class="px-5 py-3">
-                    <p class="font-medium text-gray-800">{{ $reward->referee->name }}</p>
-                    <p class="text-xs text-gray-400">{{ $reward->referee->email }}</p>
+                    <span class="text-xs px-2 py-0.5 rounded-full font-semibold {{ $tx->type_badge }}">{{ $tx->type_label }}</span>
                 </td>
-                <td class="px-5 py-3 text-right font-bold text-green-600">৳{{ number_format($reward->reward_amount) }}</td>
+                <td class="px-5 py-3 text-right font-bold {{ $tx->points >= 0 ? 'text-green-600' : 'text-red-600' }}">
+                    {{ $tx->points >= 0 ? '+' : '' }}{{ number_format($tx->points) }}
+                </td>
+                <td class="px-5 py-3 text-gray-600">{{ $tx->description }}</td>
                 <td class="px-5 py-3 text-center">
-                    <span class="text-xs px-2 py-0.5 rounded-full font-semibold {{ $reward->status_badge }}">{{ ucfirst($reward->status) }}</span>
+                    @if($tx->order)
+                        <a href="{{ route('orders.show', $tx->order) }}" class="text-indigo-600 hover:text-indigo-800 text-xs font-mono">{{ $tx->order->order_number }}</a>
+                    @else
+                        <span class="text-gray-300 text-xs">—</span>
+                    @endif
                 </td>
-                <td class="px-5 py-3 text-center text-xs text-gray-400">{{ $reward->created_at->format('M d, Y') }}</td>
+                <td class="px-5 py-3 text-center text-xs text-gray-400">{{ $tx->created_at->format('M d, Y') }}</td>
             </tr>
             @endforeach
         </tbody>
     </table>
-    <div class="px-5 py-4 border-t border-gray-100">{{ $rewards->links() }}</div>
+    <div class="px-5 py-4 border-t border-gray-100">{{ $pointTransactions->links() }}</div>
     @endif
 </div>
 @endsection

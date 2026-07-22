@@ -12,7 +12,7 @@ class ShopController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Product::with(['category', 'brand'])->active();
+        $query = Product::with(['category', 'brand', 'activeFlashSaleProduct'])->active();
 
         if ($request->filled('search')) {
             $s = $request->search;
@@ -95,7 +95,7 @@ class ShopController extends Controller
 
     public function category(Category $category)
     {
-        $products = Product::with(['category', 'brand'])
+        $products = Product::with(['category', 'brand', 'activeFlashSaleProduct'])
             ->where(fn($q) => $q
                 ->where('category_id', $category->id)
                 ->orWhere('subcategory_id', $category->id)

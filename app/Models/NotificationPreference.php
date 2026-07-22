@@ -3,11 +3,12 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Str;
 
 class NotificationPreference extends Model
 {
     protected $fillable = [
-        'user_id',
+        'user_id', 'unsubscribe_token',
         'email_order', 'email_return', 'email_ticket', 'email_promo',
         'sms_order',   'sms_return',   'sms_ticket',   'sms_promo',
         'push_order',  'push_return',  'push_ticket',  'push_promo',
@@ -32,7 +33,13 @@ class NotificationPreference extends Model
 
     public static function forUser(int $userId): self
     {
-        return static::firstOrCreate(['user_id' => $userId]);
+        $pref = static::firstOrCreate(['user_id' => $userId]);
+
+        if (! $pref->unsubscribe_token) {
+            $pref->update(['unsubscribe_token' => Str::random(48)]);
+        }
+
+        return $pref;
     }
 
     public function allows(string $channel, string $eventGroup): bool

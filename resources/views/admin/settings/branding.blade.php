@@ -81,7 +81,7 @@ $logos = [
 {{-- Brand Colors --}}
 <div class="bg-white rounded-xl shadow-sm border p-6 space-y-4">
     <h2 class="text-base font-semibold text-gray-900 pb-3 border-b">Brand Colors</h2>
-    <p class="text-xs text-gray-400 -mt-2">Primary Color re-themes the storefront's buttons, links, and highlights (currently orange). Secondary, Accent, and Text Color are saved here for reference and reused in the preview below, but aren't applied elsewhere on the site yet.</p>
+    <p class="text-xs text-gray-400 -mt-2">Primary re-themes the storefront's main buttons, links, and highlights. Secondary and Accent re-theme their respective secondary/highlight elements (badges, sale tags, etc.). Text re-themes the main body/heading text color. All four apply site-wide on the customer-facing storefront.</p>
     <div class="grid grid-cols-2 md:grid-cols-4 gap-5">
         <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Primary Color</label>

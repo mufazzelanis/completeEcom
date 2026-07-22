@@ -17,6 +17,23 @@ if (!function_exists('setting_file_url')) {
     }
 }
 
+if (!function_exists('normalize_digits')) {
+    /**
+     * Convert Bangla numerals (০-৯) to English digits (0-9), so a customer typing
+     * a phone number in Bangla script still resolves to a usable phone value.
+     */
+    function normalize_digits(?string $value): ?string
+    {
+        if ($value === null) {
+            return null;
+        }
+        return strtr($value, [
+            '০' => '0', '১' => '1', '২' => '2', '৩' => '3', '৪' => '4',
+            '৫' => '5', '৬' => '6', '৭' => '7', '৮' => '8', '৯' => '9',
+        ]);
+    }
+}
+
 if (!function_exists('format_currency')) {
     function format_currency(float|int $amount): string
     {
@@ -94,6 +111,32 @@ if (!function_exists('hsl_to_hex')) {
 
         $toHex = fn ($c) => str_pad(dechex((int) round($c * 255)), 2, '0', STR_PAD_LEFT);
         return '#' . $toHex($r) . $toHex($g) . $toHex($b);
+    }
+}
+
+if (!function_exists('wrap_branded_email')) {
+    /**
+     * Wrap a raw notification/campaign email body with the admin-configured Email Logo
+     * (falling back to the Main Logo, then the site name as text) plus a simple footer,
+     * so outgoing emails aren't just an unbranded snippet of HTML.
+     */
+    function wrap_branded_email(string $bodyHtml, ?string $footerExtra = null): string
+    {
+        $siteName = setting('site_name', 'ShopVista');
+        $logoUrl  = setting_file_url('email_logo', setting_file_url('site_logo'));
+
+        $logoHtml = $logoUrl
+            ? '<img src="' . e($logoUrl) . '" alt="' . e($siteName) . '" style="max-height:48px;">'
+            : '<span style="font-size:20px;font-weight:bold;color:#1f2937;">' . e($siteName) . '</span>';
+
+        return '<div style="max-width:600px;margin:0 auto;font-family:sans-serif;">'
+            . '<div style="padding:24px 0;text-align:center;border-bottom:1px solid #e5e7eb;">' . $logoHtml . '</div>'
+            . '<div style="padding:24px 0;">' . $bodyHtml . '</div>'
+            . '<div style="padding:16px 0;text-align:center;font-size:12px;color:#9ca3af;border-top:1px solid #e5e7eb;">'
+            . '&copy; ' . date('Y') . ' ' . e($siteName) . '. All rights reserved.'
+            . ($footerExtra ? '<br>' . $footerExtra : '')
+            . '</div>'
+            . '</div>';
     }
 }
 

@@ -63,7 +63,7 @@
                     </script>
                 </div>
                 @error('content')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
-                <p class="text-xs text-gray-400 mt-1">Write HTML email content. Use <code>@{{ $name }}</code> for recipient name.</p>
+                <p class="text-xs text-gray-400 mt-1">Write HTML email content. Use <code>@{{ $name }}</code> for recipient name and <code>@{{ $email }}</code> for recipient email — both are automatically replaced per recipient. An unsubscribe link is added to every email automatically, so you don't need to include your own.</p>
             </div>
         </div>
     </div>
@@ -99,7 +99,7 @@
                 <label class="block text-sm font-medium text-gray-700 mb-1">Schedule (optional)</label>
                 <input type="datetime-local" name="scheduled_at" value="{{ old('scheduled_at') }}"
                     class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                <p class="text-xs text-gray-400 mt-1">Leave blank to save as draft</p>
+                <p class="text-xs text-gray-400 mt-1">Leave blank to save as draft. Scheduled campaigns start sending automatically within a minute of this time — no need to come back and click Send.</p>
             </div>
         </div>
 

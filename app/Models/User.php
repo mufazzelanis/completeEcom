@@ -14,7 +14,7 @@ class User extends Authenticatable
 
     protected $fillable = [
         'name', 'email', 'password', 'role', 'phone', 'avatar', 'is_active',
-        'date_of_birth', 'gender', 'bio',
+        'date_of_birth', 'gender', 'bio', 'referred_by',
     ];
 
     protected $hidden = ['password', 'remember_token'];
@@ -204,6 +204,16 @@ class User extends Authenticatable
     public function referralCode()
     {
         return $this->hasOne(ReferralCode::class);
+    }
+
+    public function referrer()
+    {
+        return $this->belongsTo(User::class, 'referred_by');
+    }
+
+    public function pointTransactions()
+    {
+        return $this->hasMany(PointTransaction::class);
     }
 
     public function vendor()

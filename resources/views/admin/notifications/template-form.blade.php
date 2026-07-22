@@ -63,7 +63,7 @@
             <label class="block text-sm font-medium text-gray-700 mb-1">Subject <span class="text-gray-400 text-xs">(email only)</span></label>
             <input type="text" name="subject" value="{{ old('subject', $template->subject ?? '') }}"
                    class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500"
-                   placeholder="e.g. Your order {{order_number}} has been placed">
+                   placeholder="e.g. Your order @{{order_number}} has been placed">
         </div>
 
         <div>
@@ -77,8 +77,8 @@
             <label class="block text-sm font-medium text-gray-700 mb-1">Body <span class="text-red-500">*</span></label>
             <textarea name="body" rows="6" required
                       class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 font-mono"
-                      placeholder="Use {{variable}} placeholders...">{{ old('body', $template->body ?? '') }}</textarea>
-            <p class="text-xs text-gray-400 mt-1">Available variables depend on the event type. Common: {{order_number}}, {{customer}}, {{total}}, {{status}}, {{url}}, {{ticket_number}}, {{subject}}</p>
+                      placeholder="Use @{{variable}} placeholders...">{{ old('body', $template->body ?? '') }}</textarea>
+            <p class="text-xs text-gray-400 mt-1">Available variables depend on the event type. Common: @{{order_number}}, @{{customer}}, @{{total}}, @{{status}}, @{{url}}, @{{ticket_number}}, @{{subject}}</p>
         </div>
 
         <div class="flex items-center gap-2">

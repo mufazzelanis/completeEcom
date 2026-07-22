@@ -21,6 +21,10 @@
             </span>
         </div>
         <p class="text-xs text-gray-400 mt-3">Joined {{ $user->created_at->format('M d, Y') }}</p>
+        <div class="mt-4 bg-purple-50 rounded-xl px-4 py-3">
+            <p class="text-xs font-medium text-purple-500 uppercase tracking-wider">Points Balance</p>
+            <p class="text-2xl font-bold text-purple-700">{{ number_format($user->points_balance) }}</p>
+        </div>
         <a href="{{ route('admin.users.edit', $user->id) }}" class="block mt-4 text-indigo-600 hover:text-indigo-700 text-sm font-medium">Edit Profile</a>
     </div>
 
@@ -57,5 +61,48 @@
             </table>
         </div>
     </div>
+</div>
+
+<div class="bg-white rounded-2xl shadow-sm mt-6">
+    <div class="p-6 border-b border-gray-100">
+        <h2 class="font-semibold text-gray-800">Points Activity</h2>
+    </div>
+    <div class="overflow-x-auto">
+        <table class="w-full">
+            <thead class="text-xs text-gray-500 uppercase tracking-wider border-b border-gray-100">
+                <tr>
+                    <th class="px-6 py-3 text-left">Type</th>
+                    <th class="px-6 py-3 text-right">Points</th>
+                    <th class="px-6 py-3 text-left">Description</th>
+                    <th class="px-6 py-3 text-center">Order</th>
+                    <th class="px-6 py-3 text-center">Date</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-50">
+                @forelse($pointTransactions as $tx)
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-3">
+                            <span class="px-2 py-1 rounded-full text-xs font-medium {{ $tx->type_badge }}">{{ $tx->type_label }}</span>
+                        </td>
+                        <td class="px-6 py-3 text-right font-semibold {{ $tx->points >= 0 ? 'text-green-600' : 'text-red-600' }}">
+                            {{ $tx->points >= 0 ? '+' : '' }}{{ number_format($tx->points) }}
+                        </td>
+                        <td class="px-6 py-3 text-sm text-gray-600">{{ $tx->description }}</td>
+                        <td class="px-6 py-3 text-center">
+                            @if($tx->order)
+                                <a href="{{ route('admin.orders.show', $tx->order) }}" class="text-indigo-600 text-xs hover:text-indigo-700 font-mono">{{ $tx->order->order_number }}</a>
+                            @else
+                                <span class="text-gray-300 text-xs">—</span>
+                            @endif
+                        </td>
+                        <td class="px-6 py-3 text-center text-xs text-gray-500">{{ $tx->created_at->format('M d, Y') }}</td>
+                    </tr>
+                @empty
+                    <tr><td colspan="5" class="px-6 py-8 text-center text-gray-400 text-sm">No points activity yet.</td></tr>
+                @endforelse
+            </tbody>
+        </table>
+    </div>
+    <div class="px-6 py-4 border-t border-gray-100">{{ $pointTransactions->links() }}</div>
 </div>
 @endsection

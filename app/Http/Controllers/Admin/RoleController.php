@@ -27,16 +27,12 @@ class RoleController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'display_name'     => 'required|string|max:100',
+            'display_name'     => 'required|string|max:100|unique:roles,display_name',
             'description'      => 'nullable|string|max:255',
             'can_access_admin' => 'boolean',
         ]);
 
-        $slug = Str::slug($request->display_name, '_');
-
-        if (Role::where('name', $slug)->exists()) {
-            $slug .= '_' . rand(10, 99);
-        }
+        $slug = $this->uniqueSlug(Str::slug($request->display_name, '_'));
 
         $role = Role::create([
             'name'             => $slug,
@@ -66,7 +62,7 @@ class RoleController extends Controller
 
         if (!$role->is_system) {
             $request->validate([
-                'display_name'     => 'required|string|max:100',
+                'display_name'     => 'required|string|max:100|unique:roles,display_name,' . $role->id,
                 'description'      => 'nullable|string|max:255',
                 'can_access_admin' => 'boolean',
             ]);
@@ -89,16 +85,29 @@ class RoleController extends Controller
         }
 
         $userCount = User::where('role', $role->name)->count();
-        if ($userCount > 0) {
-            // Reassign users to customer before deleting
-            User::where('role', $role->name)->update(['role' => 'customer']);
-        }
 
-        DB::table('role_permissions')->where('role', $role->name)->delete();
-        $role->delete();
+        DB::transaction(function () use ($role, $userCount) {
+            if ($userCount > 0) {
+                // Reassign users to customer before deleting
+                User::where('role', $role->name)->update(['role' => 'customer']);
+            }
+
+            DB::table('role_permissions')->where('role', $role->name)->delete();
+            $role->delete();
+        });
 
         return redirect()->route('admin.roles.index')
             ->with('success', "Role '{$role->display_name}' deleted." . ($userCount > 0 ? " {$userCount} user(s) moved to Customer." : ''));
+    }
+
+    private function uniqueSlug(string $slug): string
+    {
+        $original = $slug;
+        $i = 1;
+        while (Role::where('name', $slug)->exists()) {
+            $slug = $original . '_' . $i++;
+        }
+        return $slug;
     }
 
     private function syncPermissions(string $roleName, array $permissionIds): void

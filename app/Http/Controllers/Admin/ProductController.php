@@ -133,7 +133,7 @@ class ProductController extends Controller
         $data['brand_id']             = $request->filled('brand_id') ? $request->brand_id : null;
         $data['slug']                 = $this->uniqueSlug(Str::slug($request->name));
         $data['sale_price']           = $request->filled('sale_price') ? $request->sale_price : null;
-        $data['stock']                = $request->type === 'bundle' ? 0 : (int) ($request->stock ?? 0);
+        $data['stock']                = (int) ($request->stock ?? 0);
         $data['is_active']            = $request->boolean('is_active', true);
         $data['is_featured']          = $request->boolean('is_featured');
         $data['download_expiry_days'] = $request->filled('download_expiry_days') ? (int) $request->download_expiry_days : null;
@@ -220,7 +220,7 @@ class ProductController extends Controller
         $data['brand_id']             = $request->filled('brand_id') ? $request->brand_id : null;
         $data['slug']                 = $product->name !== $request->name ? $this->uniqueSlug(Str::slug($request->name), $product->id) : $product->slug;
         $data['sale_price']           = $request->filled('sale_price') ? $request->sale_price : null;
-        $data['stock']                = $request->type === 'bundle' ? $product->stock : (int) ($request->stock ?? 0);
+        $data['stock']                = (int) ($request->stock ?? 0);
         $data['is_active']            = $request->boolean('is_active');
         $data['is_featured']          = $request->boolean('is_featured');
         $data['download_expiry_days'] = $request->filled('download_expiry_days') ? (int) $request->download_expiry_days : null;
@@ -387,13 +387,25 @@ class ProductController extends Controller
     private function syncBundleItems(Product $product, array $rows): void
     {
         $product->bundleItems()->delete();
+
+        if (!$product->isBundle()) {
+            return;
+        }
+
+        $validItemIds = Product::where('type', '!=', 'bundle')
+            ->where('id', '!=', $product->id)
+            ->pluck('id')
+            ->flip();
+
         foreach ($rows as $i => $row) {
-            if (empty($row['product_id'])) continue;
+            $itemId = (int) ($row['product_id'] ?? 0);
+            if (!$itemId || !isset($validItemIds[$itemId])) continue;
+
             BundleItem::create([
                 'bundle_product_id' => $product->id,
-                'item_product_id'   => (int) $row['product_id'],
+                'item_product_id'   => $itemId,
                 'quantity'          => max(1, (int) ($row['quantity'] ?? 1)),
-                'discount_pct'      => (float) ($row['discount_pct'] ?? 0),
+                'discount_pct'      => min(100, max(0, (float) ($row['discount_pct'] ?? 0))),
                 'sort_order'        => $i,
             ]);
         }

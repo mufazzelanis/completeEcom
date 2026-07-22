@@ -29,4 +29,5 @@ return Application::configure(basePath: dirname(__DIR__))
     })
     ->withSchedule(function (Schedule $schedule): void {
         $schedule->command('blog:publish-scheduled')->everyMinute();
+        $schedule->command('email-campaigns:process')->everyMinute();
     })->create();

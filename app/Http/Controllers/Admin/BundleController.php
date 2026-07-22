@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\BundleItem;
 use App\Models\Product;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class BundleController extends Controller
 {
@@ -26,7 +27,7 @@ class BundleController extends Controller
         $product->load('bundleItems.itemProduct.category');
         $allProducts = Product::where('is_active', true)
             ->where('id', '!=', $product->id)
-            ->whereIn('type', ['simple', 'variable'])
+            ->where('type', '!=', 'bundle')
             ->orderBy('name')
             ->get(['id', 'name', 'price', 'sale_price', 'image']);
 
@@ -38,7 +39,12 @@ class BundleController extends Controller
         abort_unless($product->isBundle(), 404);
 
         $data = $request->validate([
-            'item_product_id' => 'required|exists:products,id|different:product_id',
+            'item_product_id' => [
+                'required',
+                'integer',
+                Rule::notIn([$product->id]),
+                Rule::exists('products', 'id')->where(fn ($q) => $q->where('type', '!=', 'bundle')),
+            ],
             'quantity'        => 'required|integer|min:1',
             'discount_pct'    => 'nullable|numeric|min:0|max:100',
         ]);

@@ -50,6 +50,7 @@ class OrderController extends Controller
                 'fraud_checked_at' => now(),
             ]);
             $order->refresh();
+            $this->notifyIfFraudFlagged($order, $fraud);
         }
 
         return view('admin.orders.show', compact('order'));
@@ -165,7 +166,22 @@ class OrderController extends Controller
             ['score' => $fraud['score'], 'risk_level' => $fraud['risk_level'], 'flags' => $fraud['flags']]
         );
 
+        $this->notifyIfFraudFlagged($order, $fraud);
+
         return back()->with('success', 'Fraud check complete. Score: '.$fraud['score'].' ('.ucfirst($fraud['risk_level']).')');
+    }
+
+    private function notifyIfFraudFlagged(Order $order, array $fraud): void
+    {
+        if ($fraud['score'] < 50) {
+            return;
+        }
+
+        NotificationDispatcher::admin('fraud_flagged', [
+            'order_number' => $order->order_number,
+            'score' => $fraud['score'],
+            'flags' => implode(', ', $fraud['flags'] ?? []),
+        ]);
     }
 
     public function destroy(Order $order)

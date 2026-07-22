@@ -45,15 +45,20 @@
             </div>
         </div>
 
-        @if($emailCampaign->status === 'sent')
-        <div class="bg-white rounded-2xl shadow-sm p-6 grid grid-cols-2 gap-3 text-center">
-            <div class="bg-green-50 rounded-xl p-3">
-                <p class="text-xl font-bold text-green-600">{{ number_format($emailCampaign->sent_count) }}</p>
-                <p class="text-xs text-gray-500 mt-0.5">Delivered</p>
-            </div>
-            <div class="bg-red-50 rounded-xl p-3">
-                <p class="text-xl font-bold text-red-500">{{ number_format($emailCampaign->failed_count) }}</p>
-                <p class="text-xs text-gray-500 mt-0.5">Failed</p>
+        @if(in_array($emailCampaign->status, ['sent', 'sending']))
+        <div class="bg-white rounded-2xl shadow-sm p-6">
+            @if($emailCampaign->status === 'sending')
+            <p class="text-xs text-blue-600 bg-blue-50 rounded-lg px-3 py-2 mb-3">Still sending in the background — refresh this page to see updated progress. The rest goes out automatically within a few minutes.</p>
+            @endif
+            <div class="grid grid-cols-2 gap-3 text-center">
+                <div class="bg-green-50 rounded-xl p-3">
+                    <p class="text-xl font-bold text-green-600">{{ number_format($emailCampaign->sent_count) }}</p>
+                    <p class="text-xs text-gray-500 mt-0.5">Delivered</p>
+                </div>
+                <div class="bg-red-50 rounded-xl p-3">
+                    <p class="text-xl font-bold text-red-500">{{ number_format($emailCampaign->failed_count) }}</p>
+                    <p class="text-xs text-gray-500 mt-0.5">Failed</p>
+                </div>
             </div>
         </div>
         @endif
@@ -101,12 +106,12 @@
                             <p class="text-xs text-gray-400">{{ $log->email }}</p>
                         </td>
                         <td class="px-5 py-2.5 text-center">
-                            <span class="text-xs px-2 py-0.5 rounded-full font-semibold {{ $log->status === 'sent' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600' }}">
+                            <span class="text-xs px-2 py-0.5 rounded-full font-semibold {{ match($log->status) { 'sent' => 'bg-green-100 text-green-700', 'failed' => 'bg-red-100 text-red-600', default => 'bg-gray-100 text-gray-500' } }}">
                                 {{ ucfirst($log->status) }}
                             </span>
                         </td>
                         <td class="px-5 py-2.5 text-xs text-red-500 max-w-xs truncate">{{ $log->error ?? '—' }}</td>
-                        <td class="px-5 py-2.5 text-center text-xs text-gray-400">{{ $log->sent_at->format('H:i:s') }}</td>
+                        <td class="px-5 py-2.5 text-center text-xs text-gray-400">{{ $log->sent_at?->format('H:i:s') ?? '—' }}</td>
                     </tr>
                     @endforeach
                 </tbody>

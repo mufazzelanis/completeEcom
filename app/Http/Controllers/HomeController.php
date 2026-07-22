@@ -27,27 +27,27 @@ class HomeController extends Controller
             ->take(20)
             ->get();
 
-        $featuredProducts = Product::with('category', 'brand', 'reviews')
+        $featuredProducts = Product::with('category', 'brand', 'reviews', 'activeFlashSaleProduct')
             ->active()
             ->featured()
             ->latest()
             ->take(8)
             ->get();
 
-        $newArrivals = Product::with('category', 'brand', 'reviews')
+        $newArrivals = Product::with('category', 'brand', 'reviews', 'activeFlashSaleProduct')
             ->active()
             ->latest()
             ->take(16)
             ->get();
 
-        $topSelling = Product::with('category', 'brand', 'reviews')
+        $topSelling = Product::with('category', 'brand', 'reviews', 'activeFlashSaleProduct')
             ->active()
             ->where('stock', '>', 0)
             ->orderByDesc('views')
             ->take(16)
             ->get();
 
-        $onSale = Product::with('category', 'brand', 'reviews')
+        $onSale = Product::with('category', 'brand', 'reviews', 'activeFlashSaleProduct')
             ->active()
             ->whereNotNull('sale_price')
             ->orderByDesc('updated_at')

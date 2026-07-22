@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\PointsService;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 
@@ -13,17 +14,20 @@ class Order extends Model
         'shipping_name', 'shipping_phone', 'shipping_address', 'shipping_city',
         'shipping_state', 'shipping_zip', 'shipping_country', 'shipping_zone', 'notes',
         'fraud_score', 'fraud_flags', 'is_fraud_flagged', 'fraud_checked_at',
+        'points_awarded_at', 'points_redeemed', 'points_discount_value',
     ];
 
     protected $casts = [
-        'subtotal'          => 'decimal:2',
-        'discount'          => 'decimal:2',
-        'shipping'          => 'decimal:2',
-        'tax'               => 'decimal:2',
-        'total'             => 'decimal:2',
-        'fraud_flags'       => 'array',
-        'is_fraud_flagged'  => 'boolean',
-        'fraud_checked_at'  => 'datetime',
+        'subtotal'               => 'decimal:2',
+        'discount'               => 'decimal:2',
+        'shipping'               => 'decimal:2',
+        'total'                  => 'decimal:2',
+        'tax'                    => 'decimal:2',
+        'points_discount_value'  => 'decimal:2',
+        'fraud_flags'            => 'array',
+        'is_fraud_flagged'       => 'boolean',
+        'fraud_checked_at'       => 'datetime',
+        'points_awarded_at'      => 'datetime',
     ];
 
     protected static function boot()
@@ -32,6 +36,11 @@ class Order extends Model
         static::creating(function ($order) {
             if (empty($order->guest_token) && !$order->user_id) {
                 $order->guest_token = Str::random(64);
+            }
+        });
+        static::updated(function ($order) {
+            if ($order->wasChanged('payment_status') && $order->payment_status === 'paid') {
+                PointsService::awardPurchasePoints($order);
             }
         });
     }

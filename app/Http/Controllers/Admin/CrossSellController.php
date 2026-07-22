@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Product;
 use App\Models\ProductRecommendation;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class CrossSellController extends Controller
 {
@@ -55,7 +56,12 @@ class CrossSellController extends Controller
     public function store(Request $request, Product $product)
     {
         $data = $request->validate([
-            'recommended_product_id' => 'required|exists:products,id|different:id',
+            'recommended_product_id' => [
+                'required',
+                'integer',
+                Rule::notIn([$product->id]),
+                Rule::exists('products', 'id')->where(fn ($q) => $q->where('is_active', true)),
+            ],
             'type'                   => 'required|in:cross_sell,upsell',
         ]);
 

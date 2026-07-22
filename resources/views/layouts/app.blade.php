@@ -3,10 +3,16 @@ $siteName     = setting('site_name', 'ShopVista');
 $siteTagline  = setting('site_tagline', 'Your one-stop shop for everything you need.');
 $logoUrl      = setting_file_url('site_logo');
 $faviconUrl   = setting_file_url('favicon');
-$primaryColor = setting('primary_color', '#ea580c');
+$primaryColor   = setting('primary_color', '#ea580c');
+$secondaryColor = setting('secondary_color', '#ec4899');
+$accentColor    = setting('accent_color', '#dc2626');
+$textColor      = setting('text_color', '#1f2937');
 // Only generate an override ramp when the admin actually picked a different brand color —
-// keeps the default look pixel-identical to the hand-tuned Tailwind orange palette.
-$brandShades  = $primaryColor !== '#ea580c' ? brand_color_shades($primaryColor) : null;
+// keeps the default look pixel-identical to the hand-tuned Tailwind palette.
+$brandShades    = $primaryColor !== '#ea580c' ? brand_color_shades($primaryColor) : null;
+$secondaryShades = $secondaryColor !== '#ec4899' ? brand_color_shades($secondaryColor) : null;
+$accentShades   = $accentColor !== '#dc2626' ? brand_color_shades($accentColor) : null;
+$textColorChanged = $textColor !== '#1f2937';
 $gaId         = setting('google_analytics_id', '');
 $gtmId        = setting('google_tag_manager_id', '');
 $pixelId      = setting('facebook_pixel_id', '');
@@ -52,11 +58,14 @@ $announcementText    = setting('announcement_text', '');
             }
         }
     </script>
-    @if($brandShades)
-    {{-- Brand Colors (Settings → Branding): the storefront's "orange" is hardcoded as literal
+    @if($brandShades || $secondaryShades || $accentShades || $textColorChanged)
+    {{-- Brand Colors (Settings → Branding): the storefront's palette is hardcoded as literal
          Tailwind classes throughout, so re-theming it means overriding those generated utility
-         classes directly with the admin's chosen color ramp. --}}
+         classes directly with the admin's chosen colors. Primary→orange, Secondary→pink,
+         Accent→red (each admin field's own default hex is that exact Tailwind shade), and
+         Text→gray-800 (the default body/heading text color). --}}
     <style>
+        @if($brandShades)
         @foreach($brandShades as $step => $hex)
         .bg-orange-{{ $step }} { background-color: {{ $hex }} !important; }
         .text-orange-{{ $step }} { color: {{ $hex }} !important; }
@@ -68,6 +77,36 @@ $announcementText    = setting('announcement_text', '');
         .focus\:ring-orange-{{ $step }}:focus { --tw-ring-color: {{ $hex }} !important; }
         .focus\:border-orange-{{ $step }}:focus { border-color: {{ $hex }} !important; }
         @endforeach
+        @endif
+        @if($secondaryShades)
+        @foreach($secondaryShades as $step => $hex)
+        .bg-pink-{{ $step }} { background-color: {{ $hex }} !important; }
+        .text-pink-{{ $step }} { color: {{ $hex }} !important; }
+        .border-pink-{{ $step }} { border-color: {{ $hex }} !important; }
+        .ring-pink-{{ $step }} { --tw-ring-color: {{ $hex }} !important; }
+        .hover\:bg-pink-{{ $step }}:hover { background-color: {{ $hex }} !important; }
+        .hover\:text-pink-{{ $step }}:hover { color: {{ $hex }} !important; }
+        .hover\:border-pink-{{ $step }}:hover { border-color: {{ $hex }} !important; }
+        .focus\:ring-pink-{{ $step }}:focus { --tw-ring-color: {{ $hex }} !important; }
+        .focus\:border-pink-{{ $step }}:focus { border-color: {{ $hex }} !important; }
+        @endforeach
+        @endif
+        @if($accentShades)
+        @foreach($accentShades as $step => $hex)
+        .bg-red-{{ $step }} { background-color: {{ $hex }} !important; }
+        .text-red-{{ $step }} { color: {{ $hex }} !important; }
+        .border-red-{{ $step }} { border-color: {{ $hex }} !important; }
+        .ring-red-{{ $step }} { --tw-ring-color: {{ $hex }} !important; }
+        .hover\:bg-red-{{ $step }}:hover { background-color: {{ $hex }} !important; }
+        .hover\:text-red-{{ $step }}:hover { color: {{ $hex }} !important; }
+        .hover\:border-red-{{ $step }}:hover { border-color: {{ $hex }} !important; }
+        .focus\:ring-red-{{ $step }}:focus { --tw-ring-color: {{ $hex }} !important; }
+        .focus\:border-red-{{ $step }}:focus { border-color: {{ $hex }} !important; }
+        @endforeach
+        @endif
+        @if($textColorChanged)
+        .text-gray-800 { color: {{ $textColor }} !important; }
+        @endif
     </style>
     @endif
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>

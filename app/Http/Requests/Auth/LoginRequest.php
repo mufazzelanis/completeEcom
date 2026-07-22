@@ -50,7 +50,7 @@ class LoginRequest extends FormRequest
         if (filter_var($identifier, FILTER_VALIDATE_EMAIL)) {
             $user = \App\Models\User::where('email', $identifier)->first();
         } else {
-            $phone = preg_replace('/[^0-9]/', '', $identifier);
+            $phone = preg_replace('/[^0-9]/', '', normalize_digits($identifier));
             $user = \App\Models\User::where('phone', $phone)->first();
         }
 

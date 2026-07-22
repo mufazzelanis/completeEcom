@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\PointTransaction;
 use App\Models\ReferralCode;
-use App\Models\ReferralReward;
 
 class CustomerReferralController extends Controller
 {
@@ -16,18 +16,15 @@ class CustomerReferralController extends Controller
             $referral = ReferralCode::generateFor($user);
         }
 
-        $rewards = ReferralReward::where('referrer_id', $user->id)
-            ->with('referee')
-            ->latest()
-            ->paginate(10);
+        $pointTransactions = $user->pointTransactions()->with('order')->latest()->paginate(10);
 
         $stats = [
-            'total_uses'   => $referral->total_uses,
-            'total_earned' => $referral->total_earned,
-            'pending'      => ReferralReward::where('referrer_id', $user->id)->where('status', 'pending')->count(),
-            'paid'         => ReferralReward::where('referrer_id', $user->id)->where('status', 'paid')->sum('reward_amount'),
+            'total_uses'      => $referral->total_uses,
+            'total_earned'    => $referral->total_earned,
+            'points_redeemed' => abs(PointTransaction::where('user_id', $user->id)->where('type', 'redeemed')->sum('points')),
+            'points_balance'  => $user->points_balance,
         ];
 
-        return view('account.referral.index', compact('referral', 'rewards', 'stats'));
+        return view('account.referral.index', compact('referral', 'pointTransactions', 'stats'));
     }
 }

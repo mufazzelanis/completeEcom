@@ -1,7 +1,8 @@
 @php
-    $hasDiscount = $product->sale_price && $product->sale_price < $product->price;
-    $discountPct = $hasDiscount ? round((($product->price - $product->sale_price) / $product->price) * 100) : 0;
-    $effectivePrice = $product->sale_price ?? $product->price;
+    $isFlash = $product->activeFlashSaleProduct && $product->activeFlashSaleProduct->isAvailable();
+    $effectivePrice = $product->final_price;
+    $hasDiscount = $effectivePrice < $product->price;
+    $discountPct = $hasDiscount ? round((($product->price - $effectivePrice) / $product->price) * 100) : 0;
     $rating = $product->reviews->avg('rating') ?? 0;
     $reviewCount = $product->reviews->count();
     $isWishlisted = auth()->check() ? \App\Models\Wishlist::where('user_id', auth()->id())->where('product_id', $product->id)->exists() : false;
@@ -20,7 +21,11 @@
                 </div>
             @endif
 
-            @if($hasDiscount)
+            @if($isFlash)
+                <span class="absolute top-0 left-0 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-br-lg">
+                    ⚡ -{{ $discountPct }}%
+                </span>
+            @elseif($hasDiscount)
                 <span class="absolute top-0 left-0 bg-orange-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-br-lg">
                     -{{ $discountPct }}%
                 </span>
@@ -36,7 +41,7 @@
                 </button>
             </div>
 
-            @if($product->stock <= 0)
+            @if($product->available_stock <= 0)
                 <div class="absolute inset-0 bg-black/40 flex items-center justify-center">
                     <span class="bg-white text-gray-800 text-xs font-bold px-3 py-1.5 rounded-full">SOLD OUT</span>
                 </div>
@@ -74,15 +79,15 @@
 
         <div class="mt-2">
             @if($hasDiscount)
-                <span class="text-base font-bold text-orange-500">৳{{ number_format($effectivePrice) }}</span>
+                <span class="text-base font-bold {{ $isFlash ? 'text-red-500' : 'text-orange-500' }}">৳{{ number_format($effectivePrice) }}</span>
                 <span class="text-[10px] text-gray-400 line-through ml-1">৳{{ number_format($product->price) }}</span>
             @else
                 <span class="text-base font-bold text-gray-900">৳{{ number_format($product->price) }}</span>
             @endif
         </div>
 
-        @if($product->stock <= 5 && $product->stock > 0)
-            <p class="text-[10px] text-orange-500 mt-1 font-medium">Only {{ $product->stock }} left - order soon</p>
+        @if($product->available_stock <= 5 && $product->available_stock > 0)
+            <p class="text-[10px] text-orange-500 mt-1 font-medium">Only {{ $product->available_stock }} left - order soon</p>
         @endif
     </div>
 </div>

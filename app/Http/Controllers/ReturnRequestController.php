@@ -6,6 +6,7 @@ use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\ProductReturn;
 use App\Models\ReturnItem;
+use App\Services\Notifications\NotificationDispatcher;
 use Illuminate\Http\Request;
 
 class ReturnRequestController extends Controller
@@ -74,6 +75,12 @@ class ReturnRequestController extends Controller
                 'quantity_approved'  => 0,
             ]);
         }
+
+        NotificationDispatcher::admin('new_return', [
+            'customer' => auth()->user()->name,
+            'order_number' => $order->order_number,
+            'reason' => $request->reason,
+        ]);
 
         return redirect()->route('orders.show', $order)
             ->with('success', 'Return request submitted. We\'ll review and respond within 2–3 business days.');

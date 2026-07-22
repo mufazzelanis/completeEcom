@@ -19,10 +19,12 @@ class EmailChannel
         $error  = null;
 
         try {
-            Mail::send([], [], function (Message $message) use ($to, $subject, $body) {
+            $html = wrap_branded_email($body);
+
+            Mail::send([], [], function (Message $message) use ($to, $subject, $html) {
                 $message->to($to)
                     ->subject($subject)
-                    ->html($body);
+                    ->html($html);
             });
         } catch (\Throwable $e) {
             $status = 'failed';

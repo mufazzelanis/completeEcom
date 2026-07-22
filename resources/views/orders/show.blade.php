@@ -58,8 +58,11 @@
                 <h2 class="font-semibold text-gray-800 mb-4">Payment Summary</h2>
                 <div class="space-y-2 text-sm">
                     <div class="flex justify-between text-gray-600"><span>Subtotal</span><span>৳{{ number_format($order->subtotal) }}</span></div>
-                    @if($order->discount > 0)
-                        <div class="flex justify-between text-green-600"><span>Discount</span><span>-৳{{ number_format($order->discount) }}</span></div>
+                    @if(($order->discount - $order->points_discount_value) > 0)
+                        <div class="flex justify-between text-green-600"><span>Discount</span><span>-৳{{ number_format($order->discount - $order->points_discount_value) }}</span></div>
+                    @endif
+                    @if($order->points_discount_value > 0)
+                        <div class="flex justify-between text-green-600"><span>Points Redeemed ({{ number_format($order->points_redeemed) }} pts)</span><span>-৳{{ number_format($order->points_discount_value) }}</span></div>
                     @endif
                     <div class="flex justify-between text-gray-600"><span>Shipping</span><span>৳{{ number_format($order->shipping) }}</span></div>
                     <div class="border-t border-gray-100 pt-2 flex justify-between font-bold text-gray-900">

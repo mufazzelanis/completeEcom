@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\ProductReturn;
 use App\Models\StockAdjustment;
+use App\Services\Notifications\NotificationDispatcher;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -92,6 +93,8 @@ class ReturnController extends Controller
             ]);
         });
 
+        $this->notifyReturnStatus($return);
+
         return back()->with('success', 'Return approved and stock updated.');
     }
 
@@ -114,6 +117,22 @@ class ReturnController extends Controller
             'processed_at' => now(),
         ]);
 
+        $this->notifyReturnStatus($return);
+
         return back()->with('success', 'Return request rejected.');
+    }
+
+    private function notifyReturnStatus(ProductReturn $return): void
+    {
+        if (! $return->user) {
+            return;
+        }
+
+        NotificationDispatcher::customer('return_status_changed', $return->user, [
+            'customer' => $return->user->name,
+            'return_number' => $return->return_number,
+            'order_number' => $return->order?->order_number,
+            'status' => $return->status,
+        ]);
     }
 }

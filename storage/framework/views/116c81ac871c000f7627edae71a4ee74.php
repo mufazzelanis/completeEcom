@@ -8,6 +8,7 @@
     <meta http-equiv="Expires" content="0">
     <meta name="csrf-token" content="<?php echo e(csrf_token()); ?>">
     <title>Admin - <?php echo $__env->yieldContent('title', 'Dashboard'); ?> | <?php echo e(setting('site_name', 'ShopVista')); ?></title>
+    <?php if($faviconUrl = setting_file_url('favicon')): ?><link rel="icon" href="<?php echo e($faviconUrl); ?>"><?php endif; ?>
     <script>
         // Applied before first paint so there's never a flash of the wrong theme.
         (function () {
@@ -34,6 +35,91 @@
     <style>[x-cloak]{display:none!important}</style>
 </head>
 <body class="bg-gray-100 dark:bg-gray-950 font-sans antialiased transition-colors">
+
+<?php
+// Every navigable admin page, for the global quick-search box below — keeps the whole
+// admin panel reachable in a couple of keystrokes instead of hunting through the sidebar.
+$adminNavIndex = [
+    ['label' => 'Dashboard', 'url' => route('admin.dashboard'), 'group' => 'General'],
+    ['label' => 'Categories', 'url' => route('admin.categories.index'), 'group' => 'Catalog'],
+    ['label' => 'Subcategories', 'url' => route('admin.subcategories.index'), 'group' => 'Catalog'],
+    ['label' => 'Reviews', 'url' => route('admin.reviews.index'), 'group' => 'Catalog'],
+    ['label' => 'All Products', 'url' => route('admin.products.index'), 'group' => 'Products'],
+    ['label' => 'Add Product', 'url' => route('admin.products.create'), 'group' => 'Products'],
+    ['label' => 'Sale Products', 'url' => route('admin.sale-products.index'), 'group' => 'Products'],
+    ['label' => 'Bulk Upload', 'url' => route('admin.products.bulk-upload'), 'group' => 'Products'],
+    ['label' => 'Brands', 'url' => route('admin.brands.index'), 'group' => 'Products'],
+    ['label' => 'Attributes', 'url' => route('admin.attributes.index'), 'group' => 'Products'],
+    ['label' => 'Tags', 'url' => route('admin.tags.index'), 'group' => 'Products'],
+    ['label' => 'Stock Management', 'url' => route('admin.stock-management.index'), 'group' => 'Inventory'],
+    ['label' => 'Stock History', 'url' => route('admin.stock-adjustments.index'), 'group' => 'Inventory'],
+    ['label' => 'Stock Reasons', 'url' => route('admin.stock-reasons.index'), 'group' => 'Inventory'],
+    ['label' => 'Low Stock Alerts', 'url' => route('admin.low-stock.index'), 'group' => 'Inventory'],
+    ['label' => 'Warehouses', 'url' => route('admin.warehouses.index'), 'group' => 'Inventory'],
+    ['label' => 'Multi-Warehouse', 'url' => route('admin.warehouse-stock.index'), 'group' => 'Inventory'],
+    ['label' => 'Stock Transfers', 'url' => route('admin.stock-transfers.index'), 'group' => 'Inventory'],
+    ['label' => 'Batch / Lot', 'url' => route('admin.batches.index'), 'group' => 'Inventory'],
+    ['label' => 'Barcodes', 'url' => route('admin.barcodes.index'), 'group' => 'Inventory'],
+    ['label' => 'SKU Management', 'url' => route('admin.sku-management.index'), 'group' => 'Inventory'],
+    ['label' => 'Vendors', 'url' => route('admin.vendors.index'), 'group' => 'Inventory'],
+    ['label' => 'Suppliers', 'url' => route('admin.suppliers.index'), 'group' => 'Inventory'],
+    ['label' => 'Purchases', 'url' => route('admin.purchases.index'), 'group' => 'Inventory'],
+    ['label' => 'Orders', 'url' => route('admin.orders.index'), 'group' => 'Sales'],
+    ['label' => 'Returns', 'url' => route('admin.returns.index'), 'group' => 'Sales'],
+    ['label' => 'Payments', 'url' => route('admin.payments.index'), 'group' => 'Sales'],
+    ['label' => 'Payment Methods', 'url' => route('admin.payment-methods.index'), 'group' => 'Sales'],
+    ['label' => 'Coupons', 'url' => route('admin.coupons.index'), 'group' => 'Sales'],
+    ['label' => 'Reports Overview', 'url' => route('admin.reports.index'), 'group' => 'Reports'],
+    ['label' => 'Sales Report', 'url' => route('admin.reports.sales'), 'group' => 'Reports'],
+    ['label' => 'Revenue Report', 'url' => route('admin.reports.revenue'), 'group' => 'Reports'],
+    ['label' => 'Product Report', 'url' => route('admin.reports.products'), 'group' => 'Reports'],
+    ['label' => 'Customer Report', 'url' => route('admin.reports.customers'), 'group' => 'Reports'],
+    ['label' => 'Inventory Report', 'url' => route('admin.reports.inventory'), 'group' => 'Reports'],
+    ['label' => 'Blog Posts', 'url' => route('admin.blog.posts.index'), 'group' => 'CMS'],
+    ['label' => 'Blog Categories', 'url' => route('admin.blog.categories.index'), 'group' => 'CMS'],
+    ['label' => 'Banners', 'url' => route('admin.banners.index'), 'group' => 'CMS'],
+    ['label' => 'Pages', 'url' => route('admin.pages.index'), 'group' => 'CMS'],
+    ['label' => 'FAQs', 'url' => route('admin.faqs.index'), 'group' => 'CMS'],
+    ['label' => 'Marketing Overview', 'url' => route('admin.marketing.index'), 'group' => 'Marketing'],
+    ['label' => 'Flash Sales', 'url' => route('admin.flash-sales.index'), 'group' => 'Marketing'],
+    ['label' => 'Promo Codes', 'url' => route('admin.promo-codes.index'), 'group' => 'Marketing'],
+    ['label' => 'Bundles', 'url' => route('admin.bundles.index'), 'group' => 'Marketing'],
+    ['label' => 'Cross-Sell / Upsell', 'url' => route('admin.cross-sell.index'), 'group' => 'Marketing'],
+    ['label' => 'Referrals', 'url' => route('admin.referrals.index'), 'group' => 'Marketing'],
+    ['label' => 'Email Campaigns', 'url' => route('admin.email-campaigns.index'), 'group' => 'Marketing'],
+    ['label' => 'Notifications Overview', 'url' => route('admin.notifications.index'), 'group' => 'Notifications'],
+    ['label' => 'Notification Templates', 'url' => route('admin.notifications.templates'), 'group' => 'Notifications'],
+    ['label' => 'Delivery Logs', 'url' => route('admin.notifications.logs'), 'group' => 'Notifications'],
+    ['label' => 'Notification Settings', 'url' => route('admin.notifications.settings'), 'group' => 'Notifications'],
+    ['label' => 'Users', 'url' => route('admin.users.index'), 'group' => 'People'],
+    ['label' => 'Roles & Permissions', 'url' => route('admin.roles.index'), 'group' => 'People'],
+    ['label' => 'Support Tickets', 'url' => route('admin.support-tickets.index'), 'group' => 'Support'],
+    ['label' => 'Fraud Alerts', 'url' => route('admin.orders.index', ['fraud' => 1]), 'group' => 'Security'],
+    ['label' => 'Audit Logs', 'url' => route('admin.audit-logs.index'), 'group' => 'Security'],
+    // Settings sub-pages (labels match resources/views/admin/settings/layout.blade.php)
+    ['label' => 'General Settings', 'url' => route('admin.settings.show', 'general'), 'group' => 'Settings'],
+    ['label' => 'Branding Settings', 'url' => route('admin.settings.show', 'branding'), 'group' => 'Settings'],
+    ['label' => 'Header Settings', 'url' => route('admin.settings.show', 'header'), 'group' => 'Settings'],
+    ['label' => 'Footer Settings', 'url' => route('admin.settings.show', 'footer'), 'group' => 'Settings'],
+    ['label' => 'Localization Settings', 'url' => route('admin.settings.show', 'localization'), 'group' => 'Settings'],
+    ['label' => 'Currency Settings', 'url' => route('admin.settings.show', 'currency'), 'group' => 'Settings'],
+    ['label' => 'Tax Settings', 'url' => route('admin.settings.show', 'tax'), 'group' => 'Settings'],
+    ['label' => 'Shipping Settings', 'url' => route('admin.settings.show', 'shipping'), 'group' => 'Settings'],
+    ['label' => 'Payment Gateway Settings', 'url' => route('admin.settings.show', 'payment'), 'group' => 'Settings'],
+    ['label' => 'Order Settings', 'url' => route('admin.settings.show', 'orders'), 'group' => 'Settings'],
+    ['label' => 'Invoice Settings', 'url' => route('admin.settings.show', 'invoice'), 'group' => 'Settings'],
+    ['label' => 'Email & SMTP Settings', 'url' => route('admin.settings.show', 'email'), 'group' => 'Settings'],
+    ['label' => 'SMS & WhatsApp Settings', 'url' => route('admin.settings.show', 'sms'), 'group' => 'Settings'],
+    ['label' => 'Notification Channel Settings', 'url' => route('admin.settings.show', 'notifications'), 'group' => 'Settings'],
+    ['label' => 'SEO Settings', 'url' => route('admin.settings.show', 'seo'), 'group' => 'Settings'],
+    ['label' => 'Social Media Settings', 'url' => route('admin.settings.show', 'social'), 'group' => 'Settings'],
+    ['label' => 'Page Settings', 'url' => route('admin.settings.show', 'pages'), 'group' => 'Settings'],
+    ['label' => 'Theme & Design Settings', 'url' => route('admin.settings.show', 'theme'), 'group' => 'Settings'],
+    ['label' => 'Security Settings', 'url' => route('admin.settings.show', 'security'), 'group' => 'Settings'],
+    ['label' => 'Maintenance Settings', 'url' => route('admin.settings.show', 'maintenance'), 'group' => 'Settings'],
+    ['label' => 'API & Integration Settings', 'url' => route('admin.settings.show', 'api'), 'group' => 'Settings'],
+];
+?>
 
 <div class="flex h-screen overflow-hidden" x-data="{ sidebarOpen: false }">
     <!-- Mobile Sidebar Overlay -->

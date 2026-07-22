@@ -82,6 +82,9 @@
                     <h2 class="text-base font-semibold text-gray-800">Permission Overrides</h2>
                     <span class="text-xs text-gray-400">Overrides apply on top of the user's role permissions</span>
                 </div>
+                <div class="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 mb-3 text-xs text-amber-700">
+                    <strong>Not yet enforced:</strong> these overrides are saved but not currently checked anywhere in the admin panel. Anyone with admin panel access via their role has full access regardless of these settings.
+                </div>
                 <p class="text-xs text-gray-500 mb-4">
                     <span class="inline-flex items-center space-x-1"><span class="w-2 h-2 bg-green-400 rounded-full inline-block"></span><span>Green = granted by role</span></span>
                     &nbsp;·&nbsp;

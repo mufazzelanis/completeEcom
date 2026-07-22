@@ -19,7 +19,7 @@
     <div class="col-span-1">
         <div class="bg-white rounded-2xl shadow-sm p-6">
             <h2 class="font-semibold text-gray-800 mb-4">Add Item to Bundle</h2>
-            <form action="{{ route('admin.bundles.add-item', $product) }}" method="POST" class="space-y-4">
+            <form action="{{ route('admin.bundles.items.add', $product) }}" method="POST" class="space-y-4">
                 @csrf
                 <div>
                     <label class="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Product</label>
@@ -52,6 +52,10 @@
             @if($product->sale_price)
             <p class="text-sm text-indigo-500 mt-1">৳{{ number_format($product->sale_price) }} on sale</p>
             @endif
+            <p class="text-xs text-indigo-500 mt-3">
+                Available to sell: <span class="font-semibold">{{ $product->available_stock }}</span>
+                <span class="block text-indigo-400 mt-0.5">Auto-computed from component stock — lowest of (item stock ÷ quantity needed) across all items.</span>
+            </p>
             <a href="{{ route('admin.products.edit', $product) }}" class="text-xs text-indigo-600 hover:text-indigo-800 underline mt-3 block">Edit bundle product →</a>
         </div>
     </div>
@@ -87,7 +91,7 @@
                         </td>
                         <td class="px-4 py-3 text-center">
                             <span x-show="!editing" class="font-semibold text-gray-700">{{ $item->quantity }}</span>
-                            <form x-show="editing" x-cloak action="{{ route('admin.bundles.update-item', [$product, $item]) }}" method="POST" class="flex gap-1">
+                            <form x-show="editing" x-cloak action="{{ route('admin.bundles.items.update', [$product, $item]) }}" method="POST" class="flex gap-1">
                                 @csrf @method('PATCH')
                                 <input type="number" name="quantity" value="{{ $item->quantity }}" min="1" class="w-12 border border-gray-200 rounded text-center text-xs px-1 py-0.5">
                                 <input type="number" name="discount_pct" value="{{ $item->discount_pct }}" min="0" max="100" step="0.1" class="w-14 border border-gray-200 rounded text-center text-xs px-1 py-0.5" placeholder="Disc%">
@@ -108,7 +112,7 @@
                                 <button type="button" @click="editing = !editing" class="text-indigo-600 hover:text-indigo-800 text-xs">
                                     <span x-text="editing ? 'Cancel' : 'Edit'"></span>
                                 </button>
-                                <form action="{{ route('admin.bundles.remove-item', [$product, $item]) }}" method="POST" onsubmit="return confirm('Remove?')">
+                                <form action="{{ route('admin.bundles.items.remove', [$product, $item]) }}" method="POST" onsubmit="return confirm('Remove?')">
                                     @csrf @method('DELETE')
                                     <button class="text-red-500 hover:text-red-700 text-xs">Remove</button>
                                 </form>

@@ -33,6 +33,59 @@
                 </div>
                 @endif
 
+    @unless(session('buy_now'))
+    <div class="bg-white rounded-xl shadow-sm p-6 mb-6">
+        <h3 class="font-semibold text-gray-800 mb-3 text-sm">Coupon / Promo Code</h3>
+        @if($coupon || $promoCode)
+            <div class="flex items-center justify-between bg-green-50 border border-green-200 rounded-xl px-4 py-3">
+                <div>
+                    <p class="text-sm font-semibold text-green-700">{{ $coupon ?? $promoCode }}</p>
+                    <p class="text-xs text-green-500">Discount applied!</p>
+                </div>
+                <form action="{{ route('cart.coupon.remove') }}" method="POST">
+                    @csrf @method('DELETE')
+                    <button type="submit" class="text-red-400 hover:text-red-600 text-xs">Remove</button>
+                </form>
+            </div>
+        @else
+            <form action="{{ route('cart.coupon') }}" method="POST" class="flex space-x-2">
+                @csrf
+                <input type="text" name="code" placeholder="Enter coupon or promo code"
+                    class="flex-1 min-w-0 border border-gray-200 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 uppercase">
+                <button type="submit" class="bg-orange-500 text-white px-4 py-2 rounded-xl text-sm font-medium hover:bg-orange-600 transition flex-shrink-0">Apply</button>
+            </form>
+        @endif
+    </div>
+    @endunless
+
+    @auth
+    <div class="bg-white rounded-xl shadow-sm p-6 mb-6">
+        <h3 class="font-semibold text-gray-800 mb-3 text-sm">Use Your Points</h3>
+        <p class="text-xs text-gray-400 mb-3">Balance: <span class="font-semibold text-gray-600">{{ number_format($pointsBalance) }} pts</span></p>
+        @if($pointsRedeemed > 0)
+            <div class="flex items-center justify-between bg-green-50 border border-green-200 rounded-xl px-4 py-3">
+                <div>
+                    <p class="text-sm font-semibold text-green-700">{{ number_format($pointsRedeemed) }} pts applied</p>
+                    <p class="text-xs text-green-500">-৳{{ number_format($pointsDiscount) }} discount</p>
+                </div>
+                <form action="{{ route('cart.points.remove') }}" method="POST">
+                    @csrf @method('DELETE')
+                    <button type="submit" class="text-red-400 hover:text-red-600 text-xs">Remove</button>
+                </form>
+            </div>
+        @elseif($pointsBalance > 0)
+            <form action="{{ route('cart.points') }}" method="POST" class="flex space-x-2">
+                @csrf
+                <input type="number" name="points" min="1" max="{{ $pointsBalance }}" placeholder="Points to use"
+                    class="flex-1 min-w-0 border border-gray-200 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500">
+                <button type="submit" class="bg-orange-500 text-white px-4 py-2 rounded-xl text-sm font-medium hover:bg-orange-600 transition flex-shrink-0">Apply</button>
+            </form>
+        @else
+            <p class="text-xs text-gray-400">You don't have any points yet — earn points from purchases and referrals.</p>
+        @endif
+    </div>
+    @endauth
+
     <form action="{{ route('checkout.store') }}" method="POST"
         x-data="{
             selected: '{{ old('payment_method', $paymentMethods->first()?->slug) }}',
@@ -79,16 +132,16 @@
                     <h2 class="text-lg font-bold text-gray-800 mb-4">Contact Information</h2>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Full Name <span class="text-red-500">*</span></label>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">{{ $checkoutFields['name']['label'] }} <span class="text-red-500">*</span></label>
                             <input type="text" name="shipping_name" id="shipping_name"
-                                value="{{ old('shipping_name') }}"
+                                value="{{ old('shipping_name') }}" placeholder="{{ $checkoutFields['name']['placeholder'] }}"
                                 class="w-full border rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 {{ $errors->has('shipping_name') ? 'border-red-400 bg-red-50' : 'border-gray-200' }}">
                             @error('shipping_name')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Phone Number <span class="text-red-500">*</span></label>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">{{ $checkoutFields['phone']['label'] }} <span class="text-red-500">*</span></label>
                             <input type="text" name="shipping_phone" id="shipping_phone"
-                                value="{{ old('shipping_phone') }}" placeholder="01XXXXXXXXX"
+                                value="{{ old('shipping_phone') }}" placeholder="{{ $checkoutFields['phone']['placeholder'] }}"
                                 class="w-full border rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 {{ $errors->has('shipping_phone') ? 'border-red-400 bg-red-50' : 'border-gray-200' }}">
                             @error('shipping_phone')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
                             <p class="text-xs text-gray-400 mt-1">Your account will be created with this number</p>
@@ -123,36 +176,62 @@
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         @if(auth()->check())
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Full Name <span class="text-red-500">*</span></label>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">{{ $checkoutFields['name']['label'] }} <span class="text-red-500">*</span></label>
                             <input type="text" name="shipping_name" id="shipping_name"
-                                value="{{ old('shipping_name', auth()->user()->name) }}"
+                                value="{{ old('shipping_name', auth()->user()->name) }}" placeholder="{{ $checkoutFields['name']['placeholder'] }}"
                                 class="w-full border rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 {{ $errors->has('shipping_name') ? 'border-red-400 bg-red-50' : 'border-gray-200' }}">
                             @error('shipping_name')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Phone <span class="text-red-500">*</span></label>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">{{ $checkoutFields['phone']['label'] }}
+                                @if($checkoutFields['phone']['mode'] === 'required')<span class="text-red-500">*</span>@else <span class="text-gray-400">(optional)</span>@endif
+                            </label>
                             <input type="text" name="shipping_phone" id="shipping_phone"
                                 value="{{ old('shipping_phone', auth()->user()->phone) }}"
-                                placeholder="01XXXXXXXXX"
+                                placeholder="{{ $checkoutFields['phone']['placeholder'] }}"
+                                @if($checkoutFields['phone']['mode'] === 'required') required @endif
                                 class="w-full border rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 {{ $errors->has('shipping_phone') ? 'border-red-400 bg-red-50' : 'border-gray-200' }}">
                             @error('shipping_phone')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
                         </div>
                         @endif
+                        @if($checkoutFields['address']['mode'] !== 'hidden')
                         <div class="sm:col-span-2">
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Address <span class="text-red-500">*</span></label>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">{{ $checkoutFields['address']['label'] }}
+                                @if($checkoutFields['address']['mode'] === 'required')<span class="text-red-500">*</span>@else <span class="text-gray-400">(optional)</span>@endif
+                            </label>
                             <input type="text" name="shipping_address" id="shipping_address"
                                 value="{{ old('shipping_address') }}"
-                                placeholder="Street address, house number, area..."
+                                placeholder="{{ $checkoutFields['address']['placeholder'] }}"
+                                @if($checkoutFields['address']['mode'] === 'required') required @endif
                                 class="w-full border rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 {{ $errors->has('shipping_address') ? 'border-red-400 bg-red-50' : 'border-gray-200' }}">
                             @error('shipping_address')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
                         </div>
+                        @endif
+                        @if($checkoutFields['city']['mode'] !== 'hidden')
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">City <span class="text-red-500">*</span></label>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">{{ $checkoutFields['city']['label'] }}
+                                @if($checkoutFields['city']['mode'] === 'required')<span class="text-red-500">*</span>@else <span class="text-gray-400">(optional)</span>@endif
+                            </label>
                             <input type="text" name="shipping_city" id="shipping_city"
-                                value="{{ old('shipping_city') }}" placeholder="Dhaka"
+                                value="{{ old('shipping_city') }}" placeholder="{{ $checkoutFields['city']['placeholder'] }}"
+                                @if($checkoutFields['city']['mode'] === 'required') required @endif
                                 class="w-full border rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 {{ $errors->has('shipping_city') ? 'border-red-400 bg-red-50' : 'border-gray-200' }}">
                             @error('shipping_city')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
                         </div>
+                        @endif
+                        @if($checkoutFields['email']['mode'] !== 'hidden')
+                        <div class="sm:col-span-2">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">{{ $checkoutFields['email']['label'] }}
+                                @if($checkoutFields['email']['mode'] === 'required')<span class="text-red-500">*</span>@else <span class="text-gray-400">(optional)</span>@endif
+                            </label>
+                            <input type="email" name="shipping_email" id="shipping_email"
+                                value="{{ old('shipping_email', auth()->user()->email ?? '') }}"
+                                placeholder="{{ $checkoutFields['email']['placeholder'] }}"
+                                @if($checkoutFields['email']['mode'] === 'required') required @endif
+                                class="w-full border rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 {{ $errors->has('shipping_email') ? 'border-red-400 bg-red-50' : 'border-gray-200' }}">
+                            @error('shipping_email')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
+                        </div>
+                        @endif
                         @if($usesZones)
                         <div class="sm:col-span-2">
                             <label class="block text-sm font-medium text-gray-700 mb-1">Delivery Area <span class="text-red-500">*</span></label>
@@ -177,30 +256,52 @@
                             @error('shipping_zone')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
                         </div>
                         @endif
+                        @if($checkoutFields['state']['mode'] !== 'hidden')
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">District</label>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">{{ $checkoutFields['state']['label'] }}
+                                @if($checkoutFields['state']['mode'] === 'required')<span class="text-red-500">*</span>@endif
+                            </label>
                             <input type="text" name="shipping_state" id="shipping_state"
-                                value="{{ old('shipping_state') }}" placeholder="Dhaka"
-                                class="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500">
+                                value="{{ old('shipping_state') }}" placeholder="{{ $checkoutFields['state']['placeholder'] }}"
+                                @if($checkoutFields['state']['mode'] === 'required') required @endif
+                                class="w-full border rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 {{ $errors->has('shipping_state') ? 'border-red-400 bg-red-50' : 'border-gray-200' }}">
+                            @error('shipping_state')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
                         </div>
+                        @endif
+                        @if($checkoutFields['zip']['mode'] !== 'hidden')
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">ZIP Code</label>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">{{ $checkoutFields['zip']['label'] }}
+                                @if($checkoutFields['zip']['mode'] === 'required')<span class="text-red-500">*</span>@endif
+                            </label>
                             <input type="text" name="shipping_zip" id="shipping_zip"
-                                value="{{ old('shipping_zip') }}" placeholder="1207"
-                                class="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500">
+                                value="{{ old('shipping_zip') }}" placeholder="{{ $checkoutFields['zip']['placeholder'] }}"
+                                @if($checkoutFields['zip']['mode'] === 'required') required @endif
+                                class="w-full border rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 {{ $errors->has('shipping_zip') ? 'border-red-400 bg-red-50' : 'border-gray-200' }}">
+                            @error('shipping_zip')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
                         </div>
+                        @endif
+                        @if($checkoutFields['country']['mode'] !== 'hidden')
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Country</label>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">{{ $checkoutFields['country']['label'] }}</label>
                             <input type="text" name="shipping_country" value="Bangladesh" readonly
                                 class="w-full border border-gray-100 rounded-lg px-4 py-2.5 text-sm bg-gray-50 text-gray-500">
                         </div>
+                        @else
+                        <input type="hidden" name="shipping_country" value="Bangladesh">
+                        @endif
                     </div>
 
+                    @if($checkoutFields['notes']['mode'] !== 'hidden')
                     <div class="mt-4">
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Order Notes <span class="text-gray-400">(optional)</span></label>
-                        <textarea name="notes" rows="2" placeholder="Any special instructions..."
-                            class="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500">{{ old('notes') }}</textarea>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">{{ $checkoutFields['notes']['label'] }}
+                            @if($checkoutFields['notes']['mode'] === 'required')<span class="text-red-500">*</span>@else <span class="text-gray-400">(optional)</span>@endif
+                        </label>
+                        <textarea name="notes" rows="2" placeholder="{{ $checkoutFields['notes']['placeholder'] }}"
+                            @if($checkoutFields['notes']['mode'] === 'required') required @endif
+                            class="w-full border rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 {{ $errors->has('notes') ? 'border-red-400 bg-red-50' : 'border-gray-200' }}">{{ old('notes') }}</textarea>
+                        @error('notes')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
                     </div>
+                    @endif
                 </div>
 
                 <div class="bg-white rounded-xl shadow-sm p-6">
@@ -319,10 +420,16 @@
                             <span>Subtotal</span>
                             <span>৳{{ number_format($subtotal) }}</span>
                         </div>
-                        @if($discount > 0)
+                        @if(($discount - $pointsDiscount) > 0)
                             <div class="flex justify-between text-green-600">
-                                <span>Discount ({{ $coupon }})</span>
-                                <span>-৳{{ number_format($discount) }}</span>
+                                <span>Discount ({{ $coupon ?? $promoCode }})</span>
+                                <span>-৳{{ number_format($discount - $pointsDiscount) }}</span>
+                            </div>
+                        @endif
+                        @if($pointsDiscount > 0)
+                            <div class="flex justify-between text-green-600">
+                                <span>Points Discount</span>
+                                <span>-৳{{ number_format($pointsDiscount) }}</span>
                             </div>
                         @endif
                         <div class="flex justify-between text-gray-600">
@@ -358,12 +465,13 @@
 
 <script>
 function fillAddress(address) {
-    document.getElementById('shipping_name').value    = address.name          || '';
-    document.getElementById('shipping_phone').value   = address.phone         || '';
-    document.getElementById('shipping_address').value = address.address_line1 || '';
-    document.getElementById('shipping_city').value    = address.city          || '';
-    document.getElementById('shipping_state').value   = address.state         || '';
-    document.getElementById('shipping_zip').value     = address.zip           || '';
+    const setVal = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; };
+    setVal('shipping_name', address.name);
+    setVal('shipping_phone', address.phone);
+    setVal('shipping_address', address.address_line1);
+    setVal('shipping_city', address.city);
+    setVal('shipping_state', address.state);
+    setVal('shipping_zip', address.zip);
 }
 </script>
 @endsection

@@ -62,6 +62,9 @@
 
             {{-- Permissions --}}
             <div class="bg-white rounded-2xl shadow-sm p-6">
+                <div class="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 mb-4 text-xs text-amber-700">
+                    <strong>Not yet enforced:</strong> these permission checkboxes are saved but not currently checked anywhere in the admin panel. Any role with "Admin Panel Access" enabled has full access to every admin page, regardless of which permissions are selected here.
+                </div>
                 <div class="flex items-center justify-between mb-4">
                     <h2 class="text-base font-semibold text-gray-800">Permissions</h2>
                     <div class="flex items-center space-x-3 text-sm">
