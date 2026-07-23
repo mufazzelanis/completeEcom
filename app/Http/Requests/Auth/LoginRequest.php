@@ -55,11 +55,22 @@ class LoginRequest extends FormRequest
         }
 
         if (! $user || ! \Illuminate\Support\Facades\Hash::check($password, $user->getAuthPassword())) {
-            RateLimiter::hit($this->throttleKey());
+            RateLimiter::hit($this->throttleKey(), (int) setting('login_lockout_minutes', 15) * 60);
 
             throw ValidationException::withMessages([
                 'email' => trans('auth.failed'),
             ]);
+        }
+
+        if ($user->two_factor_secret && $user->two_factor_confirmed_at) {
+            // Password verified but 2FA still required — stash a short-lived pending-login
+            // marker instead of fully authenticating, so the session has no access yet.
+            session([
+                '2fa_pending_user_id' => $user->id,
+                '2fa_pending_remember' => $remember,
+            ]);
+            RateLimiter::clear($this->throttleKey());
+            return;
         }
 
         \Illuminate\Support\Facades\Auth::login($user, $remember);
@@ -73,7 +84,7 @@ class LoginRequest extends FormRequest
      */
     public function ensureIsNotRateLimited(): void
     {
-        if (! RateLimiter::tooManyAttempts($this->throttleKey(), 5)) {
+        if (! RateLimiter::tooManyAttempts($this->throttleKey(), (int) setting('login_max_attempts', 5))) {
             return;
         }
 

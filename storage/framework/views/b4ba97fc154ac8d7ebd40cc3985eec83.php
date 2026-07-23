@@ -240,44 +240,31 @@
 <?php endif; ?>
 
 
-<?php if($featuredProducts->isNotEmpty()): ?>
-<div class="bg-white mt-4">
-    <div class="max-w-[1200px] mx-auto px-4 py-6">
-        <div class="flex items-center justify-between mb-5">
-            <div>
-                <h2 class="text-lg font-extrabold text-gray-900">Featured Products</h2>
-                <p class="text-gray-400 text-xs mt-0.5">Handpicked just for you</p>
+<?php $__currentLoopData = $homeSections; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $entry): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+    <?php $sec = $entry['section']; ?>
+    <div class="mt-4 <?php echo e($sec->theme === 'sale' ? 'bg-gradient-to-r from-red-500 to-orange-500' : 'bg-white'); ?>">
+        <div class="max-w-[1200px] mx-auto px-4 py-6">
+            <div class="flex items-center justify-between mb-5">
+                <div class="flex items-center gap-3">
+                    <?php if($sec->theme === 'sale'): ?>
+                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
+                    <?php endif; ?>
+                    <div>
+                        <h2 class="text-lg font-extrabold <?php echo e($sec->theme === 'sale' ? 'text-white' : 'text-gray-900'); ?>"><?php echo e($sec->title); ?></h2>
+                        <?php if($sec->subtitle): ?><p class="<?php echo e($sec->theme === 'sale' ? 'text-white/80' : 'text-gray-400'); ?> text-xs mt-0.5"><?php echo e($sec->subtitle); ?></p><?php endif; ?>
+                    </div>
+                </div>
+                <a href="<?php echo e($sec->getViewAllUrl()); ?>"
+                   class="<?php echo e($sec->theme === 'sale' ? 'text-white/80 hover:text-white' : 'text-orange-500 hover:text-orange-700'); ?> font-bold text-sm transition"><?php echo e($sec->getViewAllLabelText()); ?> →</a>
             </div>
-            <a href="<?php echo e(route('shop.index')); ?>?featured=1" class="text-orange-500 hover:text-orange-700 font-bold text-sm transition">VIEW ALL →</a>
-        </div>
-        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-            <?php $__currentLoopData = $featuredProducts; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $product): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-                <?php echo $__env->make('partials.product-card', ['product' => $product], array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
-            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                <?php $__currentLoopData = $entry['products']; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $product): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                    <?php echo $__env->make('partials.product-card', ['product' => $product], array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
+                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+            </div>
         </div>
     </div>
-</div>
-<?php endif; ?>
-
-
-<?php if($topSelling->count() > 0): ?>
-<div class="bg-white mt-4">
-    <div class="max-w-[1200px] mx-auto px-4 py-6">
-        <div class="flex items-center justify-between mb-5">
-            <div>
-                <h2 class="text-lg font-extrabold text-gray-900">Top Selling</h2>
-                <p class="text-gray-400 text-xs mt-0.5">Most popular products</p>
-            </div>
-            <a href="<?php echo e(route('shop.index')); ?>?sort=popular" class="text-orange-500 hover:text-orange-700 font-bold text-sm transition">VIEW ALL →</a>
-        </div>
-        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-            <?php $__currentLoopData = $topSelling->take(8); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $product): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-                <?php echo $__env->make('partials.product-card', ['product' => $product], array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
-            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
-        </div>
-    </div>
-</div>
-<?php endif; ?>
+<?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
 
 
 <?php if($testimonials->count() > 0): ?>
@@ -329,26 +316,6 @@ $reviewThemes = [
 <?php endif; ?>
 
 
-<?php if($onSale->count() > 0): ?>
-<div class="bg-gradient-to-r from-red-500 to-orange-500 mt-4">
-    <div class="max-w-[1200px] mx-auto px-4 py-6">
-        <div class="flex items-center justify-between mb-5">
-            <div class="flex items-center gap-3">
-                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
-                <h2 class="text-lg font-extrabold text-white">Deals & Offers</h2>
-            </div>
-            <a href="<?php echo e(route('shop.index')); ?>?on_sale=1" class="text-white/80 hover:text-white font-bold text-sm transition">VIEW ALL →</a>
-        </div>
-        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-            <?php $__currentLoopData = $onSale->take(8); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $product): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-                <?php echo $__env->make('partials.product-card', ['product' => $product], array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
-            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
-        </div>
-    </div>
-</div>
-<?php endif; ?>
-
-
 <?php if($brands->count() > 0): ?>
 <div class="bg-white mt-4">
     <div class="max-w-[1200px] mx-auto px-4 py-6">
@@ -373,27 +340,7 @@ $reviewThemes = [
 <?php endif; ?>
 
 
-<?php if($newArrivals->count() > 0): ?>
-<div class="bg-white mt-4">
-    <div class="max-w-[1200px] mx-auto px-4 py-6">
-        <div class="flex items-center justify-between mb-5">
-            <div>
-                <h2 class="text-lg font-extrabold text-gray-900">New Arrivals</h2>
-                <p class="text-gray-400 text-xs mt-0.5">Fresh finds every day</p>
-            </div>
-            <a href="<?php echo e(route('shop.index')); ?>?sort=latest" class="text-orange-500 hover:text-orange-700 font-bold text-sm transition">VIEW ALL →</a>
-        </div>
-        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-            <?php $__currentLoopData = $newArrivals->take(8); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $product): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-                <?php echo $__env->make('partials.product-card', ['product' => $product], array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
-            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
-        </div>
-    </div>
-</div>
-<?php endif; ?>
-
-
-<?php if($newArrivals->count() > 8): ?>
+<?php if($justForYou->isNotEmpty()): ?>
 <div class="bg-white mt-4">
     <div class="max-w-[1200px] mx-auto px-4 py-6">
         <div class="flex items-center justify-center mb-5">
@@ -402,7 +349,7 @@ $reviewThemes = [
             <div class="h-px bg-gray-200 flex-1"></div>
         </div>
         <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
-            <?php $__currentLoopData = $newArrivals->slice(8, 10); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $product): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+            <?php $__currentLoopData = $justForYou; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $product): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                 <?php echo $__env->make('partials.product-card', ['product' => $product], array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
             <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
         </div>

@@ -10,6 +10,10 @@ class ProductController extends Controller
 {
     public function show(Product $product)
     {
+        if ($product->redirect_url) {
+            return redirect()->away($product->redirect_url, 301);
+        }
+
         $product->increment('views');
         $product->load([
             'category', 'brand', 'images', 'reviews.user', 'faqs', 'activeFlashSaleProduct',

@@ -1,5 +1,95 @@
 @extends('layouts.app')
-@section('title', $product->name)
+@php
+    $seoTitle = $product->meta_title ?: $product->name;
+    $seoDesc  = $product->meta_description ?: $product->short_description;
+    $ogImage  = $product->og_image ?: ($product->image ? Storage::url($product->image) : null);
+    $canonicalUrl = $product->canonical_url ?: route('products.show', $product);
+
+    // robots_meta (the base select) and the noindex/nofollow/nosnippet/noimageindex checkboxes
+    // both exist in the admin SEO form — the checkboxes act as an override layer on top.
+    [$robotsIndex, $robotsFollow] = array_pad(explode(',', $product->robots_meta ?: 'index,follow'), 2, null);
+    $robotsParts = [
+        $product->noindex ? 'noindex' : (trim($robotsIndex ?? '') ?: 'index'),
+        $product->nofollow ? 'nofollow' : (trim($robotsFollow ?? '') ?: 'follow'),
+    ];
+    if ($product->nosnippet) $robotsParts[] = 'nosnippet';
+    if ($product->noimageindex) $robotsParts[] = 'noimageindex';
+    $productRobots = implode(', ', $robotsParts);
+
+    $availabilityMap = [
+        'InStock' => 'https://schema.org/InStock', 'OutOfStock' => 'https://schema.org/OutOfStock',
+        'PreOrder' => 'https://schema.org/PreOrder', 'BackOrder' => 'https://schema.org/BackOrder',
+        'Discontinued' => 'https://schema.org/Discontinued', 'SoldOut' => 'https://schema.org/SoldOut',
+    ];
+    $schemaAvailability = $availabilityMap[$product->schema_availability]
+        ?? ($product->stock > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock');
+@endphp
+@section('title', $seoTitle)
+@if($seoDesc)@section('meta_description', $seoDesc)@endif
+@if($product->focus_keyword)@section('meta_keywords', $product->focus_keyword)@endif
+@section('canonical', $canonicalUrl)
+@section('og_type', 'product')
+@if($ogImage)@section('og_image', $ogImage)@endif
+@if($product->og_title)@section('og_title', $product->og_title)@endif
+@if($product->og_description)@section('og_description', $product->og_description)@endif
+@section('robots', $productRobots)
+@if($product->twitter_card)@section('twitter_card', $product->twitter_card)@endif
+@if($product->twitter_title)@section('twitter_title', $product->twitter_title)@endif
+@if($product->twitter_description)@section('twitter_description', $product->twitter_description)@endif
+@if($product->twitter_image)@section('twitter_image', $product->twitter_image)@endif
+
+@push('meta')
+{{-- Product-specific Open Graph properties the layout's generic tags don't cover --}}
+<meta property="product:price:amount" content="{{ $product->sale_price ?? $product->price }}">
+<meta property="product:price:currency" content="{{ setting('currency_code', 'BDT') }}">
+@if($product->brand)<meta property="product:brand" content="{{ $product->brand->name }}">@endif
+@if($product->sku)<meta property="product:retailer_item_id" content="{{ $product->sku }}">@endif
+<meta property="product:availability" content="{{ $product->stock > 0 ? 'in stock' : 'out of stock' }}">
+
+{{-- Product structured data --}}
+<script type="application/ld+json">
+{!! json_encode(array_filter([
+    '@context' => 'https://schema.org',
+    '@type' => $product->schema_type ?: 'Product',
+    'name' => $seoTitle,
+    'description' => $seoDesc,
+    'image' => $ogImage ? [$ogImage] : [],
+    'sku' => $product->sku,
+    'gtin' => $product->gtin,
+    'mpn' => $product->mpn,
+    'brand' => $product->brand ? ['@type' => 'Brand', 'name' => $product->brand->name] : null,
+    'countryOfOrigin' => $product->country_of_origin,
+    'offers' => array_filter([
+        '@type' => 'Offer',
+        'url' => $canonicalUrl,
+        'priceCurrency' => setting('currency_code', 'BDT'),
+        'price' => (string) ($product->sale_price ?? $product->price),
+        'priceValidUntil' => $product->price_valid_until?->format('Y-m-d'),
+        'itemCondition' => 'https://schema.org/' . ($product->schema_condition ?: 'NewCondition'),
+        'availability' => $schemaAvailability,
+    ]),
+    'aggregateRating' => $product->reviews->count() > 0 ? [
+        '@type' => 'AggregateRating',
+        'ratingValue' => round($product->average_rating, 1),
+        'reviewCount' => $product->reviews->count(),
+    ] : null,
+], fn ($v) => $v !== null && $v !== ''), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}
+</script>
+
+{{-- Breadcrumb structured data --}}
+<script type="application/ld+json">
+{!! json_encode([
+    '@context' => 'https://schema.org',
+    '@type' => 'BreadcrumbList',
+    'itemListElement' => [
+        ['@type' => 'ListItem', 'position' => 1, 'name' => 'Home', 'item' => route('home')],
+        ['@type' => 'ListItem', 'position' => 2, 'name' => 'Shop', 'item' => route('shop.index')],
+        ['@type' => 'ListItem', 'position' => 3, 'name' => $product->category->name, 'item' => route('shop.category', $product->category->slug)],
+        ['@type' => 'ListItem', 'position' => 4, 'name' => $product->breadcrumb_title ?: $product->name, 'item' => $canonicalUrl],
+    ],
+], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}
+</script>
+@endpush
 
 @section('content')
 <div class="max-w-7xl mx-auto px-4 py-8">
@@ -11,7 +101,7 @@
         <span>/</span>
         <a href="{{ route('shop.category', $product->category->slug) }}" class="hover:text-indigo-600">{{ $product->category->name }}</a>
         <span>/</span>
-        <span class="text-gray-900 font-medium line-clamp-1">{{ $product->name }}</span>
+        <span class="text-gray-900 font-medium line-clamp-1">{{ $product->breadcrumb_title ?: $product->name }}</span>
     </div>
 
     <div class="bg-white rounded-2xl shadow-sm overflow-hidden">
@@ -22,7 +112,7 @@
                      @mousemove="zoomX = (($event.offsetX / $event.currentTarget.offsetWidth) * 100).toFixed(2); zoomY = (($event.offsetY / $event.currentTarget.offsetHeight) * 100).toFixed(2)"
                      @mouseleave="zoomX = 50; zoomY = 50">
                     <template x-if="active">
-                        <img :src="active" :style="`transform-origin: ${zoomX}% ${zoomY}%`" alt="{{ $product->name }}" class="w-full h-full object-cover transition-transform duration-300 ease-out group-hover:scale-[2]">
+                        <img :src="active" :style="`transform-origin: ${zoomX}% ${zoomY}%`" alt="{{ $product->image_alt ?: $product->name }}" title="{{ $product->image_title ?: $product->name }}" class="w-full h-full object-cover transition-transform duration-300 ease-out group-hover:scale-[2]">
                     </template>
                     <template x-if="!active">
                         <div class="w-full h-full flex items-center justify-center">

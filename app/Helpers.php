@@ -1,12 +1,59 @@
 <?php
 
+use App\Models\Language;
 use App\Models\Setting;
+use App\Models\Translation;
 use Illuminate\Support\Facades\Storage;
 
 if (!function_exists('setting')) {
     function setting(string $key, mixed $default = null): mixed
     {
         return Setting::get($key, $default);
+    }
+}
+
+if (!function_exists('t')) {
+    /**
+     * Admin-editable UI string, keyed and grouped like setting()/Setting — falls back
+     * to $default (and auto-saves it as the English row) the first time a key is used,
+     * so wiring a new string into a view is enough to make it show up for translation
+     * in the admin Translations screen without a manual seed step.
+     */
+    function t(string $key, string $default = '', array $replace = [], ?string $group = null): string
+    {
+        $locale = app()->getLocale();
+        $value = Translation::get($key, $locale, null);
+
+        if ($value === null) {
+            if ($locale !== 'en' && ($enValue = Translation::get($key, 'en', null)) !== null) {
+                $value = $enValue;
+            } else {
+                $value = $default;
+                if ($default !== '') {
+                    Translation::set($key, 'en', $default, $group ?? 'common');
+                }
+            }
+        }
+
+        foreach ($replace as $search => $val) {
+            $value = str_replace(':' . $search, $val, $value);
+        }
+
+        return $value;
+    }
+}
+
+if (!function_exists('active_languages')) {
+    function active_languages(): \Illuminate\Support\Collection
+    {
+        return Language::active();
+    }
+}
+
+if (!function_exists('current_language')) {
+    function current_language(): ?Language
+    {
+        return Language::active()->firstWhere('code', app()->getLocale()) ?? Language::default();
     }
 }
 

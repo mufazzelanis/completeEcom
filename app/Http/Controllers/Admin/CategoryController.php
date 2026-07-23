@@ -33,15 +33,22 @@ class CategoryController extends Controller
             'name'      => 'required|string|max:255|unique:categories',
             'slug'      => 'nullable|string|unique:categories',
             'image'     => 'nullable|image|max:2048',
+            'og_image'  => 'nullable|image|max:2048',
             'parent_id' => 'nullable|exists:categories,id',
         ]);
 
-        $data = $request->only(['name', 'slug', 'description', 'parent_id', 'sort_order', 'is_active']);
+        $data = $request->only([
+            'name', 'slug', 'description', 'parent_id', 'sort_order', 'is_active',
+            'meta_title', 'meta_description', 'meta_keywords', 'canonical_url',
+        ]);
         $data['slug'] = $data['slug'] ?? Str::slug($data['name']);
         $data['is_active'] = $request->boolean('is_active', true);
 
         if ($request->hasFile('image')) {
             $data['image'] = $request->file('image')->store('categories', 'public');
+        }
+        if ($request->hasFile('og_image')) {
+            $data['og_image'] = $request->file('og_image')->store('categories', 'public');
         }
 
         Category::create($data);
@@ -60,14 +67,21 @@ class CategoryController extends Controller
             'name'  => 'required|string|max:255|unique:categories,name,' . $category->id,
             'slug'  => 'nullable|string|unique:categories,slug,' . $category->id,
             'image' => 'nullable|image|max:2048',
+            'og_image' => 'nullable|image|max:2048',
         ]);
 
-        $data = $request->only(['name', 'slug', 'description', 'parent_id', 'sort_order']);
+        $data = $request->only([
+            'name', 'slug', 'description', 'parent_id', 'sort_order',
+            'meta_title', 'meta_description', 'meta_keywords', 'canonical_url',
+        ]);
         $data['slug'] = $data['slug'] ?? Str::slug($data['name']);
         $data['is_active'] = $request->boolean('is_active');
 
         if ($request->hasFile('image')) {
             $data['image'] = $request->file('image')->store('categories', 'public');
+        }
+        if ($request->hasFile('og_image')) {
+            $data['og_image'] = $request->file('og_image')->store('categories', 'public');
         }
 
         $category->update($data);

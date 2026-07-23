@@ -1,7 +1,11 @@
 <?php
 
 use App\Http\Middleware\AdminMiddleware;
+use App\Http\Middleware\ForceHttps;
+use App\Http\Middleware\MaintenanceMode;
 use App\Http\Middleware\PermissionMiddleware;
+use App\Http\Middleware\SecurityHeaders;
+use App\Http\Middleware\SetLocale;
 use App\Http\Middleware\VendorMiddleware;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Application;
@@ -21,6 +25,8 @@ return Application::configure(basePath: dirname(__DIR__))
             'permission' => PermissionMiddleware::class,
             'vendor' => VendorMiddleware::class,
         ]);
+        $middleware->web(prepend: [ForceHttps::class]);
+        $middleware->web(append: [SetLocale::class, MaintenanceMode::class, SecurityHeaders::class]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(

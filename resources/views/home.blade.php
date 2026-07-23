@@ -240,45 +240,32 @@
 </div>
 @endif
 
-{{-- ═══════════ FEATURED PRODUCTS ═══════════ --}}
-@if($featuredProducts->isNotEmpty())
-<div class="bg-white mt-4">
-    <div class="max-w-[1200px] mx-auto px-4 py-6">
-        <div class="flex items-center justify-between mb-5">
-            <div>
-                <h2 class="text-lg font-extrabold text-gray-900">Featured Products</h2>
-                <p class="text-gray-400 text-xs mt-0.5">Handpicked just for you</p>
+{{-- ═══════════ HOMEPAGE PRODUCT SECTIONS (admin-managed) ═══════════ --}}
+@foreach($homeSections as $entry)
+    @php $sec = $entry['section']; @endphp
+    <div class="mt-4 {{ $sec->theme === 'sale' ? 'bg-gradient-to-r from-red-500 to-orange-500' : 'bg-white' }}">
+        <div class="max-w-[1200px] mx-auto px-4 py-6">
+            <div class="flex items-center justify-between mb-5">
+                <div class="flex items-center gap-3">
+                    @if($sec->theme === 'sale')
+                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
+                    @endif
+                    <div>
+                        <h2 class="text-lg font-extrabold {{ $sec->theme === 'sale' ? 'text-white' : 'text-gray-900' }}">{{ $sec->title }}</h2>
+                        @if($sec->subtitle)<p class="{{ $sec->theme === 'sale' ? 'text-white/80' : 'text-gray-400' }} text-xs mt-0.5">{{ $sec->subtitle }}</p>@endif
+                    </div>
+                </div>
+                <a href="{{ $sec->getViewAllUrl() }}"
+                   class="{{ $sec->theme === 'sale' ? 'text-white/80 hover:text-white' : 'text-orange-500 hover:text-orange-700' }} font-bold text-sm transition">{{ $sec->getViewAllLabelText() }} →</a>
             </div>
-            <a href="{{ route('shop.index') }}?featured=1" class="text-orange-500 hover:text-orange-700 font-bold text-sm transition">VIEW ALL →</a>
-        </div>
-        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-            @foreach($featuredProducts as $product)
-                @include('partials.product-card', ['product' => $product])
-            @endforeach
+            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                @foreach($entry['products'] as $product)
+                    @include('partials.product-card', ['product' => $product])
+                @endforeach
+            </div>
         </div>
     </div>
-</div>
-@endif
-
-{{-- ═══════════ TOP SELLING ═══════════ --}}
-@if($topSelling->count() > 0)
-<div class="bg-white mt-4">
-    <div class="max-w-[1200px] mx-auto px-4 py-6">
-        <div class="flex items-center justify-between mb-5">
-            <div>
-                <h2 class="text-lg font-extrabold text-gray-900">Top Selling</h2>
-                <p class="text-gray-400 text-xs mt-0.5">Most popular products</p>
-            </div>
-            <a href="{{ route('shop.index') }}?sort=popular" class="text-orange-500 hover:text-orange-700 font-bold text-sm transition">VIEW ALL →</a>
-        </div>
-        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-            @foreach($topSelling->take(8) as $product)
-                @include('partials.product-card', ['product' => $product])
-            @endforeach
-        </div>
-    </div>
-</div>
-@endif
+@endforeach
 
 {{-- ═══════════ CUSTOMER REVIEWS (auto-scroll marquee) ═══════════ --}}
 @if($testimonials->count() > 0)
@@ -329,26 +316,6 @@ $reviewThemes = [
 </div>
 @endif
 
-{{-- ═══════════ ON SALE / DEALS ═══════════ --}}
-@if($onSale->count() > 0)
-<div class="bg-gradient-to-r from-red-500 to-orange-500 mt-4">
-    <div class="max-w-[1200px] mx-auto px-4 py-6">
-        <div class="flex items-center justify-between mb-5">
-            <div class="flex items-center gap-3">
-                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
-                <h2 class="text-lg font-extrabold text-white">Deals & Offers</h2>
-            </div>
-            <a href="{{ route('shop.index') }}?on_sale=1" class="text-white/80 hover:text-white font-bold text-sm transition">VIEW ALL →</a>
-        </div>
-        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-            @foreach($onSale->take(8) as $product)
-                @include('partials.product-card', ['product' => $product])
-            @endforeach
-        </div>
-    </div>
-</div>
-@endif
-
 {{-- ═══════════ BRANDS ═══════════ --}}
 @if($brands->count() > 0)
 <div class="bg-white mt-4">
@@ -373,28 +340,8 @@ $reviewThemes = [
 </div>
 @endif
 
-{{-- ═══════════ NEW ARRIVALS ═══════════ --}}
-@if($newArrivals->count() > 0)
-<div class="bg-white mt-4">
-    <div class="max-w-[1200px] mx-auto px-4 py-6">
-        <div class="flex items-center justify-between mb-5">
-            <div>
-                <h2 class="text-lg font-extrabold text-gray-900">New Arrivals</h2>
-                <p class="text-gray-400 text-xs mt-0.5">Fresh finds every day</p>
-            </div>
-            <a href="{{ route('shop.index') }}?sort=latest" class="text-orange-500 hover:text-orange-700 font-bold text-sm transition">VIEW ALL →</a>
-        </div>
-        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-            @foreach($newArrivals->take(8) as $product)
-                @include('partials.product-card', ['product' => $product])
-            @endforeach
-        </div>
-    </div>
-</div>
-@endif
-
-{{-- ═══════════ JUST FOR YOU (personalized feel) ═══════════ --}}
-@if($newArrivals->count() > 8)
+{{-- ═══════════ JUST FOR YOU (personalized feel — overflow from the New Arrivals section) ═══════════ --}}
+@if($justForYou->isNotEmpty())
 <div class="bg-white mt-4">
     <div class="max-w-[1200px] mx-auto px-4 py-6">
         <div class="flex items-center justify-center mb-5">
@@ -403,7 +350,7 @@ $reviewThemes = [
             <div class="h-px bg-gray-200 flex-1"></div>
         </div>
         <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
-            @foreach($newArrivals->slice(8, 10) as $product)
+            @foreach($justForYou as $product)
                 @include('partials.product-card', ['product' => $product])
             @endforeach
         </div>

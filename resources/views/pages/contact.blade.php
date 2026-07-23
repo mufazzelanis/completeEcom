@@ -42,6 +42,8 @@
                         class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none @error('message') border-red-400 @enderror">{{ old('message') }}</textarea>
                     @error('message')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
                 </div>
+                @error('recaptcha')<p class="text-red-500 text-xs">{{ $message }}</p>@enderror
+                @include('partials.recaptcha')
                 <button type="submit" class="w-full bg-indigo-600 text-white py-3 rounded-xl text-sm font-semibold hover:bg-indigo-700 transition">
                     Send Message
                 </button>

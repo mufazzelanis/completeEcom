@@ -9,6 +9,8 @@
         processedRows: {{ $import->processed_rows }},
         createdCount: {{ $import->created_count }},
         skippedCount: {{ $import->skipped_count }},
+        imagesMatchedCount: {{ $import->images_matched_count }},
+        imagesMissingCount: {{ $import->images_missing_count }},
         progressPercent: {{ $import->progressPercent() }},
         errors: {{ Js::from($import->errors ?? []) }},
         poll() {
@@ -21,6 +23,8 @@
                     this.processedRows = data.processed_rows;
                     this.createdCount = data.created_count;
                     this.skippedCount = data.skipped_count;
+                    this.imagesMatchedCount = data.images_matched_count;
+                    this.imagesMissingCount = data.images_missing_count;
                     this.progressPercent = data.progress_percent;
                     this.errors = data.errors;
                     if (this.status !== 'completed' && this.status !== 'failed') {
@@ -63,7 +67,7 @@
             <span x-text="`${progressPercent}%`"></span>
         </div>
 
-        <div class="grid grid-cols-2 gap-4 mb-6">
+        <div class="grid grid-cols-2 gap-4 mb-4">
             <div class="bg-green-50 rounded-xl p-4 text-center">
                 <p class="text-2xl font-bold text-green-600" x-text="createdCount"></p>
                 <p class="text-xs text-green-700 mt-1">Products Created</p>
@@ -71,6 +75,16 @@
             <div class="bg-red-50 rounded-xl p-4 text-center">
                 <p class="text-2xl font-bold text-red-500" x-text="skippedCount"></p>
                 <p class="text-xs text-red-600 mt-1">Rows Skipped</p>
+            </div>
+        </div>
+        <div class="grid grid-cols-2 gap-4 mb-6" x-show="imagesMatchedCount > 0 || imagesMissingCount > 0">
+            <div class="bg-indigo-50 rounded-xl p-4 text-center">
+                <p class="text-2xl font-bold text-indigo-600" x-text="imagesMatchedCount"></p>
+                <p class="text-xs text-indigo-700 mt-1">Images Matched</p>
+            </div>
+            <div class="bg-amber-50 rounded-xl p-4 text-center">
+                <p class="text-2xl font-bold text-amber-500" x-text="imagesMissingCount"></p>
+                <p class="text-xs text-amber-600 mt-1">Images Not Found</p>
             </div>
         </div>
 

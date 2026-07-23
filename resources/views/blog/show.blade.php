@@ -1,34 +1,24 @@
 @extends('layouts.app')
-@section('title', $blogPost->meta_title ?? $blogPost->title)
-@section('meta_description', $blogPost->meta_description ?? $blogPost->excerpt)
-
-@push('meta')
 @php
     $seoTitle = $blogPost->meta_title ?: $blogPost->title;
     $seoDesc  = $blogPost->meta_description ?: $blogPost->excerpt;
     $seoImage = $blogPost->image ? Storage::url($blogPost->image) : null;
     $canonicalUrl = route('blog.show', $blogPost);
 @endphp
-<link rel="canonical" href="{{ $canonicalUrl }}">
-@if($blogPost->meta_keywords)<meta name="keywords" content="{{ $blogPost->meta_keywords }}">@endif
+@section('title', $seoTitle)
+@section('meta_description', $seoDesc)
+@section('meta_keywords', $blogPost->meta_keywords ?? '')
+@section('canonical', $canonicalUrl)
+@section('og_type', 'article')
+@section('og_image', $seoImage ?? '')
 
-{{-- Open Graph --}}
-<meta property="og:type" content="article">
-<meta property="og:title" content="{{ $seoTitle }}">
-@if($seoDesc)<meta property="og:description" content="{{ $seoDesc }}">@endif
-<meta property="og:url" content="{{ $canonicalUrl }}">
-@if($seoImage)<meta property="og:image" content="{{ $seoImage }}">@endif
+@push('meta')
+{{-- Article-specific Open Graph properties the layout's generic tags don't cover --}}
 <meta property="article:published_time" content="{{ $blogPost->published_at?->toAtomString() }}">
 <meta property="article:modified_time" content="{{ $blogPost->updated_at->toAtomString() }}">
 @if($blogPost->author)<meta property="article:author" content="{{ $blogPost->author->name }}">@endif
 @if($blogPost->category)<meta property="article:section" content="{{ $blogPost->category->name }}">@endif
 @foreach($blogPost->tags as $tag)<meta property="article:tag" content="{{ $tag->name }}">@endforeach
-
-{{-- Twitter Card --}}
-<meta name="twitter:card" content="{{ $seoImage ? 'summary_large_image' : 'summary' }}">
-<meta name="twitter:title" content="{{ $seoTitle }}">
-@if($seoDesc)<meta name="twitter:description" content="{{ $seoDesc }}">@endif
-@if($seoImage)<meta name="twitter:image" content="{{ $seoImage }}">@endif
 
 {{-- Article structured data --}}
 <script type="application/ld+json">

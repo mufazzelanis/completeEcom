@@ -463,11 +463,20 @@ class CheckoutController extends Controller
         if ($order->user_id !== auth()->id()) {
             abort(403);
         }
-        $order->load('payment');
+        $order->load('payment', 'items.product');
 
         $accountCreated = session('account_created') ?? false;
 
-        return view('checkout.success', compact('order', 'accountCreated'));
+        // Fire the Purchase/conversion event only the first time this order's success
+        // page is viewed — a session flag stops a page refresh or revisit from
+        // reporting the same sale to GA/Meta multiple times.
+        $trackedKey = 'purchase_tracked_' . $order->id;
+        $shouldTrackPurchase = !session($trackedKey, false);
+        if ($shouldTrackPurchase) {
+            session([$trackedKey => true]);
+        }
+
+        return view('checkout.success', compact('order', 'accountCreated', 'shouldTrackPurchase'));
     }
 
     public function guestTrack(Request $request)

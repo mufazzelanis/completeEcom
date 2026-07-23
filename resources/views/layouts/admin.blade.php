@@ -41,6 +41,7 @@
 // admin panel reachable in a couple of keystrokes instead of hunting through the sidebar.
 $adminNavIndex = [
     ['label' => 'Dashboard', 'url' => route('admin.dashboard'), 'group' => 'General'],
+    ['label' => 'Homepage Sections', 'url' => route('admin.home-sections.index'), 'group' => 'General'],
     ['label' => 'Categories', 'url' => route('admin.categories.index'), 'group' => 'Catalog'],
     ['label' => 'Subcategories', 'url' => route('admin.subcategories.index'), 'group' => 'Catalog'],
     ['label' => 'Reviews', 'url' => route('admin.reviews.index'), 'group' => 'Catalog'],
@@ -97,11 +98,14 @@ $adminNavIndex = [
     ['label' => 'Fraud Alerts', 'url' => route('admin.orders.index', ['fraud' => 1]), 'group' => 'Security'],
     ['label' => 'Audit Logs', 'url' => route('admin.audit-logs.index'), 'group' => 'Security'],
     // Settings sub-pages (labels match resources/views/admin/settings/layout.blade.php)
+    ['label' => 'Two-Factor Authentication', 'url' => route('admin.two-factor.show'), 'group' => 'Settings'],
     ['label' => 'General Settings', 'url' => route('admin.settings.show', 'general'), 'group' => 'Settings'],
     ['label' => 'Branding Settings', 'url' => route('admin.settings.show', 'branding'), 'group' => 'Settings'],
     ['label' => 'Header Settings', 'url' => route('admin.settings.show', 'header'), 'group' => 'Settings'],
     ['label' => 'Footer Settings', 'url' => route('admin.settings.show', 'footer'), 'group' => 'Settings'],
     ['label' => 'Localization Settings', 'url' => route('admin.settings.show', 'localization'), 'group' => 'Settings'],
+    ['label' => 'Languages', 'url' => route('admin.languages.index'), 'group' => 'Settings'],
+    ['label' => 'Translations', 'url' => route('admin.translations.index'), 'group' => 'Settings'],
     ['label' => 'Currency Settings', 'url' => route('admin.settings.show', 'currency'), 'group' => 'Settings'],
     ['label' => 'Tax Settings', 'url' => route('admin.settings.show', 'tax'), 'group' => 'Settings'],
     ['label' => 'Shipping Settings', 'url' => route('admin.settings.show', 'shipping'), 'group' => 'Settings'],
@@ -165,6 +169,11 @@ $adminNavIndex = [
                 class="flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium transition {{ request()->routeIs('admin.dashboard') ? 'bg-orange-600 text-white' : 'text-gray-300 hover:bg-gray-800' }}">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
                 <span>Dashboard</span>
+            </a>
+            <a href="{{ route('admin.home-sections.index') }}"
+                class="flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium transition {{ request()->routeIs('admin.home-sections.*') ? 'bg-orange-600 text-white' : 'text-gray-300 hover:bg-gray-800' }}">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h4m0 0v6m0-6L4 18m10-6h6m-6 0v6m0-6l4 6"/></svg>
+                <span>Homepage Sections</span>
             </a>
 
             {{-- Catalog --}}
@@ -519,10 +528,25 @@ $adminNavIndex = [
             <div class="pt-4 pb-1">
                 <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider px-3">Settings</p>
             </div>
+            <a href="{{ route('admin.two-factor.show') }}"
+                class="flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium transition {{ request()->routeIs('admin.two-factor.*') ? 'bg-orange-600 text-white' : 'text-gray-300 hover:bg-gray-800' }}">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                <span>Two-Factor Auth</span>
+            </a>
             <a href="{{ route('admin.settings.show', 'general') }}"
                 class="flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium transition {{ request()->routeIs('admin.settings.*') ? 'bg-orange-600 text-white' : 'text-gray-300 hover:bg-gray-800' }}">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
                 <span>General Settings</span>
+            </a>
+            <a href="{{ route('admin.languages.index') }}"
+                class="flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium transition {{ request()->routeIs('admin.languages.*') ? 'bg-orange-600 text-white' : 'text-gray-300 hover:bg-gray-800' }}">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129"/></svg>
+                <span>Languages</span>
+            </a>
+            <a href="{{ route('admin.translations.index') }}"
+                class="flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium transition {{ request()->routeIs('admin.translations.*') ? 'bg-orange-600 text-white' : 'text-gray-300 hover:bg-gray-800' }}">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"/></svg>
+                <span>Translations</span>
             </a>
 
         </nav>
@@ -549,14 +573,39 @@ $adminNavIndex = [
             <!-- Global Admin Quick Search -->
             <div class="relative flex-1 max-w-sm hidden sm:block" x-data="{
                 query: '',
-                results: [],
+                products: [],
+                orders: [],
+                customers: [],
+                categories: [],
                 open: false,
+                loading: false,
+                activeIndex: -1,
+                get flatResults() {
+                    return [...this.products, ...this.orders, ...this.customers, ...this.categories];
+                },
                 async fetchSuggestions() {
                     if (this.query.length < 2) { this.open = false; return; }
+                    this.loading = true;
                     const res = await fetch('{{ route('admin.search.suggest') }}?q=' + encodeURIComponent(this.query));
                     const data = await res.json();
-                    this.results = data.products;
-                    this.open = this.results.length > 0;
+                    this.products = data.products || [];
+                    this.orders = data.orders || [];
+                    this.customers = data.customers || [];
+                    this.categories = data.categories || [];
+                    this.activeIndex = -1;
+                    this.loading = false;
+                    this.open = this.flatResults.length > 0;
+                },
+                go(url) { window.location.href = url; },
+                onEnter() {
+                    if (this.activeIndex >= 0 && this.flatResults[this.activeIndex]) {
+                        this.go(this.flatResults[this.activeIndex].url);
+                    }
+                },
+                moveActive(delta) {
+                    if (!this.open) return;
+                    const max = this.flatResults.length - 1;
+                    this.activeIndex = Math.min(max, Math.max(0, this.activeIndex + delta));
                 }
             }" @click.outside="open = false">
                 <div class="relative">
@@ -566,28 +615,101 @@ $adminNavIndex = [
                         @input.debounce.300ms="fetchSuggestions()"
                         @focus="query.length > 1 && fetchSuggestions()"
                         @keydown.escape="open = false"
-                        placeholder="Quick search products..."
+                        @keydown.down.prevent="moveActive(1)"
+                        @keydown.up.prevent="moveActive(-1)"
+                        @keydown.enter.prevent="onEnter()"
+                        placeholder="Search products, orders, customers..."
                         class="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 bg-gray-50 dark:bg-gray-800 text-gray-800 dark:text-gray-100"
                         autocomplete="off">
                 </div>
                 <div x-show="open" x-cloak
-                     class="absolute top-full left-0 right-0 bg-white dark:bg-gray-800 shadow-xl rounded-xl border border-gray-100 dark:border-gray-700 z-50 mt-1 overflow-hidden">
-                    <template x-for="product in results" :key="product.url">
-                        <a :href="product.url" @click="open = false; query = ''"
-                           class="flex items-center px-3 py-2.5 hover:bg-orange-50 dark:hover:bg-gray-700 gap-3">
-                            <div class="w-9 h-9 bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden flex-shrink-0 flex items-center justify-center">
-                                <img x-show="product.image" :src="product.image" class="w-full h-full object-cover">
-                                <svg x-show="!product.image" class="w-4 h-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-                            </div>
-                            <div class="flex-1 min-w-0">
-                                <p class="text-sm font-medium text-gray-800 dark:text-gray-100 truncate" x-text="product.name"></p>
-                                <p class="text-xs text-gray-500 dark:text-gray-400" x-text="product.sku + ' · ' + product.price"></p>
-                            </div>
-                            <span :class="product.is_active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'"
-                                  class="text-xs px-1.5 py-0.5 rounded-full flex-shrink-0"
-                                  x-text="product.is_active ? 'Active' : 'Inactive'"></span>
-                        </a>
+                     class="absolute top-full left-0 right-0 bg-white dark:bg-gray-800 shadow-xl rounded-xl border border-gray-100 dark:border-gray-700 z-50 mt-1 max-h-96 overflow-y-auto">
+
+                    <!-- Products -->
+                    <template x-if="products.length">
+                        <div class="border-b border-gray-100 dark:border-gray-700">
+                            <p class="px-3 pt-2 pb-1 text-[11px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Products</p>
+                            <template x-for="product in products" :key="'p-' + product.url">
+                                <a :href="product.url" @click="open = false; query = ''"
+                                   :class="flatResults.indexOf(product) === activeIndex ? 'bg-orange-50 dark:bg-gray-700' : ''"
+                                   class="flex items-center px-3 py-2 hover:bg-orange-50 dark:hover:bg-gray-700 gap-3">
+                                    <div class="w-8 h-8 bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden flex-shrink-0 flex items-center justify-center">
+                                        <img x-show="product.image" :src="product.image" class="w-full h-full object-cover">
+                                        <svg x-show="!product.image" class="w-4 h-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <p class="text-sm font-medium text-gray-800 dark:text-gray-100 truncate" x-text="product.name"></p>
+                                        <p class="text-xs text-gray-500 dark:text-gray-400" x-text="product.sku + ' · ' + product.price"></p>
+                                    </div>
+                                    <span :class="product.is_active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'"
+                                          class="text-xs px-1.5 py-0.5 rounded-full flex-shrink-0"
+                                          x-text="product.is_active ? 'Active' : 'Inactive'"></span>
+                                </a>
+                            </template>
+                        </div>
                     </template>
+
+                    <!-- Orders -->
+                    <template x-if="orders.length">
+                        <div class="border-b border-gray-100 dark:border-gray-700">
+                            <p class="px-3 pt-2 pb-1 text-[11px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Orders</p>
+                            <template x-for="order in orders" :key="'o-' + order.url">
+                                <a :href="order.url" @click="open = false; query = ''"
+                                   :class="flatResults.indexOf(order) === activeIndex ? 'bg-orange-50 dark:bg-gray-700' : ''"
+                                   class="flex items-center px-3 py-2 hover:bg-orange-50 dark:hover:bg-gray-700 gap-3">
+                                    <div class="w-8 h-8 bg-gray-100 dark:bg-gray-700 rounded-lg flex-shrink-0 flex items-center justify-center">
+                                        <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <p class="text-sm font-medium text-gray-800 dark:text-gray-100 truncate" x-text="order.order_number"></p>
+                                        <p class="text-xs text-gray-500 dark:text-gray-400 truncate" x-text="(order.customer || 'Guest') + ' · ' + order.total"></p>
+                                    </div>
+                                    <span class="text-xs px-1.5 py-0.5 rounded-full flex-shrink-0 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 capitalize" x-text="order.status"></span>
+                                </a>
+                            </template>
+                        </div>
+                    </template>
+
+                    <!-- Customers -->
+                    <template x-if="customers.length">
+                        <div class="border-b border-gray-100 dark:border-gray-700">
+                            <p class="px-3 pt-2 pb-1 text-[11px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Customers</p>
+                            <template x-for="customer in customers" :key="'c-' + customer.url">
+                                <a :href="customer.url" @click="open = false; query = ''"
+                                   :class="flatResults.indexOf(customer) === activeIndex ? 'bg-orange-50 dark:bg-gray-700' : ''"
+                                   class="flex items-center px-3 py-2 hover:bg-orange-50 dark:hover:bg-gray-700 gap-3">
+                                    <div class="w-8 h-8 bg-orange-100 dark:bg-orange-900/40 rounded-full flex-shrink-0 flex items-center justify-center">
+                                        <span class="text-orange-600 dark:text-orange-300 font-semibold text-xs" x-text="customer.name.charAt(0).toUpperCase()"></span>
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <p class="text-sm font-medium text-gray-800 dark:text-gray-100 truncate" x-text="customer.name"></p>
+                                        <p class="text-xs text-gray-500 dark:text-gray-400 truncate" x-text="customer.email"></p>
+                                    </div>
+                                </a>
+                            </template>
+                        </div>
+                    </template>
+
+                    <!-- Categories & Brands -->
+                    <template x-if="categories.length">
+                        <div>
+                            <p class="px-3 pt-2 pb-1 text-[11px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Categories & Brands</p>
+                            <template x-for="cat in categories" :key="'cat-' + cat.url">
+                                <a :href="cat.url" @click="open = false; query = ''"
+                                   :class="flatResults.indexOf(cat) === activeIndex ? 'bg-orange-50 dark:bg-gray-700' : ''"
+                                   class="flex items-center px-3 py-2 hover:bg-orange-50 dark:hover:bg-gray-700 gap-3">
+                                    <div class="w-8 h-8 bg-gray-100 dark:bg-gray-700 rounded-lg flex-shrink-0 flex items-center justify-center">
+                                        <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <p class="text-sm font-medium text-gray-800 dark:text-gray-100 truncate" x-text="cat.name"></p>
+                                    </div>
+                                    <span class="text-xs px-1.5 py-0.5 rounded-full flex-shrink-0 bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400" x-text="cat.type"></span>
+                                </a>
+                            </template>
+                        </div>
+                    </template>
+
                     <div class="px-3 py-2 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
                         <a :href="'{{ route('admin.products.index') }}?search=' + encodeURIComponent(query)"
                            class="text-xs text-orange-600 hover:text-orange-800 font-medium">

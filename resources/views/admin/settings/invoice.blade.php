@@ -21,6 +21,11 @@
                    class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-orange-500">
         </div>
     </div>
+    @php
+        $previewPrefix = setting('invoice_prefix', 'INV-');
+        $previewStart = (int) setting('invoice_start_number', 1000);
+    @endphp
+    <p class="text-xs text-gray-400">Invoice numbers are generated sequentially from the order id — e.g. your next few invoices will read <span class="font-mono text-gray-600">{{ $previewPrefix }}{{ str_pad($previewStart, 6, '0', STR_PAD_LEFT) }}</span>, <span class="font-mono text-gray-600">{{ $previewPrefix }}{{ str_pad($previewStart + 1, 6, '0', STR_PAD_LEFT) }}</span>, <span class="font-mono text-gray-600">{{ $previewPrefix }}{{ str_pad($previewStart + 2, 6, '0', STR_PAD_LEFT) }}</span>…</p>
     <div>
         <label class="block text-sm font-medium text-gray-700 mb-1">Invoice Logo</label>
         @php $logoUrl = setting_file_url('invoice_logo'); @endphp

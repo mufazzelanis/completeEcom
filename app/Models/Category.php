@@ -7,7 +7,10 @@ use Illuminate\Support\Str;
 
 class Category extends Model
 {
-    protected $fillable = ['name', 'slug', 'description', 'image', 'parent_id', 'sort_order', 'is_active'];
+    protected $fillable = [
+        'name', 'slug', 'description', 'image', 'parent_id', 'sort_order', 'is_active',
+        'meta_title', 'meta_description', 'meta_keywords', 'canonical_url', 'og_image',
+    ];
 
     protected $casts = ['is_active' => 'boolean'];
 

@@ -19,6 +19,8 @@ use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\EmailCampaignController as AdminEmailCampaignController;
 use App\Http\Controllers\Admin\FaqController as AdminFaqController;
 use App\Http\Controllers\Admin\FlashSaleController as AdminFlashSaleController;
+use App\Http\Controllers\Admin\HomeSectionController as AdminHomeSectionController;
+use App\Http\Controllers\Admin\LanguageController as AdminLanguageController;
 use App\Http\Controllers\Admin\LowStockController as AdminLowStockController;
 use App\Http\Controllers\Admin\NewsletterController as AdminNewsletterController;
 use App\Http\Controllers\Admin\NotificationController as AdminNotificationController;
@@ -35,6 +37,8 @@ use App\Http\Controllers\Admin\ReportController as AdminReportController;
 use App\Http\Controllers\Admin\ReturnController as AdminReturnController;
 use App\Http\Controllers\Admin\SupportTicketController as AdminSupportTicketController;
 use App\Http\Controllers\Admin\ReviewController as AdminReviewController;
+use App\Http\Controllers\Admin\TranslationController as AdminTranslationController;
+use App\Http\Controllers\Admin\TwoFactorController as AdminTwoFactorController;
 use App\Http\Controllers\Admin\RoleController as AdminRoleController;
 use App\Http\Controllers\Admin\SaleProductController as AdminSaleProductController;
 use App\Http\Controllers\Admin\SettingController as AdminSettingController;
@@ -68,6 +72,7 @@ use App\Http\Controllers\ReturnRequestController;
 use App\Http\Controllers\SearchController;
 use App\Http\Controllers\SecurityController;
 use App\Http\Controllers\ShopController;
+use App\Http\Controllers\SitemapController;
 use App\Http\Controllers\SupportTicketController;
 use App\Http\Controllers\VendorRegistrationController;
 use App\Http\Controllers\WishlistController;
@@ -75,6 +80,24 @@ use Illuminate\Support\Facades\Route;
 
 // Search suggest (public)
 Route::get('/search/suggest', [SearchController::class, 'suggest'])->name('search.suggest');
+
+// SEO: sitemap + robots.txt (public/robots.txt removed so this route is actually reached)
+Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemap');
+Route::get('/robots.txt', function () {
+    $lines = ['User-agent: *'];
+    if (setting('sitemap_enabled', '1') === '1') {
+        $lines[] = 'Disallow: /admin';
+        $lines[] = 'Disallow: /cart';
+        $lines[] = 'Disallow: /checkout';
+        $lines[] = 'Disallow: /account';
+        $lines[] = '';
+        $lines[] = 'Sitemap: ' . route('sitemap');
+    } else {
+        $lines[] = 'Disallow: /';
+    }
+
+    return response(implode("\n", $lines), 200)->header('Content-Type', 'text/plain');
+})->name('robots');
 
 // Blog (public)
 Route::get('/blog', [BlogController::class, 'index'])->name('blog.index');
@@ -84,11 +107,14 @@ Route::get('/blog/{blogPost}', [BlogController::class, 'show'])->name('blog.show
 // Pages (public)
 Route::get('/faq', [PageController::class, 'faq'])->name('faq');
 Route::get('/contact', [PageController::class, 'contact'])->name('contact');
-Route::post('/contact', [PageController::class, 'sendContact'])->name('contact.send');
+Route::post('/contact', [PageController::class, 'sendContact'])->middleware('throttle:5,1')->name('contact.send');
+Route::get('/terms', [PageController::class, 'terms'])->name('terms');
+Route::get('/privacy', [PageController::class, 'privacy'])->name('privacy');
+Route::get('/about', [PageController::class, 'about'])->name('about');
 Route::get('/pages/{page}', [PageController::class, 'show'])->name('pages.show');
 
 // Newsletter (public)
-Route::post('/newsletter/subscribe', [NewsletterSubscriptionController::class, 'subscribe'])->name('newsletter.subscribe');
+Route::post('/newsletter/subscribe', [NewsletterSubscriptionController::class, 'subscribe'])->middleware('throttle:5,1')->name('newsletter.subscribe');
 Route::get('/newsletter/unsubscribe/{token}', [NewsletterSubscriptionController::class, 'unsubscribe'])->name('newsletter.unsubscribe');
 Route::get('/email/unsubscribe/{token}', [EmailUnsubscribeController::class, 'unsubscribe'])->name('email.unsubscribe');
 
@@ -98,7 +124,7 @@ Route::get('/shop', [ShopController::class, 'index'])->name('shop.index');
 Route::get('/categories', [ShopController::class, 'categories'])->name('categories.index');
 Route::get('/shop/category/{category}', [ShopController::class, 'category'])->name('shop.category');
 Route::get('/products/{product}', [ProductController::class, 'show'])->name('products.show');
-Route::post('/products/{product}/review', [ProductController::class, 'storeReview'])->middleware('auth')->name('products.review');
+Route::post('/products/{product}/review', [ProductController::class, 'storeReview'])->middleware(['auth', 'throttle:5,1'])->name('products.review');
 
 // Cart Routes
 Route::get('/cart', [CartController::class, 'index'])->name('cart.index');
@@ -118,7 +144,7 @@ Route::post('/buy-now', [CheckoutController::class, 'buyNow'])->name('checkout.b
 
 // Guest Order Tracking
 Route::get('/track-order', [CheckoutController::class, 'guestTrackForm'])->name('guest.order.track.form');
-Route::post('/track-order', [CheckoutController::class, 'guestTrackLookup'])->name('guest.order.track.lookup');
+Route::post('/track-order', [CheckoutController::class, 'guestTrackLookup'])->middleware('throttle:10,1')->name('guest.order.track.lookup');
 Route::get('/track-order/{order_number}/{token}', [CheckoutController::class, 'guestTrack'])->name('guest.order.track');
 
 Route::middleware('auth')->group(function () {
@@ -190,6 +216,16 @@ Route::middleware('auth')->group(function () {
     // Become a Seller
     Route::get('/sell', [VendorRegistrationController::class, 'create'])->name('vendor.apply');
     Route::post('/sell', [VendorRegistrationController::class, 'store'])->name('vendor.apply.store');
+
+    // Admin two-factor enrollment — deliberately outside the admin+2FA-enforcing
+    // middleware group below, so setting up 2FA is never itself blocked by
+    // the "must have 2FA" check that AdminMiddleware enforces once enabled.
+    Route::prefix('admin/two-factor')->name('admin.two-factor.')->group(function () {
+        Route::get('/', [AdminTwoFactorController::class, 'show'])->name('show');
+        Route::post('/confirm', [AdminTwoFactorController::class, 'confirm'])->middleware('throttle:10,1')->name('confirm');
+        Route::post('/disable', [AdminTwoFactorController::class, 'disable'])->name('disable');
+        Route::post('/recovery-codes', [AdminTwoFactorController::class, 'regenerateRecoveryCodes'])->name('recovery-codes');
+    });
 });
 
 // Admin Routes
@@ -198,6 +234,21 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
 
     // Admin search suggest
     Route::get('search/suggest', [SearchController::class, 'adminSuggest'])->name('search.suggest');
+
+    // Homepage Sections (homepage builder)
+    Route::resource('home-sections', AdminHomeSectionController::class)->except(['show']);
+    Route::patch('home-sections/{home_section}/toggle', [AdminHomeSectionController::class, 'toggle'])->name('home-sections.toggle');
+    Route::patch('home-sections/{home_section}/move-up', [AdminHomeSectionController::class, 'moveUp'])->name('home-sections.move-up');
+    Route::patch('home-sections/{home_section}/move-down', [AdminHomeSectionController::class, 'moveDown'])->name('home-sections.move-down');
+
+    // Languages & Translations (multi-language system)
+    Route::resource('languages', AdminLanguageController::class)->except(['show', 'create', 'edit']);
+    Route::patch('languages/{language}/toggle', [AdminLanguageController::class, 'toggle'])->name('languages.toggle');
+    Route::patch('languages/{language}/set-default', [AdminLanguageController::class, 'setDefault'])->name('languages.set-default');
+    Route::get('translations', [AdminTranslationController::class, 'index'])->name('translations.index');
+    Route::post('translations', [AdminTranslationController::class, 'store'])->name('translations.store');
+    Route::patch('translations', [AdminTranslationController::class, 'update'])->name('translations.update');
+    Route::delete('translations', [AdminTranslationController::class, 'destroy'])->name('translations.destroy');
 
     Route::resource('categories', AdminCategoryController::class);
     // Subcategories — manual routes (bypass slug-based route model binding)

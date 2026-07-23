@@ -17,7 +17,7 @@ class User extends Authenticatable
         'date_of_birth', 'gender', 'bio', 'referred_by',
     ];
 
-    protected $hidden = ['password', 'remember_token'];
+    protected $hidden = ['password', 'remember_token', 'two_factor_secret', 'two_factor_recovery_codes'];
 
     protected function casts(): array
     {
@@ -26,7 +26,16 @@ class User extends Authenticatable
             'password' => 'hashed',
             'is_active' => 'boolean',
             'date_of_birth' => 'date',
+            // Encrypted at rest — a raw DB dump alone can't be used to generate valid codes.
+            'two_factor_secret' => 'encrypted',
+            'two_factor_recovery_codes' => 'encrypted:array',
+            'two_factor_confirmed_at' => 'datetime',
         ];
+    }
+
+    public function hasTwoFactorEnabled(): bool
+    {
+        return $this->two_factor_secret !== null && $this->two_factor_confirmed_at !== null;
     }
 
     // ── Role helpers ──────────────────────────────────────────────────────────

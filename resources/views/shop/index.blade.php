@@ -1,5 +1,29 @@
 @extends('layouts.app')
-@section('title', isset($category) ? $category->name : 'Shop')
+@php
+    $shopSeoTitle = isset($category) ? ($category->meta_title ?: $category->name) : 'Shop';
+    $shopSeoDesc  = isset($category) ? ($category->meta_description ?: $category->description) : null;
+    $shopSeoImage = isset($category) ? ($category->og_image ? Storage::url($category->og_image) : ($category->image ? Storage::url($category->image) : null)) : null;
+    $shopCanonical = isset($category) ? ($category->canonical_url ?: route('shop.category', $category)) : route('shop.index');
+@endphp
+@section('title', $shopSeoTitle)
+@if($shopSeoDesc)@section('meta_description', $shopSeoDesc)@endif
+@if(isset($category) && $category->meta_keywords)@section('meta_keywords', $category->meta_keywords)@endif
+@section('canonical', $shopCanonical)
+@if($shopSeoImage)@section('og_image', $shopSeoImage)@endif
+
+@push('meta')
+@if(isset($category))
+<script type="application/ld+json">
+{!! json_encode([
+    '@context' => 'https://schema.org',
+    '@type' => 'CollectionPage',
+    'name' => $shopSeoTitle,
+    'description' => $shopSeoDesc,
+    'url' => $shopCanonical,
+], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}
+</script>
+@endif
+@endpush
 
 @section('content')
 <div class="max-w-7xl mx-auto px-4 py-8">

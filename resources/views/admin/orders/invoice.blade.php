@@ -383,6 +383,16 @@ $storeAddress = setting('company_address') ?: 'Dhaka, Bangladesh';
 $footerText = setting('invoice_footer_text', 'Thank you for shopping with us!');
 $invoiceTerms = setting('invoice_terms');
 
+// Invoice numbers are sequential and derived from the order id, so re-downloading
+// the same order's invoice always yields the same number without a separate
+// counter column — starting point and prefix are admin-configurable.
+$invoicePrefix = setting('invoice_prefix', 'INV-');
+$invoiceStartNumber = (int) setting('invoice_start_number', 1000);
+$invoiceNumber = $invoicePrefix . str_pad($invoiceStartNumber + $order->id - 1, 6, '0', STR_PAD_LEFT);
+
+$invoiceDueDays = (int) setting('invoice_due_days', 0);
+$dueDate = $invoiceDueDays > 0 ? $order->created_at->copy()->addDays($invoiceDueDays)->format('d F Y') : null;
+
 $logoPath = setting('invoice_logo');
 $logoAbsolutePath = null;
 if ($logoPath && \Illuminate\Support\Facades\Storage::disk('public')->exists($logoPath)) {
@@ -410,14 +420,15 @@ if ($logoPath && \Illuminate\Support\Facades\Storage::disk('public')->exists($lo
                 </td>
                 <td class="invoice-title">
                     <h1>INVOICE</h1>
-                    <div class="inv-number">#{{ $order->order_number }}</div>
-                    <span class="row-label">Payment:</span>
-                    {{ ucfirst(str_replace('_', ' ', $order->payment_method)) }}<br>
+                    <div class="inv-number">{{ $invoiceNumber }}</div>
                     <div style="margin-top:10px;">
                         <span class="badge badge-{{ $order->status }}">{{ ucfirst($order->status) }}</span>
                     </div>
                     <div class="inv-meta">
                         Issued: {{ $order->created_at->format('d F Y') }}
+                        @if($dueDate)
+                            <br>Due: {{ $dueDate }}
+                        @endif
                     </div>
                 </td>
             </tr>
@@ -445,12 +456,12 @@ if ($logoPath && \Illuminate\Support\Facades\Storage::disk('public')->exists($lo
                         </p>
                     </div>
                 </td>
-                {{-- <td>
+                <td>
                     <div class="info-box">
                         <h4>Order Details</h4>
                         <p>
-
-                            <span class="row-label">Payment:</span>
+                            <span class="row-label">Order Ref:</span> {{ $order->order_number }}<br>
+                            <span class="row-label">Payment Method:</span>
                             {{ ucfirst(str_replace('_', ' ', $order->payment_method)) }}<br>
                             <span class="row-label">Payment Status:</span>
                             <span class="{{ $order->payment_status === 'paid' ? 'paid-yes' : 'paid-no' }}"
@@ -458,7 +469,7 @@ if ($logoPath && \Illuminate\Support\Facades\Storage::disk('public')->exists($lo
                                 {{ ucfirst($order->payment_status) }}
                             </span>
                         </p>
-                    </div> --}}
+                    </div>
                 </td>
             </tr>
         </table>

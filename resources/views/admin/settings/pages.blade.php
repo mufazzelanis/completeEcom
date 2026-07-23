@@ -13,10 +13,16 @@ try { $pages = Page::orderBy('title')->get(['id', 'title']); } catch (\Throwable
 
 <div class="bg-white rounded-xl shadow-sm border p-6 space-y-4">
     <h2 class="text-base font-semibold text-gray-900 pb-2 border-b">Page Assignments</h2>
-    <p class="text-sm text-gray-500">Assign CMS pages to built-in page slots. Create pages first in <a href="{{ route('admin.pages.index') }}" class="text-orange-600 hover:underline">CMS → Pages</a>.</p>
+    <p class="text-sm text-gray-500">
+        Pick which CMS page fills each built-in slot. Once assigned, that page shows up automatically at its dedicated URL
+        (<span class="font-mono text-xs">/terms</span>, <span class="font-mono text-xs">/privacy</span>, <span class="font-mono text-xs">/about</span>)
+        and in the storefront footer — no matter what slug you gave the page itself. FAQ and Contact already have working pages
+        by default (via the <span class="font-mono text-xs">faq</span>/<span class="font-mono text-xs">contact</span> slugs);
+        assigning here only matters if you want a *different* page to serve that role.
+        Create pages first in <a href="{{ route('admin.pages.index') }}" class="text-orange-600 hover:underline">CMS → Pages</a>.
+    </p>
     @php
     $slots = [
-        'homepage_id'    => 'Homepage (Custom Content)',
         'terms_page_id'  => 'Terms & Conditions Page',
         'privacy_page_id'=> 'Privacy Policy Page',
         'about_page_id'  => 'About Us Page',
@@ -41,6 +47,7 @@ try { $pages = Page::orderBy('title')->get(['id', 'title']); } catch (\Throwable
 
 <div class="bg-white rounded-xl shadow-sm border p-6 space-y-4">
     <h2 class="text-base font-semibold text-gray-900 pb-2 border-b">Navigation URLs</h2>
+    <p class="text-sm text-gray-500">Override where the footer's Shop/Blog/Contact/About links point — useful if you want them to open an external URL instead of the built-in page. Leave blank to use the normal built-in page.</p>
     @php
     $navItems = [
         'nav_shop_url'    => 'Shop URL',

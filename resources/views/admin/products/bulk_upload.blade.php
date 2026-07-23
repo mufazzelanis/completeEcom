@@ -24,11 +24,12 @@
     <div class="bg-blue-50 border border-blue-200 rounded-2xl p-6 mb-6">
         <h3 class="font-semibold text-blue-800 mb-3">How to use bulk upload</h3>
         <ol class="text-sm text-blue-700 space-y-1 list-decimal list-inside">
-            <li>Download the CSV template below</li>
+            <li>Download the CSV template below — columns can be in any order, matched by header name</li>
             <li>Fill in product data — one row per product</li>
-            <li>The <strong>category_name</strong> must exactly match an existing top-level category</li>
-            <li>Leave <strong>sale_price</strong> blank if there's no discount</li>
-            <li>Upload the completed CSV file</li>
+            <li><strong>category_name</strong> must exactly match an existing top-level category</li>
+            <li>To include images: put all image files in one ZIP (any folder structure is fine), and put each product's exact image filename in the <strong>image_filename</strong> column</li>
+            <li>Leave any optional column blank to skip it</li>
+            <li>Upload the CSV (and the images ZIP, if you have one)</li>
         </ol>
 
         <div class="mt-4 flex flex-wrap gap-3">
@@ -56,12 +57,20 @@
                     @foreach([
                         ['name', 'Yes', 'Product name'],
                         ['sku', 'No', 'Stock keeping unit'],
-                        ['category_name', 'Yes', 'Must match existing category exactly'],
+                        ['category_name', 'Yes', 'Must match an existing top-level category exactly'],
+                        ['subcategory_name', 'No', 'Must be a subcategory of category_name'],
+                        ['brand_name', 'No', 'Must match an existing brand exactly'],
                         ['price', 'Yes', 'Base price (numeric)'],
                         ['sale_price', 'No', 'Leave blank for no discount'],
                         ['stock', 'No', 'Default 0 if blank'],
+                        ['weight', 'No', 'In kg, for shipping calculations'],
+                        ['barcode', 'No', 'EAN/UPC/etc.'],
+                        ['low_stock_threshold', 'No', 'Default 5 if blank'],
+                        ['image_filename', 'No', 'Exact filename of the image inside the uploaded ZIP'],
                         ['short_description', 'No', 'Brief summary'],
                         ['description', 'No', 'Full description'],
+                        ['meta_title', 'No', 'SEO page title'],
+                        ['meta_description', 'No', 'SEO meta description'],
                         ['is_active', 'No', '1 = active, 0 = inactive (default 1)'],
                         ['is_featured', 'No', '1 = featured (default 0)'],
                     ] as [$col, $req, $note])
@@ -86,20 +95,33 @@
             <div class="flex flex-wrap gap-2">
                 @foreach($categories as $cat)
                     <span class="px-2.5 py-1 bg-gray-100 text-gray-700 rounded-lg text-xs font-mono">{{ $cat->name }}</span>
+                    @foreach($cat->children as $child)
+                        <span class="px-2.5 py-1 bg-gray-50 text-gray-500 rounded-lg text-xs font-mono">↳ {{ $child->name }}</span>
+                    @endforeach
                 @endforeach
             </div>
         </div>
+        @if($brands->count())
+        <div class="mt-4">
+            <p class="text-xs text-gray-500 font-medium mb-2">Available Brands:</p>
+            <div class="flex flex-wrap gap-2">
+                @foreach($brands as $brand)
+                    <span class="px-2.5 py-1 bg-gray-100 text-gray-700 rounded-lg text-xs font-mono">{{ $brand->name }}</span>
+                @endforeach
+            </div>
+        </div>
+        @endif
     </div>
 
     {{-- Upload form --}}
     <div class="bg-white rounded-2xl shadow-sm p-8">
-        <h3 class="font-semibold text-gray-800 mb-4">Upload CSV File</h3>
+        <h3 class="font-semibold text-gray-800 mb-4">Upload Files</h3>
         @if($errors->any())
         <div class="mb-5 bg-red-50 border border-red-200 rounded-xl p-4">
             <ul class="text-sm text-red-600 space-y-1">@foreach($errors->all() as $e)<li>• {{ $e }}</li>@endforeach</ul>
         </div>
         @endif
-        <form action="{{ route('admin.products.bulk-upload.import') }}" method="POST" enctype="multipart/form-data">
+        <form action="{{ route('admin.products.bulk-upload.import') }}" method="POST" enctype="multipart/form-data" class="space-y-5">
             @csrf
             <div class="border-2 border-dashed border-gray-200 rounded-xl p-8 text-center hover:border-indigo-300 transition">
                 <svg class="w-10 h-10 text-gray-300 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -110,7 +132,18 @@
                     class="block mx-auto text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-medium file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 cursor-pointer">
                 <p class="text-xs text-gray-400 mt-2">Max file size: 500MB. CSV format only.</p>
             </div>
-            <div class="flex justify-end mt-6">
+
+            <div class="border-2 border-dashed border-gray-200 rounded-xl p-8 text-center hover:border-indigo-300 transition">
+                <svg class="w-10 h-10 text-gray-300 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                </svg>
+                <p class="text-sm text-gray-500 mb-3">Optional: ZIP file of product images</p>
+                <input type="file" name="images_zip" accept=".zip"
+                    class="block mx-auto text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-medium file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 cursor-pointer">
+                <p class="text-xs text-gray-400 mt-2">Matched to products via the image_filename column. Max file size: 500MB.</p>
+            </div>
+
+            <div class="flex justify-end">
                 <button type="submit" class="px-6 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-medium hover:bg-indigo-700 transition flex items-center space-x-2">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
                     <span>Import Products</span>

@@ -63,6 +63,12 @@
                @checked(setting('sitemap_enabled','1') == '1')>
         <span class="text-sm text-gray-700">Enable Sitemap (/sitemap.xml)</span>
     </label>
+    <p class="text-xs text-gray-400">
+        <a href="{{ route('sitemap') }}" target="_blank" class="text-orange-600 hover:underline">View live sitemap.xml</a>
+        &middot;
+        <a href="{{ route('robots') }}" target="_blank" class="text-orange-600 hover:underline">View live robots.txt</a>
+        — both include every active product, category, blog post, and page automatically.
+    </p>
 </div>
 
 <div class="bg-white rounded-xl shadow-sm border p-6 space-y-4">

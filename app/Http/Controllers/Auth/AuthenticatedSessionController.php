@@ -27,6 +27,10 @@ class AuthenticatedSessionController extends Controller
     {
         $request->authenticate();
 
+        if ($request->session()->has('2fa_pending_user_id')) {
+            return redirect()->route('two-factor.challenge');
+        }
+
         $request->session()->regenerate();
 
         $this->mergeGuestCart($request);

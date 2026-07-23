@@ -7,8 +7,9 @@ use Illuminate\Database\Eloquent\Model;
 class BulkImport extends Model
 {
     protected $fillable = [
-        'type', 'original_filename', 'stored_path', 'status',
+        'type', 'original_filename', 'stored_path', 'images_zip_path', 'status',
         'total_rows', 'processed_rows', 'created_count', 'skipped_count',
+        'images_matched_count', 'images_missing_count',
         'errors', 'user_id', 'started_at', 'finished_at',
     ];
 

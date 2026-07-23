@@ -6,6 +6,7 @@ use App\Models\Banner;
 use App\Models\Brand;
 use App\Models\Category;
 use App\Models\FlashSale;
+use App\Models\HomeSection;
 use App\Models\Product;
 use App\Models\Review;
 
@@ -27,32 +28,29 @@ class HomeController extends Controller
             ->take(20)
             ->get();
 
-        $featuredProducts = Product::with('category', 'brand', 'reviews', 'activeFlashSaleProduct')
-            ->active()
-            ->featured()
-            ->latest()
-            ->take(8)
-            ->get();
+        // Homepage product sections (Featured, Top Selling, New Arrivals, On Sale, and any
+        // custom sections) are admin-managed via Admin → Homepage Sections, each with its
+        // own product source, optional category filter, and display limit.
+        $homeSections = HomeSection::with('category')
+            ->where('is_active', true)
+            ->orderBy('sort_order')
+            ->get()
+            ->map(fn ($section) => ['section' => $section, 'products' => $section->getProducts()])
+            ->filter(fn ($entry) => $entry['products']->isNotEmpty())
+            ->values();
 
-        $newArrivals = Product::with('category', 'brand', 'reviews', 'activeFlashSaleProduct')
-            ->active()
-            ->latest()
-            ->take(16)
-            ->get();
-
-        $topSelling = Product::with('category', 'brand', 'reviews', 'activeFlashSaleProduct')
-            ->active()
-            ->where('stock', '>', 0)
-            ->orderByDesc('views')
-            ->take(16)
-            ->get();
-
-        $onSale = Product::with('category', 'brand', 'reviews', 'activeFlashSaleProduct')
-            ->active()
-            ->whereNotNull('sale_price')
-            ->orderByDesc('updated_at')
-            ->take(16)
-            ->get();
+        // "Just For You" reuses the New Arrivals section's overflow (whatever comes after
+        // what that section itself displays) so the two blocks never repeat products.
+        $newArrivalsEntry = $homeSections->first(fn ($entry) => $entry['section']->source_type === 'new_arrivals');
+        $justForYou = collect();
+        if ($newArrivalsEntry) {
+            $justForYou = Product::with('category', 'brand', 'reviews', 'activeFlashSaleProduct')
+                ->active()
+                ->latest()
+                ->skip($newArrivalsEntry['section']->product_limit)
+                ->take(10)
+                ->get();
+        }
 
         $banners = Banner::active()
             ->position('hero')
@@ -90,10 +88,8 @@ class HomeController extends Controller
         return view('home', compact(
             'categories',
             'subcategories',
-            'featuredProducts',
-            'newArrivals',
-            'topSelling',
-            'onSale',
+            'homeSections',
+            'justForYou',
             'banners',
             'promoBanners',
             'brands',

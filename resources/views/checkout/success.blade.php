@@ -53,4 +53,57 @@
         </div>
     </div>
 </div>
+
+@if($shouldTrackPurchase ?? false)
+@php
+    $currencyCode = setting('currency_code', 'BDT');
+    $trackedItems = $order->items->map(fn ($item) => [
+        'id'       => $item->product?->sku ?: (string) $item->product_id,
+        'name'     => $item->product_name,
+        'price'    => (float) $item->price,
+        'quantity' => $item->quantity,
+    ])->values();
+@endphp
+<script>
+// Fires once per order (guarded server-side) so GA/GTM/Meta each get exactly one
+// Purchase conversion — duplicate fires would inflate revenue and skew ad optimization.
+(function () {
+    var items = @json($trackedItems);
+    var orderId = @json($order->order_number);
+    var value = {{ (float) $order->total }};
+    var currency = @json($currencyCode);
+
+    if (typeof gtag === 'function') {
+        gtag('event', 'purchase', {
+            transaction_id: orderId,
+            value: value,
+            currency: currency,
+            items: items.map(function (i) {
+                return { item_id: i.id, item_name: i.name, price: i.price, quantity: i.quantity };
+            })
+        });
+    }
+
+    window.dataLayer = window.dataLayer || [];
+    window.dataLayer.push({
+        event: 'purchase',
+        ecommerce: {
+            transaction_id: orderId,
+            value: value,
+            currency: currency,
+            items: items
+        }
+    });
+
+    if (typeof fbq === 'function') {
+        fbq('track', 'Purchase', {
+            value: value,
+            currency: currency,
+            content_type: 'product',
+            content_ids: items.map(function (i) { return i.id; })
+        });
+    }
+})();
+</script>
+@endif
 @endsection

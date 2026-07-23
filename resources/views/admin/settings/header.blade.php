@@ -29,6 +29,7 @@
                        @checked(setting('top_bar_enabled','0') == '1')>
                 <span class="text-sm text-gray-700">Enable Top Bar</span>
             </label>
+            <p class="text-xs text-gray-400 -mt-2 md:col-span-2">Note: the top bar also shows automatically once you fill in any field below (Phone, Email, or Text), even if this box is left unchecked.</p>
         </div>
     </div>
 </div>
