@@ -145,18 +145,26 @@ class CategoryController extends Controller
      */
     private function swapWithNeighbor(Category $category, string $direction): void
     {
-        $siblings = Category::where('parent_id', $category->parent_id);
+        $siblings = Category::where('parent_id', $category->parent_id)
+            ->orderBy('sort_order')
+            ->orderBy('name')
+            ->get();
 
-        $neighbor = $direction === 'up'
-            ? (clone $siblings)->where('sort_order', '<', $category->sort_order)->orderByDesc('sort_order')->first()
-            : (clone $siblings)->where('sort_order', '>', $category->sort_order)->orderBy('sort_order')->first();
+        $index = $siblings->search(fn ($s) => $s->id === $category->id);
 
-        if (!$neighbor) {
+        if ($index === false) {
             return;
         }
 
-        [$a, $b] = [$category->sort_order, $neighbor->sort_order];
-        $category->update(['sort_order' => $b]);
-        $neighbor->update(['sort_order' => $a]);
+        $swapIndex = $direction === 'up' ? $index - 1 : $index + 1;
+
+        if ($swapIndex < 0 || $swapIndex >= $siblings->count()) {
+            return;
+        }
+
+        $neighbor = $siblings[$swapIndex];
+
+        $category->update(['sort_order' => $swapIndex]);
+        $neighbor->update(['sort_order' => $index]);
     }
 }

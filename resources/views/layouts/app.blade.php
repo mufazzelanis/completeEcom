@@ -533,10 +533,20 @@ $navCategories = \App\Models\Category::with(['children' => fn($q) => $q->where('
                 <div class="flex items-center gap-2 mb-4">
                     <span class="text-xs text-gray-500">{{ t('footer.we_accept', 'We accept:', [], 'footer') }}</span>
                 </div>
-                <div class="flex flex-wrap gap-1.5">
-                    @foreach(['Visa', 'Mastercard', 'bKash', 'Nagad', 'COD'] as $method)
-                        <span class="bg-gray-800 text-gray-400 text-[10px] px-2 py-1 rounded font-medium border border-gray-700">{{ $method }}</span>
-                    @endforeach
+                <div class="flex flex-wrap items-center gap-2">
+                    @php $hasPaymentIcons = false; @endphp
+                    @for($i = 1; $i <= 8; $i++)
+                        @if(setting("payment_icon_{$i}"))
+                            @php $hasPaymentIcons = true; @endphp
+                            <img src="{{ setting_file_url("payment_icon_{$i}") }}" alt="Payment method"
+                                 class="h-6 max-w-[60px] object-contain rounded bg-white/10 px-1">
+                        @endif
+                    @endfor
+                    @if(!$hasPaymentIcons)
+                        @foreach(['Visa', 'Mastercard', 'bKash', 'Nagad', 'COD'] as $method)
+                            <span class="bg-gray-800 text-gray-400 text-[10px] px-2 py-1 rounded font-medium border border-gray-700">{{ $method }}</span>
+                        @endforeach
+                    @endif
                 </div>
             </div>
 
