@@ -286,6 +286,7 @@
         .totals td {
             padding: 7px 0;
             font-size: 11.5px;
+            font-family: 'Hind Siliguri', DejaVu Sans, sans-serif;
         }
 
         .totals .label {
@@ -294,8 +295,9 @@
 
         .totals .amount {
             text-align: right;
-            font-weight: 600;
+            font-weight: normal;
             color: #111827;
+            font-family: 'Hind Siliguri', DejaVu Sans, sans-serif;
         }
 
         .totals .discount-amount {
@@ -309,8 +311,9 @@
 
         .totals .total-row td {
             font-size: 15px;
-            font-weight: 800;
+            font-weight: normal;
             padding: 12px 14px;
+            font-family: 'Hind Siliguri', DejaVu Sans, sans-serif;
         }
 
         .totals .total-row {
