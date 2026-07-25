@@ -88,11 +88,18 @@ endif;
 unset($__errorArgs, $__bag); ?>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-5">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-5">
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Number of Products</label>
                 <input type="number" name="product_limit" value="<?php echo e(old('product_limit', $s->product_limit ?? 8)); ?>" min="2" max="32"
                     class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500">
+                <p class="text-xs text-gray-400 mt-1">Total products shown (across all rows).</p>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Products Per Row</label>
+                <input type="number" name="columns" value="<?php echo e(old('columns', $s->columns ?? 4)); ?>" min="2" max="6"
+                    class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500">
+                <p class="text-xs text-gray-400 mt-1">Desktop columns (2-6). Mobile/tablet adjust automatically.</p>
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Visual Style</label>
