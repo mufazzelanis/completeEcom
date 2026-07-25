@@ -204,7 +204,35 @@ class OrderController extends Controller
         $pdf = Pdf::loadView('admin.orders.invoice', compact('order'))
             ->setPaper('a4', 'portrait');
 
+        $this->registerInvoiceFont($pdf);
+
         return $pdf->download("invoice-{$order->order_number}.pdf");
+    }
+
+    /**
+     * dompdf's bundled DejaVu Sans font has almost no Bengali glyph coverage, so
+     * Bangla order notes/addresses/names render as blank boxes. Register Hind
+     * Siliguri (storage/fonts) as a real font family before the PDF renders.
+     */
+    private function registerInvoiceFont($pdf): void
+    {
+        $fontMetrics = $pdf->getDomPDF()->getFontMetrics();
+        $fontMetrics->registerFont(
+            ['family' => 'Hind Siliguri', 'style' => 'normal', 'weight' => 'normal'],
+            storage_path('fonts/HindSiliguri-Regular.ttf')
+        );
+        $fontMetrics->registerFont(
+            ['family' => 'Hind Siliguri', 'style' => 'normal', 'weight' => 'bold'],
+            storage_path('fonts/HindSiliguri-Bold.ttf')
+        );
+        $fontMetrics->registerFont(
+            ['family' => 'Hind Siliguri', 'style' => 'italic', 'weight' => 'normal'],
+            storage_path('fonts/HindSiliguri-Regular.ttf')
+        );
+        $fontMetrics->registerFont(
+            ['family' => 'Hind Siliguri', 'style' => 'italic', 'weight' => 'bold'],
+            storage_path('fonts/HindSiliguri-Bold.ttf')
+        );
     }
 
     public function create() {}

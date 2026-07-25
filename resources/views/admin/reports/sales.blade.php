@@ -161,6 +161,44 @@
     </div>
 </div>
 
+{{-- Stored Daily Sales Report (sales_reports table) --}}
+<div class="bg-white rounded-2xl shadow-sm overflow-hidden mt-6">
+    <div class="px-6 py-4 border-b border-gray-100">
+        <h3 class="font-semibold text-gray-800">Stored Daily Sales Report</h3>
+        <p class="text-xs text-gray-400 mt-1">One row per calendar day, saved in the <span class="font-mono">sales_reports</span> database table. It updates automatically whenever an order is placed, changed, or cancelled — this is a permanent record, not a live-only calculation.</p>
+    </div>
+    <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+            <thead class="bg-gray-50"><tr class="text-xs text-gray-500 uppercase tracking-wider">
+                <th class="px-6 py-3 text-left">Date</th>
+                <th class="px-6 py-3 text-right">Orders</th>
+                <th class="px-6 py-3 text-right">Revenue</th>
+                <th class="px-6 py-3 text-right">Discounts</th>
+                <th class="px-6 py-3 text-right">Shipping</th>
+                <th class="px-6 py-3 text-right">Avg Order</th>
+                <th class="px-6 py-3 text-right">Cancelled</th>
+                <th class="px-6 py-3 text-left">Top Category</th>
+            </tr></thead>
+            <tbody class="divide-y divide-gray-50">
+                @forelse($dailyReports as $r)
+                <tr class="hover:bg-gray-50">
+                    <td class="px-6 py-3 font-medium text-gray-700">{{ $r->report_date->format('d M Y') }}</td>
+                    <td class="px-6 py-3 text-right text-gray-600">{{ number_format($r->total_orders) }}</td>
+                    <td class="px-6 py-3 text-right font-semibold text-gray-800">৳{{ number_format($r->total_revenue,2) }}</td>
+                    <td class="px-6 py-3 text-right text-orange-600">-৳{{ number_format($r->total_discounts,2) }}</td>
+                    <td class="px-6 py-3 text-right text-gray-500">৳{{ number_format($r->total_shipping,2) }}</td>
+                    <td class="px-6 py-3 text-right text-gray-600">৳{{ number_format($r->avg_order_value,2) }}</td>
+                    <td class="px-6 py-3 text-right text-red-500">{{ $r->cancelled_orders }} (৳{{ number_format($r->cancelled_revenue,0) }})</td>
+                    <td class="px-6 py-3 text-gray-600">{{ $r->top_category ?? '—' }}</td>
+                </tr>
+                @empty
+                <tr><td colspan="8" class="px-6 py-10 text-center text-gray-400">No stored snapshots for this period yet — run <span class="font-mono">php artisan sales-report:rebuild</span> to backfill.</td></tr>
+                @endforelse
+            </tbody>
+        </table>
+    </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', () => {

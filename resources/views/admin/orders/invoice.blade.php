@@ -5,6 +5,14 @@
     <meta charset="UTF-8">
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     <title>Invoice {{ $order->order_number }}</title>
+    @php
+        // Bangla text (order notes, names, addresses) needs a font with real Bengali
+        // glyph coverage — Hind Siliguri is registered in OrderController::invoice()
+        // before rendering. Two settings let admins re-theme the invoice to match
+        // their brand without editing this template.
+        $accentColor = setting('invoice_accent_color', '#6366f1');
+        $darkColor = setting('invoice_dark_color', '#111827');
+    @endphp
     <style>
         * {
             margin: 0;
@@ -13,7 +21,7 @@
         }
 
         body {
-            font-family: DejaVu Sans, sans-serif;
+            font-family: 'Hind Siliguri', DejaVu Sans, sans-serif;
             font-size: 12.5px;
             color: #1f2937;
             background: #fff;
@@ -26,7 +34,7 @@
         /* Top accent bar */
         .accent-bar {
             height: 6px;
-            background-color: #6366f1;
+            background-color: {{ $accentColor }};
             border-radius: 3px;
             margin-bottom: 28px;
         }
@@ -49,10 +57,10 @@
         }
 
         .brand {
-            font-family: DejaVu Sans, sans-serif;
+            font-family: 'Hind Siliguri', DejaVu Sans, sans-serif;
             font-size: 22px;
             font-weight: 700;
-            color: #4338ca;
+            color: {{ $accentColor }};
         }
 
         .brand-sub {
@@ -73,7 +81,7 @@
         }
 
         .invoice-title h1 {
-            font-family: DejaVu Sans, sans-serif;
+            font-family: 'Hind Siliguri', DejaVu Sans, sans-serif;
             font-size: 26px;
             font-weight: 800;
             color: #111827;
@@ -83,7 +91,7 @@
 
         .invoice-title .inv-number {
             font-size: 12px;
-            color: #6366f1;
+            color: {{ $accentColor }};
             font-weight: 700;
             margin-top: 6px;
         }
@@ -173,7 +181,7 @@
         .info-box h4 {
             font-size: 9.5px;
             font-weight: 700;
-            color: #6366f1;
+            color: {{ $accentColor }};
             text-transform: uppercase;
             letter-spacing: 1px;
             margin-bottom: 8px;
@@ -205,7 +213,7 @@
         }
 
         .items-table thead th {
-            background: #111827;
+            background: {{ $darkColor }};
             color: #fff;
             padding: 11px 14px;
             font-size: 10.5px;
@@ -306,7 +314,7 @@
         }
 
         .totals .total-row {
-            background: #111827;
+            background: {{ $darkColor }};
             color: #fff;
         }
 
@@ -325,13 +333,13 @@
             padding: 14px 16px;
             background: #f9fafb;
             border-radius: 8px;
-            border-left: 3px solid #6366f1;
+            border-left: 3px solid {{ $accentColor }};
         }
 
         .note-box h4 {
             font-size: 10px;
             font-weight: 700;
-            color: #6366f1;
+            color: {{ $accentColor }};
             margin-bottom: 5px;
             text-transform: uppercase;
             letter-spacing: 0.5px;
@@ -359,22 +367,21 @@
         }
 
         .footer strong {
-            color: #6366f1;
+            color: {{ $accentColor }};
         }
     </style>
 </head>
 
 <body>
     @php
-        // dompdf's bundled DejaVu Sans font has no glyph for the Bengali Taka sign (৳);
-// it renders as a blank box, so the PDF always spells it out as "Tk" instead.
-$currencySymbol = setting('currency_symbol', '৳');
-$pdfSymbol = $currencySymbol === '৳' ? 'Tk ' : $currencySymbol;
-$symbolPosition = setting('currency_position', 'left');
-$money = function ($amount) use ($pdfSymbol, $symbolPosition) {
-    $formatted = number_format((float) $amount, 2);
-    return $symbolPosition === 'right' ? $formatted . ' ' . trim($pdfSymbol) : $pdfSymbol . $formatted;
-};
+        // Hind Siliguri (registered in OrderController::invoice()) has a real glyph
+        // for the Bengali Taka sign (৳), so it no longer needs to be spelled out as "Tk".
+        $currencySymbol = setting('currency_symbol', '৳');
+        $symbolPosition = setting('currency_position', 'left');
+        $money = function ($amount) use ($currencySymbol, $symbolPosition) {
+            $formatted = number_format((float) $amount, 2);
+            return $symbolPosition === 'right' ? $formatted . ' ' . $currencySymbol : $currencySymbol . $formatted;
+        };
 
 $storeName = setting('company_name') ?: setting('site_name', 'ShopVista');
 $storeEmail = setting('company_email') ?: 'support@shopvista.com';

@@ -36,4 +36,8 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withSchedule(function (Schedule $schedule): void {
         $schedule->command('blog:publish-scheduled')->everyMinute();
         $schedule->command('email-campaigns:process')->everyMinute();
+        // OrderObserver keeps sales_reports in sync in real time; this nightly run
+        // just self-heals the last couple of days in case of bulk edits or direct
+        // DB writes that bypass Eloquent events.
+        $schedule->command('sales-report:rebuild', ['--from' => now()->subDays(2)->toDateString()])->dailyAt('00:15');
     })->create();

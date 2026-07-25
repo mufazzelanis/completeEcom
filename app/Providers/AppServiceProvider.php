@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\Models\Order;
+use App\Observers\OrderObserver;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
 
@@ -28,5 +30,7 @@ class AppServiceProvider extends ServiceProvider
             // offline dev/test environment, but keep it where it matters most.
             return $this->app->environment('production') ? $rule->uncompromised() : $rule;
         });
+
+        Order::observe(OrderObserver::class);
     }
 }

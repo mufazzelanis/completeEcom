@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Product;
+use App\Models\SalesReport;
 use App\Models\User;
 use App\Models\Category;
 use App\Exports\SalesReportExport;
@@ -129,9 +130,14 @@ class ReportController extends Controller
         $categoryRevenueTotal = (clone $byCategoryQuery)->get()->sum('revenue');
         $byCategory = (clone $byCategoryQuery)->take(10)->get();
 
+        // Persisted daily snapshots (sales_reports table) — auto-synced by OrderObserver
+        // on every order create/update/delete, so this is stored history, not a static copy.
+        $dailyReports = SalesReport::whereBetween('report_date', [$from->toDateString(), $to->toDateString()])
+            ->orderByDesc('report_date')->get();
+
         return view('admin.reports.sales', compact(
             'salesTrend','summary','cancelledRevenue','byStatus','byPayment','byCategory',
-            'categoryRevenueTotal','from','to','groupBy'
+            'categoryRevenueTotal','from','to','groupBy','dailyReports'
         ));
     }
 
