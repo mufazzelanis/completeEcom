@@ -88,7 +88,7 @@
 
     <form action="{{ route('checkout.store') }}" method="POST"
         x-data="{
-            cs: '{{ setting('currency_symbol', '&#x09F3;') }}',
+            cs: '{!! html_entity_decode(setting('currency_symbol', '৳')) !!}',
             selected: '{{ old('payment_method', $paymentMethods->first()?->slug) }}',
             zone: '{{ $defaultZone }}',
             usesZones: {{ $usesZones ? 'true' : 'false' }},

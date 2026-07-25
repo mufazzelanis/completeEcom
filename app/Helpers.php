@@ -84,7 +84,7 @@ if (!function_exists('normalize_digits')) {
 if (!function_exists('format_currency')) {
     function format_currency(float|int $amount): string
     {
-        $symbol    = setting('currency_symbol', '৳');
+        $symbol    = html_entity_decode(setting('currency_symbol', '৳'));
         $position  = setting('currency_position', 'left');
         $decimals  = (int) setting('decimal_places', 0);
         $thousands = setting('thousand_separator', ',');

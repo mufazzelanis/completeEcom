@@ -13,7 +13,7 @@
         @endif
     }
 }">
-    <div class="relative rounded-xl overflow-hidden bg-gray-200 aspect-[2/1] md:aspect-[5/1]">
+    <div class="relative rounded-xl overflow-hidden bg-gray-200 aspect-[2/1] md:aspect-[3/1]">
         @if($banners->count() > 0)
             @foreach($banners as $i => $banner)
             <div x-show="current === {{ $i }}" x-transition:enter="transition ease-out duration-500" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
