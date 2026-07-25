@@ -1,5 +1,4 @@
-@extends('layouts.app')
-@php
+<?php
     $seoTitle = $product->meta_title ?: $product->name;
     $seoDesc  = $product->meta_description ?: $product->short_description;
     $ogImage  = $product->og_image ?: ($product->image ? Storage::url($product->image) : null);
@@ -23,33 +22,36 @@
     ];
     $schemaAvailability = $availabilityMap[$product->schema_availability]
         ?? ($product->stock > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock');
-@endphp
-@section('title', $seoTitle)
-@if($seoDesc)@section('meta_description', $seoDesc)@endif
-@if($product->focus_keyword)@section('meta_keywords', $product->focus_keyword)@endif
-@section('canonical', $canonicalUrl)
-@section('og_type', 'product')
-@if($ogImage)@section('og_image', $ogImage)@endif
-@if($product->og_title)@section('og_title', $product->og_title)@endif
-@if($product->og_description)@section('og_description', $product->og_description)@endif
-@section('robots', $productRobots)
-@if($product->twitter_card)@section('twitter_card', $product->twitter_card)@endif
-@if($product->twitter_title)@section('twitter_title', $product->twitter_title)@endif
-@if($product->twitter_description)@section('twitter_description', $product->twitter_description)@endif
-@if($product->twitter_image)@section('twitter_image', $product->twitter_image)@endif
+?>
+<?php $__env->startSection('title', $seoTitle); ?>
+<?php if($seoDesc): ?><?php $__env->startSection('meta_description', $seoDesc); ?><?php endif; ?>
+<?php if($product->focus_keyword): ?><?php $__env->startSection('meta_keywords', $product->focus_keyword); ?><?php endif; ?>
+<?php $__env->startSection('canonical', $canonicalUrl); ?>
+<?php $__env->startSection('og_type', 'product'); ?>
+<?php if($ogImage): ?><?php $__env->startSection('og_image', $ogImage); ?><?php endif; ?>
+<?php if($product->og_title): ?><?php $__env->startSection('og_title', $product->og_title); ?><?php endif; ?>
+<?php if($product->og_description): ?><?php $__env->startSection('og_description', $product->og_description); ?><?php endif; ?>
+<?php $__env->startSection('robots', $productRobots); ?>
+<?php if($product->twitter_card): ?><?php $__env->startSection('twitter_card', $product->twitter_card); ?><?php endif; ?>
+<?php if($product->twitter_title): ?><?php $__env->startSection('twitter_title', $product->twitter_title); ?><?php endif; ?>
+<?php if($product->twitter_description): ?><?php $__env->startSection('twitter_description', $product->twitter_description); ?><?php endif; ?>
+<?php if($product->twitter_image): ?><?php $__env->startSection('twitter_image', $product->twitter_image); ?><?php endif; ?>
 
-@push('meta')
-{{-- Product-specific Open Graph properties the layout's generic tags don't cover --}}
-<meta property="product:price:amount" content="{{ $product->sale_price ?? $product->price }}">
-<meta property="product:price:currency" content="{{ setting('currency_code', 'BDT') }}">
-@if($product->brand)<meta property="product:brand" content="{{ $product->brand->name }}">@endif
-@if($product->sku)<meta property="product:retailer_item_id" content="{{ $product->sku }}">@endif
-<meta property="product:availability" content="{{ $product->stock > 0 ? 'in stock' : 'out of stock' }}">
+<?php $__env->startPush('meta'); ?>
 
-{{-- Product structured data --}}
+<meta property="product:price:amount" content="<?php echo e($product->sale_price ?? $product->price); ?>">
+<meta property="product:price:currency" content="<?php echo e(setting('currency_code', 'BDT')); ?>">
+<?php if($product->brand): ?><meta property="product:brand" content="<?php echo e($product->brand->name); ?>"><?php endif; ?>
+<?php if($product->sku): ?><meta property="product:retailer_item_id" content="<?php echo e($product->sku); ?>"><?php endif; ?>
+<meta property="product:availability" content="<?php echo e($product->stock > 0 ? 'in stock' : 'out of stock'); ?>">
+
+
 <script type="application/ld+json">
-{!! json_encode(array_filter([
-    '@context' => 'https://schema.org',
+<?php echo json_encode(array_filter([
+    '<?php $__contextArgs = [];
+if (context()->has($__contextArgs[0])) :
+if (isset($value)) { $__contextPrevious[] = $value; }
+$value = context()->get($__contextArgs[0]); ?>' => 'https://schema.org',
     '@type' => $product->schema_type ?: 'Product',
     'name' => $seoTitle,
     'description' => $seoDesc,
@@ -73,13 +75,17 @@
         'ratingValue' => round($product->average_rating, 1),
         'reviewCount' => $product->reviews->count(),
     ] : null,
-], fn ($v) => $v !== null && $v !== ''), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}
+], fn ($v) => $v !== null && $v !== ''), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE); ?>
+
 </script>
 
-{{-- Breadcrumb structured data --}}
+
 <script type="application/ld+json">
-{!! json_encode([
-    '@context' => 'https://schema.org',
+<?php echo json_encode([
+    '<?php $__contextArgs = [];
+if (context()->has($__contextArgs[0])) :
+if (isset($value)) { $__contextPrevious[] = $value; }
+$value = context()->get($__contextArgs[0]); ?>' => 'https://schema.org',
     '@type' => 'BreadcrumbList',
     'itemListElement' => [
         ['@type' => 'ListItem', 'position' => 1, 'name' => 'Home', 'item' => route('home')],
@@ -87,32 +93,33 @@
         ['@type' => 'ListItem', 'position' => 3, 'name' => $product->category->name, 'item' => route('shop.category', $product->category->slug)],
         ['@type' => 'ListItem', 'position' => 4, 'name' => $product->breadcrumb_title ?: $product->name, 'item' => $canonicalUrl],
     ],
-], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}
-</script>
-@endpush
+], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE); ?>
 
-@section('content')
+</script>
+<?php $__env->stopPush(); ?>
+
+<?php $__env->startSection('content'); ?>
 <div class="max-w-7xl mx-auto px-4 py-8">
     <!-- Breadcrumb -->
     <div class="flex items-center space-x-2 text-sm text-gray-500 mb-6">
-        <a href="{{ route('home') }}" class="hover:text-indigo-600">Home</a>
+        <a href="<?php echo e(route('home')); ?>" class="hover:text-indigo-600">Home</a>
         <span>/</span>
-        <a href="{{ route('shop.index') }}" class="hover:text-indigo-600">Shop</a>
+        <a href="<?php echo e(route('shop.index')); ?>" class="hover:text-indigo-600">Shop</a>
         <span>/</span>
-        <a href="{{ route('shop.category', $product->category->slug) }}" class="hover:text-indigo-600">{{ $product->category->name }}</a>
+        <a href="<?php echo e(route('shop.category', $product->category->slug)); ?>" class="hover:text-indigo-600"><?php echo e($product->category->name); ?></a>
         <span>/</span>
-        <span class="text-gray-900 font-medium line-clamp-1">{{ $product->breadcrumb_title ?: $product->name }}</span>
+        <span class="text-gray-900 font-medium line-clamp-1"><?php echo e($product->breadcrumb_title ?: $product->name); ?></span>
     </div>
 
     <div class="bg-white rounded-2xl shadow-sm overflow-hidden">
         <div class="grid grid-cols-1 md:grid-cols-2 gap-8 p-8">
             <!-- Images -->
-            <div x-data="{ active: '{{ $product->image ? Storage::url($product->image) : '' }}', zoomX: 50, zoomY: 50 }">
+            <div x-data="{ active: '<?php echo e($product->image ? Storage::url($product->image) : ''); ?>', zoomX: 50, zoomY: 50 }">
                 <div class="aspect-square rounded-xl overflow-hidden bg-gray-100 mb-4 relative group cursor-zoom-in"
                      @mousemove="zoomX = (($event.offsetX / $event.currentTarget.offsetWidth) * 100).toFixed(2); zoomY = (($event.offsetY / $event.currentTarget.offsetHeight) * 100).toFixed(2)"
                      @mouseleave="zoomX = 50; zoomY = 50">
                     <template x-if="active">
-                        <img :src="active" :style="`transform-origin: ${zoomX}% ${zoomY}%`" alt="{{ $product->image_alt ?: $product->name }}" title="{{ $product->image_title ?: $product->name }}" class="w-full h-full object-cover transition-transform duration-300 ease-out group-hover:scale-[2]">
+                        <img :src="active" :style="`transform-origin: ${zoomX}% ${zoomY}%`" alt="<?php echo e($product->image_alt ?: $product->name); ?>" title="<?php echo e($product->image_title ?: $product->name); ?>" class="w-full h-full object-cover transition-transform duration-300 ease-out group-hover:scale-[2]">
                     </template>
                     <template x-if="!active">
                         <div class="w-full h-full flex items-center justify-center">
@@ -122,151 +129,153 @@
                         </div>
                     </template>
                 </div>
-                @if($product->images->isNotEmpty())
+                <?php if($product->images->isNotEmpty()): ?>
                     <div class="flex space-x-3 overflow-x-auto">
-                        @if($product->image)
-                            <button @click="active = '{{ Storage::url($product->image) }}'"
+                        <?php if($product->image): ?>
+                            <button @click="active = '<?php echo e(Storage::url($product->image)); ?>'"
                                 class="w-20 h-20 flex-shrink-0 rounded-lg overflow-hidden border-2 border-indigo-500">
-                                <img src="{{ Storage::url($product->image) }}" class="w-full h-full object-cover">
+                                <img src="<?php echo e(Storage::url($product->image)); ?>" class="w-full h-full object-cover">
                             </button>
-                        @endif
-                        @foreach($product->images as $img)
-                            <button @click="active = '{{ Storage::url($img->image) }}'"
+                        <?php endif; ?>
+                        <?php $__currentLoopData = $product->images; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $img): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                            <button @click="active = '<?php echo e(Storage::url($img->image)); ?>'"
                                 class="w-20 h-20 flex-shrink-0 rounded-lg overflow-hidden border-2 border-gray-200 hover:border-indigo-400">
-                                <img src="{{ Storage::url($img->image) }}" class="w-full h-full object-cover">
+                                <img src="<?php echo e(Storage::url($img->image)); ?>" class="w-full h-full object-cover">
                             </button>
-                        @endforeach
+                        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                     </div>
-                @endif
+                <?php endif; ?>
             </div>
 
             <!-- Product Info -->
             <div>
                 <div class="flex items-center justify-between mb-2">
                     <span class="text-indigo-600 text-sm font-medium">
-                        {{ $product->category->name }}
-                        @if($product->brand)
+                        <?php echo e($product->category->name); ?>
+
+                        <?php if($product->brand): ?>
                             <span class="text-gray-300 mx-1">•</span>
-                            <span class="text-gray-500">{{ $product->brand->name }}</span>
-                        @endif
+                            <span class="text-gray-500"><?php echo e($product->brand->name); ?></span>
+                        <?php endif; ?>
                     </span>
-                    @auth
-                        <form action="{{ route('wishlist.toggle', $product->id) }}" method="POST">
-                            @csrf
-                            <button type="submit" class="p-2 rounded-full hover:bg-red-50 transition {{ $wishlisted ? 'text-red-500' : 'text-gray-400' }}">
-                                <svg class="w-6 h-6" fill="{{ $wishlisted ? 'currentColor' : 'none' }}" stroke="currentColor" viewBox="0 0 24 24">
+                    <?php if(auth()->guard()->check()): ?>
+                        <form action="<?php echo e(route('wishlist.toggle', $product->id)); ?>" method="POST">
+                            <?php echo csrf_field(); ?>
+                            <button type="submit" class="p-2 rounded-full hover:bg-red-50 transition <?php echo e($wishlisted ? 'text-red-500' : 'text-gray-400'); ?>">
+                                <svg class="w-6 h-6" fill="<?php echo e($wishlisted ? 'currentColor' : 'none'); ?>" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
                                 </svg>
                             </button>
                         </form>
-                    @endauth
+                    <?php endif; ?>
                 </div>
 
-                <h1 class="text-2xl md:text-3xl font-bold text-gray-900 mb-4">{{ $product->name }}</h1>
+                <h1 class="text-2xl md:text-3xl font-bold text-gray-900 mb-4"><?php echo e($product->name); ?></h1>
 
                 <!-- Rating -->
                 <div class="flex items-center space-x-2 mb-4">
                     <div class="flex">
-                        @for($i = 1; $i <= 5; $i++)
-                            <svg class="w-5 h-5 {{ $i <= round($product->average_rating) ? 'text-yellow-400' : 'text-gray-300' }}" fill="currentColor" viewBox="0 0 20 20">
+                        <?php for($i = 1; $i <= 5; $i++): ?>
+                            <svg class="w-5 h-5 <?php echo e($i <= round($product->average_rating) ? 'text-yellow-400' : 'text-gray-300'); ?>" fill="currentColor" viewBox="0 0 20 20">
                                 <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
                             </svg>
-                        @endfor
+                        <?php endfor; ?>
                     </div>
-                    <span class="text-sm text-gray-500">({{ $product->reviews->count() }} reviews)</span>
+                    <span class="text-sm text-gray-500">(<?php echo e($product->reviews->count()); ?> reviews)</span>
                 </div>
 
                 <!-- Price -->
-                @php $activeFlashSale = $product->activeFlashSaleProduct && $product->activeFlashSaleProduct->isAvailable() ? $product->activeFlashSaleProduct : null; @endphp
+                <?php $activeFlashSale = $product->activeFlashSaleProduct && $product->activeFlashSaleProduct->isAvailable() ? $product->activeFlashSaleProduct : null; ?>
                 <div class="mb-6">
-                    @if($activeFlashSale)
+                    <?php if($activeFlashSale): ?>
                         <div class="flex items-center space-x-3">
-                            <span class="text-3xl font-bold text-red-600">৳{{ number_format($product->final_price) }}</span>
-                            <span class="text-xl text-gray-400 line-through">৳{{ number_format($product->effective_price) }}</span>
+                            <span class="text-3xl font-bold text-red-600">৳<?php echo e(number_format($product->final_price)); ?></span>
+                            <span class="text-xl text-gray-400 line-through">৳<?php echo e(number_format($product->effective_price)); ?></span>
                             <span class="bg-red-100 text-red-600 text-sm px-2 py-1 rounded-full font-medium animate-pulse">
                                 ⚡ Flash Sale
                             </span>
                         </div>
-                    @elseif($product->sale_price)
+                    <?php elseif($product->sale_price): ?>
                         <div class="flex items-center space-x-3">
-                            <span class="text-3xl font-bold text-red-600">৳{{ number_format($product->sale_price) }}</span>
-                            <span class="text-xl text-gray-400 line-through">৳{{ number_format($product->price) }}</span>
+                            <span class="text-3xl font-bold text-red-600">৳<?php echo e(number_format($product->sale_price)); ?></span>
+                            <span class="text-xl text-gray-400 line-through">৳<?php echo e(number_format($product->price)); ?></span>
                             <span class="bg-red-100 text-red-600 text-sm px-2 py-1 rounded-full font-medium">
-                                {{ round((1 - $product->sale_price / $product->price) * 100) }}% off
+                                <?php echo e(round((1 - $product->sale_price / $product->price) * 100)); ?>% off
                             </span>
                         </div>
-                    @else
-                        <span class="text-3xl font-bold text-gray-900">৳{{ number_format($product->price) }}</span>
-                    @endif
+                    <?php else: ?>
+                        <span class="text-3xl font-bold text-gray-900">৳<?php echo e(number_format($product->price)); ?></span>
+                    <?php endif; ?>
                 </div>
 
-                @if($product->isBundle() && $product->bundleItems->isNotEmpty())
+                <?php if($product->isBundle() && $product->bundleItems->isNotEmpty()): ?>
                     <div class="mb-6 border border-indigo-100 bg-indigo-50/50 rounded-xl p-4">
                         <h3 class="font-semibold text-gray-800 mb-3 text-sm">This bundle includes:</h3>
                         <ul class="space-y-2">
-                            @foreach($product->bundleItems as $bundleItem)
+                            <?php $__currentLoopData = $product->bundleItems; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $bundleItem): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                                 <li class="flex items-center justify-between text-sm">
-                                    <span class="text-gray-600">{{ $bundleItem->quantity }}× {{ $bundleItem->itemProduct->name }}</span>
-                                    <span class="font-medium text-gray-800">৳{{ number_format($bundleItem->effective_price * $bundleItem->quantity) }}</span>
+                                    <span class="text-gray-600"><?php echo e($bundleItem->quantity); ?>× <?php echo e($bundleItem->itemProduct->name); ?></span>
+                                    <span class="font-medium text-gray-800">৳<?php echo e(number_format($bundleItem->effective_price * $bundleItem->quantity)); ?></span>
                                 </li>
-                            @endforeach
+                            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                         </ul>
-                        @php $bundleValue = $product->bundleItems->sum(fn($bi) => $bi->effective_price * $bi->quantity); @endphp
-                        @if($bundleValue > $product->final_price)
+                        <?php $bundleValue = $product->bundleItems->sum(fn($bi) => $bi->effective_price * $bi->quantity); ?>
+                        <?php if($bundleValue > $product->final_price): ?>
                             <p class="text-xs text-green-600 font-semibold mt-3">
-                                Bundle value ৳{{ number_format($bundleValue) }} — you save ৳{{ number_format($bundleValue - $product->final_price) }}
-                            </p>
-                        @endif
-                    </div>
-                @endif
+                                Bundle value ৳<?php echo e(number_format($bundleValue)); ?> — you save ৳<?php echo e(number_format($bundleValue - $product->final_price)); ?>
 
-                @if($product->short_description)
-                    <p class="text-gray-600 mb-6">{{ $product->short_description }}</p>
-                @endif
+                            </p>
+                        <?php endif; ?>
+                    </div>
+                <?php endif; ?>
+
+                <?php if($product->short_description): ?>
+                    <p class="text-gray-600 mb-6"><?php echo e($product->short_description); ?></p>
+                <?php endif; ?>
 
                 <!-- Stock -->
                 <div class="mb-6">
-                    @if($product->available_stock > 0)
+                    <?php if($product->available_stock > 0): ?>
                         <span class="inline-flex items-center bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm font-medium">
                             <span class="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
-                            In Stock ({{ $product->available_stock }} available)
+                            In Stock (<?php echo e($product->available_stock); ?> available)
                         </span>
-                    @else
+                    <?php else: ?>
                         <span class="inline-flex items-center bg-red-100 text-red-700 px-3 py-1 rounded-full text-sm font-medium">
                             <span class="w-2 h-2 bg-red-500 rounded-full mr-2"></span>
                             Out of Stock
                         </span>
-                    @endif
-                    @if($product->sku)
-                        <span class="ml-3 text-xs text-gray-400">SKU: {{ $product->sku }}</span>
-                    @endif
+                    <?php endif; ?>
+                    <?php if($product->sku): ?>
+                        <span class="ml-3 text-xs text-gray-400">SKU: <?php echo e($product->sku); ?></span>
+                    <?php endif; ?>
                 </div>
 
                 <!-- Add to Cart / Buy Now -->
-                @if($product->available_stock > 0)
-                    <form action="{{ route('cart.add') }}" method="POST" class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 mb-6">
-                        @csrf
-                        <input type="hidden" name="product_id" value="{{ $product->id }}">
+                <?php if($product->available_stock > 0): ?>
+                    <form action="<?php echo e(route('cart.add')); ?>" method="POST" class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 mb-6">
+                        <?php echo csrf_field(); ?>
+                        <input type="hidden" name="product_id" value="<?php echo e($product->id); ?>">
                         <div class="flex items-center border border-gray-200 rounded-xl overflow-hidden">
                             <button type="button" onclick="updateQty(-1)" class="px-4 py-3 text-gray-500 hover:bg-gray-100 text-lg font-bold">-</button>
-                            <input type="number" name="quantity" id="qty" value="1" min="1" max="{{ $product->available_stock }}"
+                            <input type="number" name="quantity" id="qty" value="1" min="1" max="<?php echo e($product->available_stock); ?>"
                                 class="w-16 text-center py-3 border-0 focus:outline-none text-sm font-semibold">
                             <button type="button" onclick="updateQty(1)" class="px-4 py-3 text-gray-500 hover:bg-gray-100 text-lg font-bold">+</button>
                         </div>
                         <div class="flex-1 flex gap-3">
-                            <button type="submit" formaction="{{ route('cart.add') }}"
+                            <button type="submit" formaction="<?php echo e(route('cart.add')); ?>"
                                 class="flex-1 bg-white border-2 border-indigo-600 text-indigo-600 py-3 rounded-xl font-semibold hover:bg-indigo-50 transition flex items-center justify-center space-x-2">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
                                 <span>Add to Cart</span>
                             </button>
-                            <button type="submit" formaction="{{ route('checkout.buy-now') }}"
+                            <button type="submit" formaction="<?php echo e(route('checkout.buy-now')); ?>"
                                 class="flex-1 bg-indigo-600 text-white py-3 rounded-xl font-semibold hover:bg-indigo-700 transition flex items-center justify-center space-x-2">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-                                <span>{{ setting('buy_now_button_text', 'Buy Now') }}</span>
+                                <span><?php echo e(setting('buy_now_button_text', 'Buy Now')); ?></span>
                             </button>
                         </div>
                     </form>
-                @endif
+                <?php endif; ?>
 
                 <!-- Meta -->
                 <div class="border-t border-gray-100 pt-6 space-y-3 text-sm text-gray-500">
@@ -289,62 +298,63 @@
                     Description
                 </button>
                 <button @click="tab = 'reviews'" :class="tab === 'reviews' ? 'border-b-2 border-indigo-600 text-indigo-600' : 'text-gray-500'" class="pb-3 font-medium text-sm">
-                    Reviews ({{ $product->reviews->count() }})
+                    Reviews (<?php echo e($product->reviews->count()); ?>)
                 </button>
-                @if($product->faqs->count() > 0)
+                <?php if($product->faqs->count() > 0): ?>
                     <button @click="tab = 'faq'" :class="tab === 'faq' ? 'border-b-2 border-indigo-600 text-indigo-600' : 'text-gray-500'" class="pb-3 font-medium text-sm">
-                        FAQs ({{ $product->faqs->count() }})
+                        FAQs (<?php echo e($product->faqs->count()); ?>)
                     </button>
-                @endif
+                <?php endif; ?>
             </div>
 
             <div x-show="tab === 'description'">
                 <div class="prose prose-sm max-w-none text-gray-600">
-                    {!! nl2br(e($product->description ?? 'No description available.')) !!}
+                    <?php echo nl2br(e($product->description ?? 'No description available.')); ?>
+
                 </div>
             </div>
 
             <div x-show="tab === 'reviews'" x-cloak>
-                @foreach($product->reviews as $review)
+                <?php $__currentLoopData = $product->reviews; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $review): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                     <div class="border-b border-gray-100 pb-6 mb-6 last:border-0">
                         <div class="flex items-center justify-between mb-2">
                             <div class="flex items-center space-x-3">
                                 <div class="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center">
-                                    <span class="text-indigo-600 font-semibold text-sm">{{ strtoupper(substr($review->user->name, 0, 1)) }}</span>
+                                    <span class="text-indigo-600 font-semibold text-sm"><?php echo e(strtoupper(substr($review->user->name, 0, 1))); ?></span>
                                 </div>
                                 <div>
-                                    <p class="font-semibold text-gray-800 text-sm">{{ $review->user->name }}</p>
+                                    <p class="font-semibold text-gray-800 text-sm"><?php echo e($review->user->name); ?></p>
                                     <div class="flex">
-                                        @for($i = 1; $i <= 5; $i++)
-                                            <svg class="w-4 h-4 {{ $i <= $review->rating ? 'text-yellow-400' : 'text-gray-300' }}" fill="currentColor" viewBox="0 0 20 20">
+                                        <?php for($i = 1; $i <= 5; $i++): ?>
+                                            <svg class="w-4 h-4 <?php echo e($i <= $review->rating ? 'text-yellow-400' : 'text-gray-300'); ?>" fill="currentColor" viewBox="0 0 20 20">
                                                 <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
                                             </svg>
-                                        @endfor
+                                        <?php endfor; ?>
                                     </div>
                                 </div>
                             </div>
-                            <span class="text-xs text-gray-400">{{ $review->created_at->diffForHumans() }}</span>
+                            <span class="text-xs text-gray-400"><?php echo e($review->created_at->diffForHumans()); ?></span>
                         </div>
-                        <p class="text-gray-600 text-sm mt-2">{{ $review->comment }}</p>
+                        <p class="text-gray-600 text-sm mt-2"><?php echo e($review->comment); ?></p>
                     </div>
-                @endforeach
+                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
 
-                @auth
+                <?php if(auth()->guard()->check()): ?>
                     <div class="bg-gray-50 rounded-xl p-6 mt-6">
                         <h4 class="font-semibold text-gray-800 mb-4">Write a Review</h4>
-                        <form action="{{ route('products.review', $product->slug) }}" method="POST">
-                            @csrf
+                        <form action="<?php echo e(route('products.review', $product->slug)); ?>" method="POST">
+                            <?php echo csrf_field(); ?>
                             <div class="mb-4">
                                 <label class="block text-sm font-medium text-gray-700 mb-2">Rating</label>
                                 <div class="flex space-x-2" x-data="{ rating: 0 }">
-                                    @for($i = 1; $i <= 5; $i++)
+                                    <?php for($i = 1; $i <= 5; $i++): ?>
                                         <label class="cursor-pointer">
-                                            <input type="radio" name="rating" value="{{ $i }}" class="sr-only" @change="rating = {{ $i }}">
-                                            <svg class="w-8 h-8" :class="rating >= {{ $i }} ? 'text-yellow-400' : 'text-gray-300'" fill="currentColor" viewBox="0 0 20 20" @click="rating = {{ $i }}">
+                                            <input type="radio" name="rating" value="<?php echo e($i); ?>" class="sr-only" @change="rating = <?php echo e($i); ?>">
+                                            <svg class="w-8 h-8" :class="rating >= <?php echo e($i); ?> ? 'text-yellow-400' : 'text-gray-300'" fill="currentColor" viewBox="0 0 20 20" @click="rating = <?php echo e($i); ?>">
                                                 <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
                                             </svg>
                                         </label>
-                                    @endfor
+                                    <?php endfor; ?>
                                 </div>
                             </div>
                             <div class="mb-4">
@@ -357,70 +367,71 @@
                             </button>
                         </form>
                     </div>
-                @else
+                <?php else: ?>
                     <div class="text-center py-8 text-gray-500 text-sm">
-                        <a href="{{ route('login') }}" class="text-indigo-600 hover:underline">Login</a> to write a review.
+                        <a href="<?php echo e(route('login')); ?>" class="text-indigo-600 hover:underline">Login</a> to write a review.
                     </div>
-                @endauth
+                <?php endif; ?>
             </div>
 
-            @if($product->faqs->count() > 0)
+            <?php if($product->faqs->count() > 0): ?>
                 <div x-show="tab === 'faq'" x-cloak>
                     <div class="space-y-3">
-                        @foreach($product->faqs as $faq)
+                        <?php $__currentLoopData = $product->faqs; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $faq): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                             <div class="border border-gray-200 rounded-xl overflow-hidden" x-data="{ open: false }">
                                 <button @click="open = !open" type="button" class="w-full flex items-center justify-between gap-3 px-4 py-3 text-left hover:bg-gray-50 transition">
-                                    <span class="font-medium text-sm text-gray-800">{{ $faq->question }}</span>
+                                    <span class="font-medium text-sm text-gray-800"><?php echo e($faq->question); ?></span>
                                     <svg class="w-4 h-4 text-gray-400 flex-shrink-0 transition-transform" :class="open ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
                                     </svg>
                                 </button>
                                 <div x-show="open" x-cloak x-transition class="px-4 pb-4 text-sm text-gray-600">
-                                    {{ $faq->answer }}
+                                    <?php echo e($faq->answer); ?>
+
                                 </div>
                             </div>
-                        @endforeach
+                        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                     </div>
                 </div>
-            @endif
+            <?php endif; ?>
         </div>
     </div>
 
     <!-- Cross-sells -->
-    @if($product->crossSells->isNotEmpty())
+    <?php if($product->crossSells->isNotEmpty()): ?>
         <div class="mt-12">
             <h2 class="text-xl font-bold text-gray-900 mb-6">Frequently Bought Together</h2>
             <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
-                @foreach($product->crossSells as $rec)
-                    @include('partials.product-card', ['product' => $rec->recommended])
-                @endforeach
+                <?php $__currentLoopData = $product->crossSells; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $rec): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                    <?php echo $__env->make('partials.product-card', ['product' => $rec->recommended], array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
+                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
             </div>
         </div>
-    @endif
+    <?php endif; ?>
 
     <!-- Upsells -->
-    @if($product->upsells->isNotEmpty())
+    <?php if($product->upsells->isNotEmpty()): ?>
         <div class="mt-12">
             <h2 class="text-xl font-bold text-gray-900 mb-6">You May Also Like</h2>
             <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
-                @foreach($product->upsells as $rec)
-                    @include('partials.product-card', ['product' => $rec->recommended])
-                @endforeach
+                <?php $__currentLoopData = $product->upsells; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $rec): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                    <?php echo $__env->make('partials.product-card', ['product' => $rec->recommended], array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
+                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
             </div>
         </div>
-    @endif
+    <?php endif; ?>
 
     <!-- Related Products -->
-    @if($related->isNotEmpty())
+    <?php if($related->isNotEmpty()): ?>
         <div class="mt-12">
             <h2 class="text-xl font-bold text-gray-900 mb-6">Related Products</h2>
             <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
-                @foreach($related as $relProduct)
-                    @include('partials.product-card', ['product' => $relProduct])
-                @endforeach
+                <?php $__currentLoopData = $related; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $relProduct): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                    <?php echo $__env->make('partials.product-card', ['product' => $relProduct], array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
+                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
             </div>
         </div>
-    @endif
+    <?php endif; ?>
 </div>
 
 <script>
@@ -431,4 +442,6 @@ function updateQty(delta) {
     input.value = Math.max(1, Math.min(newVal, max));
 }
 </script>
-@endsection
+<?php $__env->stopSection(); ?>
+
+<?php echo $__env->make('layouts.app', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH C:\xampp\htdocs\azad-ecom\resources\views/products/show.blade.php ENDPATH**/ ?>

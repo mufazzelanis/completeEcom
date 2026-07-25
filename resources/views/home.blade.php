@@ -242,8 +242,8 @@
 
 {{-- ═══════════ HOMEPAGE PRODUCT SECTIONS (admin-managed) ═══════════ --}}
 @foreach($homeSections as $entry)
-    @php $sec = $entry['section']; @endphp
-    <div class="mt-4 {{ $sec->theme === 'sale' ? 'bg-gradient-to-r from-red-500 to-orange-500' : 'bg-white' }}">
+    @php $sec = $entry['section']; $totalCount = $entry['totalCount']; @endphp
+    <div class="mt-4 {{ $sec->theme === 'sale' ? 'bg-gradient-to-r from-red-500 to-orange-500' : 'bg-white' }}" x-data="{ expanded: false }">
         <div class="max-w-[1200px] mx-auto px-4 py-6">
             <div class="flex items-center justify-between mb-5">
                 <div class="flex items-center gap-3">
@@ -258,11 +258,27 @@
                 <a href="{{ $sec->getViewAllUrl() }}"
                    class="{{ $sec->theme === 'sale' ? 'text-white/80 hover:text-white' : 'text-orange-500 hover:text-orange-700' }} font-bold text-sm transition">{{ $sec->getViewAllLabelText() }} →</a>
             </div>
-            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                @foreach($entry['products'] as $product)
-                    @include('partials.product-card', ['product' => $product])
+            <div class="grid {{ $sec->getGridColsClass() }} gap-3">
+                @foreach($entry['products'] as $i => $product)
+                    @if($i < $sec->product_limit)
+                        @include('partials.product-card', ['product' => $product])
+                    @else
+                        <div x-show="expanded" x-cloak>
+                            @include('partials.product-card', ['product' => $product])
+                        </div>
+                    @endif
                 @endforeach
             </div>
+            {{-- Only rendered when there's actually more to reveal — clicking stays right
+                 here on the homepage and shows the rest of this section's fetched batch,
+                 no navigation away (unlike the small "VIEW ALL" link above, which still
+                 goes to the full /shop listing). --}}
+            @if($totalCount > $sec->product_limit)
+            <div class="text-center mt-6" x-show="!expanded">
+                <button type="button" @click="expanded = true"
+                   class="inline-block {{ $sec->theme === 'sale' ? 'bg-white text-orange-600 hover:bg-gray-100' : 'bg-orange-500 text-white hover:bg-orange-600' }} px-10 py-2.5 rounded-lg font-bold text-sm transition shadow-md">{{ $sec->getViewAllLabelText() }}</button>
+            </div>
+            @endif
         </div>
     </div>
 @endforeach
@@ -346,7 +362,7 @@ $reviewThemes = [
     <div class="max-w-[1200px] mx-auto px-4 py-6">
         <div class="flex items-center justify-center mb-5">
             <div class="h-px bg-gray-200 flex-1"></div>
-            <h2 class="text-lg font-extrabold text-gray-900 px-6">Just For You</h2>
+            <h2 class="text-lg font-extrabold text-gray-900 px-6">{{ setting('just_for_you_title', 'Just For You') }}</h2>
             <div class="h-px bg-gray-200 flex-1"></div>
         </div>
         <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
@@ -355,7 +371,7 @@ $reviewThemes = [
             @endforeach
         </div>
         <div class="text-center mt-6">
-            <a href="{{ route('shop.index') }}" class="inline-block bg-orange-500 text-white px-10 py-2.5 rounded-lg font-bold text-sm hover:bg-orange-600 transition shadow-md">View More Products</a>
+            <a href="{{ route('shop.index') }}" class="inline-block bg-orange-500 text-white px-10 py-2.5 rounded-lg font-bold text-sm hover:bg-orange-600 transition shadow-md">{{ setting('just_for_you_button_text', 'View More Products') }}</a>
         </div>
     </div>
 </div>

@@ -35,7 +35,11 @@ class HomeController extends Controller
             ->where('is_active', true)
             ->orderBy('sort_order')
             ->get()
-            ->map(fn ($section) => ['section' => $section, 'products' => $section->getProducts()])
+            ->map(fn ($section) => [
+                'section' => $section,
+                'products' => $section->getProducts(),
+                'totalCount' => $section->getTotalAvailableCount(),
+            ])
             ->filter(fn ($entry) => $entry['products']->isNotEmpty())
             ->values();
 

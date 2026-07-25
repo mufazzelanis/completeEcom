@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Category;
 use App\Models\HomeSection;
+use App\Models\Setting;
 use Illuminate\Http\Request;
 
 class HomeSectionController extends Controller
@@ -15,6 +16,26 @@ class HomeSectionController extends Controller
         $categories = Category::orderBy('name')->get();
 
         return view('admin.home-sections.index', compact('sections', 'categories'));
+    }
+
+    /**
+     * "Just For You" isn't a HomeSection row (it's a fixed overflow block, see
+     * HomeController::index()), so its heading/button text live as plain Settings
+     * instead of on a manageable row like the sections above.
+     */
+    public function updateJustForYou(Request $request)
+    {
+        $data = $request->validate([
+            'just_for_you_title'       => 'required|string|max:60',
+            'just_for_you_button_text' => 'required|string|max:60',
+        ]);
+
+        foreach ($data as $key => $value) {
+            Setting::set($key, $value, 'general');
+        }
+        Setting::bust();
+
+        return back()->with('success', '"Just For You" section text updated.');
     }
 
     public function create()
@@ -95,6 +116,7 @@ class HomeSectionController extends Controller
             'source_type'    => 'required|in:featured,top_selling,new_arrivals,on_sale,category',
             'category_id'    => 'nullable|exists:categories,id|required_if:source_type,category',
             'product_limit'  => 'required|integer|min:2|max:32',
+            'columns'        => 'required|integer|min:2|max:6',
             'theme'          => 'required|in:light,sale',
             'view_all_query' => 'nullable|string|max:100',
             'view_all_label' => 'nullable|string|max:40',

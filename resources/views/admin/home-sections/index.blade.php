@@ -80,4 +80,26 @@
         </tbody>
     </table>
 </div>
+
+{{-- "Just For You" — a fixed overflow block below all the sections above, not a
+     manageable row itself (see HomeController::index()), so its text lives here
+     as its own small settings card instead of in the table. --}}
+<div class="bg-white rounded-2xl shadow-sm p-6 mt-6 max-w-xl">
+    <h3 class="font-semibold text-gray-800 mb-1">"Just For You" Section</h3>
+    <p class="text-xs text-gray-400 mb-4">The extra product grid that appears below your sections above, with a button linking to the full shop.</p>
+    <form action="{{ route('admin.home-sections.just-for-you') }}" method="POST" class="space-y-4">
+        @csrf
+        <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Section Heading</label>
+            <input type="text" name="just_for_you_title" maxlength="60" value="{{ setting('just_for_you_title', 'Just For You') }}"
+                class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500">
+        </div>
+        <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Button Text</label>
+            <input type="text" name="just_for_you_button_text" maxlength="60" value="{{ setting('just_for_you_button_text', 'View More Products') }}"
+                class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500">
+        </div>
+        <button type="submit" class="bg-orange-600 text-white px-5 py-2.5 rounded-xl text-sm font-semibold hover:bg-orange-700 transition">Save</button>
+    </form>
+</div>
 @endsection

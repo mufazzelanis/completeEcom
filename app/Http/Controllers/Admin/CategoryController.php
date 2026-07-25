@@ -11,14 +11,34 @@ class CategoryController extends Controller
 {
     public function index()
     {
-        $categories = Category::with(['parent', 'children'])
+        // Paginated by TOP-LEVEL category (not raw row count) so a parent and all its
+        // children always land on the same page together, and both levels genuinely
+        // respect sort_order — the previous COALESCE(parent_id, id) grouping ordered
+        // top-level rows by their own id underneath the hood (always unique, so
+        // sort_order never got a chance to reorder them), which is why move up/down
+        // visibly did nothing for any category that had subcategories.
+        $topLevel = Category::whereNull('parent_id')
             ->withCount(['products', 'children'])
-            ->orderByRaw('COALESCE(parent_id, id)')
-            ->orderByRaw('parent_id IS NOT NULL')
+            ->with(['children' => fn ($q) => $q->withCount('products')->orderBy('sort_order')->orderBy('name')])
             ->orderBy('sort_order')
             ->orderBy('name')
             ->paginate(50);
-        return view('admin.categories.index', compact('categories'));
+
+        // Categories in this app only nest one level deep (no sub-subcategories), so
+        // every flattened child row simply gets children_count = 0 — no lazy-load risk.
+        // Each child's `parent` relation is set from the already-loaded $parent instead
+        // of letting the view's `$category->parent` access trigger a lazy query per row.
+        $categories = $topLevel->getCollection()->flatMap(function ($parent) {
+            $parent->children->each(function ($child) use ($parent) {
+                $child->children_count = 0;
+                $child->setRelation('parent', $parent);
+            });
+            return collect([$parent])->merge($parent->children);
+        });
+
+        $topLevel->setCollection($categories);
+
+        return view('admin.categories.index', ['categories' => $topLevel]);
     }
 
     public function create()
@@ -104,5 +124,39 @@ class CategoryController extends Controller
     public function show(Category $category)
     {
         return redirect()->route('admin.categories.edit', $category);
+    }
+
+    public function moveUp(Category $category)
+    {
+        $this->swapWithNeighbor($category, 'up');
+        return back();
+    }
+
+    public function moveDown(Category $category)
+    {
+        $this->swapWithNeighbor($category, 'down');
+        return back();
+    }
+
+    /**
+     * Scoped by parent_id — top-level categories (the horizontal nav bar) and each
+     * parent's own subcategories reorder independently of one another, since they
+     * render as separate lists on the frontend, not one combined sequence.
+     */
+    private function swapWithNeighbor(Category $category, string $direction): void
+    {
+        $siblings = Category::where('parent_id', $category->parent_id);
+
+        $neighbor = $direction === 'up'
+            ? (clone $siblings)->where('sort_order', '<', $category->sort_order)->orderByDesc('sort_order')->first()
+            : (clone $siblings)->where('sort_order', '>', $category->sort_order)->orderBy('sort_order')->first();
+
+        if (!$neighbor) {
+            return;
+        }
+
+        [$a, $b] = [$category->sort_order, $neighbor->sort_order];
+        $category->update(['sort_order' => $b]);
+        $neighbor->update(['sort_order' => $a]);
     }
 }

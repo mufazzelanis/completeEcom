@@ -14,6 +14,7 @@
     <table class="w-full">
         <thead class="bg-gray-50 border-b border-gray-100">
             <tr class="text-xs text-gray-500 uppercase tracking-wider">
+                <th class="px-6 py-3 text-left w-16">Order</th>
                 <th class="px-6 py-3 text-left">Name</th>
                 <th class="px-6 py-3 text-left">Parent</th>
                 <th class="px-6 py-3 text-center">Subcategories</th>
@@ -25,6 +26,22 @@
         <tbody class="divide-y divide-gray-50">
             @forelse($categories as $category)
                 <tr class="hover:bg-gray-50 transition {{ $category->parent_id ? 'bg-gray-50/50' : '' }}">
+                    <td class="px-6 py-4">
+                        <div class="flex flex-col gap-1">
+                            <form action="{{ route('admin.categories.move-up', $category) }}" method="POST">
+                                @csrf @method('PATCH')
+                                <button type="submit" class="text-gray-400 hover:text-indigo-600" title="Move up (within its own level)">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/></svg>
+                                </button>
+                            </form>
+                            <form action="{{ route('admin.categories.move-down', $category) }}" method="POST">
+                                @csrf @method('PATCH')
+                                <button type="submit" class="text-gray-400 hover:text-indigo-600" title="Move down (within its own level)">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                                </button>
+                            </form>
+                        </div>
+                    </td>
                     <td class="px-6 py-4">
                         <div class="flex items-center space-x-3">
                             @if($category->parent_id)
@@ -74,7 +91,7 @@
                 </tr>
             @empty
                 <tr>
-                    <td colspan="6" class="px-6 py-12 text-center text-gray-400">
+                    <td colspan="7" class="px-6 py-12 text-center text-gray-400">
                         No categories found. <a href="{{ route('admin.categories.create') }}" class="text-indigo-600">Create one</a>.
                     </td>
                 </tr>

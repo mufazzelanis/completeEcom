@@ -7,9 +7,29 @@ use Illuminate\Database\Eloquent\Model;
 class HomeSection extends Model
 {
     protected $fillable = [
-        'title', 'subtitle', 'source_type', 'category_id', 'product_limit',
+        'title', 'subtitle', 'source_type', 'category_id', 'product_limit', 'columns',
         'theme', 'view_all_query', 'view_all_label', 'is_active', 'sort_order',
     ];
+
+    /**
+     * Full literal Tailwind class strings, one per supported column count — the
+     * Tailwind CDN build compiles by scanning final rendered HTML, so a class built
+     * by string concatenation (e.g. "md:grid-cols-{$n}") would never get generated.
+     * Mobile stays at 2 and tablet caps at 3 regardless, since 5-6 columns would be
+     * too cramped on a phone; only the desktop breakpoint follows the admin's choice.
+     */
+    private const GRID_COLS_CLASSES = [
+        2 => 'grid-cols-2 sm:grid-cols-2 md:grid-cols-2',
+        3 => 'grid-cols-2 sm:grid-cols-3 md:grid-cols-3',
+        4 => 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4',
+        5 => 'grid-cols-2 sm:grid-cols-3 md:grid-cols-5',
+        6 => 'grid-cols-2 sm:grid-cols-3 md:grid-cols-6',
+    ];
+
+    public function getGridColsClass(): string
+    {
+        return self::GRID_COLS_CLASSES[$this->columns] ?? self::GRID_COLS_CLASSES[4];
+    }
 
     protected $casts = [
         'is_active' => 'boolean',
@@ -21,11 +41,15 @@ class HomeSection extends Model
     }
 
     /**
-     * Builds the product list for this section from its configured source type,
-     * optionally narrowed to a single category regardless of source type — so
-     * e.g. "Featured Products" can be scoped to just Electronics if desired.
+     * Hard ceiling on how many products a homepage section ever fetches — "See More"
+     * reveals the rest of THIS batch in place (no extra request), it doesn't mean
+     * "fetch the entire catalog." A section with more products than this still gets
+     * a working "See More", it just also has the small "VIEW ALL" link (which goes
+     * to the real, unbounded /shop listing) for anything beyond the batch.
      */
-    public function getProducts()
+    private const MAX_FETCH = 40;
+
+    private function baseQuery()
     {
         $query = Product::with('category', 'brand', 'reviews', 'activeFlashSaleProduct')->active();
 
@@ -42,7 +66,29 @@ class HomeSection extends Model
             default        => $query->latest(), // 'new_arrivals' and 'category'
         };
 
-        return $query->take($this->product_limit)->get();
+        return $query;
+    }
+
+    /**
+     * Builds the product list for this section from its configured source type,
+     * optionally narrowed to a single category regardless of source type — so
+     * e.g. "Featured Products" can be scoped to just Electronics if desired.
+     * Fetches up to MAX_FETCH (not just product_limit) so "See More" on the
+     * homepage can reveal the rest without a second request.
+     */
+    public function getProducts()
+    {
+        return $this->baseQuery()->take(self::MAX_FETCH)->get();
+    }
+
+    /**
+     * True total matching this section's source/category filter, ignoring any
+     * limit — used to decide whether "See More" should render at all (no point
+     * showing it when there's nothing left to reveal).
+     */
+    public function getTotalAvailableCount(): int
+    {
+        return $this->baseQuery()->count();
     }
 
     /**

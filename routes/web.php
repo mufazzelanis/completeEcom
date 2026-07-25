@@ -240,6 +240,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::patch('home-sections/{home_section}/toggle', [AdminHomeSectionController::class, 'toggle'])->name('home-sections.toggle');
     Route::patch('home-sections/{home_section}/move-up', [AdminHomeSectionController::class, 'moveUp'])->name('home-sections.move-up');
     Route::patch('home-sections/{home_section}/move-down', [AdminHomeSectionController::class, 'moveDown'])->name('home-sections.move-down');
+    Route::post('home-sections/just-for-you', [AdminHomeSectionController::class, 'updateJustForYou'])->name('home-sections.just-for-you');
 
     // Languages & Translations (multi-language system)
     Route::resource('languages', AdminLanguageController::class)->except(['show', 'create', 'edit']);
@@ -251,6 +252,8 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::delete('translations', [AdminTranslationController::class, 'destroy'])->name('translations.destroy');
 
     Route::resource('categories', AdminCategoryController::class);
+    Route::patch('categories/{category}/move-up', [AdminCategoryController::class, 'moveUp'])->name('categories.move-up');
+    Route::patch('categories/{category}/move-down', [AdminCategoryController::class, 'moveDown'])->name('categories.move-down');
     // Subcategories — manual routes (bypass slug-based route model binding)
     Route::get('subcategories', [AdminSubcategoryController::class, 'index'])->name('subcategories.index');
     Route::get('subcategories/create', [AdminSubcategoryController::class, 'create'])->name('subcategories.create');
