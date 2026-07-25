@@ -47,6 +47,7 @@
                     </td>
                     <td class="px-6 py-4 text-center">
                         <div class="flex items-center justify-center space-x-2">
+                            <a href="{{ route('admin.reviews.edit', $review->id) }}" class="text-indigo-600 hover:text-indigo-800 text-sm font-medium">Edit</a>
                             <form action="{{ route('admin.reviews.approve', $review->id) }}" method="POST">
                                 @csrf @method('PATCH')
                                 <button type="submit" class="{{ $review->is_approved ? 'text-yellow-600 hover:text-yellow-800' : 'text-green-600 hover:text-green-800' }} text-sm font-medium">

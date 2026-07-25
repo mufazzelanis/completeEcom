@@ -56,7 +56,7 @@
         <label class="flex items-center gap-2 cursor-pointer">
             <input type="hidden" name="two_factor_enabled" value="0">
             <input type="checkbox" name="two_factor_enabled" value="1" class="rounded text-orange-600"
-                   @checked(setting('two_factor_enabled','0') == '1')>
+                   @checked(setting('two_factor_enabled','1') == '1')>
             <span class="text-sm text-gray-700">Require 2FA for Admin</span>
         </label>
         <label class="flex items-center gap-2 cursor-pointer">

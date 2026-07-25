@@ -23,6 +23,14 @@ class Page extends Model
         });
     }
 
+    // Sanitized on write, not read — content is rendered unescaped ({!! !!}) in
+    // pages/show and pages/contact, so stored HTML must already be safe rather
+    // than trusted at render time.
+    public function setContentAttribute($value)
+    {
+        $this->attributes['content'] = $value !== null ? clean($value) : $value;
+    }
+
     public function scopeActive($query)  { return $query->where('is_active', true); }
     public function scopeStatic($query)  { return $query->where('type', 'static'); }
     public function scopeLanding($query) { return $query->where('type', 'landing'); }

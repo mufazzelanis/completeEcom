@@ -31,11 +31,27 @@ class SettingController extends Controller
             abort(404);
         }
 
+        // Every file field this generic handler has ever received is a logo/banner/favicon
+        // upload — validate each posted file is a real image (content-checked, not just
+        // extension) before it's ever written to the public disk. Without this, any file
+        // (e.g. a .php web shell) could be uploaded under any field name and land directly
+        // in the public/storage tree, which has no PHP-execution restriction.
+        $request->validate(
+            collect($request->allFiles())->mapWithKeys(fn ($file, $key) => [$key => 'image|max:4096'])->all()
+        );
+
+        // These two are rendered unescaped ({!! !!}) on the storefront (announcement
+        // banner, footer copyright line) — sanitize on write, same as Page::content.
+        $rawHtmlKeys = ['announcement_text', 'copyright_text'];
+
         // Save regular fields (skip Laravel internals, delete_ prefixed keys, and _hex companions)
         $skip = ['_token', '_method'];
         foreach ($request->except($skip) as $key => $value) {
             if (str_starts_with($key, 'delete_') || str_ends_with($key, '_hex') || $request->hasFile($key)) {
                 continue;
+            }
+            if (in_array($key, $rawHtmlKeys, true) && $value !== null) {
+                $value = clean($value);
             }
             Setting::set($key, $value, $group);
         }

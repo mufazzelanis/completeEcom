@@ -4,25 +4,43 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\Cart;
+use App\Models\Otp;
 use App\Models\User;
-use App\Services\TwoFactorAuthService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\View\View;
+use Throwable;
 
 class TwoFactorChallengeController extends Controller
 {
+    private const PURPOSE = 'admin_2fa_login';
+
     public function create(Request $request): View|RedirectResponse
     {
-        if (! $request->session()->has('2fa_pending_user_id')) {
+        $userId = $request->session()->get('2fa_pending_user_id');
+        if (! $userId) {
             return redirect()->route('login');
         }
 
-        return view('auth.two-factor-challenge');
+        $user = User::find($userId);
+        if (! $user) {
+            return redirect()->route('login');
+        }
+
+        // A fresh code every time this page loads (including "resend") — cheap since
+        // Otp::generate() invalidates whatever code it's replacing for the same pair.
+        $code = Otp::generate($user->email, self::PURPOSE);
+        $this->sendCode($user->email, $code);
+
+        return view('auth.two-factor-challenge', [
+            'devCode' => app()->environment('production') ? null : $code,
+        ]);
     }
 
-    public function store(Request $request, TwoFactorAuthService $totp): RedirectResponse
+    public function store(Request $request): RedirectResponse
     {
         $userId = $request->session()->get('2fa_pending_user_id');
         if (! $userId) {
@@ -33,7 +51,7 @@ class TwoFactorChallengeController extends Controller
 
         $user = User::findOrFail($userId);
         $inputCode = trim($request->input('code'));
-        $verified = $totp->verify($user->two_factor_secret, $inputCode);
+        $verified = Otp::verify($user->email, self::PURPOSE, $inputCode);
 
         if (! $verified) {
             // Fall back to a one-time recovery code — case-insensitive, consumed on use.
@@ -63,6 +81,17 @@ class TwoFactorChallengeController extends Controller
         }
 
         return redirect()->intended(route('home', absolute: false));
+    }
+
+    private function sendCode(string $email, string $code): void
+    {
+        try {
+            Mail::raw("Your login verification code is: {$code}\n\nThis code expires in 5 minutes.", function ($message) use ($email) {
+                $message->to($email)->subject('Your login verification code');
+            });
+        } catch (Throwable $e) {
+            Log::warning('Login 2FA OTP email failed to send: ' . $e->getMessage());
+        }
     }
 
     private function mergeGuestCart(Request $request): void

@@ -35,7 +35,9 @@ class User extends Authenticatable
 
     public function hasTwoFactorEnabled(): bool
     {
-        return $this->two_factor_secret !== null && $this->two_factor_confirmed_at !== null;
+        // 2FA is email-OTP based (app/Models/Otp.php) rather than a persistent
+        // authenticator-app secret, so confirmation timestamp alone is "enabled".
+        return $this->two_factor_confirmed_at !== null;
     }
 
     // ── Role helpers ──────────────────────────────────────────────────────────

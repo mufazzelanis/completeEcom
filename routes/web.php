@@ -279,14 +279,24 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     // Tags
     Route::resource('tags', AdminTagController::class)->except(['show']);
     Route::post('tags/quick-create', [AdminTagController::class, 'quickCreate'])->name('tags.quick-create');
-    Route::resource('orders', AdminOrderController::class)->only(['index', 'show', 'update', 'destroy']);
+    Route::resource('orders', AdminOrderController::class)->only(['index', 'show', 'update']);
+    Route::delete('orders/{order}', [AdminOrderController::class, 'destroy'])->middleware('permission:orders.delete')->name('orders.destroy');
     Route::patch('orders/{order}/status', [AdminOrderController::class, 'updateStatus'])->name('orders.status');
-    Route::resource('users', AdminUserController::class);
-    Route::resource('roles', AdminRoleController::class)->except(['show']);
+    Route::resource('users', AdminUserController::class)->except(['destroy']);
+    Route::delete('users/{user}', [AdminUserController::class, 'destroy'])->middleware('permission:users.delete')->name('users.destroy');
+    // Roles & Permissions management is itself the privilege-escalation surface —
+    // require users.manage_roles (which manager is NOT granted by default).
+    Route::resource('roles', AdminRoleController::class)->except(['show'])->middleware('permission:users.manage_roles');
     Route::resource('coupons', AdminCouponController::class);
-    Route::get('reviews', [AdminReviewController::class, 'index'])->name('reviews.index');
-    Route::patch('reviews/{review}/approve', [AdminReviewController::class, 'approve'])->name('reviews.approve');
-    Route::delete('reviews/{review}', [AdminReviewController::class, 'destroy'])->name('reviews.destroy');
+    Route::middleware('permission:reviews.view')->group(function () {
+        Route::get('reviews', [AdminReviewController::class, 'index'])->name('reviews.index');
+    });
+    Route::middleware('permission:reviews.edit')->group(function () {
+        Route::get('reviews/{review}/edit', [AdminReviewController::class, 'edit'])->name('reviews.edit');
+        Route::put('reviews/{review}', [AdminReviewController::class, 'update'])->name('reviews.update');
+    });
+    Route::patch('reviews/{review}/approve', [AdminReviewController::class, 'approve'])->middleware('permission:reviews.approve')->name('reviews.approve');
+    Route::delete('reviews/{review}', [AdminReviewController::class, 'destroy'])->middleware('permission:reviews.delete')->name('reviews.destroy');
 
     // Vendors
     Route::resource('vendors', AdminVendorController::class)->only(['index', 'show']);
@@ -305,12 +315,17 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::resource('payment-methods', AdminPaymentMethodController::class)->except(['show']);
     Route::post('payment-methods/{paymentMethod}/toggle', [AdminPaymentMethodController::class, 'toggle'])->name('payment-methods.toggle');
 
-    // Payments / Transactions
-    Route::get('payments', [AdminPaymentController::class, 'index'])->name('payments.index');
-    Route::get('payments/{payment}', [AdminPaymentController::class, 'show'])->name('payments.show');
-    Route::post('payments/{payment}/verify', [AdminPaymentController::class, 'verify'])->name('payments.verify');
-    Route::post('payments/{payment}/reject', [AdminPaymentController::class, 'reject'])->name('payments.reject');
-    Route::post('payments/{payment}/refund', [AdminPaymentController::class, 'refund'])->name('payments.refund');
+    // Payments / Transactions — viewing vs verifying/refunding are separate permissions
+    // since verify/refund move real money.
+    Route::middleware('permission:payments.view')->group(function () {
+        Route::get('payments', [AdminPaymentController::class, 'index'])->name('payments.index');
+        Route::get('payments/{payment}', [AdminPaymentController::class, 'show'])->name('payments.show');
+    });
+    Route::middleware('permission:payments.manage')->group(function () {
+        Route::post('payments/{payment}/verify', [AdminPaymentController::class, 'verify'])->name('payments.verify');
+        Route::post('payments/{payment}/reject', [AdminPaymentController::class, 'reject'])->name('payments.reject');
+        Route::post('payments/{payment}/refund', [AdminPaymentController::class, 'refund'])->name('payments.refund');
+    });
 
     // Stock Adjustments (history + manual)
     Route::get('stock-adjustments', [AdminStockAdjustmentController::class, 'index'])->name('stock-adjustments.index');
@@ -380,7 +395,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::post('sku-management/generate', [AdminSkuManagementController::class, 'generate'])->name('sku-management.generate');
 
     // Reports & Analytics
-    Route::prefix('reports')->name('reports.')->group(function () {
+    Route::prefix('reports')->name('reports.')->middleware('permission:reports.view')->group(function () {
         Route::get('/', [AdminReportController::class, 'index'])->name('index');
         Route::get('/sales', [AdminReportController::class, 'sales'])->name('sales');
         Route::get('/revenue', [AdminReportController::class, 'revenue'])->name('revenue');
@@ -497,10 +512,14 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::get('notifications/seed', [AdminNotificationSeederController::class, 'seed'])->name('notifications.seed');
 
     // Settings
-    Route::get('settings', fn () => redirect()->route('admin.settings.show', 'general'))->name('settings');
-    Route::get('settings/{group}', [AdminSettingController::class, 'show'])->name('settings.show');
-    Route::patch('settings/{group}', [AdminSettingController::class, 'update'])->name('settings.update');
-    Route::post('settings/test-email', [AdminSettingController::class, 'testEmail'])->name('settings.test-email');
+    // Settings pages pre-fill live secrets (payment gateway keys, SMTP password),
+    // so viewing is gated the same as changing — not just the update/save action.
+    Route::middleware('permission:settings.manage')->group(function () {
+        Route::get('settings', fn () => redirect()->route('admin.settings.show', 'general'))->name('settings');
+        Route::get('settings/{group}', [AdminSettingController::class, 'show'])->name('settings.show');
+        Route::patch('settings/{group}', [AdminSettingController::class, 'update'])->name('settings.update');
+        Route::post('settings/test-email', [AdminSettingController::class, 'testEmail'])->name('settings.test-email');
+    });
 
 });
 

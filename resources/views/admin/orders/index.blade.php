@@ -11,6 +11,13 @@
             @foreach(['pending', 'processing', 'shipped', 'delivered', 'cancelled', 'refunded'] as $s)
                 <option value="{{ $s }}" {{ request('status') === $s ? 'selected' : '' }}>{{ ucfirst($s) }}</option>
             @endforeach
+            <option value="cancelled,refunded" {{ request('status') === 'cancelled,refunded' ? 'selected' : '' }}>Cancelled / Refunded</option>
+        </select>
+        <select name="payment_status" class="border border-gray-200 rounded-xl px-4 py-2 text-sm focus:outline-none">
+            <option value="">All Payments</option>
+            @foreach(['pending', 'paid', 'failed', 'refunded'] as $ps)
+                <option value="{{ $ps }}" {{ request('payment_status') === $ps ? 'selected' : '' }}>{{ ucfirst($ps) }}</option>
+            @endforeach
         </select>
         <button type="submit" class="bg-gray-800 text-white px-4 py-2 rounded-xl text-sm hover:bg-gray-700 transition">Filter</button>
     </form>

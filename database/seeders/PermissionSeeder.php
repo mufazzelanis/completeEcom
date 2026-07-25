@@ -45,6 +45,7 @@ class PermissionSeeder extends Seeder
 
             // Reviews
             ['name' => 'reviews.view',        'display_name' => 'View Reviews',        'group' => 'Reviews'],
+            ['name' => 'reviews.edit',        'display_name' => 'Edit Reviews',        'group' => 'Reviews'],
             ['name' => 'reviews.approve',     'display_name' => 'Approve Reviews',     'group' => 'Reviews'],
             ['name' => 'reviews.delete',      'display_name' => 'Delete Reviews',      'group' => 'Reviews'],
 
@@ -52,6 +53,16 @@ class PermissionSeeder extends Seeder
             ['name' => 'vendors.view',        'display_name' => 'View Vendors',        'group' => 'Vendors'],
             ['name' => 'vendors.approve',     'display_name' => 'Approve Vendors',     'group' => 'Vendors'],
             ['name' => 'vendors.suspend',     'display_name' => 'Suspend Vendors',     'group' => 'Vendors'],
+
+            // Reports (financial/analytics — previously ungated beyond generic admin access)
+            ['name' => 'reports.view',        'display_name' => 'View Reports',        'group' => 'Reports'],
+
+            // Payments (viewing transactions vs verifying/refunding are separate — refunding moves real money)
+            ['name' => 'payments.view',       'display_name' => 'View Payments',       'group' => 'Payments'],
+            ['name' => 'payments.manage',     'display_name' => 'Verify / Refund Payments', 'group' => 'Payments'],
+
+            // Settings (payment gateway keys, SMTP credentials, etc. — system-level, admin only by default)
+            ['name' => 'settings.manage',     'display_name' => 'Manage Settings',     'group' => 'Settings'],
         ];
 
         foreach ($permissions as $perm) {
@@ -73,8 +84,12 @@ class PermissionSeeder extends Seeder
                 'categories.view', 'categories.create', 'categories.edit', 'categories.delete',
                 'orders.view', 'orders.update',
                 'coupons.view', 'coupons.create', 'coupons.edit', 'coupons.delete',
-                'reviews.view', 'reviews.approve', 'reviews.delete',
+                'reviews.view', 'reviews.edit', 'reviews.approve', 'reviews.delete',
                 'vendors.view',
+                'reports.view',
+                'payments.view', 'payments.manage',
+                // settings.manage intentionally excluded — payment gateway keys, SMTP
+                // credentials etc. stay admin-only, same tier as users.delete/vendors.approve.
             ],
             'staff' => [
                 'dashboard.view',

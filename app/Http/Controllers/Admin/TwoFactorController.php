@@ -3,14 +3,20 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Otp;
 use App\Services\TwoFactorAuthService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\View\View;
+use Throwable;
 
 class TwoFactorController extends Controller
 {
+    private const PURPOSE = 'admin_2fa_setup';
+
     public function __construct(private TwoFactorAuthService $totp)
     {
         //
@@ -39,18 +45,16 @@ class TwoFactorController extends Controller
             ]);
         }
 
-        $secret = $request->session()->get('2fa_setup_secret');
-        if (! $secret) {
-            $secret = $this->totp->generateSecret();
-            $request->session()->put('2fa_setup_secret', $secret);
-        }
-
-        $uri = $this->totp->otpAuthUri($secret, $user->email, setting('site_name', 'ShopVista'));
+        $code = Otp::generate($user->email, self::PURPOSE);
+        $this->sendCode($user->email, $code);
 
         return view('admin.two-factor.setup', [
             'enabled' => false,
-            'secret' => $secret,
-            'uri' => $uri,
+            'email' => $user->email,
+            // Never populated in production — see Otp::generate()'s own env guard on
+            // otp_code_plain; this is the same email content shown on-screen for local
+            // testing where there's no real mail server to check.
+            'devCode' => app()->environment('production') ? null : $code,
         ]);
     }
 
@@ -59,24 +63,17 @@ class TwoFactorController extends Controller
         $this->authorizeAdmin($request);
         $request->validate(['code' => 'required|string']);
 
-        $secret = $request->session()->get('2fa_setup_secret');
-        if (! $secret) {
-            return redirect()->route('admin.two-factor.show')->with('error', 'Setup expired — please scan the QR code again.');
-        }
+        $user = $request->user();
 
-        if (! $this->totp->verify($secret, $request->input('code'))) {
-            return back()->withErrors(['code' => 'That code did not match. Please try again.']);
+        if (! Otp::verify($user->email, self::PURPOSE, trim($request->input('code')))) {
+            return back()->withErrors(['code' => 'That code did not match or has expired. A fresh code was sent — reload this page and try the new one.']);
         }
 
         $recoveryCodes = $this->totp->generateRecoveryCodes();
 
-        $user = $request->user();
-        $user->two_factor_secret = $secret;
         $user->two_factor_recovery_codes = $recoveryCodes;
         $user->two_factor_confirmed_at = now();
         $user->save();
-
-        $request->session()->forget('2fa_setup_secret');
 
         return redirect()->route('admin.two-factor.show')
             ->with('recovery_codes', $recoveryCodes)
@@ -93,7 +90,6 @@ class TwoFactorController extends Controller
         }
 
         $user = $request->user();
-        $user->two_factor_secret = null;
         $user->two_factor_recovery_codes = null;
         $user->two_factor_confirmed_at = null;
         $user->save();
@@ -114,5 +110,16 @@ class TwoFactorController extends Controller
         return redirect()->route('admin.two-factor.show')
             ->with('recovery_codes', $codes)
             ->with('success', 'New recovery codes generated — your old codes no longer work.');
+    }
+
+    private function sendCode(string $email, string $code): void
+    {
+        try {
+            Mail::raw("Your admin verification code is: {$code}\n\nThis code expires in 5 minutes.", function ($message) use ($email) {
+                $message->to($email)->subject('Your admin verification code');
+            });
+        } catch (Throwable $e) {
+            Log::warning('Admin 2FA setup OTP email failed to send: ' . $e->getMessage());
+        }
     }
 }

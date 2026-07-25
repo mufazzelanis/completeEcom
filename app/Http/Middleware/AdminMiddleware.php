@@ -23,7 +23,10 @@ class AdminMiddleware
             abort(403, 'Access to the admin panel is not allowed from your current IP address.');
         }
 
-        if (setting('two_factor_enabled', '0') === '1' && !auth()->user()->hasTwoFactorEnabled() && !$request->routeIs('admin.two-factor.*')) {
+        // On by default (secure-by-default), but toggleable off from Settings →
+        // Security for local testing/convenience. An unconfigured account is simply
+        // routed to setup, never hard-locked out.
+        if (setting('two_factor_enabled', '1') === '1' && !auth()->user()->hasTwoFactorEnabled() && !$request->routeIs('admin.two-factor.*')) {
             return redirect()->route('admin.two-factor.show')
                 ->with('warning', 'Two-factor authentication is required for admin accounts. Please set it up to continue.');
         }

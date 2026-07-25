@@ -227,7 +227,12 @@ class ImportProductsCsvJob implements ShouldQueue
                 $sourcePath = $imageMap[strtolower(basename($imageFilename))] ?? null;
                 if ($sourcePath) {
                     $imagePath = $this->storeImage($sourcePath);
-                    $imagesMatchedCount++;
+                    if ($imagePath) {
+                        $imagesMatchedCount++;
+                    } else {
+                        $errors[] = "Row {$row}: '{$imageFilename}' is not a valid image — product created without an image.";
+                        $imagesMissingCount++;
+                    }
                 } else {
                     $errors[] = "Row {$row}: image '{$imageFilename}' not found in the uploaded ZIP — product created without an image.";
                     $imagesMissingCount++;
@@ -276,12 +281,32 @@ class ImportProductsCsvJob implements ShouldQueue
         $this->flushProgress($import, $processedRows, $createdCount, $skippedCount, $imagesMatchedCount, $imagesMissingCount, $errors);
     }
 
-    /** Copies a matched image out of the extracted ZIP into public product storage. */
-    private function storeImage(string $sourceAbsolutePath): string
+    /**
+     * Copies a matched image out of the extracted ZIP into public product storage.
+     * Returns null (instead of storing anything) if the file isn't actually a valid
+     * image — trusting the ZIP entry's filename extension would let an attacker ship
+     * e.g. "photo.jpg.php" and have it land executable on the public disk.
+     */
+    private function storeImage(string $sourceAbsolutePath): ?string
     {
-        $extension = pathinfo($sourceAbsolutePath, PATHINFO_EXTENSION) ?: 'jpg';
-        $storedName = 'products/'.Str::random(32).'.'.$extension;
+        $info = @getimagesize($sourceAbsolutePath);
+        if ($info === false) {
+            return null;
+        }
 
+        $extension = match ($info['mime'] ?? null) {
+            'image/jpeg' => 'jpg',
+            'image/png'  => 'png',
+            'image/gif'  => 'gif',
+            'image/webp' => 'webp',
+            'image/bmp'  => 'bmp',
+            default      => null,
+        };
+        if ($extension === null) {
+            return null;
+        }
+
+        $storedName = 'products/'.Str::random(32).'.'.$extension;
         Storage::disk('public')->put($storedName, file_get_contents($sourceAbsolutePath));
 
         return $storedName;

@@ -62,7 +62,11 @@ class LoginRequest extends FormRequest
             ]);
         }
 
-        if ($user->two_factor_secret && $user->two_factor_confirmed_at) {
+        // The global toggle is a true kill switch: even an account that already
+        // completed 2FA setup skips the challenge while it's off, not just accounts
+        // that never set it up — otherwise turning it "off" would silently do nothing
+        // for anyone who'd already confirmed 2FA before.
+        if (setting('two_factor_enabled', '1') === '1' && $user->hasTwoFactorEnabled()) {
             // Password verified but 2FA still required — stash a short-lived pending-login
             // marker instead of fully authenticating, so the session has no access yet.
             session([

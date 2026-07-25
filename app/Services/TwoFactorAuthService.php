@@ -29,7 +29,12 @@ class TwoFactorAuthService
 
     public function otpAuthUri(string $secret, string $email, string $issuer): string
     {
-        $label = rawurlencode($issuer . ':' . $email);
+        // Issuer and account name are encoded separately and joined with a literal
+        // ":" — the form used by Google's own reference examples and virtually every
+        // authenticator app's parser. Encoding the whole "issuer:email" string as one
+        // blob (turning ":" into "%3A") is technically spec-valid but some parsers
+        // handle it poorly, so the literal-colon form is the safer/more compatible one.
+        $label = rawurlencode($issuer) . ':' . rawurlencode($email);
         $params = http_build_query([
             'secret' => $secret,
             'issuer' => $issuer,

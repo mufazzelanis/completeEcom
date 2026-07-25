@@ -18,7 +18,12 @@ class OrderController extends Controller
         $query = Order::with('user');
 
         if ($request->filled('status')) {
-            $query->where('status', $request->status);
+            $statuses = explode(',', $request->status);
+            count($statuses) > 1 ? $query->whereIn('status', $statuses) : $query->where('status', $request->status);
+        }
+
+        if ($request->filled('payment_status')) {
+            $query->where('payment_status', $request->payment_status);
         }
 
         if ($request->filled('fraud')) {

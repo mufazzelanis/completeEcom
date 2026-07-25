@@ -460,7 +460,10 @@ class CheckoutController extends Controller
 
     public function success(Order $order)
     {
-        if ($order->user_id !== auth()->id()) {
+        // Explicit auth()->check() first — if $order->user_id were ever null
+        // (e.g. a legacy or future true-guest order), an unauthenticated visitor's
+        // auth()->id() is also null, and `null !== null` would wrongly pass.
+        if (! auth()->check() || $order->user_id !== auth()->id()) {
             abort(403);
         }
         $order->load('payment', 'items.product');
@@ -502,27 +505,26 @@ class CheckoutController extends Controller
 
     public function guestTrackLookup(Request $request)
     {
+        // shipping_email is REQUIRED (not nullable) — matching by order_number alone
+        // let anyone who merely guesses/observes an order number redirect straight
+        // to the guest_token tracking link, fully bypassing the token secret.
         $request->validate([
             'order_number' => 'required|string',
-            'shipping_email' => 'nullable|email',
+            'shipping_email' => 'required|email',
         ]);
 
-        $query = Order::where('order_number', $request->order_number);
-
-        if ($request->filled('shipping_email')) {
-            $email = $request->shipping_email;
-            $query->where(function ($q) use ($email) {
+        $email = $request->shipping_email;
+        $order = Order::where('order_number', $request->order_number)
+            ->where(function ($q) use ($email) {
                 $q->where('guest_email', $email)
                   ->orWhereHas('user', function ($q2) use ($email) {
                       $q2->where('email', $email);
                   });
-            });
-        }
-
-        $order = $query->first();
+            })
+            ->first();
 
         if (!$order) {
-            return back()->withErrors(['order_number' => 'No order found with this order number.']);
+            return back()->withErrors(['order_number' => 'No order found matching that order number and email.']);
         }
 
         if ($order->guest_token) {

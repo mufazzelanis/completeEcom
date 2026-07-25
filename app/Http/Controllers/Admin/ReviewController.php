@@ -20,6 +20,26 @@ class ReviewController extends Controller
         return view('admin.reviews.index', compact('reviews'));
     }
 
+    public function edit(Review $review)
+    {
+        $review->load(['user', 'product']);
+        return view('admin.reviews.edit', compact('review'));
+    }
+
+    public function update(Request $request, Review $review)
+    {
+        $data = $request->validate([
+            'rating'      => 'required|integer|between:1,5',
+            'comment'     => 'nullable|string|max:1000',
+            'is_approved' => 'nullable|boolean',
+        ]);
+        $data['is_approved'] = $request->boolean('is_approved');
+
+        $review->update($data);
+
+        return redirect()->route('admin.reviews.index')->with('success', 'Review updated.');
+    }
+
     public function approve(Review $review)
     {
         $review->update(['is_approved' => !$review->is_approved]);

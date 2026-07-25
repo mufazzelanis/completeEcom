@@ -8,7 +8,7 @@
             <svg class="w-8 h-8 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
         </div>
         <h1 class="text-2xl font-extrabold text-gray-900 mb-2">Track Your Order</h1>
-        <p class="text-gray-500 text-sm mb-8">Enter your order number to track your order status.</p>
+        <p class="text-gray-500 text-sm mb-8">Enter your order number and the email address used at checkout to track your order status.</p>
 
         @if($errors->any())
             <div class="bg-red-50 border border-red-200 rounded-xl p-4 mb-6 text-left">
@@ -27,10 +27,10 @@
                     class="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500" required>
             </div>
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Email Address <span class="text-gray-400">(optional)</span></label>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
                 <input type="email" name="shipping_email" value="{{ old('shipping_email') }}"
                     placeholder="you@example.com"
-                    class="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500">
+                    class="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500" required>
             </div>
             <button type="submit" class="w-full bg-orange-500 text-white py-3 rounded-lg font-bold hover:bg-orange-600 transition">
                 Track Order
