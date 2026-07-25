@@ -4,6 +4,7 @@ use App\Http\Middleware\AdminMiddleware;
 use App\Http\Middleware\ForceHttps;
 use App\Http\Middleware\MaintenanceMode;
 use App\Http\Middleware\PermissionMiddleware;
+use App\Http\Middleware\RecordLoginActivity;
 use App\Http\Middleware\SecurityHeaders;
 use App\Http\Middleware\SetLocale;
 use App\Http\Middleware\VendorMiddleware;
@@ -24,6 +25,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'admin' => AdminMiddleware::class,
             'permission' => PermissionMiddleware::class,
             'vendor' => VendorMiddleware::class,
+            'record-login' => RecordLoginActivity::class,
         ]);
         $middleware->web(prepend: [ForceHttps::class]);
         $middleware->web(append: [SetLocale::class, MaintenanceMode::class, SecurityHeaders::class]);

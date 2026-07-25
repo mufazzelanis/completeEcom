@@ -22,7 +22,9 @@ Route::middleware('guest')->group(function () {
     Route::get('login', [AuthenticatedSessionController::class, 'create'])
         ->name('login');
 
-    Route::post('login', [AuthenticatedSessionController::class, 'store']);
+    Route::post('login', [AuthenticatedSessionController::class, 'store'])
+        ->middleware('record-login')
+        ->name('login.post');
 
     Route::get('two-factor-challenge', [TwoFactorChallengeController::class, 'create'])
         ->name('two-factor.challenge');

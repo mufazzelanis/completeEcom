@@ -14,7 +14,7 @@ class RecordLoginActivity
 
         // Record on successful login POST
         if ($request->isMethod('POST') && $response->isRedirect() && auth()->check()) {
-            $loginRoutes = ['login', 'auth.login'];
+            $loginRoutes = ['login', 'login.post', 'auth.login'];
             if (in_array($request->route()?->getName(), $loginRoutes)) {
                 LoginActivity::record(auth()->id(), $request->userAgent() ?? '', $request->ip());
             }
