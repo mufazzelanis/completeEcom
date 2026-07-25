@@ -1,5 +1,6 @@
 @extends('layouts.account')
 @section('title', 'My Reviews')
+@section('pageTitle', 'My Reviews')
 
 @section('content')
 <h1 class="text-xl font-bold text-gray-800 mb-5">My Reviews</h1>

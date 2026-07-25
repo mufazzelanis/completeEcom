@@ -309,7 +309,7 @@ $value = context()->get($__contextArgs[0]); ?>' => 'https://schema.org',
 
             <div x-show="tab === 'description'">
                 <div class="prose prose-sm max-w-none text-gray-600">
-                    <?php echo nl2br(e($product->description ?? 'No description available.')); ?>
+                    <?php echo $product->description ?? 'No description available.'; ?>
 
                 </div>
             </div>

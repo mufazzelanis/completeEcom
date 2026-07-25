@@ -1,5 +1,6 @@
 @extends('layouts.account')
 @section('title', 'Referral Program')
+@section('pageTitle', 'Referral Program')
 
 @section('content')
 <h1 class="text-xl font-bold text-gray-800 mb-1">Referral Program</h1>

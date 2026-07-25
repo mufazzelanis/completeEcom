@@ -1,5 +1,6 @@
 @extends('layouts.account')
 @section('title', 'Return '.$return->return_number)
+@section('pageTitle', 'Return Details')
 
 @section('content')
 <div class="flex items-center gap-3 mb-6">

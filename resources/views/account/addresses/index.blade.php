@@ -1,5 +1,6 @@
 @extends('layouts.account')
 @section('title', 'Address Book')
+@section('pageTitle', 'Address Book')
 
 @section('content')
 <div class="flex items-center justify-between mb-5">

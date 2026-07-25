@@ -1,5 +1,6 @@
 @extends('layouts.account')
 @section('title', 'Notification Preferences')
+@section('pageTitle', 'Notification Settings')
 
 @section('content')
 <div class="space-y-6">

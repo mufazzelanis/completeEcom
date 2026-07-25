@@ -1,13 +1,14 @@
 @extends('layouts.account')
 @section('title', 'My Orders')
+@section('pageTitle', 'My Orders')
 
 @section('content')
 <div class="flex items-center justify-between mb-5">
     <h1 class="text-xl font-bold text-gray-800">My Orders</h1>
-    <div class="flex gap-2">
+    <div class="flex gap-1.5 overflow-x-auto pb-1 -mb-1">
         @foreach(['all' => 'All', 'pending' => 'Pending', 'processing' => 'Processing', 'delivered' => 'Delivered', 'cancelled' => 'Cancelled'] as $val => $label)
         <a href="{{ route('orders.index', $val !== 'all' ? ['status' => $val] : []) }}"
-            class="px-3 py-1.5 rounded-xl text-xs font-semibold transition {{ (request('status', 'all') === $val) ? 'bg-indigo-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-100' }}">
+            class="px-3 py-1.5 rounded-xl text-xs font-semibold transition whitespace-nowrap {{ (request('status', 'all') === $val) ? 'bg-indigo-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-100' }}">
             {{ $label }}
         </a>
         @endforeach
@@ -24,34 +25,32 @@
 <div class="space-y-3">
     @foreach($orders as $order)
     <div class="bg-white rounded-2xl shadow-sm p-5 hover:shadow-md transition">
-        <div class="flex flex-wrap items-center justify-between gap-4 mb-4">
-            <div>
+        {{-- Row 1: Order info --}}
+        <div class="flex items-start justify-between gap-3 mb-3">
+            <div class="min-w-0">
                 <p class="text-xs text-gray-400">Order #</p>
                 <p class="font-bold text-gray-900 text-sm">{{ $order->order_number }}</p>
             </div>
-            <div class="text-center">
+            <span class="px-3 py-1 rounded-full text-xs font-semibold {{ $order->status_badge }} capitalize flex-shrink-0">{{ $order->status }}</span>
+        </div>
+
+        {{-- Row 2: Details grid --}}
+        <div class="grid grid-cols-3 gap-3 mb-3 text-center">
+            <div>
                 <p class="text-xs text-gray-400">Date</p>
                 <p class="text-sm text-gray-700">{{ $order->created_at->format('M d, Y') }}</p>
             </div>
-            <div class="text-center">
+            <div>
                 <p class="text-xs text-gray-400">Items</p>
                 <p class="text-sm font-medium text-gray-700">{{ $order->items->count() }}</p>
             </div>
-            <div class="text-center">
+            <div>
                 <p class="text-xs text-gray-400">Total</p>
-                <p class="font-bold text-gray-900">৳{{ number_format($order->total) }}</p>
-            </div>
-            <span class="px-3 py-1 rounded-full text-xs font-semibold {{ $order->status_badge }} capitalize">{{ $order->status }}</span>
-            <div class="flex items-center gap-3">
-                <a href="{{ route('orders.show', $order) }}" class="bg-indigo-50 text-indigo-600 hover:bg-indigo-100 transition text-xs font-semibold px-3 py-1.5 rounded-xl">View Details</a>
-                @if(in_array($order->status, ['pending','processing']))
-                <form action="{{ route('orders.cancel', $order) }}" method="POST">
-                    @csrf
-                    <button class="text-xs text-red-500 hover:text-red-700 font-medium" onclick="return confirm('Cancel this order?')">Cancel</button>
-                </form>
-                @endif
+                <p class="font-bold text-gray-900 text-sm">৳{{ number_format($order->total) }}</p>
             </div>
         </div>
+
+        {{-- Row 3: Items preview --}}
         <div class="flex items-center gap-2 overflow-x-auto border-t border-gray-100 pt-3">
             @foreach($order->items->take(5) as $item)
             <div class="flex items-center gap-2 flex-shrink-0">
@@ -68,6 +67,17 @@
             @endforeach
             @if($order->items->count() > 5)
             <span class="text-xs text-gray-400 flex-shrink-0">+{{ $order->items->count() - 5 }} more</span>
+            @endif
+        </div>
+
+        {{-- Row 4: Actions --}}
+        <div class="flex items-center gap-3 mt-3 pt-3 border-t border-gray-100">
+            <a href="{{ route('orders.show', $order) }}" class="flex-1 text-center bg-indigo-50 text-indigo-600 hover:bg-indigo-100 transition text-xs font-semibold px-3 py-2 rounded-xl">View Details</a>
+            @if(in_array($order->status, ['pending','processing']))
+            <form action="{{ route('orders.cancel', $order) }}" method="POST">
+                @csrf
+                <button class="text-xs text-red-500 hover:text-red-700 font-medium px-3 py-2" onclick="return confirm('Cancel this order?')">Cancel</button>
+            </form>
             @endif
         </div>
     </div>

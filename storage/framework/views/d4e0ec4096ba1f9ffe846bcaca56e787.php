@@ -12,7 +12,7 @@
         <?php endif; ?>
     }
 }">
-    <div class="relative rounded-xl overflow-hidden bg-gray-200 aspect-[2/1] md:aspect-[5/1]">
+    <div class="relative rounded-xl overflow-hidden bg-gray-200 aspect-[2/1] md:aspect-[3/1]">
         <?php if($banners->count() > 0): ?>
             <?php $__currentLoopData = $banners; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $i => $banner): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
             <div x-show="current === <?php echo e($i); ?>" x-transition:enter="transition ease-out duration-500" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"

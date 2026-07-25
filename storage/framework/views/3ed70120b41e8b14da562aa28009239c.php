@@ -87,6 +87,7 @@
 
     <form action="<?php echo e(route('checkout.store')); ?>" method="POST"
         x-data="{
+            cs: '<?php echo html_entity_decode(setting('currency_symbol', '৳')); ?>',
             selected: '<?php echo e(old('payment_method', $paymentMethods->first()?->slug)); ?>',
             zone: '<?php echo e($defaultZone); ?>',
             usesZones: <?php echo e($usesZones ? 'true' : 'false'); ?>,
@@ -553,15 +554,15 @@ unset($__errorArgs, $__bag); ?>
                         <?php endif; ?>
                         <div class="flex justify-between text-gray-600">
                             <span x-text="usesZones ? (zone === 'outside_dhaka' ? 'Shipping (Outside Dhaka)' : 'Shipping (Inside Dhaka)') : 'Shipping'">Shipping</span>
-                            <span x-text="shipping > 0 ? '৳' + shipping.toLocaleString('en-US') : 'Free'">৳<?php echo e(number_format($shipping)); ?></span>
+                            <span x-text="shipping > 0 ? cs + shipping.toLocaleString('en-US') : 'Free'">৳<?php echo e(number_format($shipping)); ?></span>
                         </div>
                         <div class="flex justify-between text-orange-600" x-show="(current.charge||0) > 0" x-cloak>
                             <span x-text="(current.name || 'Payment') + ' Fee'"></span>
-                            <span x-text="'৳' + parseFloat(current.charge||0).toFixed(2)"></span>
+                            <span x-text="cs + parseFloat(current.charge||0).toFixed(2)"></span>
                         </div>
                         <div class="border-t border-gray-100 pt-2 flex justify-between font-bold text-gray-900 text-base">
                             <span>Total</span>
-                            <span x-text="'৳' + total.toLocaleString('en-US', {minimumFractionDigits:0, maximumFractionDigits:0})">৳<?php echo e(number_format($base)); ?></span>
+                            <span x-text="cs + total.toLocaleString('en-US', {minimumFractionDigits:0, maximumFractionDigits:0})">৳<?php echo e(number_format($base)); ?></span>
                         </div>
                     </div>
 

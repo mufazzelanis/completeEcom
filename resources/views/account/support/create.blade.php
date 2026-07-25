@@ -1,5 +1,6 @@
 @extends('layouts.account')
 @section('title', 'New Support Ticket')
+@section('pageTitle', 'New Support Ticket')
 
 @section('content')
 <div class="flex items-center gap-4 mb-5">

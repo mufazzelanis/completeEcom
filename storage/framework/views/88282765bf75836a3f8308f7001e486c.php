@@ -1,4 +1,5 @@
 <?php $__env->startSection('title', 'Dashboard'); ?>
+<?php $__env->startSection('pageTitle', 'Dashboard'); ?>
 
 <?php $__env->startSection('content'); ?>
 <div class="mb-6">

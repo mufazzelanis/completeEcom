@@ -1,5 +1,6 @@
 @extends('layouts.account')
 @section('title', 'Ticket: '.$ticket->ticket_number)
+@section('pageTitle', 'Support Ticket')
 
 @section('content')
 <div class="flex items-center gap-4 mb-5">

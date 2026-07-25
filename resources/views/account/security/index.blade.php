@@ -1,5 +1,6 @@
 @extends('layouts.account')
 @section('title', 'Security')
+@section('pageTitle', 'Security')
 
 @section('content')
 <h1 class="text-xl font-bold text-gray-800 mb-5">Security</h1>

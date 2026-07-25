@@ -1,5 +1,6 @@
 @extends('layouts.account')
 @section('title', 'Dashboard')
+@section('pageTitle', 'Dashboard')
 
 @section('content')
 <div class="mb-6">
