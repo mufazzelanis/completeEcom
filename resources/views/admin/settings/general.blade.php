@@ -71,6 +71,38 @@
     </div>
 </div>
 
+{{-- Contact Page Info --}}
+<div class="bg-white rounded-xl shadow-sm border p-6 space-y-4">
+    <h2 class="text-base font-semibold text-gray-900 pb-2 border-b">Contact Page Info</h2>
+    <p class="text-xs text-gray-400">Shown on the /contact page. If left empty, falls back to Company Information above.</p>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Contact Email</label>
+            <input type="email" name="contact_email" value="{{ setting('contact_email', '') }}"
+                   class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-orange-500"
+                   placeholder="e.g. support@shopvista.com">
+        </div>
+        <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Contact Phone</label>
+            <input type="text" name="contact_phone" value="{{ setting('contact_phone', '') }}"
+                   class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-orange-500"
+                   placeholder="e.g. +880 1700-000000">
+        </div>
+        <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Business Hours</label>
+            <input type="text" name="contact_hours" value="{{ setting('contact_hours', '') }}"
+                   class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-orange-500"
+                   placeholder="e.g. Mon–Fri 9am–6pm, Sat 10am–4pm">
+        </div>
+        <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Contact Address</label>
+            <input type="text" name="contact_address" value="{{ setting('contact_address', '') }}"
+                   class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-orange-500"
+                   placeholder="e.g. Dhaka, Bangladesh">
+        </div>
+    </div>
+</div>
+
 {{-- Storefront Buttons --}}
 <div class="bg-white rounded-xl shadow-sm border p-6 space-y-4">
     <h2 class="text-base font-semibold text-gray-900 pb-2 border-b">Storefront Buttons</h2>
