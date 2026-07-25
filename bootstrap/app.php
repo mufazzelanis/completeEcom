@@ -1,5 +1,6 @@
 <?php
 
+use App\Listeners\RecordLoginActivityListener;
 use App\Http\Middleware\AdminMiddleware;
 use App\Http\Middleware\ForceHttps;
 use App\Http\Middleware\MaintenanceMode;
@@ -8,6 +9,7 @@ use App\Http\Middleware\RecordLoginActivity;
 use App\Http\Middleware\SecurityHeaders;
 use App\Http\Middleware\SetLocale;
 use App\Http\Middleware\VendorMiddleware;
+use Illuminate\Auth\Events\Login;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
