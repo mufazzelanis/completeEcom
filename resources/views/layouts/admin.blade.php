@@ -33,6 +33,7 @@
         });
     </script>
     <style>[x-cloak]{display:none!important}</style>
+    @stack('styles')
 </head>
 <body class="bg-gray-100 dark:bg-gray-950 font-sans antialiased transition-colors">
 
@@ -764,5 +765,6 @@ $adminNavIndex = [
     </div>
 </div>
 
+@stack('scripts')
 </body>
 </html>

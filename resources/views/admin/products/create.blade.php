@@ -102,24 +102,35 @@
                     <div class="space-y-4">
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Product Name *</label>
-                            <input type="text" name="name" value="{{ old('name') }}"
+                            <input type="text" name="name" id="product-name-input" value="{{ old('name') }}"
                                 class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 @error('name') border-red-400 @enderror">
                             @error('name')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">SKU</label>
-                            <input type="text" name="sku" value="{{ old('sku') }}"
-                                class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            <div class="flex gap-2">
+                                <input type="text" name="sku" id="product-sku-input" value="{{ old('sku') }}" placeholder="e.g. TSHIRT-BLU-001"
+                                    class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 @error('sku') border-red-400 @enderror">
+                                <button type="button" onclick="generateProductSku()"
+                                    class="flex-shrink-0 px-3 rounded-xl border border-gray-200 text-xs font-medium text-gray-600 hover:bg-gray-50 transition whitespace-nowrap">
+                                    Generate
+                                </button>
+                            </div>
+                            @error('sku')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
                         </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Short Description</label>
-                            <textarea name="short_description" rows="2"
-                                class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">{{ old('short_description') }}</textarea>
+                        <div x-data="{ val: {{ Js::from(old('short_description', '')) }} }">
+                            <div class="flex items-center justify-between mb-1">
+                                <label class="block text-sm font-medium text-gray-700">Short Description</label>
+                                <span class="text-xs" :class="val.length > 200 ? 'text-red-500' : 'text-gray-400'" x-text="val.length + ' / 200'"></span>
+                            </div>
+                            <textarea name="short_description" rows="2" x-model="val" maxlength="200" placeholder="A quick one- or two-line summary shown on listing cards and search results…"
+                                class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
+                            <p class="text-xs text-gray-400 mt-1">Keep it short and punchy — this is what customers see before opening the full description.</p>
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Full Description</label>
-                            <textarea name="description" rows="6"
-                                class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">{{ old('description') }}</textarea>
+                            @include('admin.products._description_editor', ['name' => 'description', 'value' => old('description', ''), 'id' => 'description'])
+                            <p class="text-xs text-gray-400 mt-1">Use headings, lists and images to lay the description out exactly how you want customers to read it.</p>
                         </div>
                     </div>
                 </div>
@@ -127,13 +138,79 @@
                 {{-- Images --}}
                 <div class="bg-white rounded-2xl shadow-sm p-6">
                     <h3 class="font-semibold text-gray-800 mb-4">Images</h3>
-                    <div>
+
+                    {{-- Main image --}}
+                    <div x-data="{
+                        preview: null,
+                        onFiles(fileList) {
+                            const file = fileList && fileList[0];
+                            if (!file || !file.type.startsWith('image/')) return;
+                            const dt = new DataTransfer(); dt.items.add(file);
+                            $refs.mainImageInput.files = dt.files;
+                            const reader = new FileReader();
+                            reader.onload = e => this.preview = e.target.result;
+                            reader.readAsDataURL(file);
+                        },
+                        clear() { this.preview = null; $refs.mainImageInput.value = ''; }
+                    }">
                         <label class="block text-sm font-medium text-gray-700 mb-1">Main Image</label>
-                        <input type="file" name="image" accept="image/*" class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm">
+                        <div class="border-2 border-dashed border-gray-200 rounded-xl p-4 text-center hover:border-indigo-400 transition cursor-pointer"
+                            @dragover.prevent @dragleave.prevent @drop.prevent="onFiles($event.dataTransfer.files)"
+                            @click="$refs.mainImageInput.click()">
+                            <template x-if="!preview">
+                                <div class="py-4 text-gray-400">
+                                    <svg class="w-8 h-8 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14M4 8h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                                    <p class="text-sm">Click or drag an image here</p>
+                                    <p class="text-xs text-gray-300 mt-0.5">PNG, JPG up to 4MB</p>
+                                </div>
+                            </template>
+                            <template x-if="preview">
+                                <div class="relative inline-block">
+                                    <img :src="preview" class="w-28 h-28 object-cover rounded-xl border border-gray-100 mx-auto">
+                                    <button type="button" @click.stop="clear()"
+                                        class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm shadow hover:bg-red-600">×</button>
+                                </div>
+                            </template>
+                        </div>
+                        <input type="file" name="image" x-ref="mainImageInput" accept="image/*" class="hidden" @change="onFiles($event.target.files)">
+                        @error('image')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
                     </div>
-                    <div class="mt-4">
+
+                    {{-- Gallery images --}}
+                    <div class="mt-5" x-data="{
+                        files: [],
+                        addFiles(fileList) {
+                            for (const f of fileList) { if (f.type.startsWith('image/')) this.files.push({ file: f, url: URL.createObjectURL(f) }); }
+                            this.syncInput();
+                        },
+                        removeFile(i) { URL.revokeObjectURL(this.files[i].url); this.files.splice(i, 1); this.syncInput(); },
+                        syncInput() {
+                            const dt = new DataTransfer();
+                            this.files.forEach(f => dt.items.add(f.file));
+                            $refs.galleryInput.files = dt.files;
+                        }
+                    }">
                         <label class="block text-sm font-medium text-gray-700 mb-1">Gallery Images</label>
-                        <input type="file" name="images[]" accept="image/*" multiple class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm">
+                        <div class="border-2 border-dashed border-gray-200 rounded-xl p-4 text-center hover:border-indigo-400 transition cursor-pointer"
+                            @dragover.prevent @dragleave.prevent @drop.prevent="addFiles($event.dataTransfer.files)"
+                            @click="$refs.galleryInput.click()">
+                            <div class="py-2 text-gray-400">
+                                <svg class="w-7 h-7 mx-auto mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+                                <p class="text-sm">Click or drag multiple images here</p>
+                                <p class="text-xs text-gray-300 mt-0.5">You can add as many as you like</p>
+                            </div>
+                        </div>
+                        <input type="file" name="images[]" x-ref="galleryInput" accept="image/*" multiple class="hidden" @change="addFiles($event.target.files)">
+                        <div class="flex flex-wrap gap-3 mt-3" x-show="files.length > 0" x-cloak>
+                            <template x-for="(f, i) in files" :key="i">
+                                <div class="relative group">
+                                    <img :src="f.url" class="w-16 h-16 object-cover rounded-lg border border-gray-100">
+                                    <button type="button" @click.stop="removeFile(i)"
+                                        class="absolute -top-1.5 -right-1.5 bg-red-500 text-white rounded-full w-5 h-5 text-xs flex items-center justify-center opacity-0 group-hover:opacity-100 transition shadow">×</button>
+                                </div>
+                            </template>
+                        </div>
+                        @error('images.*')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
                     </div>
                 </div>
 
@@ -472,4 +549,23 @@
         @include('admin.products._seo_fields', ['product' => null])
     </form>
 </div>
+
+@push('scripts')
+<script>
+    function generateProductSku() {
+        const nameInput = document.getElementById('product-name-input');
+        const skuInput = document.getElementById('product-sku-input');
+        const base = (nameInput.value || 'PROD')
+            .toUpperCase()
+            .replace(/[^A-Z0-9]+/g, '-')
+            .replace(/^-+|-+$/g, '')
+            .split('-')
+            .filter(Boolean)
+            .slice(0, 3)
+            .join('-');
+        const rand = Math.floor(1000 + Math.random() * 9000);
+        skuInput.value = `${base || 'PROD'}-${rand}`;
+    }
+</script>
+@endpush
 @endsection

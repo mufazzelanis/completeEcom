@@ -33,6 +33,7 @@
         });
     </script>
     <style>[x-cloak]{display:none!important}</style>
+    <?php echo $__env->yieldPushContent('styles'); ?>
 </head>
 <body class="bg-gray-100 dark:bg-gray-950 font-sans antialiased transition-colors">
 
@@ -764,5 +765,6 @@ $adminNavIndex = [
     </div>
 </div>
 
+<?php echo $__env->yieldPushContent('scripts'); ?>
 </body>
 </html><?php /**PATH C:\xampp\htdocs\azad-ecom\resources\views/layouts/admin.blade.php ENDPATH**/ ?>

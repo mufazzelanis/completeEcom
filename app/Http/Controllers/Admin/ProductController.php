@@ -16,6 +16,7 @@ use App\Models\ProductVariant;
 use App\Models\Tag;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 
 class ProductController extends Controller
 {
@@ -101,6 +102,7 @@ class ProductController extends Controller
             'price'         => 'required|numeric|min:0',
             'sale_price'    => 'nullable|numeric|min:0',
             'stock'         => 'nullable|integer|min:0',
+            'sku'           => 'nullable|string|max:100|unique:products,sku',
             'image'         => 'nullable|image|max:4096',
             'images.*'      => 'nullable|image|max:4096',
             'download_file' => 'nullable|file|max:102400',
@@ -189,6 +191,7 @@ class ProductController extends Controller
             'price'       => 'required|numeric|min:0',
             'sale_price'  => 'nullable|numeric|min:0',
             'stock'       => 'nullable|integer|min:0',
+            'sku'         => ['nullable', 'string', 'max:100', Rule::unique('products', 'sku')->ignore($product->id)],
             'image'       => 'nullable|image|max:4096',
             'images.*'    => 'nullable|image|max:4096',
         ]);
@@ -234,10 +237,13 @@ class ProductController extends Controller
 
         $product->update($data);
 
-        $this->saveGallery($product, $request);
         if ($request->filled('delete_images')) {
             ProductImage::whereIn('id', $request->delete_images)->where('product_id', $product->id)->delete();
         }
+        if ($request->filled('existing_image_order')) {
+            $this->reorderGallery($product, $request->input('existing_image_order'));
+        }
+        $this->saveGallery($product, $request);
         $this->syncVariants($product, $request->input('variants', []));
         $this->syncColors($product, $request->input('colors', []), $request);
         $this->syncTags($product, $request->input('tag_ids', []));
@@ -299,6 +305,13 @@ class ProductController extends Controller
                     'sort_order' => $product->images()->count() + $i,
                 ]);
             }
+        }
+    }
+
+    private function reorderGallery(Product $product, array $orderedIds): void
+    {
+        foreach (array_values($orderedIds) as $i => $id) {
+            ProductImage::where('id', $id)->where('product_id', $product->id)->update(['sort_order' => $i]);
         }
     }
 
