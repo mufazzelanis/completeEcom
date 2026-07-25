@@ -5,9 +5,11 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
 use App\Models\Cart;
+use App\Models\LoginActivity;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
 
 class AuthenticatedSessionController extends Controller
@@ -34,6 +36,12 @@ class AuthenticatedSessionController extends Controller
         $request->session()->regenerate();
 
         $this->mergeGuestCart($request);
+
+        try {
+            LoginActivity::record(auth()->id(), $request->userAgent() ?? '', $request->ip());
+        } catch (\Throwable $e) {
+            Log::error('LoginActivity recording failed: '.$e->getMessage());
+        }
 
         $user = Auth::user();
         if ($user && $user->canAccessAdmin()) {
