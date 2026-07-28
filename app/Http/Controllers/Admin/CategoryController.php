@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Category;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 
 class CategoryController extends Controller
 {
@@ -19,7 +20,10 @@ class CategoryController extends Controller
         // visibly did nothing for any category that had subcategories.
         $topLevel = Category::whereNull('parent_id')
             ->withCount(['products', 'children'])
-            ->with(['children' => fn ($q) => $q->withCount('products')->orderBy('sort_order')->orderBy('name')])
+            ->with([
+                'vendor:id,business_name',
+                'children' => fn ($q) => $q->withCount('products')->with('vendor:id,business_name')->orderBy('sort_order')->orderBy('name'),
+            ])
             ->orderBy('sort_order')
             ->orderBy('name')
             ->paginate(50);
@@ -60,9 +64,14 @@ class CategoryController extends Controller
         $data = $request->only([
             'name', 'slug', 'description', 'parent_id', 'sort_order', 'is_active',
             'meta_title', 'meta_description', 'meta_keywords', 'canonical_url',
+            'robots_meta', 'redirect_url',
         ]);
         $data['slug'] = $data['slug'] ?? Str::slug($data['name']);
         $data['is_active'] = $request->boolean('is_active', true);
+        $data['noindex'] = $request->boolean('noindex');
+        $data['nofollow'] = $request->boolean('nofollow');
+        $data['nosnippet'] = $request->boolean('nosnippet');
+        $data['noimageindex'] = $request->boolean('noimageindex');
 
         if ($request->hasFile('image')) {
             $data['image'] = $request->file('image')->store('categories', 'public');
@@ -88,14 +97,27 @@ class CategoryController extends Controller
             'slug'  => 'nullable|string|unique:categories,slug,' . $category->id,
             'image' => 'nullable|image|max:2048',
             'og_image' => 'nullable|image|max:2048',
+            'parent_id' => ['nullable', 'exists:categories,id', Rule::notIn([$category->id])],
         ]);
+
+        // Categories only nest one level deep — a category that already has its own
+        // subcategories can't itself become someone else's subcategory (that would
+        // silently turn its children into orphaned sub-subcategories).
+        if ($request->filled('parent_id') && $category->children()->exists()) {
+            return back()->withInput()->with('error', 'This category has its own subcategories — reassign or remove them first before moving it under another category.');
+        }
 
         $data = $request->only([
             'name', 'slug', 'description', 'parent_id', 'sort_order',
             'meta_title', 'meta_description', 'meta_keywords', 'canonical_url',
+            'robots_meta', 'redirect_url',
         ]);
         $data['slug'] = $data['slug'] ?? Str::slug($data['name']);
         $data['is_active'] = $request->boolean('is_active');
+        $data['noindex'] = $request->boolean('noindex');
+        $data['nofollow'] = $request->boolean('nofollow');
+        $data['nosnippet'] = $request->boolean('nosnippet');
+        $data['noimageindex'] = $request->boolean('noimageindex');
 
         if ($request->hasFile('image')) {
             $data['image'] = $request->file('image')->store('categories', 'public');
@@ -124,6 +146,26 @@ class CategoryController extends Controller
     public function show(Category $category)
     {
         return redirect()->route('admin.categories.edit', $category);
+    }
+
+    public function approve(Category $category)
+    {
+        $category->update(['approval_status' => 'approved', 'is_active' => true, 'rejection_reason' => null]);
+
+        return back()->with('success', 'Category approved and is now available.');
+    }
+
+    public function reject(Request $request, Category $category)
+    {
+        $request->validate(['rejection_reason' => 'required|string|max:255']);
+
+        $category->update([
+            'approval_status' => 'rejected',
+            'is_active' => false,
+            'rejection_reason' => $request->rejection_reason,
+        ]);
+
+        return back()->with('success', 'Category rejected.');
     }
 
     public function moveUp(Category $category)

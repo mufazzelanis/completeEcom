@@ -1,5 +1,46 @@
 <?php $__env->startSection('title', 'Home - ' . setting('site_name', 'ShopVista')); ?>
 
+<?php $__env->startPush('meta'); ?>
+
+<?php
+    $orgSameAs = array_values(array_filter([
+        setting('facebook_url'), setting('instagram_url'), setting('youtube_url'),
+        setting('linkedin_url'), setting('twitter_url'),
+    ]));
+?>
+<script type="application/ld+json">
+<?php echo json_encode(array_filter([
+    '<?php $__contextArgs = [];
+if (context()->has($__contextArgs[0])) :
+if (isset($value)) { $__contextPrevious[] = $value; }
+$value = context()->get($__contextArgs[0]); ?>' => 'https://schema.org',
+    '@type' => 'Organization',
+    'name' => setting('site_name', 'ShopVista'),
+    'url' => route('home'),
+    'logo' => setting_file_url('site_logo'),
+    'sameAs' => $orgSameAs ?: null,
+], fn ($v) => $v !== null && $v !== ''), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE); ?>
+
+</script>
+<script type="application/ld+json">
+<?php echo json_encode([
+    '<?php $__contextArgs = [];
+if (context()->has($__contextArgs[0])) :
+if (isset($value)) { $__contextPrevious[] = $value; }
+$value = context()->get($__contextArgs[0]); ?>' => 'https://schema.org',
+    '@type' => 'WebSite',
+    'name' => setting('site_name', 'ShopVista'),
+    'url' => route('home'),
+    'potentialAction' => [
+        '@type' => 'SearchAction',
+        'target' => route('shop.index') . '?search={search_term_string}',
+        'query-input' => 'required name=search_term_string',
+    ],
+], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE); ?>
+
+</script>
+<?php $__env->stopPush(); ?>
+
 <?php $__env->startSection('content'); ?>
 
 
@@ -12,7 +53,7 @@
         <?php endif; ?>
     }
 }">
-    <div class="relative rounded-xl overflow-hidden bg-gray-200 aspect-[2/1] md:aspect-[5/1]">
+    <div class="relative rounded-xl overflow-hidden bg-gray-200 aspect-[2/1] md:aspect-[3/1]">
         <?php if($banners->count() > 0): ?>
             <?php $__currentLoopData = $banners; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $i => $banner): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
             <div x-show="current === <?php echo e($i); ?>" x-transition:enter="transition ease-out duration-500" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
@@ -334,9 +375,9 @@ $reviewThemes = [
     <div class="max-w-[1200px] mx-auto px-4 py-6">
         <div class="flex items-center justify-between mb-5">
             <h2 class="text-lg font-extrabold text-gray-900">Top Brands</h2>
-            <a href="<?php echo e(route('shop.index')); ?>" class="text-orange-500 hover:text-orange-700 font-bold text-sm transition">VIEW ALL →</a>
+            <a href="<?php echo e(route('brands.index')); ?>" class="text-orange-500 hover:text-orange-700 font-bold text-sm transition">VIEW ALL →</a>
         </div>
-        <div class="flex gap-3 overflow-x-auto scrollbar-hide pb-2">
+        <div class="carousel-container flex gap-3 overflow-x-auto scrollbar-hide pb-2 scroll-smooth">
             <?php $__currentLoopData = $brands; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $brand): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                 <a href="<?php echo e(route('shop.index')); ?>?brand=<?php echo e($brand->slug); ?>"
                    class="flex-shrink-0 w-32 h-20 bg-gray-50 border border-gray-100 rounded-xl flex items-center justify-center hover:border-orange-300 hover:shadow-md transition-all duration-200 group">

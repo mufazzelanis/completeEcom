@@ -20,6 +20,7 @@
                 <th class="px-6 py-3 text-center">Subcategories</th>
                 <th class="px-6 py-3 text-center">Products</th>
                 <th class="px-6 py-3 text-center">Status</th>
+                <th class="px-6 py-3 text-center">Approval</th>
                 <th class="px-6 py-3 text-center">Actions</th>
             </tr>
         </thead>
@@ -57,6 +58,7 @@
                             <div>
                                 <p class="font-medium text-gray-800 text-sm">{{ $category->name }}</p>
                                 <p class="text-xs text-gray-400">{{ $category->slug }}</p>
+                                @if($category->vendor_id)<p class="text-xs text-indigo-500 mt-0.5">Proposed by {{ $category->vendor->business_name }}</p>@endif
                             </div>
                         </div>
                     </td>
@@ -79,6 +81,30 @@
                         </span>
                     </td>
                     <td class="px-6 py-4 text-center">
+                        @php
+                            $catApprovalColor = match($category->approval_status) {
+                                'pending' => 'bg-yellow-100 text-yellow-700',
+                                'rejected' => 'bg-red-100 text-red-700',
+                                default => 'bg-green-100 text-green-700',
+                            };
+                        @endphp
+                        <span class="px-2 py-1 rounded-full text-xs font-medium {{ $catApprovalColor }}">{{ ucfirst($category->approval_status) }}</span>
+                        @if($category->approval_status === 'pending')
+                        <div class="flex items-center justify-center gap-2 mt-2">
+                            <form action="{{ route('admin.categories.approve', $category) }}" method="POST">
+                                @csrf @method('PATCH')
+                                <button type="submit" class="text-green-600 hover:text-green-800 text-xs font-medium">Approve</button>
+                            </form>
+                            <form action="{{ route('admin.categories.reject', $category) }}" method="POST"
+                                  onsubmit="const r = prompt('Rejection reason:'); if (!r) return false; this.querySelector('[name=rejection_reason]').value = r; return true;">
+                                @csrf @method('PATCH')
+                                <input type="hidden" name="rejection_reason">
+                                <button type="submit" class="text-red-500 hover:text-red-700 text-xs font-medium">Reject</button>
+                            </form>
+                        </div>
+                        @endif
+                    </td>
+                    <td class="px-6 py-4 text-center">
                         <div class="flex items-center justify-center space-x-2">
                             <a href="{{ route('admin.categories.edit', $category) }}" class="text-indigo-600 hover:text-indigo-800 text-sm font-medium">Edit</a>
                             <form action="{{ route('admin.categories.destroy', $category) }}" method="POST"
@@ -91,7 +117,7 @@
                 </tr>
             @empty
                 <tr>
-                    <td colspan="7" class="px-6 py-12 text-center text-gray-400">
+                    <td colspan="8" class="px-6 py-12 text-center text-gray-400">
                         No categories found. <a href="{{ route('admin.categories.create') }}" class="text-indigo-600">Create one</a>.
                     </td>
                 </tr>

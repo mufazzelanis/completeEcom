@@ -81,6 +81,20 @@
                 <option value="active"   {{ request('status') === 'active'   ? 'selected' : '' }}>Active</option>
                 <option value="inactive" {{ request('status') === 'inactive' ? 'selected' : '' }}>Inactive</option>
             </select>
+
+            <select name="approval_status" class="border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                <option value="">Any Approval</option>
+                <option value="pending"  {{ request('approval_status') === 'pending'  ? 'selected' : '' }}>Pending Approval</option>
+                <option value="approved" {{ request('approval_status') === 'approved' ? 'selected' : '' }}>Approved</option>
+                <option value="rejected" {{ request('approval_status') === 'rejected' ? 'selected' : '' }}>Rejected</option>
+            </select>
+
+            <select name="seller" class="border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                <option value="">All Sellers</option>
+                @foreach($vendors as $vendor)
+                    <option value="{{ $vendor->id }}" {{ request('seller') == $vendor->id ? 'selected' : '' }}>{{ $vendor->business_name }}</option>
+                @endforeach
+            </select>
         </div>
 
         <!-- Row 2: Secondary filters + sort + buttons -->
@@ -111,12 +125,13 @@
                 <option value="price_desc" {{ request('sort_by') === 'price_desc' ? 'selected' : '' }}>Price High–Low</option>
                 <option value="stock_asc"  {{ request('sort_by') === 'stock_asc'  ? 'selected' : '' }}>Stock Low–High</option>
                 <option value="stock_desc" {{ request('sort_by') === 'stock_desc' ? 'selected' : '' }}>Stock High–Low</option>
+                <option value="manual"     {{ request('sort_by') === 'manual'     ? 'selected' : '' }}>Manual (Custom Order)</option>
             </select>
 
             <button type="submit" class="bg-gray-800 text-white px-4 py-2 rounded-xl text-sm font-medium hover:bg-gray-700 transition">
                 Filter
             </button>
-            @if(request()->hasAny(['search','category','type','brand','status','stock_status','on_sale','featured','sort_by']))
+            @if(request()->hasAny(['search','category','type','brand','status','approval_status','seller','stock_status','on_sale','featured','sort_by']))
                 <a href="{{ route('admin.products.index') }}" class="px-4 py-2 border border-gray-200 rounded-xl text-sm text-gray-600 hover:bg-gray-50">Clear</a>
             @endif
 
@@ -147,8 +162,21 @@
             <span class="text-xs text-gray-400 ml-1">— {{ $products->total() }} result(s)</span>
         </div>
         @endif
+
+        @if(request('sort_by') === 'manual' && !request('category'))
+        <div class="mt-3 pt-3 border-t border-gray-100 text-xs text-yellow-700 bg-yellow-50 rounded-lg px-3 py-2">
+            Pick a single category above to reorder its products with the ↑/↓ arrows — manual order is set per category.
+        </div>
+        @endif
     </form>
 </div>
+
+@if($pendingApprovalCount > 0 && request('approval_status') !== 'pending')
+<div class="mb-6 bg-yellow-50 border border-yellow-200 text-yellow-800 px-4 py-3 rounded-xl text-sm flex items-center justify-between">
+    <span>{{ $pendingApprovalCount }} vendor-submitted product(s) waiting for approval.</span>
+    <a href="{{ route('admin.products.index', ['approval_status' => 'pending']) }}" class="font-semibold hover:underline">Review now →</a>
+</div>
+@endif
 
 <div class="bg-white rounded-2xl shadow-sm overflow-hidden">
     <table class="w-full">
@@ -159,6 +187,7 @@
                 <th class="px-6 py-3 text-right">Price</th>
                 <th class="px-6 py-3 text-center">Stock</th>
                 <th class="px-6 py-3 text-center">Status</th>
+                <th class="px-6 py-3 text-center">Approval</th>
                 <th class="px-6 py-3 text-center">Actions</th>
             </tr>
         </thead>
@@ -185,6 +214,7 @@
                                     @if($product->is_featured)<span class="text-xs bg-yellow-100 text-yellow-700 px-1.5 py-0.5 rounded-full">Featured</span>@endif
                                     @if($product->sale_price)<span class="text-xs bg-red-100 text-red-600 px-1.5 py-0.5 rounded-full">Sale</span>@endif
                                 </div>
+                                @if($product->seller)<p class="text-xs text-indigo-500 mt-0.5">Sold by {{ $product->seller->business_name }}</p>@endif
                             </div>
                         </div>
                     </td>
@@ -211,7 +241,55 @@
                         </span>
                     </td>
                     <td class="px-6 py-4 text-center">
+                        @php
+                            $approvalColor = match($product->approval_status) {
+                                'pending' => 'bg-yellow-100 text-yellow-700',
+                                'rejected' => 'bg-red-100 text-red-700',
+                                default => 'bg-green-100 text-green-700',
+                            };
+                        @endphp
+                        <span class="px-2 py-1 rounded-full text-xs font-medium {{ $approvalColor }}">{{ ucfirst($product->approval_status) }}</span>
+                        @if($product->approval_status === 'pending')
+                        <div class="flex flex-col items-center gap-1.5 mt-2">
+                            <form action="{{ route('admin.products.approve', $product->id) }}" method="POST" class="flex items-center gap-1">
+                                @csrf @method('PATCH')
+                                <select name="category_id" class="border border-gray-200 rounded-lg text-xs px-1 py-0.5">
+                                    @foreach($categories as $cat)
+                                        <option value="{{ $cat->id }}" {{ $product->category_id == $cat->id ? 'selected' : '' }}>{{ $cat->name }}</option>
+                                        @foreach($cat->children ?? [] as $child)
+                                            <option value="{{ $child->id }}" {{ $product->category_id == $child->id ? 'selected' : '' }}>↳ {{ $child->name }}</option>
+                                        @endforeach
+                                    @endforeach
+                                </select>
+                                <button type="submit" class="text-green-600 hover:text-green-800 text-xs font-medium">Approve</button>
+                            </form>
+                            <form action="{{ route('admin.products.reject', $product->id) }}" method="POST"
+                                  onsubmit="const r = prompt('Rejection reason:'); if (!r) return false; this.querySelector('[name=rejection_reason]').value = r; return true;">
+                                @csrf @method('PATCH')
+                                <input type="hidden" name="rejection_reason">
+                                <button type="submit" class="text-red-500 hover:text-red-700 text-xs font-medium">Reject</button>
+                            </form>
+                        </div>
+                        @elseif($product->approval_status === 'rejected' && $product->rejection_reason)
+                        <p class="text-xs text-gray-400 mt-1 max-w-32 truncate" title="{{ $product->rejection_reason }}">{{ $product->rejection_reason }}</p>
+                        @endif
+                    </td>
+                    <td class="px-6 py-4 text-center">
                         <div class="flex items-center justify-center space-x-2">
+                            @if(request('sort_by') === 'manual' && request('category') == $product->category_id)
+                                <form action="{{ route('admin.products.move-up', $product->id) }}" method="POST">
+                                    @csrf @method('PATCH')
+                                    <button type="submit" class="text-gray-400 hover:text-indigo-600" title="Move up">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/></svg>
+                                    </button>
+                                </form>
+                                <form action="{{ route('admin.products.move-down', $product->id) }}" method="POST">
+                                    @csrf @method('PATCH')
+                                    <button type="submit" class="text-gray-400 hover:text-indigo-600" title="Move down">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                                    </button>
+                                </form>
+                            @endif
                             <a href="{{ route('admin.products.edit', $product->id) }}" class="text-indigo-600 hover:text-indigo-800 text-sm font-medium">Edit</a>
                             <form action="{{ route('admin.products.destroy', $product->id) }}" method="POST" onsubmit="return confirm('Delete this product?')">
                                 @csrf @method('DELETE')
@@ -222,7 +300,7 @@
                 </tr>
             @empty
                 <tr>
-                    <td colspan="6" class="px-6 py-12 text-center text-gray-400">No products found. <a href="{{ route('admin.products.create') }}" class="text-indigo-600">Add one</a>.</td>
+                    <td colspan="7" class="px-6 py-12 text-center text-gray-400">No products found. <a href="{{ route('admin.products.create') }}" class="text-indigo-600">Add one</a>.</td>
                 </tr>
             @endforelse
         </tbody>

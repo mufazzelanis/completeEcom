@@ -63,9 +63,12 @@ $adminNavIndex = [
     ['label' => 'Batch / Lot', 'url' => route('admin.batches.index'), 'group' => 'Inventory'],
     ['label' => 'Barcodes', 'url' => route('admin.barcodes.index'), 'group' => 'Inventory'],
     ['label' => 'SKU Management', 'url' => route('admin.sku-management.index'), 'group' => 'Inventory'],
-    ['label' => 'Vendors', 'url' => route('admin.vendors.index'), 'group' => 'Inventory'],
     ['label' => 'Suppliers', 'url' => route('admin.suppliers.index'), 'group' => 'Inventory'],
     ['label' => 'Purchases', 'url' => route('admin.purchases.index'), 'group' => 'Inventory'],
+    ['label' => 'All Vendors', 'url' => route('admin.vendors.index'), 'group' => 'Vendors'],
+    ['label' => 'Seller Payments', 'url' => route('admin.vendor-payments.index'), 'group' => 'Vendors'],
+    ['label' => 'Pending Vendor Products', 'url' => route('admin.products.index', ['approval_status' => 'pending']), 'group' => 'Vendors'],
+    ['label' => 'Pending Vendor Categories', 'url' => route('admin.categories.index'), 'group' => 'Vendors'],
     ['label' => 'Orders', 'url' => route('admin.orders.index'), 'group' => 'Sales'],
     ['label' => 'Returns', 'url' => route('admin.returns.index'), 'group' => 'Sales'],
     ['label' => 'Payments', 'url' => route('admin.payments.index'), 'group' => 'Sales'],
@@ -97,6 +100,7 @@ $adminNavIndex = [
     ['label' => 'Roles & Permissions', 'url' => route('admin.roles.index'), 'group' => 'People'],
     ['label' => 'Support Tickets', 'url' => route('admin.support-tickets.index'), 'group' => 'Support'],
     ['label' => 'Fraud Alerts', 'url' => route('admin.orders.index', ['fraud' => 1]), 'group' => 'Security'],
+    ['label' => 'Activity Log', 'url' => route('admin.activity-logs.index'), 'group' => 'Security'],
     ['label' => 'Audit Logs', 'url' => route('admin.audit-logs.index'), 'group' => 'Security'],
     // Settings sub-pages (labels match resources/views/admin/settings/layout.blade.php)
     ['label' => 'Two-Factor Authentication', 'url' => route('admin.two-factor.show'), 'group' => 'Settings'],
@@ -204,7 +208,9 @@ $adminNavIndex = [
             <a href="<?php echo e(route('admin.products.index')); ?>"
                 class="flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium transition <?php echo e(request()->routeIs('admin.products.index') || request()->routeIs('admin.products.show') || request()->routeIs('admin.products.edit') ? 'bg-orange-600 text-white' : 'text-gray-300 hover:bg-gray-800'); ?>">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
-                <span>All Products</span>
+                <span class="flex-1">All Products</span>
+                <?php $pendingProductCount = \App\Models\Product::where('approval_status', 'pending')->count(); ?>
+                <?php if($pendingProductCount > 0): ?><span class="bg-yellow-500 text-white text-xs rounded-full px-1.5 py-0.5 font-semibold"><?php echo e($pendingProductCount); ?></span><?php endif; ?>
             </a>
             <a href="<?php echo e(route('admin.products.create')); ?>"
                 class="flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium transition <?php echo e(request()->routeIs('admin.products.create') ? 'bg-orange-600 text-white' : 'text-gray-300 hover:bg-gray-800'); ?>">
@@ -235,6 +241,38 @@ $adminNavIndex = [
                 class="flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium transition <?php echo e(request()->routeIs('admin.tags.*') ? 'bg-orange-600 text-white' : 'text-gray-300 hover:bg-gray-800'); ?>">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
                 <span>Tags</span>
+            </a>
+
+            
+            <div class="pt-4 pb-1">
+                <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider px-3">Vendors</p>
+            </div>
+            <a href="<?php echo e(route('admin.vendors.index')); ?>"
+                class="flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium transition <?php echo e(request()->routeIs('admin.vendors.*') ? 'bg-orange-600 text-white' : 'text-gray-300 hover:bg-gray-800'); ?>">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h18v4H3V3zm0 7h18v11H3V10zm4 4h4"/></svg>
+                <span class="flex-1">All Vendors</span>
+                <?php $pendingVendors = \App\Models\Vendor::where('status','pending')->count(); ?>
+                <?php if($pendingVendors > 0): ?>
+                <span class="bg-orange-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center flex-shrink-0"><?php echo e($pendingVendors > 9 ? '9+' : $pendingVendors); ?></span>
+                <?php endif; ?>
+            </a>
+            <a href="<?php echo e(route('admin.vendor-payments.index')); ?>"
+                class="flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium transition <?php echo e(request()->routeIs('admin.vendor-payments.*') ? 'bg-orange-600 text-white' : 'text-gray-300 hover:bg-gray-800'); ?>">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3v-6m-3 6v-1m1-5V4a1 1 0 00-1-1H4a1 1 0 00-1 1v16a1 1 0 001 1h16a1 1 0 001-1V8a1 1 0 00-1-1h-5a1 1 0 01-1-1V4"/></svg>
+                <span>Seller Payments</span>
+            </a>
+            <a href="<?php echo e(route('admin.products.index', ['approval_status' => 'pending'])); ?>"
+                class="flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium transition <?php echo e(request()->routeIs('admin.products.index') && request('approval_status') === 'pending' ? 'bg-orange-600 text-white' : 'text-gray-300 hover:bg-gray-800'); ?>">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+                <span class="flex-1">Pending Products</span>
+                <?php if($pendingProductCount > 0): ?><span class="bg-yellow-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center flex-shrink-0"><?php echo e($pendingProductCount > 9 ? '9+' : $pendingProductCount); ?></span><?php endif; ?>
+            </a>
+            <?php $pendingCategoryCount = \App\Models\Category::where('approval_status', 'pending')->count(); ?>
+            <a href="<?php echo e(route('admin.categories.index')); ?>"
+                class="flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium transition <?php echo e(request()->routeIs('admin.categories.*') ? 'bg-orange-600 text-white' : 'text-gray-300 hover:bg-gray-800'); ?>">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
+                <span class="flex-1">Pending Categories</span>
+                <?php if($pendingCategoryCount > 0): ?><span class="bg-yellow-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center flex-shrink-0"><?php echo e($pendingCategoryCount > 9 ? '9+' : $pendingCategoryCount); ?></span><?php endif; ?>
             </a>
 
             
@@ -292,15 +330,6 @@ $adminNavIndex = [
                 class="flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium transition <?php echo e(request()->routeIs('admin.sku-management.*') ? 'bg-orange-600 text-white' : 'text-gray-300 hover:bg-gray-800'); ?>">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
                 <span>SKU Management</span>
-            </a>
-            <a href="<?php echo e(route('admin.vendors.index')); ?>"
-                class="flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium transition <?php echo e(request()->routeIs('admin.vendors.*') ? 'bg-orange-600 text-white' : 'text-gray-300 hover:bg-gray-800'); ?>">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h18v4H3V3zm0 7h18v11H3V10zm4 4h4"/></svg>
-                <span>Vendors</span>
-                <?php $pendingVendors = \App\Models\Vendor::where('status','pending')->count(); ?>
-                <?php if($pendingVendors > 0): ?>
-                <span class="ml-auto bg-orange-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center flex-shrink-0"><?php echo e($pendingVendors > 9 ? '9+' : $pendingVendors); ?></span>
-                <?php endif; ?>
             </a>
             <a href="<?php echo e(route('admin.suppliers.index')); ?>"
                 class="flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium transition <?php echo e(request()->routeIs('admin.suppliers.*') ? 'bg-orange-600 text-white' : 'text-gray-300 hover:bg-gray-800'); ?>">
@@ -518,6 +547,11 @@ $adminNavIndex = [
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
                 <span class="flex-1">Fraud Alerts</span>
                 <?php if($fraudFlagged > 0): ?><span class="bg-red-500 text-white text-xs rounded-full px-1.5 py-0.5 font-semibold"><?php echo e($fraudFlagged); ?></span><?php endif; ?>
+            </a>
+            <a href="<?php echo e(route('admin.activity-logs.index')); ?>"
+                class="flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium transition <?php echo e(request()->routeIs('admin.activity-logs.*') ? 'bg-orange-600 text-white' : 'text-gray-300 hover:bg-gray-800'); ?>">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                <span>Activity Log</span>
             </a>
             <a href="<?php echo e(route('admin.audit-logs.index')); ?>"
                 class="flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium transition <?php echo e(request()->routeIs('admin.audit-logs.*') ? 'bg-orange-600 text-white' : 'text-gray-300 hover:bg-gray-800'); ?>">

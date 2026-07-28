@@ -8,6 +8,8 @@ use App\Models\Product;
 use App\Models\ProductRecommendation;
 use App\Models\PromoCode;
 use App\Models\Setting;
+use App\Services\ActivityLogger;
+use App\Services\ShippingCalculator;
 use Illuminate\Http\Request;
 
 class CartController extends Controller
@@ -75,7 +77,7 @@ class CartController extends Controller
             $discount += $pointsDiscount;
         }
 
-        $shipping = $subtotal > 0 ? 60 : 0;
+        $shipping = $subtotal > 0 ? ShippingCalculator::calculate($subtotal, ShippingCalculator::ZONE_DHAKA) : 0;
         $total = $subtotal - $discount + $shipping;
 
         $cartProductIds = $cartItems->pluck('product_id');
@@ -106,6 +108,10 @@ class CartController extends Controller
         $product = Product::findOrFail($request->product_id);
 
         if ($product->available_stock < $request->quantity) {
+            if ($request->wantsJson()) {
+                return response()->json(['status' => 'error', 'message' => 'Insufficient stock.'], 422);
+            }
+
             return back()->with('error', 'Insufficient stock.');
         }
 
@@ -125,6 +131,15 @@ class CartController extends Controller
             ]);
         }
 
+        ActivityLogger::log('cart.add', "Added \"{$product->name}\" x{$request->quantity} to cart", $product, ['quantity' => $request->quantity]);
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'status' => 'added',
+                'cart_count' => (int) $this->getCartQuery()->sum('quantity'),
+            ]);
+        }
+
         return back()->with('success', 'Product added to cart!');
     }
 
@@ -138,7 +153,31 @@ class CartController extends Controller
 
     public function remove(Cart $cart)
     {
+        $product = $cart->product;
         $cart->delete();
+
+        if ($product) {
+            ActivityLogger::log('cart.remove', "Removed \"{$product->name}\" from cart", $product);
+        }
+
+        return back()->with('success', 'Item removed from cart.');
+    }
+
+    public function removeByProduct(Request $request, Product $product)
+    {
+        $cartItem = $this->getCartQuery()->where('product_id', $product->id)->first();
+
+        if ($cartItem) {
+            $cartItem->delete();
+            ActivityLogger::log('cart.remove', "Removed \"{$product->name}\" from cart", $product);
+        }
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'status' => 'removed',
+                'cart_count' => (int) $this->getCartQuery()->sum('quantity'),
+            ]);
+        }
 
         return back()->with('success', 'Item removed from cart.');
     }

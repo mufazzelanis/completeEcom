@@ -6,6 +6,9 @@
     $rating = $product->reviews->avg('rating') ?? 0;
     $reviewCount = $product->reviews->count();
     $isWishlisted = auth()->check() ? \App\Models\Wishlist::where('user_id', auth()->id())->where('product_id', $product->id)->exists() : false;
+    $isInCart = auth()->check()
+        ? \App\Models\Cart::where('user_id', auth()->id())->where('product_id', $product->id)->exists()
+        : \App\Models\Cart::where('session_id', session()->getId())->where('product_id', $product->id)->exists();
 @endphp
 <div class="h-full flex flex-col bg-white rounded-lg shadow-sm hover:shadow-lg transition-all duration-300 group overflow-hidden border border-transparent hover:border-orange-200 relative">
     <a href="{{ route('products.show', $product->slug) }}" class="block relative">
@@ -31,7 +34,7 @@
                 </span>
             @endif
 
-            <div class="absolute top-2 right-2 flex flex-col gap-1.5 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-200">
+            <div class="absolute top-2 right-2 flex flex-col items-end gap-1.5 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-200">
                 <button onclick="event.preventDefault(); toggleWishlist({{ $product->id }}, this)"
                     class="w-8 h-8 bg-white rounded-full shadow-md flex items-center justify-center hover:bg-red-50 transition {{ $isWishlisted ? 'text-red-500' : 'text-gray-400 hover:text-red-500' }}"
                     title="Add to Wishlist">
@@ -39,6 +42,35 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
                     </svg>
                 </button>
+
+                {{-- Quick add-to-cart — toggles this product in/out of the cart via AJAX, no page
+                     reload, so a customer browsing the grid can select several products without
+                     losing the "added" state on the ones they already picked. The button reflects
+                     actual cart membership (computed above as $isInCart) rather than a timed
+                     animation, so it stays selected until the customer explicitly un-selects it.
+                     Only shown for simple products with stock: variants aren't wired into the
+                     cart-add flow at all, so there's no UI here to pick one. --}}
+                @if($product->isSimple() && $product->available_stock > 0)
+                    @php
+                        $quickAddStyle = setting('add_to_cart_button_style', 'icon');
+                        $addToCartText = setting('add_to_cart_button_text', 'Add to Cart');
+                        $cartIconSvg = '<svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>';
+                        $checkIconSvg = '<svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>';
+                    @endphp
+                    <button onclick="event.preventDefault(); toggleCartItem({{ $product->id }}, this)"
+                        data-in-cart="{{ $isInCart ? 'true' : 'false' }}"
+                        data-icon-default='{!! $cartIconSvg !!}'
+                        data-icon-added='{!! $checkIconSvg !!}'
+                        data-label-default="{{ $addToCartText }}"
+                        data-label-added="Added"
+                        class="quick-add-btn {{ $quickAddStyle === 'text' ? 'pl-2 pr-3 h-8' : 'w-8 h-8' }} rounded-full shadow-md flex items-center justify-center gap-1 transition {{ $isInCart ? 'bg-orange-500 text-white hover:bg-orange-600' : 'bg-white text-gray-500 hover:bg-orange-50 hover:text-orange-500' }}"
+                        title="{{ $isInCart ? 'Remove from Cart' : $addToCartText }}">
+                        <span class="quick-add-icon">{!! $isInCart ? $checkIconSvg : $cartIconSvg !!}</span>
+                        @if($quickAddStyle === 'text')
+                            <span class="text-[10px] font-bold whitespace-nowrap quick-add-label">{{ $isInCart ? 'Added' : $addToCartText }}</span>
+                        @endif
+                    </button>
+                @endif
             </div>
 
             @if($product->available_stock <= 0)

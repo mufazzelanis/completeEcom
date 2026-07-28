@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Order;
+use App\Services\ActivityLogger;
 use App\Services\AuditLogger;
 use App\Services\FraudDetectionService;
 use App\Services\Notifications\NotificationDispatcher;
@@ -57,6 +58,8 @@ class OrderController extends Controller
             $order->refresh();
             $this->notifyIfFraudFlagged($order, $fraud);
         }
+
+        ActivityLogger::log('order.view', "Admin viewed order #{$order->order_number}", $order);
 
         return view('admin.orders.show', compact('order'));
     }

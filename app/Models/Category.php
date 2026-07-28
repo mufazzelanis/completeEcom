@@ -10,9 +10,17 @@ class Category extends Model
     protected $fillable = [
         'name', 'slug', 'description', 'image', 'parent_id', 'sort_order', 'is_active',
         'meta_title', 'meta_description', 'meta_keywords', 'canonical_url', 'og_image',
+        'approval_status', 'rejection_reason', 'vendor_id',
+        'noindex', 'nofollow', 'nosnippet', 'noimageindex', 'robots_meta', 'redirect_url',
     ];
 
-    protected $casts = ['is_active' => 'boolean'];
+    protected $casts = [
+        'is_active' => 'boolean',
+        'noindex' => 'boolean',
+        'nofollow' => 'boolean',
+        'nosnippet' => 'boolean',
+        'noimageindex' => 'boolean',
+    ];
 
     protected static function boot()
     {
@@ -37,6 +45,22 @@ class Category extends Model
     public function children()
     {
         return $this->hasMany(Category::class, 'parent_id');
+    }
+
+    public function vendor()
+    {
+        return $this->belongsTo(Vendor::class);
+    }
+
+    /**
+     * Same dual-gate shape as Product::scopeActive() — is_active is the
+     * admin show/hide toggle, approval_status is the separate vendor-proposal
+     * gate, so an admin hiding an already-approved category can't be confused
+     * with one still awaiting review.
+     */
+    public function scopeActive($query)
+    {
+        return $query->where('is_active', true)->where('approval_status', 'approved');
     }
 
     public function getRouteKeyName()

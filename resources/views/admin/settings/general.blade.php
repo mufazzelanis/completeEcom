@@ -113,6 +113,20 @@
                    class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-orange-500">
             <p class="text-xs text-gray-400 mt-1">Shown on every product card and the product page — skips the cart and goes straight to checkout for that one item.</p>
         </div>
+        <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Quick "Add to Cart" Button Style</label>
+            <select name="add_to_cart_button_style" class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-orange-500">
+                <option value="icon" {{ setting('add_to_cart_button_style', 'icon') === 'icon' ? 'selected' : '' }}>Icon only</option>
+                <option value="text" {{ setting('add_to_cart_button_style', 'icon') === 'text' ? 'selected' : '' }}>Icon + Text</option>
+            </select>
+            <p class="text-xs text-gray-400 mt-1">Small quick-add button shown on the top-right of each product card (adds 1 unit straight to cart, no page reload).</p>
+        </div>
+        <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Quick "Add to Cart" Button Text</label>
+            <input type="text" name="add_to_cart_button_text" value="{{ setting('add_to_cart_button_text', 'Add to Cart') }}" maxlength="40"
+                   class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-orange-500">
+            <p class="text-xs text-gray-400 mt-1">Only shown when the style above is set to "Icon + Text".</p>
+        </div>
     </div>
 </div>
 

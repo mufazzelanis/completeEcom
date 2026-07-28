@@ -2,6 +2,7 @@
 $siteName     = setting('site_name', 'ShopVista');
 $siteTagline  = setting('site_tagline', 'Your one-stop shop for everything you need.');
 $logoUrl      = setting_file_url('site_logo');
+$logoMobileUrl = setting_file_url('site_logo_mobile');
 $faviconUrl   = setting_file_url('favicon');
 $primaryColor   = setting('primary_color', '#ea580c');
 $secondaryColor = setting('secondary_color', '#ec4899');
@@ -293,8 +294,8 @@ $pageTwitterImage = trim($__env->yieldContent('twitter_image', $pageOgImage));
 @if($gtmId)<noscript><iframe src="https://www.googletagmanager.com/ns.html?id={{ $gtmId }}" height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>@endif
 
 @php
-$navCategories = \App\Models\Category::with(['children' => fn($q) => $q->where('is_active', true)->orderBy('sort_order')])
-    ->whereNull('parent_id')->where('is_active', true)->orderBy('sort_order')->take(12)->get();
+$navCategories = \App\Models\Category::with(['children' => fn($q) => $q->active()->orderBy('sort_order')])
+    ->whereNull('parent_id')->active()->orderBy('sort_order')->take(12)->get();
 @endphp
 
 {{-- Top Utility Bar --}}
@@ -419,7 +420,7 @@ $navCategories = \App\Models\Category::with(['children' => fn($q) => $q->where('
                 <a href="{{ route('home') }}" class="block px-3 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-orange-50 dark:hover:bg-gray-800 hover:text-orange-600 rounded-lg transition">{{ t('header.home', 'Home', [], 'header') }}</a>
                 <a href="{{ route('shop.index') }}" class="block px-3 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-orange-50 dark:hover:bg-gray-800 hover:text-orange-600 rounded-lg transition">{{ t('header.shop_all', 'Shop All', [], 'header') }}</a>
                 @php
-                    $mobileCategories = \App\Models\Category::whereNull('parent_id')->withCount('products')->orderBy('sort_order')->limit(8)->get();
+                    $mobileCategories = \App\Models\Category::whereNull('parent_id')->active()->withCount('products')->orderBy('sort_order')->limit(8)->get();
                 @endphp
                 @if($mobileCategories->count() > 0)
                     <div x-data="{ showCats: false }">
@@ -655,6 +656,69 @@ async function toggleWishlist(productId, btn) {
         }
     } catch (e) {
         window.location.href = '/login';
+    }
+}
+</script>
+
+{{-- Quick Add to Cart AJAX (product card grids). The button's selected/added state reflects
+     actual cart membership (data-in-cart), so picking one product doesn't unselect another —
+     each button toggles independently and stays selected until explicitly un-selected. --}}
+<script>
+function setQuickAddButtonState(btn, inCart) {
+    btn.dataset.inCart = inCart ? 'true' : 'false';
+
+    const icon = btn.querySelector('.quick-add-icon');
+    if (icon) icon.innerHTML = inCart ? btn.dataset.iconAdded : btn.dataset.iconDefault;
+
+    const label = btn.querySelector('.quick-add-label');
+    if (label) label.textContent = inCart ? btn.dataset.labelAdded : btn.dataset.labelDefault;
+
+    btn.title = inCart ? 'Remove from Cart' : btn.dataset.labelDefault;
+
+    btn.classList.toggle('bg-orange-500', inCart);
+    btn.classList.toggle('text-white', inCart);
+    btn.classList.toggle('hover:bg-orange-600', inCart);
+    btn.classList.toggle('bg-white', !inCart);
+    btn.classList.toggle('text-gray-500', !inCart);
+    btn.classList.toggle('hover:bg-orange-50', !inCart);
+    btn.classList.toggle('hover:text-orange-500', !inCart);
+}
+
+async function toggleCartItem(productId, btn) {
+    if (btn.disabled) return;
+    const wasInCart = btn.dataset.inCart === 'true';
+    btn.disabled = true;
+
+    try {
+        const res = await fetch(wasInCart ? '/cart/product/' + productId : '{{ route('cart.add') }}', {
+            method: wasInCart ? 'DELETE' : 'POST',
+            headers: {
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            },
+            body: wasInCart ? null : JSON.stringify({ product_id: productId, quantity: 1 })
+        });
+        const data = await res.json();
+
+        if (res.ok && (data.status === 'added' || data.status === 'removed')) {
+            setQuickAddButtonState(btn, data.status === 'added');
+
+            const badge = document.getElementById('header-cart-count');
+            if (badge) {
+                badge.textContent = data.cart_count;
+                badge.classList.toggle('hidden', data.cart_count <= 0);
+                badge.classList.remove('pulse-badge');
+                void badge.offsetWidth; // restart the CSS animation
+                badge.classList.add('pulse-badge');
+            }
+        } else {
+            alert(data.message || 'Could not update your cart.');
+        }
+    } catch (e) {
+        alert('Something went wrong. Please try again.');
+    } finally {
+        btn.disabled = false;
     }
 }
 </script>

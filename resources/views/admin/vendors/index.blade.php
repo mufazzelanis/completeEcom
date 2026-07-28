@@ -39,8 +39,19 @@
             @forelse($vendors as $vendor)
             <tr class="hover:bg-gray-50 transition">
                 <td class="px-6 py-4">
-                    <p class="text-sm font-medium text-gray-900">{{ $vendor->business_name }}</p>
-                    @if($vendor->email)<p class="text-xs text-gray-400">{{ $vendor->email }}</p>@endif
+                    <div class="flex items-center gap-3">
+                        @if($vendor->logo)
+                            <img src="{{ Storage::url($vendor->logo) }}" alt="{{ $vendor->business_name }}" class="w-9 h-9 rounded-full object-cover flex-shrink-0">
+                        @else
+                            <div class="w-9 h-9 rounded-full bg-indigo-100 flex items-center justify-center flex-shrink-0">
+                                <span class="text-indigo-600 font-bold text-xs">{{ strtoupper(substr($vendor->business_name, 0, 1)) }}</span>
+                            </div>
+                        @endif
+                        <div>
+                            <p class="text-sm font-medium text-gray-900">{{ $vendor->business_name }}</p>
+                            @if($vendor->email)<p class="text-xs text-gray-400">{{ $vendor->email }}</p>@endif
+                        </div>
+                    </div>
                 </td>
                 <td class="px-6 py-4">
                     <p class="text-sm text-gray-700">{{ $vendor->user->name }}</p>
@@ -49,6 +60,9 @@
                 <td class="px-6 py-4 text-center text-sm text-gray-600">{{ $vendor->products_count }}</td>
                 <td class="px-6 py-4 text-center">
                     <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ $vendor->statusBadge() }}">{{ ucfirst($vendor->status) }}</span>
+                    @if($vendor->profile_status === 'pending')
+                    <span class="mt-1 flex justify-center items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-700">Profile Update</span>
+                    @endif
                 </td>
                 <td class="px-6 py-4 text-right">
                     <div class="flex justify-end items-center space-x-3">

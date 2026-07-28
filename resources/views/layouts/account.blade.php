@@ -1,6 +1,7 @@
 @php
 $siteName = setting('site_name', 'ShopVista');
 $logoUrl  = setting_file_url('site_logo');
+$logoMobileUrl = setting_file_url('site_logo_mobile');
 $unread   = \App\Models\UserNotification::where('user_id', auth()->id())->where('is_read', false)->count();
 $cartCount = \App\Models\Cart::where('user_id', auth()->id())->sum('quantity');
 @endphp
@@ -22,14 +23,28 @@ $cartCount = \App\Models\Cart::where('user_id', auth()->id())->sum('quantity');
 <nav class="bg-white shadow-sm sticky top-0 z-50 border-b border-gray-100">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between">
         <a href="{{ route('home') }}" class="flex items-center gap-2">
-            @if($logoUrl)
-                <img src="{{ $logoUrl }}" alt="{{ $siteName }}" class="h-7 max-w-[120px] object-contain">
-            @else
-                <div class="w-7 h-7 bg-orange-500 rounded-lg flex items-center justify-center">
-                    <span class="text-white font-bold text-sm">{{ strtoupper(substr($siteName, 0, 1)) }}</span>
-                </div>
-                <span class="font-bold text-orange-600">{{ $siteName }}</span>
-            @endif
+            <div class="md:hidden flex items-center gap-2">
+                @if($logoMobileUrl)
+                    <img src="{{ $logoMobileUrl }}" alt="{{ $siteName }}" class="h-7 max-w-[120px] object-contain">
+                @elseif($logoUrl)
+                    <img src="{{ $logoUrl }}" alt="{{ $siteName }}" class="h-7 max-w-[120px] object-contain">
+                @else
+                    <div class="w-7 h-7 bg-orange-500 rounded-lg flex items-center justify-center">
+                        <span class="text-white font-bold text-sm">{{ strtoupper(substr($siteName, 0, 1)) }}</span>
+                    </div>
+                    <span class="font-bold text-orange-600">{{ $siteName }}</span>
+                @endif
+            </div>
+            <div class="hidden md:flex items-center gap-2">
+                @if($logoUrl)
+                    <img src="{{ $logoUrl }}" alt="{{ $siteName }}" class="h-7 max-w-[120px] object-contain">
+                @else
+                    <div class="w-7 h-7 bg-orange-500 rounded-lg flex items-center justify-center">
+                        <span class="text-white font-bold text-sm">{{ strtoupper(substr($siteName, 0, 1)) }}</span>
+                    </div>
+                    <span class="font-bold text-orange-600">{{ $siteName }}</span>
+                @endif
+            </div>
         </a>
 
         <div class="flex items-center gap-3">
@@ -80,6 +95,7 @@ $cartCount = \App\Models\Cart::where('user_id', auth()->id())->sum('quantity');
             @php
                 $mobileNav = fn(string $route, string $icon, string $label, string $match = '') =>
                     ['route' => $route, 'icon' => $icon, 'label' => $label, 'match' => $match ?: $route];
+                $isApprovedVendor = auth()->user()->vendor?->status === 'approved';
                 $mobileItems = [
                     $mobileNav('account.dashboard', 'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6', 'Dashboard'),
                     $mobileNav('account.profile', 'M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z', 'My Profile'),
@@ -89,7 +105,9 @@ $cartCount = \App\Models\Cart::where('user_id', auth()->id())->sum('quantity');
                     $mobileNav('wishlist.index', 'M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z', 'Wishlist', 'wishlist.*'),
                     $mobileNav('account.reviews.index', 'M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z', 'My Reviews', 'account.reviews.*'),
                     $mobileNav('account.referral', 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z', 'Referral Program'),
-                    $mobileNav('vendor.apply', 'M3 3h18v4H3V3zm0 7h18v11H3V10zm4 4h4', 'Become a Seller'),
+                    $isApprovedVendor
+                        ? $mobileNav('seller.dashboard', 'M3 3h18v4H3V3zm0 7h18v11H3V10zm4 4h4', 'Seller Dashboard')
+                        : $mobileNav('vendor.apply', 'M3 3h18v4H3V3zm0 7h18v11H3V10zm4 4h4', 'Become a Seller'),
                     $mobileNav('account.support.index', 'M18 2a2 2 0 012 2v12a2 2 0 01-2 2H6l-4 4V4a2 2 0 012-2h14z', 'Support Tickets', 'account.support.*'),
                     $mobileNav('account.notifications', 'M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9', 'Notifications', 'account.notifications*'),
                     $mobileNav('account.security', 'M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z', 'Security'),
@@ -139,6 +157,7 @@ $cartCount = \App\Models\Cart::where('user_id', auth()->id())->sum('quantity');
                     @php
                         $navItem = fn(string $route, string $icon, string $label, string $match = '') =>
                             ['route' => $route, 'icon' => $icon, 'label' => $label, 'match' => $match ?: $route];
+                        $isApprovedVendor = auth()->user()->vendor?->status === 'approved';
                         $items = [
                             ['group' => 'Account'],
                             $navItem('account.dashboard', 'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6', 'Dashboard'),
@@ -151,7 +170,9 @@ $cartCount = \App\Models\Cart::where('user_id', auth()->id())->sum('quantity');
                             ['group' => 'Rewards'],
                             $navItem('account.reviews.index', 'M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z', 'My Reviews', 'account.reviews.*'),
                             $navItem('account.referral', 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z', 'Referral Program'),
-                            $navItem('vendor.apply', 'M3 3h18v4H3V3zm0 7h18v11H3V10zm4 4h4', 'Become a Seller'),
+                            $isApprovedVendor
+                                ? $navItem('seller.dashboard', 'M3 3h18v4H3V3zm0 7h18v11H3V10zm4 4h4', 'Seller Dashboard')
+                                : $navItem('vendor.apply', 'M3 3h18v4H3V3zm0 7h18v11H3V10zm4 4h4', 'Become a Seller'),
                             ['group' => 'Support'],
                             $navItem('account.support.index', 'M18 2a2 2 0 012 2v12a2 2 0 01-2 2H6l-4 4V4a2 2 0 012-2h14z', 'Support Tickets', 'account.support.*'),
                             ['group' => 'Settings'],

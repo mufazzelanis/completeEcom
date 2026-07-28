@@ -22,7 +22,7 @@ class SitemapController extends Controller
         $urls[] = ['loc' => route('shop.index'), 'changefreq' => 'daily', 'priority' => '0.9'];
         $urls[] = ['loc' => route('blog.index'), 'changefreq' => 'daily', 'priority' => '0.7'];
 
-        foreach (Category::where('is_active', true)->get() as $category) {
+        foreach (Category::active()->where('noindex', false)->get() as $category) {
             $urls[] = [
                 'loc' => route('shop.category', $category->slug),
                 'lastmod' => $category->updated_at->toAtomString(),
@@ -31,7 +31,11 @@ class SitemapController extends Controller
             ];
         }
 
-        Product::where('is_active', true)->where('noindex', false)->chunk(200, function ($products) use (&$urls) {
+        // Product::active() = is_active AND approval_status=approved — without the
+        // latter check, a vendor's still-pending/rejected product (which defaults to
+        // is_active=true) would get listed here and then 404 when Google crawls it,
+        // since ProductController::show() blocks non-approved products.
+        Product::active()->where('noindex', false)->chunk(200, function ($products) use (&$urls) {
             foreach ($products as $product) {
                 $urls[] = [
                     'loc' => $product->canonical_url ?: route('products.show', $product),

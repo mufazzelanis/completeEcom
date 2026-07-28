@@ -39,5 +39,40 @@
             <input type="file" name="og_image" accept="image/*"
                 class="block w-full text-xs text-gray-600 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-medium file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
         </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 border-t border-gray-100 pt-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Robots Meta</label>
+                <select name="robots_meta" class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    @foreach(['index,follow' => 'Index, Follow (default)', 'noindex,follow' => 'No Index, Follow', 'index,nofollow' => 'Index, No Follow', 'noindex,nofollow' => 'No Index, No Follow'] as $val => $lbl)
+                    <option value="{{ $val }}" {{ old('robots_meta', $seo?->robots_meta ?? 'index,follow') === $val ? 'selected' : '' }}>{{ $lbl }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">301 Redirect URL <span class="text-xs text-gray-400 font-normal">(blank = none)</span></label>
+                <input type="url" name="redirect_url" value="{{ old('redirect_url', $seo?->redirect_url ?? '') }}"
+                    placeholder="https://... (send visitors elsewhere)"
+                    class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            </div>
+        </div>
+
+        <div class="border-t border-gray-100 pt-4">
+            <p class="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3">Search Visibility</p>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                @foreach([
+                    ['noindex', 'No Index'],
+                    ['nofollow', 'No Follow'],
+                    ['nosnippet', 'No Snippet'],
+                    ['noimageindex', 'No Image Index'],
+                ] as [$fname, $flabel])
+                <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" name="{{ $fname }}" value="1" {{ old($fname, $seo?->{$fname} ?? false) ? 'checked' : '' }}
+                        class="rounded text-indigo-600">
+                    <span class="text-sm text-gray-700">{{ $flabel }}</span>
+                </label>
+                @endforeach
+            </div>
+        </div>
     </div>
 </div>

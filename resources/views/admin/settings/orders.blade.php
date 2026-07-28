@@ -120,6 +120,13 @@
                   placeholder="Describe your return and refund policy...">{{ setting('return_policy', '') }}</textarea>
     </div>
     <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Return Window (days)</label>
+        <input type="number" name="return_days" value="{{ setting('return_days', '7') }}"
+               min="0" step="1"
+               class="w-32 border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-orange-500">
+        <p class="text-xs text-gray-400 mt-1">Shown as a "{{ setting('return_days', '7') }}-day return policy" badge on product pages. Set to 0 to hide the badge.</p>
+    </div>
+    <div>
         <label class="block text-sm font-medium text-gray-700 mb-1">Cancellation Policy</label>
         <textarea name="cancellation_policy" rows="4"
                   class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-orange-500"

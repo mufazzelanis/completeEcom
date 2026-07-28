@@ -3,6 +3,7 @@
 namespace App\Listeners;
 
 use App\Models\LoginActivity;
+use App\Services\ActivityLogger;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Request;
@@ -19,6 +20,8 @@ class RecordLoginActivityListener
                     Request::userAgent() ?? '',
                     Request::ip()
                 );
+
+                ActivityLogger::log('login', "{$user->name} logged in", $user);
             }
         } catch (\Throwable $e) {
             Log::error('LoginActivity listener failed: ' . $e->getMessage());

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Product;
 use App\Models\Review;
+use App\Services\ActivityLogger;
 use Illuminate\Http\Request;
 
 class ProductController extends Controller
@@ -14,7 +15,13 @@ class ProductController extends Controller
             return redirect()->away($product->redirect_url, 301);
         }
 
+        $isOwningVendor = auth()->check() && auth()->user()->vendor && $product->seller_id === auth()->user()->vendor->id;
+        if (!$product->isApproved() && !$isOwningVendor) {
+            abort(404);
+        }
+
         $product->increment('views');
+        ActivityLogger::log('product.view', "Viewed product: {$product->name}", $product);
         $product->load([
             'category', 'brand', 'images', 'reviews.user', 'faqs', 'activeFlashSaleProduct',
             'crossSells.recommended.activeFlashSaleProduct',

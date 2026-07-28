@@ -2,6 +2,7 @@
 $siteName     = setting('site_name', 'ShopVista');
 $siteTagline  = setting('site_tagline', 'Your one-stop shop for everything you need.');
 $logoUrl      = setting_file_url('site_logo');
+$logoMobileUrl = setting_file_url('site_logo_mobile');
 $faviconUrl   = setting_file_url('favicon');
 $primaryColor   = setting('primary_color', '#ea580c');
 $secondaryColor = setting('secondary_color', '#ec4899');
@@ -284,8 +285,8 @@ $pageTwitterImage = trim($__env->yieldContent('twitter_image', $pageOgImage));
 <?php if($gtmId): ?><noscript><iframe src="https://www.googletagmanager.com/ns.html?id=<?php echo e($gtmId); ?>" height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript><?php endif; ?>
 
 <?php
-$navCategories = \App\Models\Category::with(['children' => fn($q) => $q->where('is_active', true)->orderBy('sort_order')])
-    ->whereNull('parent_id')->where('is_active', true)->orderBy('sort_order')->take(12)->get();
+$navCategories = \App\Models\Category::with(['children' => fn($q) => $q->active()->orderBy('sort_order')])
+    ->whereNull('parent_id')->active()->orderBy('sort_order')->take(12)->get();
 ?>
 
 
@@ -415,7 +416,7 @@ $navCategories = \App\Models\Category::with(['children' => fn($q) => $q->where('
                 <a href="<?php echo e(route('home')); ?>" class="block px-3 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-orange-50 dark:hover:bg-gray-800 hover:text-orange-600 rounded-lg transition"><?php echo e(t('header.home', 'Home', [], 'header')); ?></a>
                 <a href="<?php echo e(route('shop.index')); ?>" class="block px-3 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-orange-50 dark:hover:bg-gray-800 hover:text-orange-600 rounded-lg transition"><?php echo e(t('header.shop_all', 'Shop All', [], 'header')); ?></a>
                 <?php
-                    $mobileCategories = \App\Models\Category::whereNull('parent_id')->withCount('products')->orderBy('sort_order')->limit(8)->get();
+                    $mobileCategories = \App\Models\Category::whereNull('parent_id')->active()->withCount('products')->orderBy('sort_order')->limit(8)->get();
                 ?>
                 <?php if($mobileCategories->count() > 0): ?>
                     <div x-data="{ showCats: false }">
@@ -536,10 +537,20 @@ unset($__errorArgs, $__bag); ?>
                 <div class="flex items-center gap-2 mb-4">
                     <span class="text-xs text-gray-500"><?php echo e(t('footer.we_accept', 'We accept:', [], 'footer')); ?></span>
                 </div>
-                <div class="flex flex-wrap gap-1.5">
-                    <?php $__currentLoopData = ['Visa', 'Mastercard', 'bKash', 'Nagad', 'COD']; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $method): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-                        <span class="bg-gray-800 text-gray-400 text-[10px] px-2 py-1 rounded font-medium border border-gray-700"><?php echo e($method); ?></span>
-                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                <div class="flex flex-wrap items-center gap-2">
+                    <?php $hasPaymentIcons = false; ?>
+                    <?php for($i = 1; $i <= 8; $i++): ?>
+                        <?php if(setting("payment_icon_{$i}")): ?>
+                            <?php $hasPaymentIcons = true; ?>
+                            <img src="<?php echo e(setting_file_url("payment_icon_{$i}")); ?>" alt="Payment method"
+                                 class="h-6 max-w-[60px] object-contain rounded bg-white/10 px-1">
+                        <?php endif; ?>
+                    <?php endfor; ?>
+                    <?php if(!$hasPaymentIcons): ?>
+                        <?php $__currentLoopData = ['Visa', 'Mastercard', 'bKash', 'Nagad', 'COD']; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $method): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                            <span class="bg-gray-800 text-gray-400 text-[10px] px-2 py-1 rounded font-medium border border-gray-700"><?php echo e($method); ?></span>
+                        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                    <?php endif; ?>
                 </div>
             </div>
 
@@ -650,6 +661,67 @@ async function toggleWishlist(productId, btn) {
         }
     } catch (e) {
         window.location.href = '/login';
+    }
+}
+</script>
+
+
+<script>
+function setQuickAddButtonState(btn, inCart) {
+    btn.dataset.inCart = inCart ? 'true' : 'false';
+
+    const icon = btn.querySelector('.quick-add-icon');
+    if (icon) icon.innerHTML = inCart ? btn.dataset.iconAdded : btn.dataset.iconDefault;
+
+    const label = btn.querySelector('.quick-add-label');
+    if (label) label.textContent = inCart ? btn.dataset.labelAdded : btn.dataset.labelDefault;
+
+    btn.title = inCart ? 'Remove from Cart' : btn.dataset.labelDefault;
+
+    btn.classList.toggle('bg-orange-500', inCart);
+    btn.classList.toggle('text-white', inCart);
+    btn.classList.toggle('hover:bg-orange-600', inCart);
+    btn.classList.toggle('bg-white', !inCart);
+    btn.classList.toggle('text-gray-500', !inCart);
+    btn.classList.toggle('hover:bg-orange-50', !inCart);
+    btn.classList.toggle('hover:text-orange-500', !inCart);
+}
+
+async function toggleCartItem(productId, btn) {
+    if (btn.disabled) return;
+    const wasInCart = btn.dataset.inCart === 'true';
+    btn.disabled = true;
+
+    try {
+        const res = await fetch(wasInCart ? '/cart/product/' + productId : '<?php echo e(route('cart.add')); ?>', {
+            method: wasInCart ? 'DELETE' : 'POST',
+            headers: {
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            },
+            body: wasInCart ? null : JSON.stringify({ product_id: productId, quantity: 1 })
+        });
+        const data = await res.json();
+
+        if (res.ok && (data.status === 'added' || data.status === 'removed')) {
+            setQuickAddButtonState(btn, data.status === 'added');
+
+            const badge = document.getElementById('header-cart-count');
+            if (badge) {
+                badge.textContent = data.cart_count;
+                badge.classList.toggle('hidden', data.cart_count <= 0);
+                badge.classList.remove('pulse-badge');
+                void badge.offsetWidth; // restart the CSS animation
+                badge.classList.add('pulse-badge');
+            }
+        } else {
+            alert(data.message || 'Could not update your cart.');
+        }
+    } catch (e) {
+        alert('Something went wrong. Please try again.');
+    } finally {
+        btn.disabled = false;
     }
 }
 </script>

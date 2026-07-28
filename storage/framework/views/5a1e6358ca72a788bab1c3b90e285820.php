@@ -42,9 +42,8 @@
                 ? \App\Models\Cart::where('user_id', auth()->id())->sum('quantity')
                 : \App\Models\Cart::where('session_id', session()->getId())->sum('quantity');
         ?>
-        <?php if($cartCount > 0): ?>
-            <span class="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-[10px] rounded-full min-w-[18px] h-[18px] flex items-center justify-center font-bold pulse-badge"><?php echo e($cartCount); ?></span>
-        <?php endif; ?>
+        <span id="header-cart-count"
+              class="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-[10px] rounded-full min-w-[18px] h-[18px] flex items-center justify-center font-bold pulse-badge <?php echo e($cartCount > 0 ? '' : 'hidden'); ?>"><?php echo e($cartCount); ?></span>
     </a>
 
     

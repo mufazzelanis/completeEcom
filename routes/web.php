@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AccountController;
 use App\Http\Controllers\AddressController;
+use App\Http\Controllers\Admin\ActivityLogController as AdminActivityLogController;
 use App\Http\Controllers\Admin\AttributeController as AdminAttributeController;
 use App\Http\Controllers\Admin\AuditLogController as AdminAuditLogController;
 use App\Http\Controllers\Admin\BannerController as AdminBannerController;
@@ -52,6 +53,7 @@ use App\Http\Controllers\Admin\SupplierController as AdminSupplierController;
 use App\Http\Controllers\Admin\TagController as AdminTagController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Admin\VendorController as AdminVendorController;
+use App\Http\Controllers\Admin\VendorPaymentController as AdminVendorPaymentController;
 use App\Http\Controllers\Admin\WarehouseController as AdminWarehouseController;
 use App\Http\Controllers\Admin\WarehouseStockController as AdminWarehouseStockController;
 use App\Http\Controllers\BlogController;
@@ -74,6 +76,12 @@ use App\Http\Controllers\SecurityController;
 use App\Http\Controllers\ShopController;
 use App\Http\Controllers\SitemapController;
 use App\Http\Controllers\SupportTicketController;
+use App\Http\Controllers\Seller\CategoryController as SellerCategoryController;
+use App\Http\Controllers\Seller\DashboardController as SellerDashboardController;
+use App\Http\Controllers\Seller\OrderController as SellerOrderController;
+use App\Http\Controllers\Seller\ProductController as SellerProductController;
+use App\Http\Controllers\Seller\ProfileController as SellerProfileController;
+use App\Http\Controllers\Seller\ReportController as SellerReportController;
 use App\Http\Controllers\VendorRegistrationController;
 use App\Http\Controllers\WishlistController;
 use Illuminate\Support\Facades\Route;
@@ -84,16 +92,20 @@ Route::get('/search/suggest', [SearchController::class, 'suggest'])->name('searc
 // SEO: sitemap + robots.txt (public/robots.txt removed so this route is actually reached)
 Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemap');
 Route::get('/robots.txt', function () {
-    $lines = ['User-agent: *'];
+    // The "Enable Sitemap" admin toggle only controls sitemap.xml itself — it must
+    // never also flip into a site-wide "Disallow: /", or an admin turning off the
+    // sitemap feature for an unrelated reason would silently deindex the whole store.
+    $lines = [
+        'User-agent: *',
+        'Disallow: /admin',
+        'Disallow: /cart',
+        'Disallow: /checkout',
+        'Disallow: /account',
+    ];
+
     if (setting('sitemap_enabled', '1') === '1') {
-        $lines[] = 'Disallow: /admin';
-        $lines[] = 'Disallow: /cart';
-        $lines[] = 'Disallow: /checkout';
-        $lines[] = 'Disallow: /account';
         $lines[] = '';
         $lines[] = 'Sitemap: ' . route('sitemap');
-    } else {
-        $lines[] = 'Disallow: /';
     }
 
     return response(implode("\n", $lines), 200)->header('Content-Type', 'text/plain');
@@ -122,6 +134,7 @@ Route::get('/email/unsubscribe/{token}', [EmailUnsubscribeController::class, 'un
 Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::get('/shop', [ShopController::class, 'index'])->name('shop.index');
 Route::get('/categories', [ShopController::class, 'categories'])->name('categories.index');
+Route::get('/brands', [ShopController::class, 'brands'])->name('brands.index');
 Route::get('/shop/category/{category}', [ShopController::class, 'category'])->name('shop.category');
 Route::get('/products/{product}', [ProductController::class, 'show'])->name('products.show');
 Route::post('/products/{product}/review', [ProductController::class, 'storeReview'])->middleware(['auth', 'throttle:5,1'])->name('products.review');
@@ -131,6 +144,7 @@ Route::get('/cart', [CartController::class, 'index'])->name('cart.index');
 Route::post('/cart/add', [CartController::class, 'add'])->name('cart.add');
 Route::patch('/cart/{cart}', [CartController::class, 'update'])->name('cart.update');
 Route::delete('/cart/{cart}', [CartController::class, 'remove'])->name('cart.remove');
+Route::delete('/cart/product/{product}', [CartController::class, 'removeByProduct'])->name('cart.remove-by-product');
 Route::post('/cart/coupon', [CartController::class, 'applyCoupon'])->name('cart.coupon');
 Route::delete('/cart/coupon/remove', [CartController::class, 'removeCoupon'])->name('cart.coupon.remove');
 Route::post('/cart/points', [CartController::class, 'applyPoints'])->name('cart.points')->middleware('auth');
@@ -216,6 +230,20 @@ Route::middleware('auth')->group(function () {
     // Become a Seller
     Route::get('/sell', [VendorRegistrationController::class, 'create'])->name('vendor.apply');
     Route::post('/sell', [VendorRegistrationController::class, 'store'])->name('vendor.apply.store');
+    Route::get('/sell/document/{field}', [VendorRegistrationController::class, 'document'])->name('vendor.apply.document');
+
+    // Seller Dashboard — approved vendors only (VendorMiddleware checks canAccessVendorPanel())
+    Route::middleware('vendor')->prefix('seller')->name('seller.')->group(function () {
+        Route::get('/', [SellerDashboardController::class, 'index'])->name('dashboard');
+        Route::resource('products', SellerProductController::class)->except(['show']);
+        Route::get('categories/create', [SellerCategoryController::class, 'create'])->name('categories.create');
+        Route::post('categories', [SellerCategoryController::class, 'store'])->name('categories.store');
+        Route::get('orders', [SellerOrderController::class, 'index'])->name('orders.index');
+        Route::get('reports', [SellerReportController::class, 'index'])->name('reports.index');
+        Route::get('reports/download', [SellerReportController::class, 'download'])->name('reports.download');
+        Route::get('profile', [SellerProfileController::class, 'edit'])->name('profile.edit');
+        Route::put('profile', [SellerProfileController::class, 'update'])->name('profile.update');
+    });
 
     // Admin two-factor enrollment — deliberately outside the admin+2FA-enforcing
     // middleware group below, so setting up 2FA is never itself blocked by
@@ -254,6 +282,8 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::resource('categories', AdminCategoryController::class);
     Route::patch('categories/{category}/move-up', [AdminCategoryController::class, 'moveUp'])->name('categories.move-up');
     Route::patch('categories/{category}/move-down', [AdminCategoryController::class, 'moveDown'])->name('categories.move-down');
+    Route::patch('categories/{category}/approve', [AdminCategoryController::class, 'approve'])->name('categories.approve');
+    Route::patch('categories/{category}/reject', [AdminCategoryController::class, 'reject'])->name('categories.reject');
     // Subcategories — manual routes (bypass slug-based route model binding)
     Route::get('subcategories', [AdminSubcategoryController::class, 'index'])->name('subcategories.index');
     Route::get('subcategories/create', [AdminSubcategoryController::class, 'create'])->name('subcategories.create');
@@ -268,9 +298,15 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::get('products/bulk-upload/{bulkImport}/status', [AdminBulkProductController::class, 'status'])->name('products.bulk-upload.status');
     Route::get('products/bulk-upload/{bulkImport}/status-data', [AdminBulkProductController::class, 'statusData'])->name('products.bulk-upload.status-data');
     Route::resource('products', AdminProductController::class);
+    Route::patch('products/{product}/move-up', [AdminProductController::class, 'moveUp'])->name('products.move-up');
+    Route::patch('products/{product}/move-down', [AdminProductController::class, 'moveDown'])->name('products.move-down');
+    Route::patch('products/{product}/approve', [AdminProductController::class, 'approve'])->name('products.approve');
+    Route::patch('products/{product}/reject', [AdminProductController::class, 'reject'])->name('products.reject');
 
     // Brands
     Route::resource('brands', AdminBrandController::class);
+    Route::patch('brands/{brand}/move-up', [AdminBrandController::class, 'moveUp'])->name('brands.move-up');
+    Route::patch('brands/{brand}/move-down', [AdminBrandController::class, 'moveDown'])->name('brands.move-down');
 
     // Attributes
     Route::get('attributes', [AdminAttributeController::class, 'index'])->name('attributes.index');
@@ -302,10 +338,16 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::delete('reviews/{review}', [AdminReviewController::class, 'destroy'])->middleware('permission:reviews.delete')->name('reviews.destroy');
 
     // Vendors
-    Route::resource('vendors', AdminVendorController::class)->only(['index', 'show']);
+    Route::resource('vendors', AdminVendorController::class)->only(['index', 'show', 'edit', 'update']);
     Route::post('vendors/{vendor}/approve', [AdminVendorController::class, 'approve'])->name('vendors.approve');
     Route::post('vendors/{vendor}/reject', [AdminVendorController::class, 'reject'])->name('vendors.reject');
     Route::post('vendors/{vendor}/suspend', [AdminVendorController::class, 'suspend'])->name('vendors.suspend');
+    Route::post('vendors/{vendor}/request-correction', [AdminVendorController::class, 'requestCorrection'])->name('vendors.request-correction');
+    Route::post('vendors/{vendor}/payout', [AdminVendorController::class, 'payout'])->name('vendors.payout');
+    Route::post('vendors/{vendor}/approve-profile', [AdminVendorController::class, 'approveProfile'])->name('vendors.approve-profile');
+    Route::post('vendors/{vendor}/reject-profile', [AdminVendorController::class, 'rejectProfile'])->name('vendors.reject-profile');
+    Route::get('vendors/{vendor}/document/{field}', [AdminVendorController::class, 'document'])->name('vendors.document');
+    Route::get('vendor-payments', [AdminVendorPaymentController::class, 'index'])->name('vendor-payments.index');
 
     // Suppliers
     Route::resource('suppliers', AdminSupplierController::class)->except(['show']);
@@ -424,6 +466,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
 
     // Audit Logs
     Route::get('audit-logs', [AdminAuditLogController::class, 'index'])->name('audit-logs.index');
+    Route::get('activity-logs', [AdminActivityLogController::class, 'index'])->name('activity-logs.index');
 
     // CMS — Blog
     Route::resource('blog/categories', AdminBlogCategoryController::class)->except(['show'])->names([

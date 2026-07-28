@@ -57,6 +57,11 @@ class HomeSection extends Model
             $query->where(fn ($q) => $q
                 ->where('category_id', $this->category_id)
                 ->orWhere('subcategory_id', $this->category_id));
+
+            // Section is scoped to one category, so the admin's manual per-category
+            // product order (set via Admin > Products > Manual sort) applies here
+            // too — takes priority over the source_type's own ordering below.
+            $query->orderBy('sort_order');
         }
 
         match ($this->source_type) {

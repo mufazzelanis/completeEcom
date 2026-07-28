@@ -70,9 +70,9 @@ class ShopController extends Controller
 
         $products   = $query->paginate(12)->withQueryString();
         $categories = Category::whereNull('parent_id')
-            ->where('is_active', true)
+            ->active()
             ->withCount('products')
-            ->with(['children' => fn($q) => $q->where('is_active', true)->withCount('products')])
+            ->with(['children' => fn($q) => $q->active()->withCount('products')])
             ->orderBy('sort_order')
             ->get();
         $brands     = Brand::where('is_active', true)->orderBy('name')->get(['id', 'name', 'slug']);
@@ -84,31 +84,47 @@ class ShopController extends Controller
     public function categories()
     {
         $categories = Category::whereNull('parent_id')
-            ->where('is_active', true)
+            ->active()
             ->withCount('products')
-            ->with(['children' => fn($q) => $q->where('is_active', true)->withCount('products')->orderBy('sort_order')])
+            ->with(['children' => fn($q) => $q->active()->withCount('products')->orderBy('sort_order')])
             ->orderBy('sort_order')
             ->get();
 
         return view('shop.categories', compact('categories'));
     }
 
+    public function brands()
+    {
+        $brands = Brand::where('is_active', true)
+            ->withCount('products')
+            ->orderBy('sort_order')
+            ->orderBy('name')
+            ->get();
+
+        return view('shop.brands', compact('brands'));
+    }
+
     public function category(Category $category)
     {
+        if ($category->redirect_url) {
+            return redirect()->away($category->redirect_url, 301);
+        }
+
         $products = Product::with(['category', 'brand', 'activeFlashSaleProduct'])
             ->where(fn($q) => $q
                 ->where('category_id', $category->id)
                 ->orWhere('subcategory_id', $category->id)
             )
             ->active()
+            ->orderBy('sort_order')
             ->latest()
             ->paginate(12)
             ->withQueryString();
 
         $categories = Category::whereNull('parent_id')
-            ->where('is_active', true)
+            ->active()
             ->withCount('products')
-            ->with(['children' => fn($q) => $q->where('is_active', true)->withCount('products')])
+            ->with(['children' => fn($q) => $q->active()->withCount('products')])
             ->orderBy('sort_order')
             ->get();
         $brands     = Brand::where('is_active', true)->orderBy('name')->get(['id', 'name', 'slug']);

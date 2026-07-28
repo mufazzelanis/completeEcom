@@ -14,6 +14,8 @@ use App\Models\ProductImage;
 use App\Models\ProductSpec;
 use App\Models\ProductVariant;
 use App\Models\Tag;
+use App\Models\Vendor;
+use App\Services\Notifications\NotificationDispatcher;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -22,7 +24,7 @@ class ProductController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Product::with(['category', 'brand']);
+        $query = Product::with(['category', 'brand', 'seller']);
 
         if ($request->filled('search')) {
             $q = $request->search;
@@ -44,6 +46,12 @@ class ProductController extends Controller
         }
         if ($request->filled('status')) {
             $query->where('is_active', $request->status === 'active');
+        }
+        if ($request->filled('approval_status')) {
+            $query->where('approval_status', $request->approval_status);
+        }
+        if ($request->filled('seller')) {
+            $query->where('seller_id', $request->seller);
         }
         if ($request->boolean('featured')) {
             $query->where('is_featured', true);
@@ -69,14 +77,57 @@ class ProductController extends Controller
             'price_desc' => $query->orderBy('price', 'desc'),
             'stock_asc'  => $query->orderBy('stock', 'asc'),
             'stock_desc' => $query->orderBy('stock', 'desc'),
+            'manual'     => $query->orderBy('sort_order')->orderBy('name'),
             default      => $query->latest(),
         };
 
         $products   = $query->paginate(15)->withQueryString();
         $categories = $this->categoryTree();
         $brands     = Brand::where('is_active', true)->orderBy('name')->get(['id', 'name']);
+        $vendors    = Vendor::approved()->orderBy('business_name')->get(['id', 'business_name']);
+        $pendingApprovalCount = Product::where('approval_status', 'pending')->count();
 
-        return view('admin.products.index', compact('products', 'categories', 'brands'));
+        return view('admin.products.index', compact('products', 'categories', 'brands', 'vendors', 'pendingApprovalCount'));
+    }
+
+    public function approve(Request $request, Product $product)
+    {
+        $request->validate(['category_id' => 'nullable|exists:categories,id']);
+
+        $data = ['approval_status' => 'approved', 'is_active' => true, 'rejection_reason' => null];
+        if ($request->filled('category_id')) {
+            $data['category_id'] = $request->category_id;
+        }
+        $product->update($data);
+
+        if ($product->seller) {
+            NotificationDispatcher::customer('vendor_product_approved', $product->seller->user, [
+                'product_name' => $product->name,
+                'url' => route('products.show', $product),
+            ]);
+        }
+
+        return back()->with('success', 'Product approved and is now live.');
+    }
+
+    public function reject(Request $request, Product $product)
+    {
+        $request->validate(['rejection_reason' => 'required|string|max:255']);
+
+        $product->update([
+            'approval_status' => 'rejected',
+            'is_active' => false,
+            'rejection_reason' => $request->rejection_reason,
+        ]);
+
+        if ($product->seller) {
+            NotificationDispatcher::customer('vendor_product_rejected', $product->seller->user, [
+                'product_name' => $product->name,
+                'reason' => $request->rejection_reason,
+            ]);
+        }
+
+        return back()->with('success', 'Product rejected.');
     }
 
     public function create()
@@ -258,6 +309,49 @@ class ProductController extends Controller
     {
         $product->delete();
         return redirect()->route('admin.products.index')->with('success', 'Product deleted.');
+    }
+
+    public function moveUp(Product $product)
+    {
+        $this->swapWithNeighbor($product, 'up');
+        return back();
+    }
+
+    public function moveDown(Product $product)
+    {
+        $this->swapWithNeighbor($product, 'down');
+        return back();
+    }
+
+    /**
+     * Scoped by category_id, same as Category::swapWithNeighbor is scoped by
+     * parent_id — manual order only makes sense among products the admin is
+     * already viewing together (one category's product list), not globally
+     * across unrelated categories.
+     */
+    private function swapWithNeighbor(Product $product, string $direction): void
+    {
+        $siblings = Product::where('category_id', $product->category_id)
+            ->orderBy('sort_order')
+            ->orderBy('name')
+            ->get();
+
+        $index = $siblings->search(fn ($s) => $s->id === $product->id);
+
+        if ($index === false) {
+            return;
+        }
+
+        $swapIndex = $direction === 'up' ? $index - 1 : $index + 1;
+
+        if ($swapIndex < 0 || $swapIndex >= $siblings->count()) {
+            return;
+        }
+
+        $neighbor = $siblings[$swapIndex];
+
+        $product->update(['sort_order' => $swapIndex]);
+        $neighbor->update(['sort_order' => $index]);
     }
 
     // ── Private helpers ────────────────────────────────────────────────────────

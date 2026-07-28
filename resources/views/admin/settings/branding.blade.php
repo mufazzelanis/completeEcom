@@ -34,6 +34,7 @@
 @php
 $logos = [
     'site_logo'    => ['label' => 'Main Logo',        'desc' => 'Header logo (200×60 px)',       'h' => 'h-12', 'max' => 'max-w-[140px]'],
+    'site_logo_mobile' => ['label' => 'Mobile Logo', 'desc' => 'Header logo on mobile only (120×40 px). Leave empty to reuse Main Logo on mobile.', 'h' => 'h-12', 'max' => 'max-w-[140px]'],
     'favicon'      => ['label' => 'Favicon',           'desc' => 'Browser tab icon (32×32 px)',   'h' => 'h-8',  'max' => 'max-w-[32px]'],
     'footer_logo'  => ['label' => 'Footer Logo',       'desc' => 'Footer logo (160×50 px)',       'h' => 'h-10', 'max' => 'max-w-[120px]'],
     'login_logo'   => ['label' => 'Login Page Logo',   'desc' => 'Login/register page (160×50 px)','h' => 'h-10', 'max' => 'max-w-[120px]'],

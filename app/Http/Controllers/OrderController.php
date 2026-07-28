@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Order;
+use App\Services\ActivityLogger;
 use App\Services\OrderStockService;
 use Illuminate\Http\Request;
 
@@ -30,6 +31,7 @@ class OrderController extends Controller
 
         $order->load('items.product');
         $existingReturn = $order->returns()->where('status', '!=', 'rejected')->first();
+        ActivityLogger::log('order.view', "Viewed order #{$order->order_number}", $order);
         return view('orders.show', compact('order', 'existingReturn'));
     }
 

@@ -9,10 +9,11 @@ class Product extends Model
 {
     protected $fillable = [
         'seller_id',
-        'type', 'category_id', 'subcategory_id', 'brand_id', 'name', 'slug',
+        'type', 'category_id', 'subcategory_id', 'brand_id', 'name', 'slug', 'sort_order',
         'short_description', 'description', 'sku', 'barcode', 'price', 'sale_price',
         'stock', 'low_stock_threshold', 'weight', 'image', 'download_file',
         'download_expiry_days', 'is_active', 'is_featured', 'views',
+        'approval_status', 'rejection_reason',
         // Basic SEO
         'meta_title', 'meta_description', 'focus_keyword', 'canonical_url', 'robots_meta',
         'sitemap_priority', 'sitemap_changefreq', 'redirect_url', 'breadcrumb_title',
@@ -246,9 +247,20 @@ class Product extends Model
         return parent::resolveRouteBinding($value, $field);
     }
 
+    /**
+     * Every storefront listing (shop, category, home sections) filters through
+     * this scope — folding the approval check in here means a vendor's pending
+     * or rejected product is automatically invisible everywhere, with no other
+     * call site needing to know approval_status exists.
+     */
     public function scopeActive($query)
     {
-        return $query->where('is_active', true);
+        return $query->where('is_active', true)->where('approval_status', 'approved');
+    }
+
+    public function isApproved(): bool
+    {
+        return $this->approval_status === 'approved';
     }
 
     public function scopeFeatured($query)

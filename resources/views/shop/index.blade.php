@@ -4,12 +4,27 @@
     $shopSeoDesc  = isset($category) ? ($category->meta_description ?: $category->description) : null;
     $shopSeoImage = isset($category) ? ($category->og_image ? Storage::url($category->og_image) : ($category->image ? Storage::url($category->image) : null)) : null;
     $shopCanonical = isset($category) ? ($category->canonical_url ?: route('shop.category', $category)) : route('shop.index');
+
+    // Same robots_meta + override-checkbox pattern as products/show.blade.php —
+    // only applies when viewing a single category page (the plain /shop listing
+    // always stays index,follow).
+    if (isset($category)) {
+        [$catRobotsIndex, $catRobotsFollow] = array_pad(explode(',', $category->robots_meta ?: 'index,follow'), 2, null);
+        $shopRobotsParts = [
+            $category->noindex ? 'noindex' : (trim($catRobotsIndex ?? '') ?: 'index'),
+            $category->nofollow ? 'nofollow' : (trim($catRobotsFollow ?? '') ?: 'follow'),
+        ];
+        if ($category->nosnippet) $shopRobotsParts[] = 'nosnippet';
+        if ($category->noimageindex) $shopRobotsParts[] = 'noimageindex';
+        $shopRobots = implode(', ', $shopRobotsParts);
+    }
 @endphp
 @section('title', $shopSeoTitle)
 @if($shopSeoDesc)@section('meta_description', $shopSeoDesc)@endif
 @if(isset($category) && $category->meta_keywords)@section('meta_keywords', $category->meta_keywords)@endif
 @section('canonical', $shopCanonical)
 @if($shopSeoImage)@section('og_image', $shopSeoImage)@endif
+@if(isset($shopRobots))@section('robots', $shopRobots)@endif
 
 @push('meta')
 @if(isset($category))

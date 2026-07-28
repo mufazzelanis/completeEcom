@@ -1,6 +1,41 @@
 @extends('layouts.app')
 @section('title', 'Home - ' . setting('site_name', 'ShopVista'))
 
+@push('meta')
+{{-- Organization + WebSite structured data — homepage-only signals for Google's
+     knowledge panel and sitelinks search box, mirroring the per-product/category
+     JSON-LD already used on products/show and shop/index. --}}
+@php
+    $orgSameAs = array_values(array_filter([
+        setting('facebook_url'), setting('instagram_url'), setting('youtube_url'),
+        setting('linkedin_url'), setting('twitter_url'),
+    ]));
+@endphp
+<script type="application/ld+json">
+{!! json_encode(array_filter([
+    '@context' => 'https://schema.org',
+    '@type' => 'Organization',
+    'name' => setting('site_name', 'ShopVista'),
+    'url' => route('home'),
+    'logo' => setting_file_url('site_logo'),
+    'sameAs' => $orgSameAs ?: null,
+], fn ($v) => $v !== null && $v !== ''), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}
+</script>
+<script type="application/ld+json">
+{!! json_encode([
+    '@context' => 'https://schema.org',
+    '@type' => 'WebSite',
+    'name' => setting('site_name', 'ShopVista'),
+    'url' => route('home'),
+    'potentialAction' => [
+        '@type' => 'SearchAction',
+        'target' => route('shop.index') . '?search={search_term_string}',
+        'query-input' => 'required name=search_term_string',
+    ],
+], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}
+</script>
+@endpush
+
 @section('content')
 
 {{-- ═══════════ HERO BANNER CAROUSEL ═══════════ --}}
@@ -338,9 +373,9 @@ $reviewThemes = [
     <div class="max-w-[1200px] mx-auto px-4 py-6">
         <div class="flex items-center justify-between mb-5">
             <h2 class="text-lg font-extrabold text-gray-900">Top Brands</h2>
-            <a href="{{ route('shop.index') }}" class="text-orange-500 hover:text-orange-700 font-bold text-sm transition">VIEW ALL →</a>
+            <a href="{{ route('brands.index') }}" class="text-orange-500 hover:text-orange-700 font-bold text-sm transition">VIEW ALL →</a>
         </div>
-        <div class="flex gap-3 overflow-x-auto scrollbar-hide pb-2">
+        <div class="carousel-container flex gap-3 overflow-x-auto scrollbar-hide pb-2 scroll-smooth">
             @foreach($brands as $brand)
                 <a href="{{ route('shop.index') }}?brand={{ $brand->slug }}"
                    class="flex-shrink-0 w-32 h-20 bg-gray-50 border border-gray-100 rounded-xl flex items-center justify-center hover:border-orange-300 hover:shadow-md transition-all duration-200 group">

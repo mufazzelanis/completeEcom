@@ -32,6 +32,22 @@
                 </div>
 
                 <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Parent Category</label>
+                    <select name="parent_id" class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <option value="">None (Top Level Category)</option>
+                        @foreach($parents as $parent)
+                            <option value="{{ $parent->id }}" {{ old('parent_id', $category->parent_id) == $parent->id ? 'selected' : '' }}>{{ $parent->name }}</option>
+                        @endforeach
+                    </select>
+                    @if($category->children_count ?? $category->children()->count())
+                    <p class="text-xs text-amber-600 mt-1">This category has its own subcategories — it can't be moved under another category until they're reassigned or removed (subcategories can't nest further).</p>
+                    @else
+                    <p class="text-xs text-gray-400 mt-1">Change this to move the category — e.g. turn it into a subcategory, or promote a subcategory back to top-level by selecting "None".</p>
+                    @endif
+                    @error('parent_id')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
+                </div>
+
+                <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Category Image</label>
                     @if($category->image)
                         <div class="mb-2">

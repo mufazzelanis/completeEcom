@@ -270,14 +270,18 @@
 
                 <!-- Meta -->
                 <div class="border-t border-gray-100 pt-6 space-y-3 text-sm text-gray-500">
+                    @if(setting('free_shipping_enabled', '0') == '1')
                     <div class="flex items-center space-x-2">
                         <svg class="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"/></svg>
-                        <span>Free shipping on orders over ৳2000</span>
+                        <span>Free shipping on orders over {{ setting('currency_symbol', '৳') }}{{ number_format((float) setting('free_shipping_min', '999')) }}</span>
                     </div>
+                    @endif
+                    @if((int) setting('return_days', '7') > 0)
                     <div class="flex items-center space-x-2">
                         <svg class="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-                        <span>7-day return policy</span>
+                        <span>{{ setting('return_days', '7') }}-day return policy</span>
                     </div>
+                    @endif
                 </div>
             </div>
         </div>

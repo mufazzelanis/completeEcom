@@ -77,4 +77,44 @@ class BrandController extends Controller
         $brand->delete();
         return back()->with('success', 'Brand deleted.');
     }
+
+    public function moveUp(Brand $brand)
+    {
+        $this->swapWithNeighbor($brand, 'up');
+        return back();
+    }
+
+    public function moveDown(Brand $brand)
+    {
+        $this->swapWithNeighbor($brand, 'down');
+        return back();
+    }
+
+    /**
+     * Same swap-with-neighbor pattern as CategoryController — brands are a flat
+     * list (no parent scoping needed), ordered the same way index() displays them.
+     */
+    private function swapWithNeighbor(Brand $brand, string $direction): void
+    {
+        $siblings = Brand::orderBy('sort_order')
+            ->orderBy('name')
+            ->get();
+
+        $index = $siblings->search(fn ($b) => $b->id === $brand->id);
+
+        if ($index === false) {
+            return;
+        }
+
+        $swapIndex = $direction === 'up' ? $index - 1 : $index + 1;
+
+        if ($swapIndex < 0 || $swapIndex >= $siblings->count()) {
+            return;
+        }
+
+        $neighbor = $siblings[$swapIndex];
+
+        $brand->update(['sort_order' => $swapIndex]);
+        $neighbor->update(['sort_order' => $index]);
+    }
 }

@@ -6,6 +6,9 @@
     $rating = $product->reviews->avg('rating') ?? 0;
     $reviewCount = $product->reviews->count();
     $isWishlisted = auth()->check() ? \App\Models\Wishlist::where('user_id', auth()->id())->where('product_id', $product->id)->exists() : false;
+    $isInCart = auth()->check()
+        ? \App\Models\Cart::where('user_id', auth()->id())->where('product_id', $product->id)->exists()
+        : \App\Models\Cart::where('session_id', session()->getId())->where('product_id', $product->id)->exists();
 ?>
 <div class="h-full flex flex-col bg-white rounded-lg shadow-sm hover:shadow-lg transition-all duration-300 group overflow-hidden border border-transparent hover:border-orange-200 relative">
     <a href="<?php echo e(route('products.show', $product->slug)); ?>" class="block relative">
@@ -31,7 +34,7 @@
                 </span>
             <?php endif; ?>
 
-            <div class="absolute top-2 right-2 flex flex-col gap-1.5 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-200">
+            <div class="absolute top-2 right-2 flex flex-col items-end gap-1.5 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-200">
                 <button onclick="event.preventDefault(); toggleWishlist(<?php echo e($product->id); ?>, this)"
                     class="w-8 h-8 bg-white rounded-full shadow-md flex items-center justify-center hover:bg-red-50 transition <?php echo e($isWishlisted ? 'text-red-500' : 'text-gray-400 hover:text-red-500'); ?>"
                     title="Add to Wishlist">
@@ -39,6 +42,29 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
                     </svg>
                 </button>
+
+                
+                <?php if($product->isSimple() && $product->available_stock > 0): ?>
+                    <?php
+                        $quickAddStyle = setting('add_to_cart_button_style', 'icon');
+                        $addToCartText = setting('add_to_cart_button_text', 'Add to Cart');
+                        $cartIconSvg = '<svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>';
+                        $checkIconSvg = '<svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>';
+                    ?>
+                    <button onclick="event.preventDefault(); toggleCartItem(<?php echo e($product->id); ?>, this)"
+                        data-in-cart="<?php echo e($isInCart ? 'true' : 'false'); ?>"
+                        data-icon-default='<?php echo $cartIconSvg; ?>'
+                        data-icon-added='<?php echo $checkIconSvg; ?>'
+                        data-label-default="<?php echo e($addToCartText); ?>"
+                        data-label-added="Added"
+                        class="quick-add-btn <?php echo e($quickAddStyle === 'text' ? 'pl-2 pr-3 h-8' : 'w-8 h-8'); ?> rounded-full shadow-md flex items-center justify-center gap-1 transition <?php echo e($isInCart ? 'bg-orange-500 text-white hover:bg-orange-600' : 'bg-white text-gray-500 hover:bg-orange-50 hover:text-orange-500'); ?>"
+                        title="<?php echo e($isInCart ? 'Remove from Cart' : $addToCartText); ?>">
+                        <span class="quick-add-icon"><?php echo $isInCart ? $checkIconSvg : $cartIconSvg; ?></span>
+                        <?php if($quickAddStyle === 'text'): ?>
+                            <span class="text-[10px] font-bold whitespace-nowrap quick-add-label"><?php echo e($isInCart ? 'Added' : $addToCartText); ?></span>
+                        <?php endif; ?>
+                    </button>
+                <?php endif; ?>
             </div>
 
             <?php if($product->available_stock <= 0): ?>
