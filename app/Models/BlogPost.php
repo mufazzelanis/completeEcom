@@ -27,6 +27,14 @@ class BlogPost extends Model
         });
     }
 
+    // Sanitized on write, not read — content is rendered unescaped ({!! !!}) in
+    // blog/show, so stored HTML must already be safe rather than trusted at
+    // render time. See Page::setContentAttribute() for the same pattern.
+    public function setContentAttribute($value)
+    {
+        $this->attributes['content'] = $value !== null ? clean($value, 'rich_content') : $value;
+    }
+
     public function category() { return $this->belongsTo(BlogCategory::class, 'blog_category_id'); }
     public function author()   { return $this->belongsTo(User::class, 'user_id'); }
     public function tags()     { return $this->belongsToMany(BlogTag::class, 'blog_post_tag'); }

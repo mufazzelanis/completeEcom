@@ -76,7 +76,7 @@
             @endif
 
             <div class="prose prose-gray max-w-none text-gray-700 leading-relaxed">
-                {!! nl2br(e($blogPost->content)) !!}
+                {!! $blogPost->content !!}
             </div>
         </article>
 

@@ -32,6 +32,10 @@ class ProductController extends Controller
             $product->load('bundleItems.itemProduct');
         }
 
+        if ($product->isVariable()) {
+            $product->load(['colors', 'sizes', 'combinations.color', 'combinations.size']);
+        }
+
         $related = Product::active()
             ->with('activeFlashSaleProduct')
             ->where('category_id', $product->category_id)

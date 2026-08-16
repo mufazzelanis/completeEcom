@@ -53,7 +53,18 @@ $rc = $riskColors[$riskLevel];
                         </div>
                         <div class="flex-1">
                             <p class="font-medium text-gray-800 text-sm">{{ $item->product_name }}</p>
+                            @if($item->variant_label)
+                                <p class="text-xs text-gray-500">{{ $item->variant_label }}</p>
+                            @endif
                             <p class="text-xs text-gray-400">৳{{ number_format($item->price) }} × {{ $item->quantity }}</p>
+                            @if($item->product?->isDigital())
+                                <p class="text-xs text-indigo-500 mt-0.5">
+                                    {{ $item->download_count > 0 ? "Downloaded {$item->download_count}×" : 'Not downloaded yet' }}
+                                    @if($item->download_expires_at)
+                                        · expires {{ $item->download_expires_at->format('M d, Y') }}
+                                    @endif
+                                </p>
+                            @endif
                         </div>
                         <p class="font-bold text-gray-900">৳{{ number_format($item->subtotal) }}</p>
                     </div>

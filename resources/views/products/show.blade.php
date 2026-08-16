@@ -105,9 +105,59 @@
     </div>
 
     <div class="bg-white rounded-2xl shadow-sm overflow-hidden">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 p-8">
+        @php
+            $productColorsJs = $product->isVariable() ? $product->colors->map(fn ($c) => [
+                'id' => $c->id, 'name' => $c->name, 'hex_code' => $c->hex_code,
+                'image' => $c->image ? Storage::url($c->image) : null,
+            ]) : collect();
+            $productSizesJs = $product->isVariable() ? $product->sizes->map(fn ($s) => [
+                'id' => $s->id, 'name' => $s->name,
+            ]) : collect();
+            $combinationsJs = $product->isVariable() ? $product->combinations->where('is_active', true)->map(fn ($c) => [
+                'id' => $c->id, 'color_id' => $c->product_color_id, 'size_id' => $c->product_size_id,
+                'sku' => $c->sku, 'price' => $c->price !== null ? (float) $c->price : null, 'stock' => $c->stock,
+            ])->values() : collect();
+            $basePrice = (float) ($product->sale_price ?? $product->price);
+            $comboPrices = $combinationsJs->map(fn ($c) => $c['price'] ?? $basePrice);
+            $priceMin = $comboPrices->isNotEmpty() ? $comboPrices->min() : $basePrice;
+            $priceMax = $comboPrices->isNotEmpty() ? $comboPrices->max() : $basePrice;
+        @endphp
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 p-8"
+            x-data="{
+                active: '{{ $product->image ? Storage::url($product->image) : '' }}',
+                zoomX: 50, zoomY: 50,
+                qty: 1,
+                productColors: {{ Js::from($productColorsJs) }},
+                productSizes: {{ Js::from($productSizesJs) }},
+                combinations: {{ Js::from($combinationsJs) }},
+                selectedColorId: null,
+                selectedSizeId: null,
+                get selectedCombo() {
+                    // A product with no colors never asks for one (selectedColorId stays
+                    // null, matching combo.color_id === null), same for sizes — so this one
+                    // equality check works whether the product uses one dimension, both, or neither.
+                    return this.combinations.find(c =>
+                        c.color_id === this.selectedColorId && c.size_id === this.selectedSizeId
+                    ) || null;
+                },
+                colorAvailable(id) {
+                    return this.combinations.some(c => c.color_id === id && c.stock > 0 &&
+                        (this.selectedSizeId === null || c.size_id === this.selectedSizeId));
+                },
+                sizeAvailable(id) {
+                    return this.combinations.some(c => c.size_id === id && c.stock > 0 &&
+                        (this.selectedColorId === null || c.color_id === this.selectedColorId));
+                },
+                selectColor(color) {
+                    this.selectedColorId = this.selectedColorId === color.id ? null : color.id;
+                    if (color.image) this.active = color.image;
+                },
+                selectSize(size) {
+                    this.selectedSizeId = this.selectedSizeId === size.id ? null : size.id;
+                },
+            }">
             <!-- Images -->
-            <div x-data="{ active: '{{ $product->image ? Storage::url($product->image) : '' }}', zoomX: 50, zoomY: 50 }">
+            <div>
                 <div class="aspect-square rounded-xl overflow-hidden bg-gray-100 mb-4 relative group cursor-zoom-in"
                      @mousemove="zoomX = (($event.offsetX / $event.currentTarget.offsetWidth) * 100).toFixed(2); zoomY = (($event.offsetY / $event.currentTarget.offsetHeight) * 100).toFixed(2)"
                      @mouseleave="zoomX = 50; zoomY = 50">
@@ -178,27 +228,44 @@
 
                 <!-- Price -->
                 @php $activeFlashSale = $product->activeFlashSaleProduct && $product->activeFlashSaleProduct->isAvailable() ? $product->activeFlashSaleProduct : null; @endphp
-                <div class="mb-6">
-                    @if($activeFlashSale)
-                        <div class="flex items-center space-x-3">
-                            <span class="text-3xl font-bold text-red-600">৳{{ number_format($product->final_price) }}</span>
-                            <span class="text-xl text-gray-400 line-through">৳{{ number_format($product->effective_price) }}</span>
-                            <span class="bg-red-100 text-red-600 text-sm px-2 py-1 rounded-full font-medium animate-pulse">
-                                ⚡ Flash Sale
+                @if($product->isVariable())
+                    <div class="mb-6">
+                        <template x-if="selectedCombo">
+                            <span class="text-3xl font-bold text-gray-900" x-text="'৳' + Math.round(selectedCombo.price ?? {{ $basePrice }}).toLocaleString()"></span>
+                        </template>
+                        <template x-if="!selectedCombo">
+                            <span class="text-3xl font-bold text-gray-900">
+                                @if($priceMin === $priceMax)
+                                    ৳{{ number_format($priceMin) }}
+                                @else
+                                    ৳{{ number_format($priceMin) }} – ৳{{ number_format($priceMax) }}
+                                @endif
                             </span>
-                        </div>
-                    @elseif($product->sale_price)
-                        <div class="flex items-center space-x-3">
-                            <span class="text-3xl font-bold text-red-600">৳{{ number_format($product->sale_price) }}</span>
-                            <span class="text-xl text-gray-400 line-through">৳{{ number_format($product->price) }}</span>
-                            <span class="bg-red-100 text-red-600 text-sm px-2 py-1 rounded-full font-medium">
-                                {{ round((1 - $product->sale_price / $product->price) * 100) }}% off
-                            </span>
-                        </div>
-                    @else
-                        <span class="text-3xl font-bold text-gray-900">৳{{ number_format($product->price) }}</span>
-                    @endif
-                </div>
+                        </template>
+                    </div>
+                @else
+                    <div class="mb-6">
+                        @if($activeFlashSale)
+                            <div class="flex items-center space-x-3">
+                                <span class="text-3xl font-bold text-red-600">৳{{ number_format($product->final_price) }}</span>
+                                <span class="text-xl text-gray-400 line-through">৳{{ number_format($product->effective_price) }}</span>
+                                <span class="bg-red-100 text-red-600 text-sm px-2 py-1 rounded-full font-medium animate-pulse">
+                                    ⚡ Flash Sale
+                                </span>
+                            </div>
+                        @elseif($product->sale_price)
+                            <div class="flex items-center space-x-3">
+                                <span class="text-3xl font-bold text-red-600">৳{{ number_format($product->sale_price) }}</span>
+                                <span class="text-xl text-gray-400 line-through">৳{{ number_format($product->price) }}</span>
+                                <span class="bg-red-100 text-red-600 text-sm px-2 py-1 rounded-full font-medium">
+                                    {{ round((1 - $product->sale_price / $product->price) * 100) }}% off
+                                </span>
+                            </div>
+                        @else
+                            <span class="text-3xl font-bold text-gray-900">৳{{ number_format($product->price) }}</span>
+                        @endif
+                    </div>
+                @endif
 
                 @if($product->isBundle() && $product->bundleItems->isNotEmpty())
                     <div class="mb-6 border border-indigo-100 bg-indigo-50/50 rounded-xl p-4">
@@ -224,48 +291,145 @@
                     <p class="text-gray-600 mb-6">{{ $product->short_description }}</p>
                 @endif
 
+                @if($product->isVariable())
+                    {{-- Color / Size selection --}}
+                    @if($product->colors->isNotEmpty())
+                        <div class="mb-5">
+                            <p class="text-sm font-medium text-gray-700 mb-2">
+                                Color<template x-if="productColors.find(c => c.id === selectedColorId)">: <span x-text="productColors.find(c => c.id === selectedColorId)?.name"></span></template>
+                            </p>
+                            <div class="flex flex-wrap gap-2">
+                                <template x-for="color in productColors" :key="color.id">
+                                    <button type="button" @click="selectColor(color)"
+                                        :disabled="!colorAvailable(color.id)"
+                                        :class="{
+                                            'ring-2 ring-offset-2 ring-indigo-600': selectedColorId === color.id,
+                                            'opacity-30 cursor-not-allowed': !colorAvailable(color.id),
+                                        }"
+                                        class="w-9 h-9 rounded-full border border-gray-200 flex-shrink-0 transition"
+                                        :style="`background:${color.hex_code || '#ccc'}`"
+                                        :title="color.name"></button>
+                                </template>
+                            </div>
+                        </div>
+                    @endif
+                    @if($product->sizes->isNotEmpty())
+                        <div class="mb-5">
+                            <p class="text-sm font-medium text-gray-700 mb-2">Size</p>
+                            <div class="flex flex-wrap gap-2">
+                                <template x-for="size in productSizes" :key="size.id">
+                                    <button type="button" @click="selectSize(size)"
+                                        :disabled="!sizeAvailable(size.id)"
+                                        :class="selectedSizeId === size.id
+                                            ? 'border-indigo-600 bg-indigo-50 text-indigo-700'
+                                            : (sizeAvailable(size.id) ? 'border-gray-200 text-gray-700 hover:border-gray-300' : 'border-gray-100 text-gray-300 cursor-not-allowed')"
+                                        class="px-4 py-2 rounded-xl border text-sm font-medium transition"
+                                        x-text="size.name"></button>
+                                </template>
+                            </div>
+                        </div>
+                    @endif
+                    <template x-if="(productColors.length > 0 || productSizes.length > 0) && !selectedCombo">
+                        <p class="text-xs text-amber-600 mb-5">Please select an option above.</p>
+                    </template>
+                @endif
+
                 <!-- Stock -->
-                <div class="mb-6">
-                    @if($product->available_stock > 0)
-                        <span class="inline-flex items-center bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm font-medium">
-                            <span class="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
-                            In Stock ({{ $product->available_stock }} available)
-                        </span>
-                    @else
-                        <span class="inline-flex items-center bg-red-100 text-red-700 px-3 py-1 rounded-full text-sm font-medium">
-                            <span class="w-2 h-2 bg-red-500 rounded-full mr-2"></span>
-                            Out of Stock
-                        </span>
-                    @endif
-                    @if($product->sku)
-                        <span class="ml-3 text-xs text-gray-400">SKU: {{ $product->sku }}</span>
-                    @endif
-                </div>
+                @if($product->isVariable())
+                    <div class="mb-6">
+                        <template x-if="selectedCombo">
+                            <span class="inline-flex items-center bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm font-medium">
+                                <span class="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
+                                <span x-text="'In Stock (' + selectedCombo.stock + ' available)'"></span>
+                            </span>
+                        </template>
+                        <template x-if="!selectedCombo">
+                            <span class="inline-flex items-center bg-gray-100 text-gray-500 px-3 py-1 rounded-full text-sm font-medium">
+                                Select an option to see availability
+                            </span>
+                        </template>
+                        <template x-if="selectedCombo && selectedCombo.sku">
+                            <span class="ml-3 text-xs text-gray-400" x-text="'SKU: ' + selectedCombo.sku"></span>
+                        </template>
+                        @if($product->sku)
+                            <template x-if="!(selectedCombo && selectedCombo.sku)">
+                                <span class="ml-3 text-xs text-gray-400">SKU: {{ $product->sku }}</span>
+                            </template>
+                        @endif
+                    </div>
+                @else
+                    <div class="mb-6">
+                        @if($product->available_stock > 0)
+                            <span class="inline-flex items-center bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm font-medium">
+                                <span class="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
+                                In Stock ({{ $product->available_stock }} available)
+                            </span>
+                        @else
+                            <span class="inline-flex items-center bg-red-100 text-red-700 px-3 py-1 rounded-full text-sm font-medium">
+                                <span class="w-2 h-2 bg-red-500 rounded-full mr-2"></span>
+                                Out of Stock
+                            </span>
+                        @endif
+                        @if($product->sku)
+                            <span class="ml-3 text-xs text-gray-400">SKU: {{ $product->sku }}</span>
+                        @endif
+                    </div>
+                @endif
 
                 <!-- Add to Cart / Buy Now -->
-                @if($product->available_stock > 0)
-                    <form action="{{ route('cart.add') }}" method="POST" class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 mb-6">
-                        @csrf
-                        <input type="hidden" name="product_id" value="{{ $product->id }}">
-                        <div class="flex items-center border border-gray-200 rounded-xl overflow-hidden">
-                            <button type="button" onclick="updateQty(-1)" class="px-4 py-3 text-gray-500 hover:bg-gray-100 text-lg font-bold">-</button>
-                            <input type="number" name="quantity" id="qty" value="1" min="1" max="{{ $product->available_stock }}"
-                                class="w-16 text-center py-3 border-0 focus:outline-none text-sm font-semibold">
-                            <button type="button" onclick="updateQty(1)" class="px-4 py-3 text-gray-500 hover:bg-gray-100 text-lg font-bold">+</button>
-                        </div>
-                        <div class="flex-1 flex gap-3">
-                            <button type="submit" formaction="{{ route('cart.add') }}"
-                                class="flex-1 bg-white border-2 border-indigo-600 text-indigo-600 py-3 rounded-xl font-semibold hover:bg-indigo-50 transition flex items-center justify-center space-x-2">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
-                                <span>Add to Cart</span>
-                            </button>
-                            <button type="submit" formaction="{{ route('checkout.buy-now') }}"
-                                class="flex-1 bg-indigo-600 text-white py-3 rounded-xl font-semibold hover:bg-indigo-700 transition flex items-center justify-center space-x-2">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-                                <span>{{ setting('buy_now_button_text', 'Buy Now') }}</span>
-                            </button>
-                        </div>
-                    </form>
+                @if($product->isVariable())
+                    @if($product->available_stock > 0)
+                        <form action="{{ route('cart.add') }}" method="POST" class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 mb-6">
+                            @csrf
+                            <input type="hidden" name="product_id" value="{{ $product->id }}">
+                            <input type="hidden" name="variant_combination_id" :value="selectedCombo ? selectedCombo.id : ''">
+                            <div class="flex items-center border border-gray-200 rounded-xl overflow-hidden">
+                                <button type="button" @click="qty = Math.max(1, qty - 1)" class="px-4 py-3 text-gray-500 hover:bg-gray-100 text-lg font-bold">-</button>
+                                <input type="number" name="quantity" x-model.number="qty" min="1" :max="selectedCombo ? selectedCombo.stock : 1"
+                                    class="w-16 text-center py-3 border-0 focus:outline-none text-sm font-semibold">
+                                <button type="button" @click="qty = Math.min(selectedCombo ? selectedCombo.stock : 1, qty + 1)" class="px-4 py-3 text-gray-500 hover:bg-gray-100 text-lg font-bold">+</button>
+                            </div>
+                            <div class="flex-1 flex gap-3">
+                                <button type="submit" formaction="{{ route('cart.add') }}" :disabled="!selectedCombo"
+                                    :class="!selectedCombo ? 'opacity-40 cursor-not-allowed' : 'hover:bg-indigo-50'"
+                                    class="flex-1 bg-white border-2 border-indigo-600 text-indigo-600 py-3 rounded-xl font-semibold transition flex items-center justify-center space-x-2">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+                                    <span>Add to Cart</span>
+                                </button>
+                                <button type="submit" formaction="{{ route('checkout.buy-now') }}" :disabled="!selectedCombo"
+                                    :class="!selectedCombo ? 'opacity-40 cursor-not-allowed' : 'hover:bg-indigo-700'"
+                                    class="flex-1 bg-indigo-600 text-white py-3 rounded-xl font-semibold transition flex items-center justify-center space-x-2">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                                    <span>{{ setting('buy_now_button_text', 'Buy Now') }}</span>
+                                </button>
+                            </div>
+                        </form>
+                    @endif
+                @else
+                    @if($product->available_stock > 0)
+                        <form action="{{ route('cart.add') }}" method="POST" class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 mb-6">
+                            @csrf
+                            <input type="hidden" name="product_id" value="{{ $product->id }}">
+                            <div class="flex items-center border border-gray-200 rounded-xl overflow-hidden">
+                                <button type="button" onclick="updateQty(-1)" class="px-4 py-3 text-gray-500 hover:bg-gray-100 text-lg font-bold">-</button>
+                                <input type="number" name="quantity" id="qty" value="1" min="1" max="{{ $product->available_stock }}"
+                                    class="w-16 text-center py-3 border-0 focus:outline-none text-sm font-semibold">
+                                <button type="button" onclick="updateQty(1)" class="px-4 py-3 text-gray-500 hover:bg-gray-100 text-lg font-bold">+</button>
+                            </div>
+                            <div class="flex-1 flex gap-3">
+                                <button type="submit" formaction="{{ route('cart.add') }}"
+                                    class="flex-1 bg-white border-2 border-indigo-600 text-indigo-600 py-3 rounded-xl font-semibold hover:bg-indigo-50 transition flex items-center justify-center space-x-2">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+                                    <span>Add to Cart</span>
+                                </button>
+                                <button type="submit" formaction="{{ route('checkout.buy-now') }}"
+                                    class="flex-1 bg-indigo-600 text-white py-3 rounded-xl font-semibold hover:bg-indigo-700 transition flex items-center justify-center space-x-2">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                                    <span>{{ setting('buy_now_button_text', 'Buy Now') }}</span>
+                                </button>
+                            </div>
+                        </form>
+                    @endif
                 @endif
 
                 <!-- Meta -->
@@ -434,5 +598,34 @@ function updateQty(delta) {
     const newVal = parseInt(input.value) + delta;
     input.value = Math.max(1, Math.min(newVal, max));
 }
+</script>
+
+@php $trackedValue = $product->isVariable() ? $priceMin : (float) $product->final_price; @endphp
+<script>
+(function () {
+    var id = {!! Js::from((string) $product->id) !!};
+    var name = {!! Js::from($product->name) !!};
+    var category = {!! Js::from($product->category->name ?? '') !!};
+    var value = {{ $trackedValue }};
+    var currency = {!! Js::from(setting('currency_code', 'BDT')) !!};
+
+    if (typeof fbq === 'function') {
+        fbq('track', 'ViewContent', {
+            content_ids: [id], content_type: 'product', content_name: name,
+            content_category: category, value: value, currency: currency,
+        });
+    }
+    if (typeof gtag === 'function') {
+        gtag('event', 'view_item', {
+            currency: currency, value: value,
+            items: [{ item_id: id, item_name: name, item_category: category, price: value }],
+        });
+    }
+    window.dataLayer = window.dataLayer || [];
+    window.dataLayer.push({
+        event: 'view_item',
+        ecommerce: { currency: currency, value: value, items: [{ item_id: id, item_name: name, item_category: category, price: value }] },
+    });
+})();
 </script>
 @endsection

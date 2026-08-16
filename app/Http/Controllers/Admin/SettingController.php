@@ -15,6 +15,7 @@ class SettingController extends Controller
         'shipping', 'payment', 'orders', 'invoice',
         'email', 'sms', 'seo', 'social', 'notifications',
         'theme', 'security', 'maintenance', 'api', 'pages',
+        'facebook_pixel', 'google_ads',
     ];
 
     public function show(string $group = 'general')

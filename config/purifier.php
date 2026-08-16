@@ -33,6 +33,23 @@ return [
         'test'    => [
             'Attr.EnableID' => 'true',
         ],
+        // Sized for the Summernote rich-text editor's toolbar output (headings,
+        // lists, blockquote, tables, colors, alignment) — the 'default' profile
+        // above was sized for plain-textarea input and would silently strip
+        // most of that on save. Used for Product.description, BlogPost.content,
+        // Page.content — see each model's set*Attribute() mutator.
+        'rich_content' => [
+            'HTML.Doctype'             => 'HTML 4.01 Transitional',
+            'HTML.Allowed'             => 'h1,h2,h3,h4,h5,h6,p[style],div[style],br,hr,'
+                . 'b,strong,i,em,u,s,strike,sub,sup,span[style],'
+                . 'a[href|title|target],ul,ol,li,blockquote,pre,code,'
+                . 'img[src|alt|width|height|style],'
+                . 'table,thead,tbody,tr,td[colspan|rowspan],th[colspan|rowspan]',
+            'CSS.AllowedProperties'    => 'color,background-color,text-align,font-size,font-family,'
+                . 'font-weight,font-style,text-decoration,padding-left,margin-left',
+            'AutoFormat.AutoParagraph' => true,
+            'AutoFormat.RemoveEmpty'   => true,
+        ],
         "youtube" => [
             "HTML.SafeIframe"      => 'true',
             "URI.SafeIframeRegexp" => "%^(http://|https://|//)(www.youtube.com/embed/|player.vimeo.com/video/)%",

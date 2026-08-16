@@ -81,6 +81,64 @@ if (!function_exists('normalize_digits')) {
     }
 }
 
+if (!function_exists('pixel_advanced_matching_data')) {
+    /**
+     * Builds the em/ph/fn/ln(/ct/st/zp/country) payload for Meta's
+     * fbq('init', id, ...) Advanced Matching, and the matching email/phone_number/
+     * address shape for Google's gtag('set', 'user_data', ...) Enhanced Conversions —
+     * from whatever subset of name/email/phone/address is known. Used both for a
+     * logged-in customer's profile (site-wide default, see layouts/app.blade.php)
+     * and an order's shipping details at checkout (richer, and the only source for
+     * guest checkouts — see checkout/success.blade.php). Both platforms hash this
+     * client-side before it's ever sent, so plain values go in here, not hashes.
+     */
+    function pixel_advanced_matching_data(
+        ?string $name = null, ?string $email = null, ?string $phone = null,
+        ?string $city = null, ?string $state = null, ?string $zip = null, ?string $country = null
+    ): array {
+        $fb = [];
+        $google = ['address' => []];
+
+        if ($email) {
+            $email = strtolower(trim($email));
+            $fb['em'] = $email;
+            $google['email'] = $email;
+        }
+        if ($phone) {
+            $digits = preg_replace('/[^0-9]/', '', normalize_digits($phone) ?? '');
+            // Bangladesh-focused store (see normalize_digits above) — local numbers
+            // are typically submitted without a country code; add 880 so both
+            // platforms receive a code-qualified number rather than a bare local one.
+            if ($digits !== '' && !str_starts_with($digits, '880') && strlen($digits) <= 11) {
+                $digits = '880' . ltrim($digits, '0');
+            }
+            if ($digits !== '') {
+                $fb['ph'] = $digits;
+                $google['phone_number'] = '+' . $digits;
+            }
+        }
+        if ($name) {
+            $parts = preg_split('/\s+/', trim($name), 2);
+            $fb['fn'] = strtolower($parts[0]);
+            $google['address']['first_name'] = strtolower($parts[0]);
+            if (!empty($parts[1])) {
+                $fb['ln'] = strtolower($parts[1]);
+                $google['address']['last_name'] = strtolower($parts[1]);
+            }
+        }
+        if ($city)    { $fb['ct'] = strtolower($city); $google['address']['city'] = strtolower($city); }
+        if ($state)   { $fb['st'] = strtolower($state); $google['address']['region'] = strtolower($state); }
+        if ($zip)     { $fb['zp'] = strtolower($zip); $google['address']['postal_code'] = $zip; }
+        if ($country) { $fb['country'] = strtolower($country); $google['address']['country'] = strtolower($country); }
+
+        if (empty($google['address'])) {
+            unset($google['address']);
+        }
+
+        return ['fb' => $fb, 'google' => $google];
+    }
+}
+
 if (!function_exists('format_currency')) {
     function format_currency(float|int $amount): string
     {

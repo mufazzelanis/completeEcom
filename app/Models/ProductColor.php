@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class ProductColor extends Model
 {
-    protected $fillable = ['product_id', 'name', 'hex_code', 'image', 'stock', 'sort_order', 'is_active'];
+    protected $fillable = ['product_id', 'name', 'hex_code', 'image', 'sort_order', 'is_active'];
 
     protected $casts = ['is_active' => 'boolean'];
 

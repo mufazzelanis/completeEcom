@@ -17,8 +17,9 @@
     <form action="{{ route('admin.products.update', $product) }}" method="POST" enctype="multipart/form-data"
         x-data="{
             productType: '{{ old('type', $product->type ?? 'simple') }}',
-            variants: {{ Js::from($product->variants->toArray()) }},
-            colors: {{ Js::from($product->colors->toArray()) }},
+            colors: {{ Js::from($variantMatrix['colors']) }},
+            sizes: {{ Js::from($variantMatrix['sizes']) }},
+            combinations: {{ Js::from($variantMatrix['combinations']) }},
             bundleItems: {{ Js::from($product->bundleItems->map(fn($b) => ['product_id' => $b->item_product_id, 'quantity' => $b->quantity, 'discount_pct' => $b->discount_pct])->toArray()) }},
             faqs: {{ Js::from($product->faqs->map(fn($f) => ['question' => $f->question, 'answer' => $f->answer])->toArray()) }},
             specs: {{ Js::from($product->specs->map(fn($s) => ['key' => $s->spec_key, 'value' => $s->spec_value])->toArray()) }},
@@ -61,13 +62,51 @@
                     this.creatingTag = false;
                 }
             },
-            addVariant() { this.variants.push({ id:'', name:'', sku:'', price:'', stock:0, is_active:true }); },
-            addColor() { this.colors.push({ id:'', name:'', hex_code:'#6366f1', stock:'', is_active:true }); },
+            addColor() { this.colors.push({ id:'', name:'', hex_code:'#6366f1', is_active:true }); this.rebuildCombinations(); },
+            removeColor(i) {
+                this.colors.splice(i, 1);
+                this.combinations = this.combinations
+                    .filter(c => c.color_index !== i)
+                    .map(c => ({ ...c, color_index: (c.color_index !== null && c.color_index > i) ? c.color_index - 1 : c.color_index }));
+                this.rebuildCombinations();
+            },
+            addSize() { this.sizes.push({ id:'', name:'', is_active:true }); this.rebuildCombinations(); },
+            removeSize(i) {
+                this.sizes.splice(i, 1);
+                this.combinations = this.combinations
+                    .filter(c => c.size_index !== i)
+                    .map(c => ({ ...c, size_index: (c.size_index !== null && c.size_index > i) ? c.size_index - 1 : c.size_index }));
+                this.rebuildCombinations();
+            },
+            rebuildCombinations() {
+                const colorIdxs = this.colors.length ? this.colors.map((_, i) => i) : [null];
+                const sizeIdxs = this.sizes.length ? this.sizes.map((_, i) => i) : [null];
+                const wanted = [];
+                for (const ci of colorIdxs) {
+                    for (const si of sizeIdxs) {
+                        if (ci === null && si === null) continue;
+                        wanted.push(ci + '|' + si);
+                    }
+                }
+                const existingByKey = {};
+                this.combinations.forEach(c => { existingByKey[c.color_index + '|' + c.size_index] = c; });
+                this.combinations = wanted.map(key => {
+                    if (existingByKey[key]) return existingByKey[key];
+                    const [ciRaw, siRaw] = key.split('|');
+                    return {
+                        id: '', color_index: ciRaw === 'null' ? null : parseInt(ciRaw),
+                        size_index: siRaw === 'null' ? null : parseInt(siRaw),
+                        sku: '', price: '', stock: 0, is_active: true,
+                    };
+                });
+            },
             addBundleItem() { this.bundleItems.push({ product_id:'', quantity:1, discount_pct:0 }); },
             addFaq() { this.faqs.push({ question:'', answer:'' }); },
             addSpec() { this.specs.push({ key:'', value:'' }); },
             specKeyFilter(q) { return this.attributeNames.filter(n => n.toLowerCase().includes(q.toLowerCase())).slice(0,6); }
-        }">
+        }"
+        @submit="if (productType === 'variable' && combinations.length === 0) { alert('Add at least one color or size for this variable product.'); $event.preventDefault(); }
+                 else if (productType === 'bundle' && bundleItems.length === 0) { alert('Add at least one item to this bundle.'); $event.preventDefault(); }">
         @csrf @method('PUT')
         <input type="hidden" name="type" :value="productType">
 
@@ -122,7 +161,7 @@
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Full Description</label>
-                            @include('admin.products._description_editor', ['name' => 'description', 'value' => old('description', $product->description ?? ''), 'id' => 'description'])
+                            @include('partials.rich-editor', ['name' => 'description', 'value' => old('description', $product->description ?? ''), 'id' => 'description', 'placeholder' => 'Describe the product in detail — features, materials, sizing, care instructions…'])
                             <p class="text-xs text-gray-400 mt-1">Use headings, lists and images to lay the description out exactly how you want customers to read it.</p>
                         </div>
                     </div>
@@ -243,64 +282,8 @@
                     </div>
                 </div>
 
-                {{-- Variable: Variants --}}
-                <div class="bg-white rounded-2xl shadow-sm p-6" x-show="productType === 'variable'" x-cloak>
-                    <div class="flex items-center justify-between mb-4">
-                        <h3 class="font-semibold text-gray-800">Size Variants</h3>
-                        <button type="button" @click="addVariant()" class="text-sm text-indigo-600 hover:text-indigo-800 font-medium flex items-center gap-1">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg> Add
-                        </button>
-                    </div>
-                    <div class="space-y-2">
-                        <template x-if="variants.length === 0"><p class="text-sm text-gray-400 py-2">No variants yet.</p></template>
-                        <div class="grid grid-cols-12 gap-2 text-xs text-gray-500 font-medium px-1 mb-1" x-show="variants.length > 0">
-                            <div class="col-span-3">Name *</div><div class="col-span-2">SKU</div>
-                            <div class="col-span-2">Price (৳)</div><div class="col-span-2">Stock</div>
-                            <div class="col-span-2">Active</div><div class="col-span-1"></div>
-                        </div>
-                        <template x-for="(v, i) in variants" :key="i">
-                            <div class="grid grid-cols-12 gap-2 items-center bg-gray-50 rounded-xl px-3 py-2">
-                                <input type="hidden" :name="`variants[${i}][id]`" :value="v.id">
-                                <div class="col-span-3"><input type="text" :name="`variants[${i}][name]`" x-model="v.name" placeholder="Small" class="w-full border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"></div>
-                                <div class="col-span-2"><input type="text" :name="`variants[${i}][sku]`" x-model="v.sku" class="w-full border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"></div>
-                                <div class="col-span-2"><input type="number" :name="`variants[${i}][price]`" x-model="v.price" placeholder="Base" class="w-full border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"></div>
-                                <div class="col-span-2"><input type="number" :name="`variants[${i}][stock]`" x-model="v.stock" min="0" class="w-full border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"></div>
-                                <div class="col-span-2 flex justify-center"><input type="checkbox" :name="`variants[${i}][is_active]`" value="1" :checked="v.is_active" @change="v.is_active=$event.target.checked" class="w-4 h-4 text-indigo-600 rounded"></div>
-                                <div class="col-span-1 flex justify-end"><button type="button" @click="variants.splice(i,1)" class="text-red-400 hover:text-red-600"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button></div>
-                            </div>
-                        </template>
-                    </div>
-                </div>
-
-                {{-- Variable: Colors --}}
-                <div class="bg-white rounded-2xl shadow-sm p-6" x-show="productType === 'variable'" x-cloak>
-                    <div class="flex items-center justify-between mb-4">
-                        <h3 class="font-semibold text-gray-800">Color Options</h3>
-                        <button type="button" @click="addColor()" class="text-sm text-indigo-600 hover:text-indigo-800 font-medium flex items-center gap-1">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg> Add
-                        </button>
-                    </div>
-                    <div class="space-y-2">
-                        <template x-if="colors.length === 0"><p class="text-sm text-gray-400 py-2">No colors yet.</p></template>
-                        <template x-for="(c, i) in colors" :key="i">
-                            <div class="grid grid-cols-12 gap-2 items-center bg-gray-50 rounded-xl px-3 py-2">
-                                <input type="hidden" :name="`colors[${i}][id]`" :value="c.id">
-                                <div class="col-span-3"><input type="text" :name="`colors[${i}][name]`" x-model="c.name" placeholder="Navy Blue" class="w-full border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"></div>
-                                <div class="col-span-3 flex items-center gap-1">
-                                    <input type="color" x-model="c.hex_code" class="w-8 h-8 rounded cursor-pointer border-0 p-0 flex-shrink-0">
-                                    <input type="text" :name="`colors[${i}][hex_code]`" x-model="c.hex_code" class="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-xs focus:outline-none font-mono">
-                                </div>
-                                <div class="col-span-2">
-                                    <input type="file" :name="`color_images[${i}]`" accept="image/*" class="w-full text-xs">
-                                    <template x-if="c.image"><img :src="`/storage/${c.image}`" class="w-8 h-8 rounded mt-1 object-cover"></template>
-                                </div>
-                                <div class="col-span-2"><input type="number" :name="`colors[${i}][stock]`" x-model="c.stock" placeholder="—" class="w-full border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"></div>
-                                <div class="col-span-1 flex justify-center"><input type="checkbox" :name="`colors[${i}][is_active]`" value="1" :checked="c.is_active" @change="c.is_active=$event.target.checked" class="w-4 h-4 text-indigo-600 rounded"></div>
-                                <div class="col-span-1 flex justify-end"><button type="button" @click="colors.splice(i,1)" class="text-red-400 hover:text-red-600"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button></div>
-                            </div>
-                        </template>
-                    </div>
-                </div>
+                {{-- Variable: Colors / Sizes / Combinations --}}
+                @include('admin.products._variant_matrix')
 
                 {{-- Bundle Items --}}
                 <div class="bg-white rounded-2xl shadow-sm p-6" x-show="productType === 'bundle'" x-cloak>
@@ -475,6 +458,9 @@
                             <input type="number" name="stock" value="{{ old('stock', $product->stock) }}" min="0"
                                 class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
                         </div>
+                        <div x-show="productType === 'variable'" x-cloak>
+                            <p class="text-xs text-gray-400 bg-gray-50 rounded-lg p-3">Stock is managed per color/size combination above.</p>
+                        </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Weight (kg)</label>
                             <input type="number" name="weight" value="{{ old('weight', $product->weight) }}" step="0.01" min="0"
@@ -543,8 +529,9 @@
                 {{-- Info summary --}}
                 <div class="bg-gray-50 rounded-2xl p-4 text-xs text-gray-500 space-y-1.5">
                     <div class="flex justify-between"><span>Slug</span><span class="font-mono text-gray-600 truncate max-w-32">{{ $product->slug }}</span></div>
-                    <div class="flex justify-between"><span>Variants</span><span class="font-semibold text-gray-700">{{ $product->variants->count() }}</span></div>
                     <div class="flex justify-between"><span>Colors</span><span class="font-semibold text-gray-700">{{ $product->colors->count() }}</span></div>
+                    <div class="flex justify-between"><span>Sizes</span><span class="font-semibold text-gray-700">{{ $product->sizes->count() }}</span></div>
+                    <div class="flex justify-between"><span>Combinations</span><span class="font-semibold text-gray-700">{{ $product->combinations->count() }}</span></div>
                     <div class="flex justify-between"><span>Gallery</span><span class="font-semibold text-gray-700">{{ $product->images->count() }}</span></div>
                     <div class="flex justify-between"><span>FAQs</span><span class="font-semibold text-gray-700">{{ $product->faqs->count() }}</span></div>
                     <div class="flex justify-between"><span>Specs</span><span class="font-semibold text-gray-700">{{ $product->specs->count() }}</span></div>

@@ -25,9 +25,12 @@ class BundleController extends Controller
     {
         abort_unless($product->isBundle(), 404);
         $product->load('bundleItems.itemProduct.category');
+        // 'variable' excluded too: bundling one would decrement its products.stock
+        // directly on checkout, desyncing it from the per-combination stock that
+        // column is supposed to mirror — there's no "which color/size" UI here.
         $allProducts = Product::where('is_active', true)
             ->where('id', '!=', $product->id)
-            ->where('type', '!=', 'bundle')
+            ->whereNotIn('type', ['bundle', 'variable'])
             ->orderBy('name')
             ->get(['id', 'name', 'price', 'sale_price', 'image']);
 
@@ -43,7 +46,7 @@ class BundleController extends Controller
                 'required',
                 'integer',
                 Rule::notIn([$product->id]),
-                Rule::exists('products', 'id')->where(fn ($q) => $q->where('type', '!=', 'bundle')),
+                Rule::exists('products', 'id')->where(fn ($q) => $q->whereNotIn('type', ['bundle', 'variable'])),
             ],
             'quantity'        => 'required|integer|min:1',
             'discount_pct'    => 'nullable|numeric|min:0|max:100',
@@ -54,6 +57,8 @@ class BundleController extends Controller
             ['quantity' => $data['quantity'], 'discount_pct' => $data['discount_pct'] ?? 0]
         );
 
+        $product->refreshBundleStock();
+
         return back()->with('success', 'Item added to bundle.');
     }
 
@@ -61,6 +66,7 @@ class BundleController extends Controller
     {
         abort_unless($item->bundle_product_id === $product->id, 403);
         $item->delete();
+        $product->refreshBundleStock();
         return back()->with('success', 'Item removed.');
     }
 
@@ -74,6 +80,7 @@ class BundleController extends Controller
         ]);
 
         $item->update($data);
+        $product->refreshBundleStock();
         return back()->with('success', 'Item updated.');
     }
 }

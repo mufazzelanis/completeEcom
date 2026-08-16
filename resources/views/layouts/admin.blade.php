@@ -121,6 +121,8 @@ $adminNavIndex = [
     ['label' => 'SMS & WhatsApp Settings', 'url' => route('admin.settings.show', 'sms'), 'group' => 'Settings'],
     ['label' => 'Notification Channel Settings', 'url' => route('admin.settings.show', 'notifications'), 'group' => 'Settings'],
     ['label' => 'SEO Settings', 'url' => route('admin.settings.show', 'seo'), 'group' => 'Settings'],
+    ['label' => 'Facebook Pixel Settings', 'url' => route('admin.settings.show', 'facebook_pixel'), 'group' => 'Settings'],
+    ['label' => 'Google Analytics & Ads Settings', 'url' => route('admin.settings.show', 'google_ads'), 'group' => 'Settings'],
     ['label' => 'Social Media Settings', 'url' => route('admin.settings.show', 'social'), 'group' => 'Settings'],
     ['label' => 'Page Settings', 'url' => route('admin.settings.show', 'pages'), 'group' => 'Settings'],
     ['label' => 'Theme & Design Settings', 'url' => route('admin.settings.show', 'theme'), 'group' => 'Settings'],
@@ -612,17 +614,29 @@ $adminNavIndex = [
                 orders: [],
                 customers: [],
                 categories: [],
+                // Every navigable admin page/settings screen — filtered client-side (it's
+                // a small static list, no round trip needed) so typing a feature name like
+                // 'coupon' or 'tax' jumps straight there, not just DB records.
+                allPages: {{ Js::from($adminNavIndex) }},
                 open: false,
                 loading: false,
                 activeIndex: -1,
+                requestSeq: 0,
+                get pages() {
+                    if (this.query.length < 2) return [];
+                    const q = this.query.toLowerCase();
+                    return this.allPages.filter(p => p.label.toLowerCase().includes(q)).slice(0, 6);
+                },
                 get flatResults() {
-                    return [...this.products, ...this.orders, ...this.customers, ...this.categories];
+                    return [...this.products, ...this.orders, ...this.customers, ...this.categories, ...this.pages];
                 },
                 async fetchSuggestions() {
-                    if (this.query.length < 2) { this.open = false; return; }
+                    if (this.query.length < 2) { this.open = false; this.products = []; this.orders = []; this.customers = []; this.categories = []; return; }
                     this.loading = true;
+                    const seq = ++this.requestSeq;
                     const res = await fetch('{{ route('admin.search.suggest') }}?q=' + encodeURIComponent(this.query));
                     const data = await res.json();
+                    if (seq !== this.requestSeq) return; // a newer query already superseded this one
                     this.products = data.products || [];
                     this.orders = data.orders || [];
                     this.customers = data.customers || [];
@@ -740,6 +754,26 @@ $adminNavIndex = [
                                         <p class="text-sm font-medium text-gray-800 dark:text-gray-100 truncate" x-text="cat.name"></p>
                                     </div>
                                     <span class="text-xs px-1.5 py-0.5 rounded-full flex-shrink-0 bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400" x-text="cat.type"></span>
+                                </a>
+                            </template>
+                        </div>
+                    </template>
+
+                    <!-- Admin Pages & Settings -->
+                    <template x-if="pages.length">
+                        <div class="border-b border-gray-100 dark:border-gray-700">
+                            <p class="px-3 pt-2 pb-1 text-[11px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Pages</p>
+                            <template x-for="page in pages" :key="'pg-' + page.url">
+                                <a :href="page.url" @click="open = false; query = ''"
+                                   :class="flatResults.indexOf(page) === activeIndex ? 'bg-orange-50 dark:bg-gray-700' : ''"
+                                   class="flex items-center px-3 py-2 hover:bg-orange-50 dark:hover:bg-gray-700 gap-3">
+                                    <div class="w-8 h-8 bg-gray-100 dark:bg-gray-700 rounded-lg flex-shrink-0 flex items-center justify-center">
+                                        <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <p class="text-sm font-medium text-gray-800 dark:text-gray-100 truncate" x-text="page.label"></p>
+                                    </div>
+                                    <span class="text-xs px-1.5 py-0.5 rounded-full flex-shrink-0 bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400" x-text="page.group"></span>
                                 </a>
                             </template>
                         </div>

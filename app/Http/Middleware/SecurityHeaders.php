@@ -33,11 +33,22 @@ class SecurityHeaders
         // depth against injected third-party script/frame/object sources.
         $response->headers->set('Content-Security-Policy', implode('; ', [
             "default-src 'self'",
-            "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://cdn.jsdelivr.net https://www.googletagmanager.com https://www.google.com https://www.gstatic.com https://connect.facebook.net",
+            // googleads.g.doubleclick.net added for Google Ads conversion tracking
+            // (resources/views/admin/settings/google_ads.blade.php) — once a Google
+            // Ads Conversion ID is configured, gtag.js itself loads a remarketing
+            // script from this domain; without it here that load is silently blocked.
+            "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://cdn.jsdelivr.net https://www.googletagmanager.com https://www.google.com https://www.gstatic.com https://connect.facebook.net https://googleads.g.doubleclick.net",
             "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com",
-            "font-src 'self' data: https://fonts.gstatic.com",
+            // cdn.jsdelivr.net added for the Summernote editor's bundled icon font
+            // (resources/views/partials/rich-editor.blade.php) — same CDN already
+            // trusted on script-src/style-src above.
+            "font-src 'self' data: https://fonts.gstatic.com https://cdn.jsdelivr.net",
             "img-src 'self' data: blob: https:",
-            "connect-src 'self' https://www.google-analytics.com https://analytics.google.com https://www.googletagmanager.com https://www.facebook.com",
+            // www.google.com, googleads.g.doubleclick.net and *.doubleclick.net added
+            // for the same Google Ads conversion tracking as script-src above — gtag.js
+            // sends its conversion/remarketing beacons (rmkt/collect, ccm/collect) to
+            // these once a Conversion ID is configured.
+            "connect-src 'self' https://www.google-analytics.com https://analytics.google.com https://www.googletagmanager.com https://www.facebook.com https://www.google.com https://googleads.g.doubleclick.net https://*.doubleclick.net https://www.googleadservices.com",
             "frame-src 'self' https://www.google.com https://www.facebook.com",
             "object-src 'none'",
             "base-uri 'self'",

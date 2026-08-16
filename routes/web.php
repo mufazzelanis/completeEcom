@@ -69,6 +69,7 @@ use App\Http\Controllers\OrderController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\RichEditorController;
 use App\Http\Controllers\AccountReturnController;
 use App\Http\Controllers\ReturnRequestController;
 use App\Http\Controllers\SearchController;
@@ -167,6 +168,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/orders', [OrderController::class, 'index'])->name('orders.index');
     Route::get('/orders/{order}', [OrderController::class, 'show'])->name('orders.show');
     Route::post('/orders/{order}/cancel', [OrderController::class, 'cancel'])->name('orders.cancel');
+    Route::get('/orders/{order}/download/{item}', [OrderController::class, 'download'])->name('orders.download');
 
     // Return requests
     Route::get('/orders/{order}/return', [ReturnRequestController::class, 'create'])->name('orders.return.create');
@@ -177,6 +179,9 @@ Route::middleware('auth')->group(function () {
     // Wishlist
     Route::post('/wishlist/toggle/{product}', [WishlistController::class, 'toggle'])->name('wishlist.toggle');
     Route::get('/wishlist', [WishlistController::class, 'index'])->name('wishlist.index');
+
+    // Rich-text editor image uploads (admin product/blog/page descriptions, seller product descriptions)
+    Route::post('/rich-editor/upload-image', [RichEditorController::class, 'uploadImage'])->name('rich-editor.upload-image');
 
     // Profile (legacy — keep for compatibility)
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');

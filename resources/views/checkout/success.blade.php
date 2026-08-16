@@ -43,6 +43,25 @@
             </div>
         </div>
 
+        @php $digitalItems = $order->items->filter(fn ($item) => $item->product?->isDigital()); @endphp
+        @if($digitalItems->isNotEmpty())
+        <div class="bg-indigo-50 border border-indigo-100 rounded-xl p-6 text-left mb-8">
+            <h3 class="font-semibold text-indigo-800 mb-3 text-sm">Your digital downloads are ready</h3>
+            <div class="space-y-2">
+                @foreach($digitalItems as $item)
+                    <a href="{{ route('orders.download', [$order, $item]) }}" class="flex items-center justify-between bg-white rounded-lg px-4 py-3 hover:bg-indigo-50/50 transition">
+                        <span class="text-sm text-gray-700">{{ $item->product_name }}</span>
+                        <span class="inline-flex items-center gap-1 text-indigo-600 text-xs font-semibold">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-8-3V4m0 12l-4-4m4 4l4-4"/></svg>
+                            Download
+                        </span>
+                    </a>
+                @endforeach
+            </div>
+            <p class="text-xs text-indigo-400 mt-3">If your payment needs manual verification, downloads unlock once it's confirmed.</p>
+        </div>
+        @endif
+
         <div class="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-4 justify-center">
             <a href="{{ route('orders.show', $order->id) }}" class="bg-orange-500 text-white px-6 py-3 rounded-xl font-bold hover:bg-orange-600 transition">
                 View Order Details
@@ -63,6 +82,25 @@
         'price'    => (float) $item->price,
         'quantity' => $item->quantity,
     ])->values();
+
+    // Re-derived here rather than reused from layouts/app.blade.php — @extends
+    // evaluates this @section before the parent layout's own @php block runs,
+    // so those variables aren't in scope here. setting() is request-cached
+    // (see Setting::allFresh()), so this costs nothing extra.
+    $pixelId = setting('facebook_pixel_id', '');
+    $pixelOn = $pixelId && setting('facebook_pixel_enabled', $pixelId ? '1' : '0') == '1';
+    $fbAdvancedMatchingOn = setting('facebook_advanced_matching_enabled', '0') == '1';
+    $googleEnhancedOn = setting('google_enhanced_conversions_enabled', '0') == '1';
+    $adsConversionId = setting('google_ads_conversion_id', '');
+    $adsPurchaseLabel = setting('google_ads_purchase_label', '');
+
+    // The order's own shipping details — richer than the general logged-in-user
+    // profile the layout defaults to, and the only source at all for a guest
+    // checkout (whose email/phone only became known by placing this order).
+    $orderTrackingData = pixel_advanced_matching_data(
+        $order->shipping_name, $order->user?->email, $order->shipping_phone,
+        $order->shipping_city, $order->shipping_state, $order->shipping_zip, $order->shipping_country
+    );
 @endphp
 <script>
 // Fires once per order (guarded server-side) so GA/GTM/Meta each get exactly one
@@ -73,6 +111,12 @@
     var value = {{ (float) $order->total }};
     var currency = @json($currencyCode);
 
+    @if($googleEnhancedOn && $orderTrackingData['google'])
+    if (typeof gtag === 'function') {
+        gtag('set', 'user_data', {!! Js::from($orderTrackingData['google']) !!});
+    }
+    @endif
+
     if (typeof gtag === 'function') {
         gtag('event', 'purchase', {
             transaction_id: orderId,
@@ -82,6 +126,14 @@
                 return { item_id: i.id, item_name: i.name, price: i.price, quantity: i.quantity };
             })
         });
+        @if($adsConversionId && $adsPurchaseLabel)
+        gtag('event', 'conversion', {
+            send_to: {!! Js::from($adsConversionId . '/' . $adsPurchaseLabel) !!},
+            value: value,
+            currency: currency,
+            transaction_id: orderId,
+        });
+        @endif
     }
 
     window.dataLayer = window.dataLayer || [];
@@ -95,7 +147,13 @@
         }
     });
 
+    @if($pixelOn)
     if (typeof fbq === 'function') {
+        @if($fbAdvancedMatchingOn && $orderTrackingData['fb'])
+        // Refresh Advanced Matching with this order's shipping details right
+        // before the highest-value event fires — see the @php block above.
+        fbq('init', {!! Js::from($pixelId) !!}, {!! Js::from($orderTrackingData['fb']) !!});
+        @endif
         fbq('track', 'Purchase', {
             value: value,
             currency: currency,
@@ -103,6 +161,7 @@
             content_ids: items.map(function (i) { return i.id; })
         });
     }
+    @endif
 })();
 </script>
 @endif

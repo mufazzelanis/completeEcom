@@ -62,6 +62,16 @@ class Product extends Model
         });
     }
 
+    // Sanitized on write, not read — description is rendered unescaped
+    // ({!! !!}) on the product page, and this is the only gate: both admin and
+    // seller-authored descriptions pass through here (sellers are the less
+    // trusted author, and their description field had no HTML restriction at
+    // all before this). See Page::setContentAttribute() for the same pattern.
+    public function setDescriptionAttribute($value)
+    {
+        $this->attributes['description'] = $value !== null ? clean($value, 'rich_content') : $value;
+    }
+
     public function category()
     {
         return $this->belongsTo(Category::class);
@@ -181,14 +191,19 @@ class Product extends Model
         };
     }
 
-    public function variants()
+    public function sizes()
     {
-        return $this->hasMany(ProductVariant::class)->orderBy('sort_order')->orderBy('id');
+        return $this->hasMany(ProductSize::class)->orderBy('sort_order')->orderBy('id');
     }
 
     public function colors()
     {
         return $this->hasMany(ProductColor::class)->orderBy('sort_order')->orderBy('id');
+    }
+
+    public function combinations()
+    {
+        return $this->hasMany(ProductVariantCombination::class)->orderBy('sort_order')->orderBy('id');
     }
 
     public function getEffectivePriceAttribute()
@@ -207,6 +222,29 @@ class Product extends Model
         }
 
         return $this->bundleItems->min(fn ($item) => intdiv($item->itemProduct->stock, $item->quantity));
+    }
+
+    /**
+     * A bundle's own `stock` column is otherwise never touched (a bundle isn't
+     * decremented directly — its components are), so it stays synced here as a
+     * denormalized copy of the same number getAvailableStockAttribute() already
+     * computes live, for everything that queries `stock` in SQL directly
+     * (admin filters, reports, low-stock) rather than through the accessor.
+     * Call after anything that changes bundle composition or a component's stock.
+     */
+    public function refreshBundleStock(): void
+    {
+        if (! $this->isBundle()) {
+            return;
+        }
+
+        $items = $this->bundleItems()->with('itemProduct')->get();
+
+        $stock = $items->isEmpty() ? 0 : (int) $items->min(
+            fn ($item) => $item->itemProduct ? intdiv($item->itemProduct->stock, max(1, $item->quantity)) : 0
+        );
+
+        $this->update(['stock' => $stock]);
     }
 
     public function activeFlashSaleProduct()

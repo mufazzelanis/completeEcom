@@ -2,17 +2,16 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Concerns\SyncsProductVariants;
 use App\Http\Controllers\Controller;
 use App\Models\Attribute;
 use App\Models\Brand;
 use App\Models\BundleItem;
 use App\Models\Category;
 use App\Models\Product;
-use App\Models\ProductColor;
 use App\Models\ProductFaq;
 use App\Models\ProductImage;
 use App\Models\ProductSpec;
-use App\Models\ProductVariant;
 use App\Models\Tag;
 use App\Models\Vendor;
 use App\Services\Notifications\NotificationDispatcher;
@@ -22,6 +21,8 @@ use Illuminate\Validation\Rule;
 
 class ProductController extends Controller
 {
+    use SyncsProductVariants;
+
     public function index(Request $request)
     {
         $query = Product::with(['category', 'brand', 'seller']);
@@ -137,7 +138,10 @@ class ProductController extends Controller
         $brands           = Brand::where('is_active', true)->orderBy('name')->get(['id', 'name']);
         $allTags          = Tag::orderBy('name')->get(['id', 'name']);
         $attributeNames   = Attribute::where('is_active', true)->orderBy('sort_order')->orderBy('name')->pluck('name');
-        $simpleProducts   = Product::where('type', '!=', 'bundle')->where('is_active', true)->orderBy('name')->get(['id', 'name', 'price']);
+        // 'variable' excluded too: bundling one would decrement its products.stock
+        // directly on checkout, desyncing it from the per-combination stock that
+        // column is supposed to mirror — there's no "which color/size" UI here.
+        $simpleProducts   = Product::whereNotIn('type', ['bundle', 'variable'])->where('is_active', true)->orderBy('name')->get(['id', 'name', 'price']);
 
         return view('admin.products.create', compact(
             'categoryTree', 'allSubcategories', 'brands', 'allTags', 'attributeNames', 'simpleProducts'
@@ -156,7 +160,9 @@ class ProductController extends Controller
             'sku'           => 'nullable|string|max:100|unique:products,sku',
             'image'         => 'nullable|image|max:4096',
             'images.*'      => 'nullable|image|max:4096',
-            'download_file' => 'nullable|file|max:102400',
+            // A digital product with no file has nothing to deliver — require it
+            // up front rather than letting it silently publish empty.
+            'download_file' => $request->input('type') === 'digital' ? 'required|file|max:102400' : 'nullable|file|max:102400',
         ]);
 
         $data = $request->only([
@@ -201,8 +207,9 @@ class ProductController extends Controller
         $product = Product::create($data);
 
         $this->saveGallery($product, $request);
-        $this->syncVariants($product, $request->input('variants', []));
-        $this->syncColors($product, $request->input('colors', []), $request);
+        $colorIdsByIndex = $this->syncProductColors($product, $request->input('colors', []), $request);
+        $sizeIdsByIndex = $this->syncProductSizes($product, $request->input('sizes', []));
+        $this->syncProductCombinations($product, $request->input('combinations', []), $colorIdsByIndex, $sizeIdsByIndex);
         $this->syncTags($product, $request->input('tag_ids', []));
         $this->syncFaqs($product, $request->input('faqs', []));
         $this->syncSpecs($product, $request->input('specs', []));
@@ -223,13 +230,14 @@ class ProductController extends Controller
         $brands           = Brand::where('is_active', true)->orderBy('name')->get(['id', 'name']);
         $allTags          = Tag::orderBy('name')->get(['id', 'name']);
         $attributeNames   = Attribute::where('is_active', true)->orderBy('sort_order')->orderBy('name')->pluck('name');
-        $simpleProducts   = Product::where('type', '!=', 'bundle')->where('is_active', true)->where('id', '!=', $product->id)->orderBy('name')->get(['id', 'name', 'price']);
+        $simpleProducts   = Product::whereNotIn('type', ['bundle', 'variable'])->where('is_active', true)->where('id', '!=', $product->id)->orderBy('name')->get(['id', 'name', 'price']);
 
-        $product->load(['images', 'variants', 'colors', 'tags', 'faqs', 'specs', 'bundleItems.itemProduct']);
+        $product->load(['images', 'colors', 'sizes', 'combinations.color', 'combinations.size', 'tags', 'faqs', 'specs', 'bundleItems.itemProduct']);
+        $variantMatrix = $this->variantMatrixJsData($product);
 
         return view('admin.products.edit', compact(
             'product', 'categoryTree', 'allSubcategories', 'brands',
-            'allTags', 'attributeNames', 'simpleProducts'
+            'allTags', 'attributeNames', 'simpleProducts', 'variantMatrix'
         ));
     }
 
@@ -245,6 +253,10 @@ class ProductController extends Controller
             'sku'         => ['nullable', 'string', 'max:100', Rule::unique('products', 'sku')->ignore($product->id)],
             'image'       => 'nullable|image|max:4096',
             'images.*'    => 'nullable|image|max:4096',
+            // Only required if there isn't already a file saved — editing other
+            // fields shouldn't force a re-upload.
+            'download_file' => ($request->input('type') === 'digital' && ! $product->download_file)
+                ? 'required|file|max:102400' : 'nullable|file|max:102400',
         ]);
 
         $data = $request->only([
@@ -295,8 +307,9 @@ class ProductController extends Controller
             $this->reorderGallery($product, $request->input('existing_image_order'));
         }
         $this->saveGallery($product, $request);
-        $this->syncVariants($product, $request->input('variants', []));
-        $this->syncColors($product, $request->input('colors', []), $request);
+        $colorIdsByIndex = $this->syncProductColors($product, $request->input('colors', []), $request);
+        $sizeIdsByIndex = $this->syncProductSizes($product, $request->input('sizes', []));
+        $this->syncProductCombinations($product, $request->input('combinations', []), $colorIdsByIndex, $sizeIdsByIndex);
         $this->syncTags($product, $request->input('tag_ids', []));
         $this->syncFaqs($product, $request->input('faqs', []));
         $this->syncSpecs($product, $request->input('specs', []));
@@ -409,55 +422,6 @@ class ProductController extends Controller
         }
     }
 
-    private function syncVariants(Product $product, array $rows): void
-    {
-        $keptIds = [];
-        foreach ($rows as $i => $row) {
-            if (empty(trim($row['name'] ?? ''))) continue;
-            $attrs = [
-                'name'       => trim($row['name']),
-                'sku'        => $row['sku'] ?? null ?: null,
-                'price'      => $row['price'] ?? null ?: null,
-                'stock'      => (int) ($row['stock'] ?? 0),
-                'sort_order' => $i,
-                'is_active'  => !empty($row['is_active']),
-            ];
-            if (!empty($row['id'])) {
-                $v = ProductVariant::where('id', $row['id'])->where('product_id', $product->id)->first();
-                if ($v) { $v->update($attrs); $keptIds[] = $v->id; continue; }
-            }
-            $keptIds[] = ProductVariant::create(array_merge($attrs, ['product_id' => $product->id]))->id;
-        }
-        $product->variants()->whereNotIn('id', $keptIds)->delete();
-    }
-
-    private function syncColors(Product $product, array $rows, Request $request): void
-    {
-        $keptIds = [];
-        foreach ($rows as $i => $row) {
-            if (empty(trim($row['name'] ?? ''))) continue;
-            $attrs = [
-                'name'       => trim($row['name']),
-                'hex_code'   => $row['hex_code'] ?? null ?: null,
-                'stock'      => $row['stock'] ?? null ?: null,
-                'sort_order' => $i,
-                'is_active'  => !empty($row['is_active']),
-            ];
-            if ($request->hasFile("color_images.{$i}")) {
-                $attrs['image'] = $request->file("color_images.{$i}")->store('products/colors', 'public');
-            }
-            if (!empty($row['id'])) {
-                $c = ProductColor::where('id', $row['id'])->where('product_id', $product->id)->first();
-                if ($c) {
-                    if (empty($attrs['image'])) unset($attrs['image']);
-                    $c->update($attrs); $keptIds[] = $c->id; continue;
-                }
-            }
-            $keptIds[] = ProductColor::create(array_merge($attrs, ['product_id' => $product->id]))->id;
-        }
-        $product->colors()->whereNotIn('id', $keptIds)->delete();
-    }
-
     private function syncTags(Product $product, array $tagIds): void
     {
         $product->tags()->sync(array_filter(array_map('intval', $tagIds)));
@@ -499,7 +463,7 @@ class ProductController extends Controller
             return;
         }
 
-        $validItemIds = Product::where('type', '!=', 'bundle')
+        $validItemIds = Product::whereNotIn('type', ['bundle', 'variable'])
             ->where('id', '!=', $product->id)
             ->pluck('id')
             ->flip();
@@ -516,6 +480,8 @@ class ProductController extends Controller
                 'sort_order'        => $i,
             ]);
         }
+
+        $product->refreshBundleStock();
     }
 
     private function computeSeoScore(array $data): int

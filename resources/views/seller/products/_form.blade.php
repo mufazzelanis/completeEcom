@@ -1,5 +1,6 @@
 @csrf
 @if(isset($product))@method('PUT')@endif
+<input type="hidden" name="type" :value="productType">
 
 <div class="bg-white rounded-2xl shadow-sm p-6 space-y-4 max-w-2xl">
     @if(isset($product) && $product->approval_status === 'rejected' && $product->rejection_reason)
@@ -13,6 +14,30 @@
         <input type="text" name="name" value="{{ old('name', $product->name ?? '') }}" required
             class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
         @error('name')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
+    </div>
+
+    <div>
+        <label class="block text-sm font-medium text-gray-700 mb-2">Product Type</label>
+        <div class="grid grid-cols-3 gap-3">
+            <label class="flex flex-col p-3 border-2 rounded-xl cursor-pointer transition"
+                :class="productType === 'simple' ? 'border-indigo-500 bg-indigo-50' : 'border-gray-200 hover:border-gray-300'"
+                @click="productType = 'simple'">
+                <span class="text-sm font-semibold" :class="productType === 'simple' ? 'text-indigo-700' : 'text-gray-700'">Simple</span>
+                <span class="text-xs text-gray-400 mt-0.5">Fixed price and stock</span>
+            </label>
+            <label class="flex flex-col p-3 border-2 rounded-xl cursor-pointer transition"
+                :class="productType === 'variable' ? 'border-indigo-500 bg-indigo-50' : 'border-gray-200 hover:border-gray-300'"
+                @click="productType = 'variable'">
+                <span class="text-sm font-semibold" :class="productType === 'variable' ? 'text-indigo-700' : 'text-gray-700'">Variable</span>
+                <span class="text-xs text-gray-400 mt-0.5">Sizes and/or colors, each with its own stock</span>
+            </label>
+            <label class="flex flex-col p-3 border-2 rounded-xl cursor-pointer transition"
+                :class="productType === 'digital' ? 'border-indigo-500 bg-indigo-50' : 'border-gray-200 hover:border-gray-300'"
+                @click="productType = 'digital'">
+                <span class="text-sm font-semibold" :class="productType === 'digital' ? 'text-indigo-700' : 'text-gray-700'">Digital</span>
+                <span class="text-xs text-gray-400 mt-0.5">Downloadable file (PDF, ZIP, etc.)</span>
+            </label>
+        </div>
     </div>
 
     <div class="grid grid-cols-2 gap-4">
@@ -51,11 +76,15 @@
                 class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
             @error('sale_price')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
         </div>
-        <div>
+        <div x-show="productType !== 'variable'">
             <label class="block text-sm font-medium text-gray-700 mb-1">Stock <span class="text-red-500">*</span></label>
-            <input type="number" name="stock" value="{{ old('stock', $product->stock ?? 0) }}" required
+            <input type="number" name="stock" value="{{ old('stock', $product->stock ?? 0) }}"
                 class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
             @error('stock')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
+        </div>
+        <div x-show="productType === 'variable'" x-cloak>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Stock</label>
+            <p class="text-xs text-gray-400 bg-gray-50 rounded-lg p-3">Managed per combination below.</p>
         </div>
     </div>
 
@@ -81,8 +110,7 @@
 
     <div>
         <label class="block text-sm font-medium text-gray-700 mb-1">Full Description</label>
-        <textarea name="description" rows="6"
-            class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">{{ old('description', $product->description ?? '') }}</textarea>
+        @include('partials.rich-editor', ['name' => 'description', 'value' => old('description', $product->description ?? ''), 'id' => 'description', 'placeholder' => 'Describe the product in detail — features, materials, sizing, care instructions…'])
     </div>
 
     <div>
@@ -97,11 +125,38 @@
     <div class="bg-indigo-50 text-indigo-700 text-xs rounded-xl px-4 py-3">
         {{ isset($product) ? 'Saving changes will re-submit this product for admin approval before it goes live again.' : 'New products are reviewed by admin before they appear on the store.' }}
     </div>
+</div>
 
-    <div class="flex gap-3 pt-2">
-        <button type="submit" class="bg-indigo-600 text-white px-6 py-2.5 rounded-xl text-sm font-semibold hover:bg-indigo-700 transition">
-            {{ isset($product) ? 'Save Changes' : 'Submit for Approval' }}
-        </button>
-        <a href="{{ route('seller.products.index') }}" class="px-6 py-2.5 border border-gray-200 rounded-xl text-sm text-gray-600 hover:bg-gray-50">Cancel</a>
+<div class="bg-white rounded-2xl shadow-sm p-6 space-y-4 max-w-2xl mt-4" x-show="productType === 'digital'" x-cloak>
+    <h3 class="font-semibold text-gray-800">Digital File</h3>
+    @if(isset($product) && $product->download_file)
+    <div class="bg-green-50 border border-green-200 rounded-xl p-3 text-sm text-green-700">
+        Current file: <span class="font-mono">{{ basename($product->download_file) }}</span>
     </div>
+    @endif
+    <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">
+            {{ isset($product) && $product->download_file ? 'Replace File' : 'Upload File' }}
+            <span class="text-red-500" x-show="{{ isset($product) && $product->download_file ? 'false' : 'true' }}">*</span>
+        </label>
+        <input type="file" name="download_file" class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm">
+        <p class="text-xs text-gray-400 mt-1">Max 100MB. Customers can download this after their order is placed and paid.</p>
+        @error('download_file')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
+    </div>
+    <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Download Expiry (days)</label>
+        <input type="number" name="download_expiry_days" value="{{ old('download_expiry_days', $product->download_expiry_days ?? '') }}" min="1" placeholder="Blank = no limit"
+            class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+    </div>
+</div>
+
+<div class="max-w-2xl mt-4">
+    @include('admin.products._variant_matrix')
+</div>
+
+<div class="max-w-2xl flex gap-3 pt-4">
+    <button type="submit" class="bg-indigo-600 text-white px-6 py-2.5 rounded-xl text-sm font-semibold hover:bg-indigo-700 transition">
+        {{ isset($product) ? 'Save Changes' : 'Submit for Approval' }}
+    </button>
+    <a href="{{ route('seller.products.index') }}" class="px-6 py-2.5 border border-gray-200 rounded-xl text-sm text-gray-600 hover:bg-gray-50">Cancel</a>
 </div>

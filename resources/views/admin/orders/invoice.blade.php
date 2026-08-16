@@ -501,6 +501,9 @@ if ($logoPath && \Illuminate\Support\Facades\Storage::disk('public')->exists($lo
                         <td>{{ $i + 1 }}</td>
                         <td>
                             <div class="prod-name">{{ $item->product_name }}</div>
+                            @if ($item->variant_label)
+                                <div class="prod-sku">{{ $item->variant_label }}</div>
+                            @endif
                             @if ($item->product?->sku)
                                 <div class="prod-sku">SKU: {{ $item->product->sku }}</div>
                             @endif

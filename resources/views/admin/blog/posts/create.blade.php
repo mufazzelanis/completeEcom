@@ -71,8 +71,7 @@
 
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Content <span class="text-red-500">*</span></label>
-                        <textarea name="content" rows="16" required
-                            class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono @error('content') border-red-400 @enderror">{{ old('content') }}</textarea>
+                        @include('partials.rich-editor', ['name' => 'content', 'value' => old('content', ''), 'id' => 'content', 'placeholder' => 'Write the post…'])
                         @error('content')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
                     </div>
                 </div>

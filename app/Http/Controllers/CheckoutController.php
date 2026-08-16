@@ -10,6 +10,7 @@ use App\Models\Payment;
 use App\Models\PaymentMethod;
 use App\Models\PointTransaction;
 use App\Models\Product;
+use App\Models\ProductVariantCombination;
 use App\Models\PromoCode;
 use App\Models\ReferralCode;
 use App\Models\Setting;
@@ -31,16 +32,32 @@ class CheckoutController extends Controller
         $request->validate([
             'product_id' => 'required|exists:products,id',
             'quantity' => 'required|integer|min:1',
+            'variant_combination_id' => 'nullable|exists:product_variant_combinations,id',
         ]);
 
         $product = Product::findOrFail($request->product_id);
+        $combination = null;
 
-        if ($product->available_stock < $request->quantity) {
+        if ($product->isVariable()) {
+            $combination = ProductVariantCombination::where('id', $request->variant_combination_id)
+                ->where('product_id', $product->id)
+                ->where('is_active', true)
+                ->first();
+
+            if (! $combination) {
+                return back()->with('error', 'Please select a valid option.');
+            }
+        }
+
+        $availableQty = $combination ? $combination->stock : $product->available_stock;
+
+        if ($availableQty < $request->quantity) {
             return back()->with('error', 'Insufficient stock.');
         }
 
         session(['buy_now' => [
             'product_id' => $product->id,
+            'variant_combination_id' => $combination?->id,
             'quantity' => (int) $request->quantity,
         ]]);
 
@@ -51,24 +68,36 @@ class CheckoutController extends Controller
     {
         if ($buyNow = session('buy_now')) {
             $product = Product::find($buyNow['product_id']);
+            $combination = !empty($buyNow['variant_combination_id'])
+                ? ProductVariantCombination::with(['color', 'size'])->find($buyNow['variant_combination_id'])
+                : null;
 
-            if (! $product || $product->available_stock < $buyNow['quantity']) {
+            $availableQty = $combination ? $combination->stock : $product?->available_stock;
+
+            if (! $product || $availableQty === null || $availableQty < $buyNow['quantity']) {
                 session()->forget('buy_now');
 
                 return collect();
             }
 
-            $item = new Cart(['product_id' => $product->id, 'quantity' => $buyNow['quantity']]);
+            $item = new Cart([
+                'product_id' => $product->id,
+                'product_variant_combination_id' => $combination?->id,
+                'quantity' => $buyNow['quantity'],
+            ]);
             $item->setRelation('product', $product);
+            if ($combination) {
+                $item->setRelation('combination', $combination);
+            }
 
             return collect([$item]);
         }
 
         if (auth()->check()) {
-            return Cart::where('user_id', auth()->id())->with('product')->get();
+            return Cart::where('user_id', auth()->id())->with(['product', 'combination.color', 'combination.size'])->get();
         }
 
-        return Cart::where('session_id', session()->getId())->with('product')->get();
+        return Cart::where('session_id', session()->getId())->with(['product', 'combination.color', 'combination.size'])->get();
     }
 
     private function resolveCartCount()
@@ -385,10 +414,14 @@ class CheckoutController extends Controller
                 OrderItem::create([
                     'order_id' => $order->id,
                     'product_id' => $item->product_id,
+                    'product_variant_combination_id' => $item->product_variant_combination_id,
+                    'variant_label' => $item->combination?->label,
                     'product_name' => $item->product->name,
-                    'price' => $item->product->final_price,
+                    'price' => $item->unit_price,
                     'quantity' => $item->quantity,
                     'subtotal' => $item->subtotal,
+                    'download_expires_at' => ($item->product->isDigital() && $item->product->download_expiry_days)
+                        ? now()->addDays($item->product->download_expiry_days) : null,
                 ]);
                 if ($item->product->isBundle()) {
                     foreach ($item->product->bundleItems as $bundleItem) {
@@ -396,6 +429,14 @@ class CheckoutController extends Controller
                         $bundleItem->itemProduct->decrement('stock', $bundleItem->quantity * $item->quantity);
                         $this->maybeNotifyLowStock($bundleItem->itemProduct, $before);
                     }
+                    $item->product->refreshBundleStock();
+                } elseif ($item->combination) {
+                    // Keep the combination's own stock and the product's denormalized
+                    // total (used everywhere else — filters, reports, low-stock) in lockstep.
+                    $before = $item->product->stock;
+                    $item->combination->decrement('stock', $item->quantity);
+                    $item->product->decrement('stock', $item->quantity);
+                    $this->maybeNotifyLowStock($item->product, $before);
                 } else {
                     $before = $item->product->stock;
                     $item->product->decrement('stock', $item->quantity);

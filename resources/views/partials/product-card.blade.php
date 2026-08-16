@@ -59,6 +59,8 @@
                     @endphp
                     <button onclick="event.preventDefault(); toggleCartItem({{ $product->id }}, this)"
                         data-in-cart="{{ $isInCart ? 'true' : 'false' }}"
+                        data-product-name="{{ $product->name }}"
+                        data-product-price="{{ $effectivePrice }}"
                         data-icon-default='{!! $cartIconSvg !!}'
                         data-icon-added='{!! $checkIconSvg !!}'
                         data-label-default="{{ $addToCartText }}"
@@ -127,7 +129,15 @@
                 <p class="text-[10px] text-orange-500 mt-1 font-medium">Only {{ $product->available_stock }} left - order soon</p>
             @endif
 
-            @if($product->available_stock > 0)
+            @if($product->isVariable() && $product->available_stock > 0)
+                {{-- Variable products need a color/size picked first — no matrix here
+                     on the card, so send the customer to the product page to choose. --}}
+                <a href="{{ route('products.show', $product->slug) }}"
+                    class="inline-flex items-center gap-1 bg-[length:200%_auto] bg-gradient-to-r from-pink-500 via-fuchsia-500 to-orange-400 hover:bg-right text-white text-[11px] font-bold pl-2 pr-3 py-1 rounded-full shadow-sm hover:shadow-md transition-all duration-500 mt-2">
+                    <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z"/></svg>
+                    Select Options
+                </a>
+            @elseif($product->available_stock > 0)
                 {{-- Same checkout.buy-now endpoint the product page uses — skips the cart
                      and takes the customer straight to checkout for just this one item. --}}
                 <form action="{{ route('checkout.buy-now') }}" method="POST" class="mt-2">

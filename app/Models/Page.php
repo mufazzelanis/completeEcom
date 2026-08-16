@@ -25,10 +25,11 @@ class Page extends Model
 
     // Sanitized on write, not read — content is rendered unescaped ({!! !!}) in
     // pages/show and pages/contact, so stored HTML must already be safe rather
-    // than trusted at render time.
+    // than trusted at render time. 'rich_content' (not the minimal 'default'
+    // profile) matches what the Summernote editor's toolbar actually produces.
     public function setContentAttribute($value)
     {
-        $this->attributes['content'] = $value !== null ? clean($value) : $value;
+        $this->attributes['content'] = $value !== null ? clean($value, 'rich_content') : $value;
     }
 
     public function scopeActive($query)  { return $query->where('is_active', true); }

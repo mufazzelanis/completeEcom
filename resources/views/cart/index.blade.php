@@ -35,7 +35,10 @@
                             <div class="flex-1 min-w-0">
                                 <a href="{{ route('products.show', $item->product->slug) }}" class="font-semibold text-gray-800 hover:text-orange-500 text-sm block truncate">{{ $item->product->name }}</a>
                                 <p class="text-xs text-gray-400 mt-1">{{ $item->product->category->name }}</p>
-                                <p class="text-orange-500 font-bold mt-2">৳{{ number_format($item->product->final_price) }}</p>
+                                @if($item->combination?->label)
+                                    <p class="text-xs text-gray-500 mt-0.5">{{ $item->combination->label }}</p>
+                                @endif
+                                <p class="text-orange-500 font-bold mt-2">৳{{ number_format($item->unit_price) }}</p>
                             </div>
                             <div class="flex flex-col items-end space-y-3">
                                 <form action="{{ route('cart.update', $item->id) }}" method="POST" class="flex items-center border border-gray-200 rounded-lg overflow-hidden">
@@ -69,7 +72,10 @@
                                 </div>
                                 <div class="flex-1 min-w-0">
                                     <a href="{{ route('products.show', $item->product->slug) }}" class="font-semibold text-gray-800 text-sm line-clamp-2">{{ $item->product->name }}</a>
-                                    <p class="text-orange-500 font-bold mt-1">৳{{ number_format($item->product->final_price) }}</p>
+                                    @if($item->combination?->label)
+                                        <p class="text-xs text-gray-500 mt-0.5">{{ $item->combination->label }}</p>
+                                    @endif
+                                    <p class="text-orange-500 font-bold mt-1">৳{{ number_format($item->unit_price) }}</p>
                                 </div>
                                 <form action="{{ route('cart.remove', $item->id) }}" method="POST">
                                     @csrf @method('DELETE')

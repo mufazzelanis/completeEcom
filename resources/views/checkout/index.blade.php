@@ -409,6 +409,9 @@
                                 </div>
                                 <div class="flex-1 min-w-0">
                                     <p class="text-sm text-gray-700 truncate">{{ $item->product->name }}</p>
+                                    @if($item->combination?->label)
+                                        <p class="text-xs text-gray-400 truncate">{{ $item->combination->label }}</p>
+                                    @endif
                                     <p class="text-xs text-gray-400">× {{ $item->quantity }}</p>
                                 </div>
                                 <span class="text-sm font-semibold text-gray-900 flex-shrink-0">৳{{ number_format($item->subtotal) }}</span>
@@ -474,5 +477,39 @@ function fillAddress(address) {
     setVal('shipping_state', address.state);
     setVal('shipping_zip', address.zip);
 }
+</script>
+
+@php
+    // Covers both the cart-checkout and buy-now paths — both land on this page,
+    // whichever cart items resolveCheckoutItems() (CheckoutController) built.
+    $trackedItems = $cartItems->map(fn ($item) => [
+        'id'       => (string) $item->product_id,
+        'name'     => $item->product->name,
+        'price'    => (float) $item->unit_price,
+        'quantity' => $item->quantity,
+    ])->values();
+@endphp
+<script>
+(function () {
+    var items = @json($trackedItems);
+    var value = {{ (float) $subtotal }};
+    var currency = {!! Js::from(setting('currency_code', 'BDT')) !!};
+
+    if (typeof fbq === 'function') {
+        fbq('track', 'InitiateCheckout', {
+            content_ids: items.map(function (i) { return i.id; }), content_type: 'product',
+            num_items: items.reduce(function (n, i) { return n + i.quantity; }, 0),
+            value: value, currency: currency,
+        });
+    }
+    if (typeof gtag === 'function') {
+        gtag('event', 'begin_checkout', {
+            currency: currency, value: value,
+            items: items.map(function (i) { return { item_id: i.id, item_name: i.name, price: i.price, quantity: i.quantity }; }),
+        });
+    }
+    window.dataLayer = window.dataLayer || [];
+    window.dataLayer.push({ event: 'begin_checkout', ecommerce: { currency: currency, value: value, items: items } });
+})();
 </script>
 @endsection

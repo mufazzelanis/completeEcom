@@ -25,7 +25,11 @@
                 <td class="px-5 py-3 text-gray-500 text-xs">{{ $order->created_at->format('M d, Y') }}</td>
                 <td class="px-5 py-3">
                     @foreach($order->items as $item)
-                        <p class="text-gray-700">{{ $item->product_name }} <span class="text-gray-400">x{{ $item->quantity }}</span></p>
+                        <p class="text-gray-700">
+                            {{ $item->product_name }}
+                            @if($item->variant_label)<span class="text-gray-400">({{ $item->variant_label }})</span>@endif
+                            <span class="text-gray-400">x{{ $item->quantity }}</span>
+                        </p>
                     @endforeach
                 </td>
                 <td class="px-5 py-3 text-center">

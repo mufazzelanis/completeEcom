@@ -16,8 +16,19 @@ $accentShades   = $accentColor !== '#dc2626' ? brand_color_shades($accentColor) 
 $textColorChanged = $textColor !== '#1f2937';
 $gaId         = setting('google_analytics_id', '');
 $gtmId        = setting('google_tag_manager_id', '');
+$adsConversionId = setting('google_ads_conversion_id', '');
+$googleEnhancedOn = setting('google_enhanced_conversions_enabled', '0') == '1';
 $pixelId      = setting('facebook_pixel_id', '');
+$pixelOn      = $pixelId && setting('facebook_pixel_enabled', $pixelId ? '1' : '0') == '1';
+$fbAdvancedMatchingOn = setting('facebook_advanced_matching_enabled', '0') == '1';
 $customCss    = setting('custom_css', '');
+
+// Site-wide default for Advanced Matching / Enhanced Conversions: whatever we
+// know about the logged-in visitor. checkout/success.blade.php refreshes this
+// with the order's own (often more complete, and the only source for guest
+// checkouts) shipping details right before the Purchase event fires.
+$trackedUser = auth()->check() ? auth()->user() : null;
+$trackingData = $trackedUser ? pixel_advanced_matching_data($trackedUser->name, $trackedUser->email, $trackedUser->phone) : ['fb' => [], 'google' => []];
 
 // Theme & Design (Settings → Theme & Design) — same "override the literal Tailwind
 // utility classes already hardcoded throughout the storefront" approach as brand colors.
@@ -279,15 +290,24 @@ $pageTwitterImage = trim($__env->yieldContent('twitter_image', $pageOgImage));
         .marquee-pause:hover .animate-marquee{animation-play-state:paused}
     </style>
     @if($customCss)<style>{{ $customCss }}</style>@endif
-    @if($gaId)
-    <script async src="https://www.googletagmanager.com/gtag/js?id={{ $gaId }}"></script>
-    <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','{{ $gaId }}');</script>
+    @if($gaId || $adsConversionId)
+    <script async src="https://www.googletagmanager.com/gtag/js?id={{ $gaId ?: $adsConversionId }}"></script>
+    <script>
+        window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());
+        @if($gaId)gtag('config','{{ $gaId }}');@endif
+        @if($adsConversionId)gtag('config','{{ $adsConversionId }}');@endif
+        @if($googleEnhancedOn && $trackingData['google'])gtag('set','user_data',{!! Js::from($trackingData['google']) !!});@endif
+    </script>
     @endif
     @if($gtmId)
     <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer','{{ $gtmId }}');</script>
     @endif
-    @if($pixelId)
-    <script>!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');fbq('init','{{ $pixelId }}');fbq('track','PageView');</script>
+    @if($pixelOn)
+    <script>
+        !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');
+        fbq('init','{{ $pixelId }}'@if($fbAdvancedMatchingOn && $trackingData['fb']), {!! Js::from($trackingData['fb']) !!}@endif);
+        fbq('track','PageView');
+    </script>
     @endif
 </head>
 <body class="bg-gray-100 dark:bg-gray-950 font-sans antialiased transition-colors">
@@ -664,6 +684,32 @@ async function toggleWishlist(productId, btn) {
      actual cart membership (data-in-cart), so picking one product doesn't unselect another —
      each button toggles independently and stays selected until explicitly un-selected. --}}
 <script>
+// Fires AddToCart for both the quick-add button (called directly, right after
+// its fetch() succeeds) and the product-page form (a full-page POST + redirect —
+// see the session-flash block near the end of this file, which calls this once
+// per add, guarded server-side the same way the Purchase event already is).
+function trackAddToCart(item) {
+    var currency = {!! Js::from(setting('currency_code', 'BDT')) !!};
+    var value = (item.price || 0) * (item.quantity || 1);
+    if (typeof fbq === 'function') {
+        fbq('track', 'AddToCart', {
+            content_ids: [String(item.id)], content_type: 'product',
+            content_name: item.name, value: value, currency: currency,
+        });
+    }
+    if (typeof gtag === 'function') {
+        gtag('event', 'add_to_cart', {
+            currency: currency, value: value,
+            items: [{ item_id: String(item.id), item_name: item.name, price: item.price, quantity: item.quantity || 1 }],
+        });
+    }
+    window.dataLayer = window.dataLayer || [];
+    window.dataLayer.push({
+        event: 'add_to_cart',
+        ecommerce: { currency: currency, value: value, items: [{ item_id: String(item.id), item_name: item.name, price: item.price, quantity: item.quantity || 1 }] },
+    });
+}
+
 function setQuickAddButtonState(btn, inCart) {
     btn.dataset.inCart = inCart ? 'true' : 'false';
 
@@ -704,6 +750,15 @@ async function toggleCartItem(productId, btn) {
         if (res.ok && (data.status === 'added' || data.status === 'removed')) {
             setQuickAddButtonState(btn, data.status === 'added');
 
+            if (data.status === 'added') {
+                trackAddToCart({
+                    id: productId,
+                    name: btn.dataset.productName || '',
+                    price: parseFloat(btn.dataset.productPrice || '0'),
+                    quantity: 1,
+                });
+            }
+
             const badge = document.getElementById('header-cart-count');
             if (badge) {
                 badge.textContent = data.cart_count;
@@ -722,6 +777,10 @@ async function toggleCartItem(productId, btn) {
     }
 }
 </script>
+
+@if(session('tracked_add_to_cart'))
+<script>trackAddToCart(@json(session('tracked_add_to_cart')));</script>
+@endif
 
 @php $customJs = setting('custom_js', ''); @endphp
 @if($customJs)<script>{{ $customJs }}</script>@endif

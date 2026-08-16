@@ -6,6 +6,7 @@ use App\Models\Cart;
 use App\Models\Coupon;
 use App\Models\Product;
 use App\Models\ProductRecommendation;
+use App\Models\ProductVariantCombination;
 use App\Models\PromoCode;
 use App\Models\Setting;
 use App\Services\ActivityLogger;
@@ -32,14 +33,14 @@ class CartController extends Controller
             }
         }
 
-        return $this->getCartQuery()->with('product')->get()->sum('subtotal');
+        return $this->getCartQuery()->with(['product', 'combination'])->get()->sum('subtotal');
     }
 
     public function index()
     {
         session()->forget('buy_now');
 
-        $cartItems = $this->getCartQuery()->with('product')->get();
+        $cartItems = $this->getCartQuery()->with(['product', 'combination.color', 'combination.size'])->get();
         $subtotal = $cartItems->sum('subtotal');
         $coupon = session('coupon');
         $promoCode = session('promo_code');
@@ -103,11 +104,31 @@ class CartController extends Controller
         $request->validate([
             'product_id' => 'required|exists:products,id',
             'quantity' => 'required|integer|min:1',
+            'variant_combination_id' => 'nullable|exists:product_variant_combinations,id',
         ]);
 
         $product = Product::findOrFail($request->product_id);
+        $combination = null;
 
-        if ($product->available_stock < $request->quantity) {
+        if ($product->isVariable()) {
+            $combination = ProductVariantCombination::where('id', $request->variant_combination_id)
+                ->where('product_id', $product->id)
+                ->where('is_active', true)
+                ->first();
+
+            if (! $combination) {
+                $message = 'Please select a valid option.';
+                if ($request->wantsJson()) {
+                    return response()->json(['status' => 'error', 'message' => $message], 422);
+                }
+
+                return back()->with('error', $message);
+            }
+        }
+
+        $availableQty = $combination ? $combination->stock : $product->available_stock;
+
+        if ($availableQty < $request->quantity) {
             if ($request->wantsJson()) {
                 return response()->json(['status' => 'error', 'message' => 'Insufficient stock.'], 422);
             }
@@ -117,7 +138,9 @@ class CartController extends Controller
 
         session()->forget('buy_now');
 
-        $cartQuery = $this->getCartQuery()->where('product_id', $product->id);
+        $cartQuery = $this->getCartQuery()->where('product_id', $product->id)
+            ->when($combination, fn ($q) => $q->where('product_variant_combination_id', $combination->id),
+                fn ($q) => $q->whereNull('product_variant_combination_id'));
         $cartItem = $cartQuery->first();
 
         if ($cartItem) {
@@ -127,6 +150,7 @@ class CartController extends Controller
                 'user_id' => auth()->id(),
                 'session_id' => auth()->check() ? null : session()->getId(),
                 'product_id' => $product->id,
+                'product_variant_combination_id' => $combination?->id,
                 'quantity' => $request->quantity,
             ]);
         }
@@ -134,11 +158,25 @@ class CartController extends Controller
         ActivityLogger::log('cart.add', "Added \"{$product->name}\" x{$request->quantity} to cart", $product, ['quantity' => $request->quantity]);
 
         if ($request->wantsJson()) {
+            // The quick-add button fires AddToCart itself (trackAddToCart() in
+            // layouts/app.blade.php, right after this fetch() resolves) — no
+            // page reload here to hang a session-flash tracker off of.
             return response()->json([
                 'status' => 'added',
                 'cart_count' => (int) $this->getCartQuery()->sum('quantity'),
             ]);
         }
+
+        // This path is a full-page POST + redirect, so there's no JS callback to
+        // fire AddToCart from directly — flash it instead and let the layout fire
+        // it once on whichever page the redirect lands on (same pattern as the
+        // Purchase event's $shouldTrackPurchase guard).
+        session()->flash('tracked_add_to_cart', [
+            'id' => $product->id,
+            'name' => $product->name,
+            'price' => (float) ($combination?->price ?? $product->final_price),
+            'quantity' => (int) $request->quantity,
+        ]);
 
         return back()->with('success', 'Product added to cart!');
     }

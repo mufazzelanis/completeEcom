@@ -30,32 +30,18 @@
 </div>
 
 <div class="bg-white rounded-xl shadow-sm border p-6 space-y-4">
-    <h2 class="text-base font-semibold text-gray-900 pb-2 border-b">Analytics & Tracking</h2>
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Google Analytics ID</label>
-            <input type="text" name="google_analytics_id" value="{{ setting('google_analytics_id', '') }}"
-                   class="w-full border rounded-lg px-3 py-2 text-sm font-mono focus:ring-2 focus:ring-orange-500"
-                   placeholder="G-XXXXXXXXXX or UA-XXXXXXXXX-X">
-        </div>
-        <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Google Tag Manager ID</label>
-            <input type="text" name="google_tag_manager_id" value="{{ setting('google_tag_manager_id', '') }}"
-                   class="w-full border rounded-lg px-3 py-2 text-sm font-mono focus:ring-2 focus:ring-orange-500"
-                   placeholder="GTM-XXXXXXX">
-        </div>
-        <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Facebook Pixel ID</label>
-            <input type="text" name="facebook_pixel_id" value="{{ setting('facebook_pixel_id', '') }}"
-                   class="w-full border rounded-lg px-3 py-2 text-sm font-mono focus:ring-2 focus:ring-orange-500"
-                   placeholder="123456789012345">
-        </div>
-        <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Google Site Verification</label>
-            <input type="text" name="google_site_verification" value="{{ setting('google_site_verification', '') }}"
-                   class="w-full border rounded-lg px-3 py-2 text-sm font-mono focus:ring-2 focus:ring-orange-500"
-                   placeholder="verification meta content">
-        </div>
+    <h2 class="text-base font-semibold text-gray-900 pb-2 border-b">Search Console & Sitemap</h2>
+    <p class="text-xs text-gray-400 -mt-2">
+        Looking for Google Analytics, Google Ads, or Facebook Pixel? Those moved to
+        <a href="{{ route('admin.settings.show', 'google_ads') }}" class="text-orange-600 hover:underline">Google Analytics &amp; Ads</a>
+        and <a href="{{ route('admin.settings.show', 'facebook_pixel') }}" class="text-orange-600 hover:underline">Facebook Pixel</a>
+        under Marketing.
+    </p>
+    <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Google Site Verification</label>
+        <input type="text" name="google_site_verification" value="{{ setting('google_site_verification', '') }}"
+               class="w-full border rounded-lg px-3 py-2 text-sm font-mono focus:ring-2 focus:ring-orange-500"
+               placeholder="verification meta content">
     </div>
     <label class="flex items-center gap-2 cursor-pointer">
         <input type="hidden" name="sitemap_enabled" value="0">
