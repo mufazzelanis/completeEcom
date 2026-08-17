@@ -29,6 +29,13 @@ class OptimizeImages extends Command
 
     public function handle(): int
     {
+        // Some hosts set a much tighter memory_limit for CLI/cron than for web requests —
+        // decoding+resizing a full-resolution banner (the largest images this command
+        // touches, capped at 1920px vs. 600–1200px for everything else) can need more
+        // headroom than that. Scoped to just this one process; harmless either way.
+        @ini_set('memory_limit', '512M');
+        @set_time_limit(300);
+
         $dryRun = (bool) $this->option('dry-run');
         $minBytes = (int) $this->option('min-kb') * 1024;
         $limit = (int) $this->option('limit');
@@ -63,8 +70,16 @@ class OptimizeImages extends Command
                 continue;
             }
 
-            if (! $result || strlen($result['bytes']) >= $originalSize) {
-                continue; // GD couldn't touch it, or it genuinely wasn't improvable — leave as-is
+            if (! $result) {
+                if (ImageOptimizer::$lastError) {
+                    $this->warn('  ✗ ' . $path . ': ' . ImageOptimizer::$lastError);
+                    $failed++;
+                }
+                continue; // otherwise this format is intentionally never processed (gif, svg, ...)
+            }
+
+            if (strlen($result['bytes']) >= $originalSize) {
+                continue; // genuinely not improvable — leave as-is rather than make it worse
             }
 
             $newSize = strlen($result['bytes']);

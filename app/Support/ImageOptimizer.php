@@ -23,6 +23,13 @@ use Illuminate\Support\Str;
 class ImageOptimizer
 {
     /**
+     * Set whenever optimize() falls back to null because of a caught exception (not because
+     * GD simply doesn't handle the format) — images:optimize surfaces this so a failure isn't
+     * silently indistinguishable from "nothing to do here".
+     */
+    public static ?string $lastError = null;
+
+    /**
      * Resize + re-encode an uploaded image and store it, returning the stored path — a drop-in
      * replacement for `$file->store($directory, $disk)`.
      */
@@ -47,7 +54,10 @@ class ImageOptimizer
      */
     public static function optimize(string $path, ?string $mime, int $maxDimension, int $quality): ?array
     {
+        self::$lastError = null;
+
         if (! extension_loaded('gd')) {
+            self::$lastError = 'the GD extension is not loaded';
             return null;
         }
 
@@ -60,6 +70,12 @@ class ImageOptimizer
             };
 
             if (! $image) {
+                // A recognized mime whose GD decoder still returned false is an actual
+                // failure (corrupt file, unsupported PNG color mode, etc.) worth surfacing —
+                // as opposed to a format we intentionally never attempt (gif, svg, ...).
+                if (in_array($mime, ['image/jpeg', 'image/png', 'image/webp'], true)) {
+                    self::$lastError = "GD couldn't decode this {$mime} file";
+                }
                 return null;
             }
 
@@ -122,6 +138,7 @@ class ImageOptimizer
                 },
             ];
         } catch (\Throwable $e) {
+            self::$lastError = $e->getMessage();
             Log::warning('ImageOptimizer: falling back to unprocessed upload — ' . $e->getMessage());
             return null;
         }
