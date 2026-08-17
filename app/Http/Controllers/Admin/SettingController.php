@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Setting;
+use App\Support\ImageOptimizer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
@@ -79,7 +80,7 @@ class SettingController extends Controller
                 if ($old && Storage::disk('public')->exists($old)) {
                     Storage::disk('public')->delete($old);
                 }
-                $path = $file->store('settings', 'public');
+                $path = ImageOptimizer::store($file, 'settings', 'public', 1600);
                 Setting::set($key, $path, $group);
             }
         }

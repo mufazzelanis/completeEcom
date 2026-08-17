@@ -8,6 +8,7 @@ use App\Models\Brand;
 use App\Models\Category;
 use App\Models\OrderItem;
 use App\Models\Product;
+use App\Support\ImageOptimizer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
@@ -50,7 +51,7 @@ class ProductController extends Controller
         $data['download_expiry_days'] = $request->filled('download_expiry_days') ? (int) $request->download_expiry_days : null;
 
         if ($request->hasFile('image')) {
-            $data['image'] = $request->file('image')->store('products', 'public');
+            $data['image'] = ImageOptimizer::store($request->file('image'), 'products', 'public', 1200);
         }
         if ($request->hasFile('download_file')) {
             $data['download_file'] = $request->file('download_file')->store('downloads', 'private');
@@ -90,7 +91,7 @@ class ProductController extends Controller
         $data['download_expiry_days'] = $request->filled('download_expiry_days') ? (int) $request->download_expiry_days : null;
 
         if ($request->hasFile('image')) {
-            $data['image'] = $request->file('image')->store('products', 'public');
+            $data['image'] = ImageOptimizer::store($request->file('image'), 'products', 'public', 1200);
         }
         if ($request->hasFile('download_file')) {
             $data['download_file'] = $request->file('download_file')->store('downloads', 'private');

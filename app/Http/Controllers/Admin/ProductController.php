@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Concerns\SyncsProductVariants;
 use App\Http\Controllers\Controller;
+use App\Support\ImageOptimizer;
 use App\Models\Attribute;
 use App\Models\Brand;
 use App\Models\BundleItem;
@@ -198,7 +199,7 @@ class ProductController extends Controller
         $data['download_expiry_days'] = $request->filled('download_expiry_days') ? (int) $request->download_expiry_days : null;
 
         if ($request->hasFile('image')) {
-            $data['image'] = $request->file('image')->store('products', 'public');
+            $data['image'] = ImageOptimizer::store($request->file('image'), 'products', 'public', 1200);
         }
         if ($request->hasFile('download_file')) {
             $data['download_file'] = $request->file('download_file')->store('downloads', 'private');
@@ -292,7 +293,7 @@ class ProductController extends Controller
         $data['download_expiry_days'] = $request->filled('download_expiry_days') ? (int) $request->download_expiry_days : null;
 
         if ($request->hasFile('image')) {
-            $data['image'] = $request->file('image')->store('products', 'public');
+            $data['image'] = ImageOptimizer::store($request->file('image'), 'products', 'public', 1200);
         }
         if ($request->hasFile('download_file')) {
             $data['download_file'] = $request->file('download_file')->store('downloads', 'private');
@@ -408,7 +409,7 @@ class ProductController extends Controller
             foreach ($request->file('images') as $i => $img) {
                 ProductImage::create([
                     'product_id' => $product->id,
-                    'image'      => $img->store('products', 'public'),
+                    'image'      => ImageOptimizer::store($img, 'products', 'public', 1200),
                     'sort_order' => $product->images()->count() + $i,
                 ]);
             }

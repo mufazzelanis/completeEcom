@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Banner;
+use App\Support\ImageOptimizer;
 use Illuminate\Http\Request;
 
 class BannerController extends Controller
@@ -34,7 +35,7 @@ class BannerController extends Controller
         $data['ends_at']    = $request->filled('ends_at') ? $request->ends_at : null;
 
         if ($request->hasFile('image')) {
-            $data['image'] = $request->file('image')->store('banners', 'public');
+            $data['image'] = ImageOptimizer::store($request->file('image'), 'banners', 'public', 1920);
         }
 
         Banner::create($data);
@@ -61,7 +62,7 @@ class BannerController extends Controller
         $data['ends_at']    = $request->filled('ends_at') ? $request->ends_at : null;
 
         if ($request->hasFile('image')) {
-            $data['image'] = $request->file('image')->store('banners', 'public');
+            $data['image'] = ImageOptimizer::store($request->file('image'), 'banners', 'public', 1920);
         }
 
         $banner->update($data);

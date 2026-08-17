@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Category;
+use App\Support\ImageOptimizer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
@@ -66,7 +67,7 @@ class SubcategoryController extends Controller
         ];
 
         if ($request->hasFile('image')) {
-            $data['image'] = $request->file('image')->store('categories', 'public');
+            $data['image'] = ImageOptimizer::store($request->file('image'), 'categories', 'public', 800);
         }
 
         Category::create($data);
@@ -101,7 +102,7 @@ class SubcategoryController extends Controller
         ];
 
         if ($request->hasFile('image')) {
-            $data['image'] = $request->file('image')->store('categories', 'public');
+            $data['image'] = ImageOptimizer::store($request->file('image'), 'categories', 'public', 800);
         }
 
         $sub->update($data);

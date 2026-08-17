@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Brand;
+use App\Support\ImageOptimizer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
@@ -37,7 +38,7 @@ class BrandController extends Controller
         $data['is_active'] = $request->boolean('is_active', true);
 
         if ($request->hasFile('logo')) {
-            $data['logo'] = $request->file('logo')->store('brands', 'public');
+            $data['logo'] = ImageOptimizer::store($request->file('logo'), 'brands', 'public', 600);
         }
 
         Brand::create($data);
@@ -62,7 +63,7 @@ class BrandController extends Controller
         $data['is_active'] = $request->boolean('is_active');
 
         if ($request->hasFile('logo')) {
-            $data['logo'] = $request->file('logo')->store('brands', 'public');
+            $data['logo'] = ImageOptimizer::store($request->file('logo'), 'brands', 'public', 600);
         }
 
         $brand->update($data);

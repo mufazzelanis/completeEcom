@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Category;
+use App\Support\ImageOptimizer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -74,10 +75,10 @@ class CategoryController extends Controller
         $data['noimageindex'] = $request->boolean('noimageindex');
 
         if ($request->hasFile('image')) {
-            $data['image'] = $request->file('image')->store('categories', 'public');
+            $data['image'] = ImageOptimizer::store($request->file('image'), 'categories', 'public', 800);
         }
         if ($request->hasFile('og_image')) {
-            $data['og_image'] = $request->file('og_image')->store('categories', 'public');
+            $data['og_image'] = ImageOptimizer::store($request->file('og_image'), 'categories', 'public', 1200);
         }
 
         Category::create($data);
@@ -120,10 +121,10 @@ class CategoryController extends Controller
         $data['noimageindex'] = $request->boolean('noimageindex');
 
         if ($request->hasFile('image')) {
-            $data['image'] = $request->file('image')->store('categories', 'public');
+            $data['image'] = ImageOptimizer::store($request->file('image'), 'categories', 'public', 800);
         }
         if ($request->hasFile('og_image')) {
-            $data['og_image'] = $request->file('og_image')->store('categories', 'public');
+            $data['og_image'] = ImageOptimizer::store($request->file('og_image'), 'categories', 'public', 1200);
         }
 
         $category->update($data);
