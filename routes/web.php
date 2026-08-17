@@ -92,25 +92,7 @@ Route::get('/search/suggest', [SearchController::class, 'suggest'])->name('searc
 
 // SEO: sitemap + robots.txt (public/robots.txt removed so this route is actually reached)
 Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemap');
-Route::get('/robots.txt', function () {
-    // The "Enable Sitemap" admin toggle only controls sitemap.xml itself — it must
-    // never also flip into a site-wide "Disallow: /", or an admin turning off the
-    // sitemap feature for an unrelated reason would silently deindex the whole store.
-    $lines = [
-        'User-agent: *',
-        'Disallow: /admin',
-        'Disallow: /cart',
-        'Disallow: /checkout',
-        'Disallow: /account',
-    ];
-
-    if (setting('sitemap_enabled', '1') === '1') {
-        $lines[] = '';
-        $lines[] = 'Sitemap: ' . route('sitemap');
-    }
-
-    return response(implode("\n", $lines), 200)->header('Content-Type', 'text/plain');
-})->name('robots');
+Route::get('/robots.txt', [SitemapController::class, 'robots'])->name('robots');
 
 // Blog (public)
 Route::get('/blog', [BlogController::class, 'index'])->name('blog.index');
@@ -506,7 +488,8 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::patch('faqs/{faq}/toggle', [AdminFaqController::class, 'toggle'])->name('faqs.toggle');
 
     // Marketing — Overview
-    Route::get('marketing', fn () => view('admin.marketing.index'))->name('marketing.index');
+    // Route::view (not a closure) so this survives `php artisan route:cache`.
+    Route::view('marketing', 'admin.marketing.index')->name('marketing.index');
 
     // Marketing — Flash Sales
     Route::resource('flash-sales', AdminFlashSaleController::class)->except(['show']);
@@ -566,7 +549,9 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     // Settings pages pre-fill live secrets (payment gateway keys, SMTP password),
     // so viewing is gated the same as changing — not just the update/save action.
     Route::middleware('permission:settings.manage')->group(function () {
-        Route::get('settings', fn () => redirect()->route('admin.settings.show', 'general'))->name('settings');
+        // Route::redirect (not a closure) so this survives `php artisan route:cache` —
+        // destination is the literal path admin.settings.show('general') resolves to.
+        Route::redirect('settings', 'admin/settings/general')->name('settings');
         Route::get('settings/{group}', [AdminSettingController::class, 'show'])->name('settings.show');
         Route::patch('settings/{group}', [AdminSettingController::class, 'update'])->name('settings.update');
         Route::post('settings/test-email', [AdminSettingController::class, 'testEmail'])->name('settings.test-email');

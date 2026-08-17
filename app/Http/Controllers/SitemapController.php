@@ -70,4 +70,29 @@ class SitemapController extends Controller
 
         return Response::make($xml, 200, ['Content-Type' => 'application/xml']);
     }
+
+    /**
+     * A closure route can't be included in `php artisan route:cache` (Laravel refuses to
+     * serialize it), so this lives here instead — same body as before, just moved.
+     */
+    public function robots()
+    {
+        // The "Enable Sitemap" admin toggle only controls sitemap.xml itself — it must
+        // never also flip into a site-wide "Disallow: /", or an admin turning off the
+        // sitemap feature for an unrelated reason would silently deindex the whole store.
+        $lines = [
+            'User-agent: *',
+            'Disallow: /admin',
+            'Disallow: /cart',
+            'Disallow: /checkout',
+            'Disallow: /account',
+        ];
+
+        if (setting('sitemap_enabled', '1') === '1') {
+            $lines[] = '';
+            $lines[] = 'Sitemap: ' . route('sitemap');
+        }
+
+        return response(implode("\n", $lines), 200)->header('Content-Type', 'text/plain');
+    }
 }
