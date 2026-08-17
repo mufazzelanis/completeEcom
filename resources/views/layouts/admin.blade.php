@@ -17,9 +17,7 @@
             document.documentElement.classList.toggle('dark', isDark);
         })();
     </script>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>tailwind.config = { darkMode: 'class' };</script>
-    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
     <script>
         document.addEventListener('alpine:init', () => {
             Alpine.store('theme', {

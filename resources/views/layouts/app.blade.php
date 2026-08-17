@@ -156,25 +156,7 @@ $pageTwitterImage = trim($__env->yieldContent('twitter_image', $pageOgImage));
             document.documentElement.classList.toggle('dark', isDark);
         })();
     </script>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    colors: {
-                        primary: {
-                            @if($brandShades)
-                                @foreach($brandShades as $step => $hex) {{ $step }}:'{{ $hex }}', @endforeach
-                            @else
-                                50:'#fff7ed',100:'#ffedd5',200:'#fed7aa',300:'#fdba74',400:'#fb923c',500:'#f97316',600:'#ea580c',700:'#c2410c',800:'#9a3412',900:'#7c2d12',
-                            @endif
-                        },
-                    }
-                }
-            }
-        }
-    </script>
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
     @if($brandShades || $secondaryShades || $accentShades || $textColorChanged)
     {{-- Brand Colors (Settings → Branding): the storefront's palette is hardcoded as literal
          Tailwind classes throughout, so re-theming it means overriding those generated utility
@@ -260,7 +242,6 @@ $pageTwitterImage = trim($__env->yieldContent('twitter_image', $pageOgImage));
         @endif
     </style>
     @endif
-    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <script>
         document.addEventListener('alpine:init', () => {
             Alpine.store('theme', {

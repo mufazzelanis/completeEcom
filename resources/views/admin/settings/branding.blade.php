@@ -154,6 +154,56 @@ $logos = [
     </div>
 </div>
 
+{{-- Login / Verification Pages --}}
+<div class="bg-white rounded-xl shadow-sm border p-6 space-y-4">
+    <div class="pb-3 border-b">
+        <h2 class="text-base font-semibold text-gray-900">Login &amp; Verification Pages</h2>
+        <p class="text-xs text-gray-400 mt-1">Controls the marketing panel shown beside the login, register, and 2FA verification forms.</p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+        <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Panel Heading</label>
+            <input type="text" name="auth_panel_heading" value="{{ setting('auth_panel_heading', '') }}"
+                   class="w-full border rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                   placeholder="Welcome back to {{ setting('site_name', 'ShopVista') }}">
+            <p class="text-xs text-gray-400 mt-1">Leave blank to default to "Welcome back to {{ setting('site_name', 'ShopVista') }}".</p>
+        </div>
+        <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Panel Subheading</label>
+            <input type="text" name="auth_panel_subheading" value="{{ setting('auth_panel_subheading', '') }}"
+                   class="w-full border rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                   placeholder="{{ setting('site_tagline', 'Your one-stop shop for everything you need.') }}">
+            <p class="text-xs text-gray-400 mt-1">Leave blank to default to the Tagline above.</p>
+        </div>
+    </div>
+
+    <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Trust Points</label>
+        <textarea name="auth_panel_features" rows="3"
+                  class="w-full border rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                  placeholder="Secure checkout &amp; encrypted data&#10;Fast, tracked delivery&#10;24/7 customer support">{{ setting('auth_panel_features', '') }}</textarea>
+        <p class="text-xs text-gray-400 mt-1">One point per line, shown with a checkmark. Leave blank to use the defaults (secure checkout, fast delivery, 24/7 support).</p>
+    </div>
+
+    @php $authPanelImageUrl = setting_file_url('auth_panel_image'); @endphp
+    <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Panel Background Image <span class="text-gray-400 font-normal">(optional)</span></label>
+        <p class="text-xs text-gray-400 mb-2">If set, this image is shown behind the panel with a brand-color overlay instead of the plain gradient. Recommended 1200×1600px.</p>
+        @if($authPanelImageUrl)
+        <div class="flex items-center gap-3 mb-2">
+            <img src="{{ $authPanelImageUrl }}" alt="Auth panel background" class="h-16 w-24 object-cover rounded-lg border">
+            <label class="inline-flex items-center gap-1.5">
+                <input type="checkbox" name="delete_auth_panel_image" value="1" class="rounded border-gray-300 text-red-600 focus:ring-red-500">
+                <span class="text-xs text-red-500">Remove image</span>
+            </label>
+        </div>
+        @endif
+        <input type="file" name="auth_panel_image" accept="image/*"
+               class="block w-full text-xs text-gray-600 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-medium file:bg-orange-50 file:text-orange-700 hover:file:bg-orange-100">
+    </div>
+</div>
+
 <div class="flex justify-end">
     <button type="submit" class="px-6 py-2.5 bg-orange-600 text-white rounded-lg text-sm font-semibold hover:bg-orange-700 transition">Save Branding</button>
 </div>

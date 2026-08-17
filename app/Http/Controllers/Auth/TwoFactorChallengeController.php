@@ -37,6 +37,7 @@ class TwoFactorChallengeController extends Controller
 
         return view('auth.two-factor-challenge', [
             'devCode' => app()->environment('production') ? null : $code,
+            'maskedEmail' => $this->maskEmail($user->email),
         ]);
     }
 
@@ -92,6 +93,18 @@ class TwoFactorChallengeController extends Controller
         } catch (Throwable $e) {
             Log::warning('Login 2FA OTP email failed to send: ' . $e->getMessage());
         }
+    }
+
+    /**
+     * "jo***@example.com" — enough for the user to recognize which inbox to check
+     * without exposing the full address on a page anyone with the URL can load.
+     */
+    private function maskEmail(string $email): string
+    {
+        [$local, $domain] = array_pad(explode('@', $email, 2), 2, '');
+        $visible = mb_substr($local, 0, min(2, max(mb_strlen($local) - 1, 1)));
+
+        return $visible . str_repeat('*', max(mb_strlen($local) - mb_strlen($visible), 3)) . ($domain ? '@' . $domain : '');
     }
 
     private function mergeGuestCart(Request $request): void
