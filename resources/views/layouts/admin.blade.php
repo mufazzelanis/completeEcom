@@ -82,8 +82,10 @@ $adminNavIndex = [
     ['label' => 'Blog Categories', 'url' => route('admin.blog.categories.index'), 'group' => 'CMS'],
     ['label' => 'Banners', 'url' => route('admin.banners.index'), 'group' => 'CMS'],
     ['label' => 'Pages', 'url' => route('admin.pages.index'), 'group' => 'CMS'],
-    ['label' => 'Landing Pages', 'url' => route('admin.landing-pages.index'), 'group' => 'CMS'],
     ['label' => 'FAQs', 'url' => route('admin.faqs.index'), 'group' => 'CMS'],
+    ['label' => 'Landing Pages', 'url' => route('admin.landing-pages.index'), 'group' => 'Landing Pages'],
+    ['label' => 'Landing Report', 'url' => route('admin.landing-pages.report'), 'group' => 'Landing Pages'],
+    ['label' => 'Landing Page Orders', 'url' => route('admin.orders.index', ['from_landing' => 1]), 'group' => 'Landing Pages'],
     ['label' => 'Marketing Overview', 'url' => route('admin.marketing.index'), 'group' => 'Marketing'],
     ['label' => 'Flash Sales', 'url' => route('admin.flash-sales.index'), 'group' => 'Marketing'],
     ['label' => 'Promo Codes', 'url' => route('admin.promo-codes.index'), 'group' => 'Marketing'],
@@ -438,15 +440,30 @@ $adminNavIndex = [
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                 <span>Pages</span>
             </a>
-            <a href="{{ route('admin.landing-pages.index') }}"
-                class="flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium transition {{ request()->routeIs('admin.landing-pages.*') ? 'bg-orange-600 text-white' : 'text-gray-300 hover:bg-gray-800' }}">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-                <span>Landing Pages</span>
-            </a>
             <a href="{{ route('admin.faqs.index') }}"
                 class="flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium transition {{ request()->routeIs('admin.faqs.*') ? 'bg-orange-600 text-white' : 'text-gray-300 hover:bg-gray-800' }}">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                 <span>FAQs</span>
+            </a>
+
+            {{-- Landing Pages --}}
+            <div class="pt-4 pb-1">
+                <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider px-3">Landing Pages</p>
+            </div>
+            <a href="{{ route('admin.landing-pages.index') }}"
+                class="flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium transition {{ request()->routeIs('admin.landing-pages.index') || request()->routeIs('admin.landing-pages.create') || request()->routeIs('admin.landing-pages.edit') ? 'bg-orange-600 text-white' : 'text-gray-300 hover:bg-gray-800' }}">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                <span>Landing Pages</span>
+            </a>
+            <a href="{{ route('admin.landing-pages.report') }}"
+                class="flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium transition {{ request()->routeIs('admin.landing-pages.report') ? 'bg-orange-600 text-white' : 'text-gray-300 hover:bg-gray-800' }}">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                <span>Landing Report</span>
+            </a>
+            <a href="{{ route('admin.orders.index', ['from_landing' => 1]) }}"
+                class="flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium transition {{ request()->routeIs('admin.orders.index') && (request('from_landing') || request()->filled('landing_page_id')) ? 'bg-orange-600 text-white' : 'text-gray-300 hover:bg-gray-800' }}">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+                <span>Orders</span>
             </a>
 
             {{-- Marketing --}}

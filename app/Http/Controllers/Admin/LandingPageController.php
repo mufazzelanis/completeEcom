@@ -98,6 +98,23 @@ class LandingPageController extends Controller
         return back()->with('success', 'Landing page is now ' . $landingPage->status . '.');
     }
 
+    public function report()
+    {
+        $pages = LandingPage::withCount('orders')
+            ->withSum('orders', 'total')
+            ->orderByDesc('views_count')
+            ->get();
+
+        $totals = [
+            'views'   => $pages->sum('views_count'),
+            'orders'  => $pages->sum('orders_count'),
+            'revenue' => $pages->sum('orders_sum_total'),
+        ];
+        $totals['conversion'] = $totals['views'] > 0 ? round($totals['orders'] / $totals['views'] * 100, 1) : 0;
+
+        return view('admin.landing-pages.report', compact('pages', 'totals'));
+    }
+
     private function validated(Request $request, ?int $exceptId = null): array
     {
         $request->validate([

@@ -484,6 +484,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
 
     // CMS — Landing Pages (bare top-level public URL: mitavin.com/{slug} — see the
     // catch-all route at the very end of this file)
+    Route::get('landing-pages-report', [AdminLandingPageController::class, 'report'])->name('landing-pages.report');
     Route::resource('landing-pages', AdminLandingPageController::class)->except(['show']);
     Route::patch('landing-pages/{landingPage}/toggle', [AdminLandingPageController::class, 'toggle'])->name('landing-pages.toggle');
 

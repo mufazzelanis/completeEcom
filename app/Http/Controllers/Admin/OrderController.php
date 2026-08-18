@@ -31,12 +31,21 @@ class OrderController extends Controller
             $query->where('is_fraud_flagged', true);
         }
 
+        // "Orders" link under the Landing Pages nav section — either all landing-page-sourced
+        // orders, or (via ?landing_page_id=) orders from one specific landing page (linked from
+        // the Landing Report row-level "View Orders" action).
+        if ($request->filled('landing_page_id')) {
+            $query->where('landing_page_id', $request->landing_page_id)->with('landingPage');
+        } elseif ($request->boolean('from_landing')) {
+            $query->whereNotNull('landing_page_id')->with('landingPage');
+        }
+
         if ($request->filled('search')) {
             $query->where('order_number', 'like', '%'.$request->search.'%')
                 ->orWhereHas('user', fn ($q) => $q->where('name', 'like', '%'.$request->search.'%'));
         }
 
-        $orders = $query->latest()->paginate(15);
+        $orders = $query->latest()->paginate(15)->withQueryString();
         $flaggedCount = Order::where('is_fraud_flagged', true)->count();
 
         return view('admin.orders.index', compact('orders', 'flaggedCount'));
