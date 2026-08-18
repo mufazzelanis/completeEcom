@@ -73,10 +73,14 @@
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Countdown Length</label>
                 <div class="flex items-center gap-2">
-                    <input type="number" min="0" max="9" name="urgency_bar_minutes" value="{{ old('urgency_bar_minutes', $lp->urgency_bar_minutes ?? 9) }}"
+                    {{-- min()-clamped for display — a page saved before this min/sec split could
+                         still have a stored value like 10 or higher (the old field went up to
+                         1440), which would silently violate this input's own max and block the
+                         browser from submitting the form at all until re-saved once. --}}
+                    <input type="number" min="0" max="9" name="urgency_bar_minutes" value="{{ min(9, (int) old('urgency_bar_minutes', $lp->urgency_bar_minutes ?? 9)) }}"
                         class="w-20 border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-center focus:outline-none focus:ring-2 focus:ring-indigo-500">
                     <span class="text-sm text-gray-400">min</span>
-                    <input type="number" min="0" max="59" name="urgency_bar_seconds" value="{{ old('urgency_bar_seconds', $lp->urgency_bar_seconds ?? 45) }}"
+                    <input type="number" min="0" max="59" name="urgency_bar_seconds" value="{{ min(59, (int) old('urgency_bar_seconds', $lp->urgency_bar_seconds ?? 45)) }}"
                         class="w-20 border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-center focus:outline-none focus:ring-2 focus:ring-indigo-500">
                     <span class="text-sm text-gray-400">sec</span>
                 </div>
