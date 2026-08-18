@@ -11,7 +11,7 @@
         </div>
         <h1 class="text-2xl font-extrabold text-gray-900 mb-2">Order Placed Successfully!</h1>
         <p class="text-gray-500 mb-2">Thank you for your order.</p>
-        <p class="text-orange-500 font-bold text-lg mb-6">{{ $order->order_number }}</p>
+        <p class="text-orange-700 font-bold text-lg mb-6">{{ $order->order_number }}</p>
 
         @if($accountCreated ?? false)
             <div class="bg-green-50 border border-green-200 rounded-xl p-4 mb-6 text-left">

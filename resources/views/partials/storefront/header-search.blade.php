@@ -54,13 +54,13 @@
                             </div>
                             <div class="flex-1 min-w-0">
                                 <p class="text-sm font-medium text-gray-800 dark:text-gray-100 truncate" x-text="product.name"></p>
-                                <p class="text-xs font-bold text-orange-500" x-text="product.price"></p>
+                                <p class="text-xs font-bold text-orange-700" x-text="product.price"></p>
                             </div>
                         </a>
                     </template>
                     <div class="px-4 py-2.5 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
                         <a :href="'{{ route('shop.index') }}?search=' + encodeURIComponent(query)"
-                           class="text-xs text-orange-500 hover:text-orange-700 font-semibold">
+                           class="text-xs text-orange-700 hover:text-orange-800 font-semibold">
                             {{ t('header.see_all_results', 'See all results for', [], 'header') }} "<span x-text="query"></span>" &rarr;
                         </a>
                     </div>

@@ -462,13 +462,13 @@ $navCategories = \App\Models\Category::with(['children' => fn($q) => $q->active(
                                     </div>
                                     <div class="flex-1 min-w-0">
                                         <p class="text-sm font-medium text-gray-800 dark:text-gray-100 truncate" x-text="product.name"></p>
-                                        <p class="text-xs font-bold text-orange-500" x-text="product.price"></p>
+                                        <p class="text-xs font-bold text-orange-700" x-text="product.price"></p>
                                     </div>
                                 </a>
                             </template>
                             <div class="px-4 py-2.5 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
                                 <a :href="'{{ route('shop.index') }}?search=' + encodeURIComponent(query)" @click="mobileOpen = false"
-                                   class="text-xs text-orange-500 hover:text-orange-700 font-semibold">
+                                   class="text-xs text-orange-700 hover:text-orange-800 font-semibold">
                                     {{ t('header.see_all_results', 'See all results for', [], 'header') }} "<span x-text="query"></span>" &rarr;
                                 </a>
                             </div>
@@ -504,7 +504,7 @@ $navCategories = \App\Models\Category::with(['children' => fn($q) => $q->active(
                             @foreach($mobileCategories as $cat)
                                 <a href="{{ route('shop.category', $cat->slug) }}" class="block px-3 py-2 text-xs text-gray-600 dark:text-gray-300 hover:bg-orange-50 dark:hover:bg-gray-800 hover:text-orange-600 rounded-lg transition">{{ $cat->name }}</a>
                             @endforeach
-                            <a href="{{ route('shop.index') }}" class="block px-3 py-2 text-xs text-orange-500 font-medium hover:bg-orange-50 dark:hover:bg-gray-800 rounded-lg transition">{{ t('header.view_all_categories', 'View All Categories', [], 'header') }} →</a>
+                            <a href="{{ route('shop.index') }}" class="block px-3 py-2 text-xs text-orange-700 font-medium hover:bg-orange-50 dark:hover:bg-gray-800 rounded-lg transition">{{ t('header.view_all_categories', 'View All Categories', [], 'header') }} →</a>
                         </div>
                     </div>
                 @endif
@@ -779,7 +779,7 @@ function setQuickAddButtonState(btn, inCart) {
     btn.classList.toggle('bg-white', !inCart);
     btn.classList.toggle('text-gray-500', !inCart);
     btn.classList.toggle('hover:bg-orange-50', !inCart);
-    btn.classList.toggle('hover:text-orange-500', !inCart);
+    btn.classList.toggle('hover:text-orange-700', !inCart);
 }
 
 async function toggleCartItem(productId, btn) {

@@ -4,7 +4,7 @@
 @section('content')
 <div class="max-w-7xl mx-auto px-4 py-8">
     <div class="flex items-center space-x-2 text-sm text-gray-500 mb-6">
-        <a href="{{ route('home') }}" class="hover:text-orange-500">Home</a>
+        <a href="{{ route('home') }}" class="hover:text-orange-700">Home</a>
         <span>/</span>
         <span class="text-gray-900 font-medium">Brands</span>
     </div>
@@ -23,7 +23,7 @@
                         @if($brand->logo)
                             <img src="{{ Storage::url($brand->logo) }}" alt="{{ $brand->name }}" class="w-full h-full object-contain p-2">
                         @else
-                            <span class="text-orange-500 font-extrabold text-xl">{{ strtoupper(substr($brand->name, 0, 2)) }}</span>
+                            <span class="text-orange-700 font-extrabold text-xl">{{ strtoupper(substr($brand->name, 0, 2)) }}</span>
                         @endif
                     </div>
                     <div class="min-w-0">

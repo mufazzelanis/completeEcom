@@ -93,7 +93,7 @@
                     <td class="px-6 py-3 text-right text-gray-600">{{ number_format($m->count) }}</td>
                     <td class="px-6 py-3 text-right font-semibold text-gray-800">৳{{ number_format($m->revenue,2) }}</td>
                     <td class="px-6 py-3 text-right text-green-600">{{ number_format($m->paid_count) }}</td>
-                    <td class="px-6 py-3 text-right text-orange-500">{{ number_format($m->pending_count) }}</td>
+                    <td class="px-6 py-3 text-right text-orange-700">{{ number_format($m->pending_count) }}</td>
                     <td class="px-6 py-3 text-right text-red-500">{{ number_format($m->failed_count) }}</td>
                     <td class="px-6 py-3 text-right">
                         <span class="px-2 py-0.5 rounded-full text-xs font-medium {{ $rate >= 80 ? 'bg-green-100 text-green-700' : ($rate >= 50 ? 'bg-orange-100 text-orange-700' : 'bg-red-100 text-red-700') }}">{{ $rate }}%</span>

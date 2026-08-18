@@ -43,10 +43,10 @@
 @section('content')
 <div class="max-w-7xl mx-auto px-4 py-8">
     <div class="flex items-center space-x-2 text-sm text-gray-500 mb-6">
-        <a href="{{ route('home') }}" class="hover:text-orange-500">Home</a>
+        <a href="{{ route('home') }}" class="hover:text-orange-700">Home</a>
         <span>/</span>
         @if(isset($category))
-            <a href="{{ route('shop.index') }}" class="hover:text-orange-500">Shop</a>
+            <a href="{{ route('shop.index') }}" class="hover:text-orange-700">Shop</a>
             <span>/</span>
             <span class="text-gray-900 font-medium">{{ $category->name }}</span>
         @else
@@ -162,7 +162,7 @@
                     </svg>
                     <h3 class="text-lg font-semibold text-gray-700 mb-2">No products found</h3>
                     <p class="text-gray-500 text-sm mb-4">Try adjusting your search or filter criteria</p>
-                    <a href="{{ route('shop.index') }}" class="text-orange-500 hover:text-orange-700 text-sm font-medium">Clear all filters</a>
+                    <a href="{{ route('shop.index') }}" class="text-orange-700 hover:text-orange-800 text-sm font-medium">Clear all filters</a>
                 </div>
             @else
                 <div class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">

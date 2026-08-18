@@ -33,12 +33,12 @@
          instead of just navigating to the shop page, so tapping this actually lets you
          type a search rather than dropping you on an unfiltered product listing. --}}
     <button type="button" @click="mobileOpen = true; $nextTick(() => $refs.mobileSearchInput.focus())"
-        class="md:hidden p-2 text-gray-600 dark:text-gray-300 hover:text-orange-500" aria-label="Search">
+        class="md:hidden p-2 text-gray-600 dark:text-gray-300 hover:text-orange-700" aria-label="Search">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
     </button>
 
     {{-- Cart --}}
-    <a href="{{ route('cart.index') }}" aria-label="Cart" class="relative p-2 text-gray-600 dark:text-gray-300 hover:text-orange-500 transition group">
+    <a href="{{ route('cart.index') }}" aria-label="Cart" class="relative p-2 text-gray-600 dark:text-gray-300 hover:text-orange-700 transition group">
         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
         @php
             $cartCount = auth()->check()
@@ -104,7 +104,7 @@
             </div>
         </div>
     @else
-        <a href="{{ route('login') }}" class="hidden md:block text-gray-600 dark:text-gray-300 hover:text-orange-500 font-medium text-sm px-3 py-1.5 rounded hover:bg-gray-100 dark:hover:bg-gray-800 transition">{{ t('header.login', 'Login', [], 'header') }}</a>
+        <a href="{{ route('login') }}" class="hidden md:block text-gray-600 dark:text-gray-300 hover:text-orange-700 font-medium text-sm px-3 py-1.5 rounded hover:bg-gray-100 dark:hover:bg-gray-800 transition">{{ t('header.login', 'Login', [], 'header') }}</a>
         <a href="{{ route('register') }}" class="hidden md:block bg-orange-500 text-white px-4 py-1.5 rounded text-sm font-medium hover:bg-orange-600 transition">{{ t('header.signup', 'Sign Up', [], 'header') }}</a>
     @endauth
 

@@ -79,7 +79,7 @@
                         @elseif($vendor->status === 'approved')
                         <form action="{{ route('admin.vendors.suspend', $vendor) }}" method="POST" onsubmit="return confirm('Suspend this vendor?')">
                             @csrf
-                            <button class="text-orange-500 hover:text-orange-700 text-sm font-medium">Suspend</button>
+                            <button class="text-orange-700 hover:text-orange-800 text-sm font-medium">Suspend</button>
                         </form>
                         @elseif(in_array($vendor->status, ['suspended','rejected']))
                         <form action="{{ route('admin.vendors.approve', $vendor) }}" method="POST">

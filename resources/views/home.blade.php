@@ -222,7 +222,7 @@
                     </div>
                 </div>
             </div>
-            <a href="{{ route('shop.index') }}?on_sale=1" class="text-orange-500 hover:text-orange-700 font-bold text-sm transition">SHOP ALL →</a>
+            <a href="{{ route('shop.index') }}?on_sale=1" class="text-orange-700 hover:text-orange-800 font-bold text-sm transition">SHOP ALL →</a>
         </div>
         <div class="flex gap-3 overflow-x-auto scrollbar-hide pb-2">
             @foreach($flashSaleProducts->take(10) as $fsp)
@@ -239,7 +239,7 @@
     <div class="max-w-[1200px] mx-auto px-4 py-6">
         <div class="flex items-center justify-between mb-5">
             <h2 class="text-lg font-extrabold text-gray-900">Categories</h2>
-            <a href="{{ route('categories.index') }}" class="text-orange-500 hover:text-orange-700 font-bold text-sm transition">VIEW ALL →</a>
+            <a href="{{ route('categories.index') }}" class="text-orange-700 hover:text-orange-800 font-bold text-sm transition">VIEW ALL →</a>
         </div>
         <div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-3">
             @foreach($categories as $category)
@@ -247,9 +247,9 @@
                    class="group flex flex-col items-center p-3 rounded-xl hover:bg-orange-50 transition-all duration-200">
                     <div class="w-14 h-14 md:w-16 md:h-16 bg-gradient-to-br from-orange-100 to-orange-50 rounded-2xl flex items-center justify-center mb-2 group-hover:from-orange-200 group-hover:to-orange-100 transition-all group-hover:scale-110 duration-300 shadow-sm overflow-hidden">
                         @if($category->image)
-                            <img src="{{ Storage::url($category->image) }}" alt="{{ $category->name }}" class="w-full h-full object-cover">
+                            <img src="{{ Storage::url($category->image) }}" alt="{{ $category->name }}" loading="lazy" decoding="async" class="w-full h-full object-cover">
                         @else
-                            <span class="text-orange-500 font-extrabold text-xl">{{ strtoupper(substr($category->name, 0, 2)) }}</span>
+                            <span class="text-orange-700 font-extrabold text-xl">{{ strtoupper(substr($category->name, 0, 2)) }}</span>
                         @endif
                     </div>
                     <p class="text-[10px] md:text-xs font-semibold text-gray-700 text-center leading-tight group-hover:text-orange-600 transition line-clamp-2">{{ $category->name }}</p>
@@ -267,7 +267,7 @@
         @foreach($promoBanners as $banner)
             @if($banner->image)
             <a href="{{ $banner->button_link ?: '#' }}" class="relative rounded-xl overflow-hidden group block aspect-[2/1]">
-                <img src="{{ Storage::url($banner->image) }}" alt="{{ $banner->title }}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+                <img src="{{ Storage::url($banner->image) }}" alt="{{ $banner->title }}" loading="lazy" decoding="async" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
                 <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
                 <div class="absolute bottom-0 left-0 p-4">
                     <h3 class="text-white font-bold text-sm md:text-base">{{ $banner->title }}</h3>
@@ -296,7 +296,7 @@
                     </div>
                 </div>
                 <a href="{{ $sec->getViewAllUrl() }}"
-                   class="{{ $sec->theme === 'sale' ? 'text-white/80 hover:text-white' : 'text-orange-500 hover:text-orange-700' }} font-bold text-sm transition">{{ $sec->getViewAllLabelText() }} →</a>
+                   class="{{ $sec->theme === 'sale' ? 'text-white/80 hover:text-white' : 'text-orange-700 hover:text-orange-800' }} font-bold text-sm transition">{{ $sec->getViewAllLabelText() }} →</a>
             </div>
             <div class="grid {{ $sec->getGridColsClass() }} gap-3">
                 @foreach($entry['products'] as $i => $product)
@@ -378,16 +378,16 @@ $reviewThemes = [
     <div class="max-w-[1200px] mx-auto px-4 py-6">
         <div class="flex items-center justify-between mb-5">
             <h2 class="text-lg font-extrabold text-gray-900">Top Brands</h2>
-            <a href="{{ route('brands.index') }}" class="text-orange-500 hover:text-orange-700 font-bold text-sm transition">VIEW ALL →</a>
+            <a href="{{ route('brands.index') }}" class="text-orange-700 hover:text-orange-800 font-bold text-sm transition">VIEW ALL →</a>
         </div>
         <div class="carousel-container flex gap-3 overflow-x-auto scrollbar-hide pb-2 scroll-smooth">
             @foreach($brands as $brand)
                 <a href="{{ route('shop.index') }}?brand={{ $brand->slug }}"
                    class="flex-shrink-0 w-32 h-20 bg-gray-50 border border-gray-100 rounded-xl flex items-center justify-center hover:border-orange-300 hover:shadow-md transition-all duration-200 group">
                     @if($brand->logo)
-                        <img src="{{ Storage::url($brand->logo) }}" alt="{{ $brand->name }}" class="max-w-[80%] max-h-[60%] object-contain group-hover:scale-105 transition">
+                        <img src="{{ Storage::url($brand->logo) }}" alt="{{ $brand->name }}" loading="lazy" decoding="async" class="max-w-[80%] max-h-[60%] object-contain group-hover:scale-105 transition">
                     @else
-                        <span class="text-gray-500 font-bold text-sm group-hover:text-orange-500 transition">{{ $brand->name }}</span>
+                        <span class="text-gray-500 font-bold text-sm group-hover:text-orange-700 transition">{{ $brand->name }}</span>
                     @endif
                 </a>
             @endforeach

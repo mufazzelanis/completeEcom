@@ -38,7 +38,7 @@
         </form>
 
         <div class="mt-6 pt-6 border-t border-gray-100">
-            <a href="{{ route('home') }}" class="text-orange-500 hover:text-orange-700 text-sm font-medium">← Back to Home</a>
+            <a href="{{ route('home') }}" class="text-orange-700 hover:text-orange-800 text-sm font-medium">← Back to Home</a>
         </div>
     </div>
 </div>

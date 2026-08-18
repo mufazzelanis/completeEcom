@@ -14,7 +14,7 @@
     <a href="{{ route('products.show', $product->slug) }}" class="block relative">
         <div class="relative overflow-hidden bg-gray-50 aspect-square">
             @if($product->image)
-                <img src="{{ Storage::url($product->image) }}" alt="{{ $product->name }}"
+                <img src="{{ Storage::url($product->image) }}" alt="{{ $product->name }}" loading="lazy" decoding="async"
                     class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500">
             @else
                 <div class="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200">
@@ -34,9 +34,9 @@
                 </span>
             @endif
 
-            <div class="absolute top-2 right-2 flex flex-col items-end gap-1.5 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-200">
+            <div class="absolute top-2 right-2 flex flex-col items-end gap-2 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-200">
                 <button onclick="event.preventDefault(); toggleWishlist({{ $product->id }}, this)"
-                    class="w-8 h-8 bg-white rounded-full shadow-md flex items-center justify-center hover:bg-red-50 transition {{ $isWishlisted ? 'text-red-500' : 'text-gray-400 hover:text-red-500' }}"
+                    class="w-9 h-9 bg-white rounded-full shadow-md flex items-center justify-center hover:bg-red-50 transition {{ $isWishlisted ? 'text-red-500' : 'text-gray-400 hover:text-red-500' }}"
                     title="Add to Wishlist" aria-label="{{ $isWishlisted ? 'Remove from wishlist' : 'Add to wishlist' }} — {{ $product->name }}">
                     <svg class="w-4 h-4" fill="{{ $isWishlisted ? 'currentColor' : 'none' }}" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
@@ -65,7 +65,7 @@
                         data-icon-added='{!! $checkIconSvg !!}'
                         data-label-default="{{ $addToCartText }}"
                         data-label-added="Added"
-                        class="quick-add-btn {{ $quickAddStyle === 'text' ? 'pl-2 pr-3 h-8' : 'w-8 h-8' }} rounded-full shadow-md flex items-center justify-center gap-1 transition {{ $isInCart ? 'bg-orange-500 text-white hover:bg-orange-600' : 'bg-white text-gray-500 hover:bg-orange-50 hover:text-orange-500' }}"
+                        class="quick-add-btn {{ $quickAddStyle === 'text' ? 'pl-2 pr-3 h-9' : 'w-9 h-9' }} rounded-full shadow-md flex items-center justify-center gap-1 transition {{ $isInCart ? 'bg-orange-500 text-white hover:bg-orange-600' : 'bg-white text-gray-500 hover:bg-orange-50 hover:text-orange-700' }}"
                         title="{{ $isInCart ? 'Remove from Cart' : $addToCartText }}"
                         aria-label="{{ $isInCart ? 'Remove from cart' : $addToCartText }} — {{ $product->name }}">
                         <span class="quick-add-icon">{!! $isInCart ? $checkIconSvg : $cartIconSvg !!}</span>
@@ -90,7 +90,7 @@
         @endif
 
         <a href="{{ route('products.show', $product->slug) }}" class="block">
-            <h3 class="text-xs text-gray-700 leading-snug line-clamp-2 h-8 group-hover:text-orange-500 transition-colors">
+            <h3 class="text-xs text-gray-700 leading-snug line-clamp-2 h-8 group-hover:text-orange-700 transition-colors">
                 {{ $product->name }}
             </h3>
         </a>
@@ -119,7 +119,7 @@
         <div class="mt-auto pt-2">
             <div>
                 @if($hasDiscount)
-                    <span class="text-base font-bold {{ $isFlash ? 'text-red-500' : 'text-orange-500' }}">৳{{ number_format($effectivePrice) }}</span>
+                    <span class="text-base font-bold {{ $isFlash ? 'text-red-500' : 'text-orange-700' }}">৳{{ number_format($effectivePrice) }}</span>
                     <span class="text-[10px] text-gray-500 line-through ml-1">৳{{ number_format($product->price) }}</span>
                 @else
                     <span class="text-base font-bold text-gray-900">৳{{ number_format($product->price) }}</span>
@@ -127,7 +127,7 @@
             </div>
 
             @if($product->available_stock <= 5 && $product->available_stock > 0)
-                <p class="text-[10px] text-orange-500 mt-1 font-medium">Only {{ $product->available_stock }} left - order soon</p>
+                <p class="text-[10px] text-orange-700 mt-1 font-medium">Only {{ $product->available_stock }} left - order soon</p>
             @endif
 
             @if($product->isVariable() && $product->available_stock > 0)

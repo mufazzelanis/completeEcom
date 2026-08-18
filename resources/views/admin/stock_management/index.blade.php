@@ -81,7 +81,7 @@
                 </td>
                 <td class="px-6 py-3 text-xs font-mono text-gray-500">{{ $product->sku ?? '—' }}</td>
                 <td class="px-6 py-3 text-center">
-                    <span class="text-sm font-bold {{ $product->stock === 0 ? 'text-red-600' : ($product->stock <= 5 ? 'text-orange-500' : 'text-gray-900') }}">
+                    <span class="text-sm font-bold {{ $product->stock === 0 ? 'text-red-600' : ($product->stock <= 5 ? 'text-orange-700' : 'text-gray-900') }}">
                         {{ $product->stock }}
                     </span>
                     @if($product->stock === 0)

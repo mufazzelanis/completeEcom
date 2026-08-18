@@ -8,7 +8,7 @@
 <a href="{{ route('products.show', $fsp->product->slug) }}" class="flex-shrink-0 w-32 sm:w-36 md:w-40 group">
     <div class="relative overflow-hidden bg-gray-50 rounded-lg aspect-square mb-2">
         @if($fsp->product->image)
-            <img src="{{ Storage::url($fsp->product->image) }}" alt="{{ $fsp->product->name }}"
+            <img src="{{ Storage::url($fsp->product->image) }}" alt="{{ $fsp->product->name }}" loading="lazy" decoding="async"
                 class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-400">
         @else
             <div class="w-full h-full flex items-center justify-center">
