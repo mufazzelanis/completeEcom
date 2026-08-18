@@ -22,7 +22,7 @@
         </span>
     </div>
     <p class="text-sm font-bold text-red-500">৳{{ number_format($flashPrice) }}</p>
-    <p class="text-[10px] text-gray-400 line-through">৳{{ number_format($basePrice) }}</p>
+    <p class="text-[10px] text-gray-500 line-through">৳{{ number_format($basePrice) }}</p>
     <div class="mt-1.5 bg-orange-100 rounded-full h-3 overflow-hidden relative">
         <div class="bg-gradient-to-r from-orange-400 to-red-500 h-full rounded-full transition-all" style="width: {{ max(10, $soldPct) }}%"></div>
         <span class="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-gray-700">

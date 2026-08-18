@@ -85,7 +85,7 @@
 
     <div class="p-3 flex flex-col flex-1">
         @if($product->brand)
-            <p class="text-[10px] text-gray-400 font-medium uppercase tracking-wide mb-0.5">{{ $product->brand->name }}</p>
+            <p class="text-[10px] text-gray-500 font-medium uppercase tracking-wide mb-0.5">{{ $product->brand->name }}</p>
         @endif
 
         <a href="{{ route('products.show', $product->slug) }}" class="block">
@@ -107,7 +107,7 @@
                         @endif
                     @endfor
                 </div>
-                <span class="text-[10px] text-gray-400">({{ $reviewCount }})</span>
+                <span class="text-[10px] text-gray-500">({{ $reviewCount }})</span>
             </div>
         @endif
 
@@ -119,7 +119,7 @@
             <div>
                 @if($hasDiscount)
                     <span class="text-base font-bold {{ $isFlash ? 'text-red-500' : 'text-orange-500' }}">৳{{ number_format($effectivePrice) }}</span>
-                    <span class="text-[10px] text-gray-400 line-through ml-1">৳{{ number_format($product->price) }}</span>
+                    <span class="text-[10px] text-gray-500 line-through ml-1">৳{{ number_format($product->price) }}</span>
                 @else
                     <span class="text-base font-bold text-gray-900">৳{{ number_format($product->price) }}</span>
                 @endif

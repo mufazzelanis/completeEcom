@@ -159,7 +159,7 @@
                         </div>
                         <div class="min-w-0">
                             <p class="font-bold text-gray-800 text-xs">{{ $f['text'] }}</p>
-                            <p class="text-gray-400 text-[10px] truncate">{{ $f['sub'] }}</p>
+                            <p class="text-gray-500 text-[10px] truncate">{{ $f['sub'] }}</p>
                         </div>
                     </a>
                 @else
@@ -171,7 +171,7 @@
                         </div>
                         <div class="min-w-0">
                             <p class="font-bold text-gray-800 text-xs">{{ $f['text'] }}</p>
-                            <p class="text-gray-400 text-[10px] truncate">{{ $f['sub'] }}</p>
+                            <p class="text-gray-500 text-[10px] truncate">{{ $f['sub'] }}</p>
                         </div>
                     </div>
                 @endif
@@ -287,7 +287,7 @@
                     @endif
                     <div>
                         <h2 class="text-lg font-extrabold {{ $sec->theme === 'sale' ? 'text-white' : 'text-gray-900' }}">{{ $sec->title }}</h2>
-                        @if($sec->subtitle)<p class="{{ $sec->theme === 'sale' ? 'text-white/80' : 'text-gray-400' }} text-xs mt-0.5">{{ $sec->subtitle }}</p>@endif
+                        @if($sec->subtitle)<p class="{{ $sec->theme === 'sale' ? 'text-white/80' : 'text-gray-500' }} text-xs mt-0.5">{{ $sec->subtitle }}</p>@endif
                     </div>
                 </div>
                 <a href="{{ $sec->getViewAllUrl() }}"
@@ -332,7 +332,7 @@ $reviewThemes = [
 <div class="mt-4 py-8 bg-gradient-to-r from-indigo-50 via-white to-orange-50 overflow-hidden">
     <div class="max-w-[1200px] mx-auto px-4 mb-6 text-center">
         <h2 class="text-lg md:text-2xl font-extrabold bg-gradient-to-r from-pink-500 via-orange-500 to-indigo-500 bg-clip-text text-transparent inline-block">What Our Customers Say</h2>
-        <p class="text-gray-400 text-xs md:text-sm mt-1">Real reviews from real, happy buyers</p>
+        <p class="text-gray-500 text-xs md:text-sm mt-1">Real reviews from real, happy buyers</p>
     </div>
     <div class="relative marquee-pause" style="-webkit-mask-image:linear-gradient(to right, transparent, black 5%, black 95%, transparent); mask-image:linear-gradient(to right, transparent, black 5%, black 95%, transparent);">
         <div class="flex gap-4 w-max animate-marquee">
@@ -382,7 +382,7 @@ $reviewThemes = [
                     @if($brand->logo)
                         <img src="{{ Storage::url($brand->logo) }}" alt="{{ $brand->name }}" class="max-w-[80%] max-h-[60%] object-contain group-hover:scale-105 transition">
                     @else
-                        <span class="text-gray-400 font-bold text-sm group-hover:text-orange-500 transition">{{ $brand->name }}</span>
+                        <span class="text-gray-500 font-bold text-sm group-hover:text-orange-500 transition">{{ $brand->name }}</span>
                     @endif
                 </a>
             @endforeach
@@ -425,7 +425,7 @@ $reviewThemes = [
                 ] as $stat)
                 <div>
                     <p class="text-white text-lg md:text-2xl font-extrabold">{{ $stat['num'] }}</p>
-                    <p class="text-gray-400 text-xs mt-1">{{ $stat['label'] }}</p>
+                    <p class="text-gray-500 text-xs mt-1">{{ $stat['label'] }}</p>
                 </div>
                 @endforeach
             </div>
