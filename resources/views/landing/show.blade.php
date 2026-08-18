@@ -46,7 +46,7 @@
             @if($landingPage->rating_count)<span class="text-gray-400">({{ number_format($landingPage->rating_count) }} রিভিউ)</span>@endif
         </div>
         @endif
-        <a href="#order-form" class="block w-full text-white font-extrabold py-3.5 rounded-xl text-base shadow-lg hover:opacity-90 active:scale-[0.99] transition"
+        <a href="#order-form" class="block w-full text-center text-white font-extrabold py-3.5 rounded-xl text-base shadow-lg hover:opacity-90 active:scale-[0.99] transition"
            style="background-color: {{ $primary }};">
             {{ $landingPage->order_button_text }}
         </a>
@@ -208,7 +208,7 @@
                 @endif
             </div>
 
-            <a href="#order-form" class="block w-full text-white font-extrabold py-3.5 rounded-xl text-base shadow-lg hover:opacity-90 active:scale-[0.99] transition mt-4"
+            <a href="#order-form" class="block w-full text-center text-white font-extrabold py-3.5 rounded-xl text-base shadow-lg hover:opacity-90 active:scale-[0.99] transition mt-4"
                style="background-color: {{ $primary }};">
                 {{ $landingPage->order_button_text }}
             </a>
