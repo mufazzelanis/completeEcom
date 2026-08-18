@@ -20,6 +20,7 @@
                 @focus="query.length > 1 && fetchSuggestions()"
                 @keydown.escape="open = false"
                 placeholder="{{ t('header.search_placeholder', 'Search in :site', ['site' => $siteName], 'header') }}"
+                aria-label="{{ t('header.search_placeholder', 'Search in :site', ['site' => $siteName], 'header') }}"
                 class="w-full border-2 border-orange-400 rounded-l-md px-4 py-2 focus:outline-none focus:border-orange-500 text-sm bg-orange-50/50"
                 autocomplete="off">
             <button type="submit" class="bg-orange-500 text-white px-6 py-2 rounded-r-md hover:bg-orange-600 flex-shrink-0 transition-colors">

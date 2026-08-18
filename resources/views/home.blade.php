@@ -56,7 +56,12 @@
                  class="absolute inset-0">
                 @if($banner->image)
                     <a href="{{ $banner->button_link ?: '#' }}">
-                        <img src="{{ Storage::url($banner->image) }}" alt="{{ $banner->title }}" class="w-full h-full object-cover">
+                        {{-- Every slide is in the DOM at once (x-show just toggles visibility,
+                             not presence) — without hints, the browser fetches all of them
+                             immediately and the actual LCP image (slide 0, the only one visible
+                             on load) competes for bandwidth with slides nobody's looking at yet. --}}
+                        <img src="{{ Storage::url($banner->image) }}" alt="{{ $banner->title }}" class="w-full h-full object-cover"
+                            @if($i === 0) fetchpriority="high" @else loading="lazy" @endif>
                         <div class="absolute inset-0 bg-gradient-to-r from-black/50 to-transparent"></div>
                         <div class="absolute inset-0 flex items-center px-5 md:px-14">
                             <div>

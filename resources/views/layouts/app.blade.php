@@ -429,7 +429,7 @@ $navCategories = \App\Models\Category::with(['children' => fn($q) => $q->active(
                         @input.debounce.300ms="fetchSuggestions()"
                         @focus="query.length > 1 && fetchSuggestions()"
                         @keydown.escape="open = false"
-                        placeholder="Search products..." autocomplete="off"
+                        placeholder="Search products..." aria-label="Search products" autocomplete="off"
                         class="flex-1 border-2 border-orange-400 rounded-l-md px-4 py-2 text-sm focus:outline-none focus:border-orange-500">
                     <button type="submit" class="bg-orange-500 text-white px-4 py-2 rounded-r-md flex-shrink-0">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
@@ -578,7 +578,7 @@ $navCategories = \App\Models\Category::with(['children' => fn($q) => $q->active(
                 <div class="w-full md:w-auto">
                     <form action="{{ route('newsletter.subscribe') }}" method="POST" class="flex w-full md:w-auto">
                         @csrf
-                        <input type="email" name="email" value="{{ old('email') }}" placeholder="{{ t('footer.email_placeholder', 'Enter your email', [], 'footer') }}" required class="flex-1 md:w-72 px-4 py-2.5 rounded-l-lg bg-gray-700 text-white border border-gray-600 focus:outline-none focus:border-orange-500 text-sm placeholder-gray-500">
+                        <input type="email" name="email" value="{{ old('email') }}" placeholder="{{ t('footer.email_placeholder', 'Enter your email', [], 'footer') }}" aria-label="{{ t('footer.email_placeholder', 'Enter your email', [], 'footer') }}" required class="flex-1 md:w-72 px-4 py-2.5 rounded-l-lg bg-gray-700 text-white border border-gray-600 focus:outline-none focus:border-orange-500 text-sm placeholder-gray-500">
                         <button type="submit" class="bg-orange-500 text-white px-6 py-2.5 rounded-r-lg font-medium text-sm hover:bg-orange-600 transition whitespace-nowrap">{{ t('footer.subscribe', 'Subscribe', [], 'footer') }}</button>
                     </form>
                     @error('email')<p class="text-red-400 text-xs mt-1.5">{{ $message }}</p>@enderror

@@ -37,7 +37,7 @@
             <div class="absolute top-2 right-2 flex flex-col items-end gap-1.5 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-200">
                 <button onclick="event.preventDefault(); toggleWishlist({{ $product->id }}, this)"
                     class="w-8 h-8 bg-white rounded-full shadow-md flex items-center justify-center hover:bg-red-50 transition {{ $isWishlisted ? 'text-red-500' : 'text-gray-400 hover:text-red-500' }}"
-                    title="Add to Wishlist">
+                    title="Add to Wishlist" aria-label="{{ $isWishlisted ? 'Remove from wishlist' : 'Add to wishlist' }} — {{ $product->name }}">
                     <svg class="w-4 h-4" fill="{{ $isWishlisted ? 'currentColor' : 'none' }}" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
                     </svg>
@@ -66,7 +66,8 @@
                         data-label-default="{{ $addToCartText }}"
                         data-label-added="Added"
                         class="quick-add-btn {{ $quickAddStyle === 'text' ? 'pl-2 pr-3 h-8' : 'w-8 h-8' }} rounded-full shadow-md flex items-center justify-center gap-1 transition {{ $isInCart ? 'bg-orange-500 text-white hover:bg-orange-600' : 'bg-white text-gray-500 hover:bg-orange-50 hover:text-orange-500' }}"
-                        title="{{ $isInCart ? 'Remove from Cart' : $addToCartText }}">
+                        title="{{ $isInCart ? 'Remove from Cart' : $addToCartText }}"
+                        aria-label="{{ $isInCart ? 'Remove from cart' : $addToCartText }} — {{ $product->name }}">
                         <span class="quick-add-icon">{!! $isInCart ? $checkIconSvg : $cartIconSvg !!}</span>
                         @if($quickAddStyle === 'text')
                             <span class="text-[10px] font-bold whitespace-nowrap quick-add-label">{{ $isInCart ? 'Added' : $addToCartText }}</span>
