@@ -16,13 +16,47 @@ class LandingPage extends Model
         'thank_you_heading', 'thank_you_message', 'thank_you_redirect_url',
         'meta_title', 'meta_description', 'og_image',
         'views_count',
+        // Urgency bar
+        'urgency_bar_enabled', 'urgency_bar_text', 'urgency_bar_minutes',
+        // Rating line + trust badges
+        'rating_value', 'rating_count', 'trust_badges',
+        // How it works video
+        'how_it_works_heading', 'how_it_works_video',
+        // Benefits grid
+        'benefits_heading', 'benefits',
+        // Who is this for
+        'who_for_heading', 'who_for',
+        // Testimonials
+        'testimonials_heading', 'testimonial_videos', 'testimonial_images',
+        // Pricing / offer box
+        'offer_badge_text', 'pricing_items', 'compare_at_price',
+        // FAQ
+        'faqs_heading', 'faqs',
+        // Certificates
+        'certificates_heading', 'certificates_subheading', 'certificates',
+        // Delivery zones (shipping charge picker on the order form)
+        'delivery_zones',
     ];
 
     protected $casts = [
-        'collect_address'   => 'boolean',
-        'require_address'   => 'boolean',
-        'order_form_fields' => 'array',
-        'price_override'    => 'decimal:2',
+        'collect_address'      => 'boolean',
+        'require_address'      => 'boolean',
+        'order_form_fields'    => 'array',
+        'price_override'       => 'decimal:2',
+        'urgency_bar_enabled'  => 'boolean',
+        'urgency_bar_minutes'  => 'integer',
+        'rating_value'         => 'decimal:1',
+        'rating_count'         => 'integer',
+        'trust_badges'         => 'array',
+        'benefits'             => 'array',
+        'who_for'              => 'array',
+        'testimonial_videos'   => 'array',
+        'testimonial_images'   => 'array',
+        'pricing_items'        => 'array',
+        'compare_at_price'     => 'decimal:2',
+        'faqs'                 => 'array',
+        'certificates'         => 'array',
+        'delivery_zones'       => 'array',
     ];
 
     protected static function boot()

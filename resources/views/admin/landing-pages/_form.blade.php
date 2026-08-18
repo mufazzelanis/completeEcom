@@ -1,6 +1,26 @@
 @php
     $lp = $landingPage ?? null;
     $existingFields = old('field_label') ? null : ($lp->order_form_fields ?? []);
+
+    // Repeater seed helper — old() input on a validation-retry takes priority over the
+    // saved model value, same pattern the Order Form Builder below already established.
+    // $fieldMap is ['output_key' => 'input_name'] (matches the controller's normalizeRepeater
+    // field maps exactly), $primaryKey picks which column's old() array drives the row count.
+    $seed = function (array $fieldMap, string $primaryKey, array $existing = []) {
+        $primaryOld = old($fieldMap[$primaryKey]);
+        if ($primaryOld === null) {
+            return $existing;
+        }
+        $rows = [];
+        foreach ($primaryOld as $i => $_) {
+            $row = [];
+            foreach ($fieldMap as $outKey => $inputName) {
+                $row[$outKey] = old($inputName)[$i] ?? '';
+            }
+            $rows[] = $row;
+        }
+        return $rows;
+    };
 @endphp
 
 <div class="grid grid-cols-3 gap-6">
@@ -36,6 +56,29 @@
             </div>
         </div>
 
+        {{-- Urgency Bar --}}
+        <div class="bg-white rounded-2xl shadow-sm p-6 space-y-4">
+            <label class="flex items-center justify-between cursor-pointer">
+                <span>
+                    <span class="font-medium text-gray-800 block">Urgency Bar</span>
+                    <span class="text-xs text-gray-400">Sticky strip above the page with a countdown — "order in the next 10 minutes…"</span>
+                </span>
+                <input type="checkbox" name="urgency_bar_enabled" value="1" {{ old('urgency_bar_enabled', $lp->urgency_bar_enabled ?? false) ? 'checked' : '' }} class="rounded text-indigo-600 w-5 h-5 shrink-0 ml-3">
+            </label>
+            <div class="grid grid-cols-3 gap-3">
+                <div class="col-span-2">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Bar Text</label>
+                    <input type="text" name="urgency_bar_text" value="{{ old('urgency_bar_text', $lp->urgency_bar_text ?? '') }}" placeholder="১০ মিনিটের মধ্যে অর্ডার করলেই পাবেন ফ্রি ডেলিভারি"
+                        class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Minutes</label>
+                    <input type="number" min="1" max="1440" name="urgency_bar_minutes" value="{{ old('urgency_bar_minutes', $lp->urgency_bar_minutes ?? 10) }}"
+                        class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+            </div>
+        </div>
+
         {{-- Hero --}}
         <div class="bg-white rounded-2xl shadow-sm p-6 space-y-5">
             <h3 class="font-medium text-gray-800">Hero</h3>
@@ -58,13 +101,197 @@
                 @endif
                 <input type="file" name="hero_image" accept="image/*" class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm">
             </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Rating <span class="text-gray-400 font-normal">(out of 5, optional)</span></label>
+                    <input type="number" step="0.1" min="0" max="5" name="rating_value" value="{{ old('rating_value', $lp->rating_value ?? '') }}" placeholder="4.9"
+                        class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Review Count</label>
+                    <input type="number" min="0" name="rating_count" value="{{ old('rating_count', $lp->rating_count ?? '') }}" placeholder="5000"
+                        class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+            </div>
+        </div>
+
+        {{-- Trust Badges --}}
+        <div class="bg-white rounded-2xl shadow-sm p-6 space-y-4" x-data="{
+                rows: {{ Js::from($seed(['icon' => 'tb_icon', 'text' => 'tb_text'], 'text', collect($lp->trust_badges ?? [])->toArray())) }},
+                add() { this.rows.push({ icon: '✅', text: '' }); },
+                remove(i) { this.rows.splice(i, 1); },
+            }">
+            <div>
+                <h3 class="font-medium text-gray-800">Trust Badges</h3>
+                <p class="text-xs text-gray-400 mt-0.5">Small icon + label strip shown under the hero and again near the price (e.g. "Cash on Delivery", "100% Original", "Fast Delivery"). First 6 shown near the top, first 2 repeated near the price.</p>
+            </div>
+            <div class="space-y-2">
+                <template x-for="(row, i) in rows" :key="i">
+                    <div class="flex items-center gap-2">
+                        <input type="text" name="tb_icon[]" x-model="row.icon" placeholder="✅" maxlength="4"
+                            class="w-16 border border-gray-200 rounded-lg px-3 py-2 text-sm text-center focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <input type="text" name="tb_text[]" x-model="row.text" placeholder="Cash on Delivery"
+                            class="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <button type="button" @click="remove(i)" class="text-red-400 hover:text-red-600 p-2" aria-label="Remove"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
+                    </div>
+                </template>
+            </div>
+            <button type="button" @click="add()" class="text-sm text-indigo-600 hover:text-indigo-800 font-medium flex items-center gap-1.5">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg> Add Badge
+            </button>
         </div>
 
         {{-- Content --}}
         <div class="bg-white rounded-2xl shadow-sm p-6 space-y-2">
             <h3 class="font-medium text-gray-800 mb-3">Page Content</h3>
-            <p class="text-xs text-gray-400 -mt-2 mb-3">Design the rest of the page freely — description, features, images, testimonials, whatever sells this product. This is the main body shown between the hero and the order form.</p>
+            <p class="text-xs text-gray-400 -mt-2 mb-3">Free-form description shown right after the trust badges — features, story, whatever else sells this product.</p>
             @include('partials.rich-editor', ['name' => 'content', 'value' => old('content', $lp->content ?? ''), 'id' => 'lpcontent', 'placeholder' => 'Write/design the landing page content…'])
+        </div>
+
+        {{-- How It Works --}}
+        <div class="bg-white rounded-2xl shadow-sm p-6 space-y-4">
+            <div>
+                <h3 class="font-medium text-gray-800">How It Works Video</h3>
+                <p class="text-xs text-gray-400 mt-0.5">Optional explainer video — YouTube, Facebook, or a direct .mp4 link. Leave blank to skip this section entirely.</p>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+                <input type="text" name="how_it_works_heading" value="{{ old('how_it_works_heading', $lp->how_it_works_heading ?? '') }}" placeholder="Heading (defaults to 'How It Works')"
+                    class="border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                <input type="url" name="how_it_works_video" value="{{ old('how_it_works_video', $lp->how_it_works_video ?? '') }}" placeholder="https://youtube.com/watch?v=…"
+                    class="border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            </div>
+        </div>
+
+        {{-- Benefits --}}
+        <div class="bg-white rounded-2xl shadow-sm p-6 space-y-4" x-data="{
+                rows: {{ Js::from($seed(['icon' => 'benefit_icon', 'title' => 'benefit_title', 'description' => 'benefit_desc'], 'title', collect($lp->benefits ?? [])->toArray())) }},
+                add() { this.rows.push({ icon: '✨', title: '', description: '' }); },
+                remove(i) { this.rows.splice(i, 1); },
+            }">
+            <div>
+                <h3 class="font-medium text-gray-800">Benefits Grid</h3>
+                <input type="text" name="benefits_heading" value="{{ old('benefits_heading', $lp->benefits_heading ?? '') }}" placeholder="Section heading (defaults to 'Benefits')"
+                    class="w-full mt-2 border border-gray-200 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            </div>
+            <div class="space-y-2">
+                <template x-for="(row, i) in rows" :key="i">
+                    <div class="border border-gray-100 rounded-xl p-3 space-y-2">
+                        <div class="flex items-center gap-2">
+                            <input type="text" name="benefit_icon[]" x-model="row.icon" placeholder="✨" maxlength="4"
+                                class="w-16 border border-gray-200 rounded-lg px-3 py-2 text-sm text-center focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            <input type="text" name="benefit_title[]" x-model="row.title" placeholder="Benefit title"
+                                class="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            <button type="button" @click="remove(i)" class="text-red-400 hover:text-red-600 p-2" aria-label="Remove"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
+                        </div>
+                        <input type="text" name="benefit_desc[]" x-model="row.description" placeholder="Short description (optional)"
+                            class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                </template>
+            </div>
+            <button type="button" @click="add()" class="text-sm text-indigo-600 hover:text-indigo-800 font-medium flex items-center gap-1.5">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg> Add Benefit
+            </button>
+        </div>
+
+        {{-- Who Is This For --}}
+        <div class="bg-white rounded-2xl shadow-sm p-6 space-y-4" x-data="{
+                rows: {{ Js::from($seed(['icon' => 'wf_icon', 'text' => 'wf_text'], 'text', collect($lp->who_for ?? [])->toArray())) }},
+                add() { this.rows.push({ icon: '👤', text: '' }); },
+                remove(i) { this.rows.splice(i, 1); },
+            }">
+            <div>
+                <h3 class="font-medium text-gray-800">Who Is This For</h3>
+                <input type="text" name="who_for_heading" value="{{ old('who_for_heading', $lp->who_for_heading ?? '') }}" placeholder="Section heading (defaults to 'Who Is This For')"
+                    class="w-full mt-2 border border-gray-200 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            </div>
+            <div class="space-y-2">
+                <template x-for="(row, i) in rows" :key="i">
+                    <div class="flex items-center gap-2">
+                        <input type="text" name="wf_icon[]" x-model="row.icon" placeholder="👤" maxlength="4"
+                            class="w-16 border border-gray-200 rounded-lg px-3 py-2 text-sm text-center focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <input type="text" name="wf_text[]" x-model="row.text" placeholder="e.g. Anyone managing diabetes"
+                            class="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <button type="button" @click="remove(i)" class="text-red-400 hover:text-red-600 p-2" aria-label="Remove"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
+                    </div>
+                </template>
+            </div>
+            <button type="button" @click="add()" class="text-sm text-indigo-600 hover:text-indigo-800 font-medium flex items-center gap-1.5">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg> Add Row
+            </button>
+        </div>
+
+        {{-- Testimonials --}}
+        <div class="bg-white rounded-2xl shadow-sm p-6 space-y-5">
+            <div>
+                <h3 class="font-medium text-gray-800">Testimonials</h3>
+                <input type="text" name="testimonials_heading" value="{{ old('testimonials_heading', $lp->testimonials_heading ?? '') }}" placeholder="Section heading (defaults to 'What Customers Say')"
+                    class="w-full mt-2 border border-gray-200 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            </div>
+
+            {{-- Video testimonials --}}
+            <div x-data="{
+                    rows: {{ Js::from($seed(['video_url' => 'tv_url', 'name' => 'tv_name'], 'video_url', collect($lp->testimonial_videos ?? [])->toArray())) }},
+                    add() { this.rows.push({ video_url: '', name: '' }); },
+                    remove(i) { this.rows.splice(i, 1); },
+                }" class="space-y-2">
+                <p class="text-xs font-medium text-gray-600">Video testimonials <span class="text-gray-400 font-normal">(YouTube / Facebook / .mp4 links)</span></p>
+                <template x-for="(row, i) in rows" :key="i">
+                    <div class="flex items-center gap-2">
+                        <input type="url" name="tv_url[]" x-model="row.video_url" placeholder="https://youtube.com/watch?v=…"
+                            class="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <input type="text" name="tv_name[]" x-model="row.name" placeholder="Customer name (optional)"
+                            class="w-40 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <button type="button" @click="remove(i)" class="text-red-400 hover:text-red-600 p-2" aria-label="Remove"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
+                    </div>
+                </template>
+                <button type="button" @click="add()" class="text-sm text-indigo-600 hover:text-indigo-800 font-medium flex items-center gap-1.5">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg> Add Video
+                </button>
+            </div>
+
+            {{-- Screenshot testimonials --}}
+            <div class="border-t border-gray-100 pt-4">
+                <p class="text-xs font-medium text-gray-600 mb-2">Screenshot testimonials <span class="text-gray-400 font-normal">(chat/review screenshots)</span></p>
+                @include('admin.landing-pages._gallery', ['field' => 'testimonial_images', 'existing' => $lp->testimonial_images ?? []])
+            </div>
+        </div>
+
+        {{-- Special Offer / Pricing --}}
+        <div class="bg-white rounded-2xl shadow-sm p-6 space-y-4" x-data="{
+                rows: {{ Js::from($seed(['label' => 'price_label', 'price' => 'price_amount'], 'label', collect($lp->pricing_items ?? [])->toArray())) }},
+                add() { this.rows.push({ label: '', price: '' }); },
+                remove(i) { this.rows.splice(i, 1); },
+            }">
+            <div>
+                <h3 class="font-medium text-gray-800">Special Offer Box</h3>
+                <p class="text-xs text-gray-400 mt-0.5">Itemized lines shown above the final price (e.g. "Product price — ৳600", "Delivery — Free"). The final price itself is the Price Override / linked product price set in the sidebar.</p>
+            </div>
+            <div class="space-y-2">
+                <template x-for="(row, i) in rows" :key="i">
+                    <div class="flex items-center gap-2">
+                        <input type="text" name="price_label[]" x-model="row.label" placeholder="Product price"
+                            class="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <input type="text" name="price_amount[]" x-model="row.price" placeholder="৳600"
+                            class="w-28 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <button type="button" @click="remove(i)" class="text-red-400 hover:text-red-600 p-2" aria-label="Remove"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
+                    </div>
+                </template>
+            </div>
+            <button type="button" @click="add()" class="text-sm text-indigo-600 hover:text-indigo-800 font-medium flex items-center gap-1.5">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg> Add Line
+            </button>
+            <div class="grid grid-cols-2 gap-3 pt-2 border-t border-gray-100">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Offer Badge Text <span class="text-gray-400 font-normal">(optional)</span></label>
+                    <input type="text" name="offer_badge_text" value="{{ old('offer_badge_text', $lp->offer_badge_text ?? '') }}" placeholder="🔥 Special Offer"
+                        class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Compare-at Price <span class="text-gray-400 font-normal">(struck through)</span></label>
+                    <input type="number" step="0.01" min="0" name="compare_at_price" value="{{ old('compare_at_price', $lp->compare_at_price ?? '') }}" placeholder="Leave blank to hide"
+                        class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+            </div>
         </div>
 
         {{-- Order Form Builder --}}
@@ -135,6 +362,76 @@
             </button>
         </div>
 
+        {{-- Delivery Zones --}}
+        <div class="bg-white rounded-2xl shadow-sm p-6 space-y-4" x-data="{
+                rows: {{ Js::from($seed(['label' => 'zone_label', 'charge' => 'zone_charge'], 'label', collect($lp->delivery_zones ?? [])->toArray())) }},
+                add() { this.rows.push({ label: '', charge: '' }); },
+                remove(i) { this.rows.splice(i, 1); },
+            }">
+            <div>
+                <h3 class="font-medium text-gray-800">Delivery Zones</h3>
+                <p class="text-xs text-gray-400 mt-0.5">Shipping-charge radio buttons on the order form (e.g. "Inside Dhaka — ৳60", "Outside Dhaka — ৳100"). Leave empty for no shipping charge picker — the order form just collects the address as plain text.</p>
+            </div>
+            <div class="space-y-2">
+                <template x-for="(row, i) in rows" :key="i">
+                    <div class="flex items-center gap-2">
+                        <input type="text" name="zone_label[]" x-model="row.label" placeholder="Inside Dhaka"
+                            class="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <input type="number" step="0.01" min="0" name="zone_charge[]" x-model="row.charge" placeholder="60"
+                            class="w-28 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <button type="button" @click="remove(i)" class="text-red-400 hover:text-red-600 p-2" aria-label="Remove"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
+                    </div>
+                </template>
+            </div>
+            <button type="button" @click="add()" class="text-sm text-indigo-600 hover:text-indigo-800 font-medium flex items-center gap-1.5">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg> Add Zone
+            </button>
+        </div>
+
+        {{-- FAQ --}}
+        <div class="bg-white rounded-2xl shadow-sm p-6 space-y-4" x-data="{
+                rows: {{ Js::from($seed(['question' => 'faq_q', 'answer' => 'faq_a'], 'question', collect($lp->faqs ?? [])->toArray())) }},
+                add() { this.rows.push({ question: '', answer: '' }); },
+                remove(i) { this.rows.splice(i, 1); },
+            }">
+            <div>
+                <h3 class="font-medium text-gray-800">FAQ</h3>
+                <input type="text" name="faqs_heading" value="{{ old('faqs_heading', $lp->faqs_heading ?? '') }}" placeholder="Section heading (defaults to 'FAQ')"
+                    class="w-full mt-2 border border-gray-200 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            </div>
+            <div class="space-y-2">
+                <template x-for="(row, i) in rows" :key="i">
+                    <div class="border border-gray-100 rounded-xl p-3 space-y-2">
+                        <div class="flex items-center gap-2">
+                            <input type="text" name="faq_q[]" x-model="row.question" placeholder="Question"
+                                class="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            <button type="button" @click="remove(i)" class="text-red-400 hover:text-red-600 p-2" aria-label="Remove"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
+                        </div>
+                        <textarea name="faq_a[]" x-model="row.answer" rows="2" placeholder="Answer"
+                            class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
+                    </div>
+                </template>
+            </div>
+            <button type="button" @click="add()" class="text-sm text-indigo-600 hover:text-indigo-800 font-medium flex items-center gap-1.5">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg> Add Question
+            </button>
+        </div>
+
+        {{-- Certificates --}}
+        <div class="bg-white rounded-2xl shadow-sm p-6 space-y-4">
+            <div>
+                <h3 class="font-medium text-gray-800">Certificates / Credentials</h3>
+                <p class="text-xs text-gray-400 mt-0.5">ISO certificates, awards, licenses — a photo strip that builds trust.</p>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+                <input type="text" name="certificates_heading" value="{{ old('certificates_heading', $lp->certificates_heading ?? '') }}" placeholder="Heading (defaults to 'Certified')"
+                    class="border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                <input type="text" name="certificates_subheading" value="{{ old('certificates_subheading', $lp->certificates_subheading ?? '') }}" placeholder="Subheading (optional)"
+                    class="border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            </div>
+            @include('admin.landing-pages._gallery', ['field' => 'certificates', 'existing' => $lp->certificates ?? []])
+        </div>
+
         {{-- Thank You Page --}}
         <div class="bg-white rounded-2xl shadow-sm p-6 space-y-4">
             <h3 class="font-medium text-gray-800">Thank You Page</h3>
@@ -178,7 +475,7 @@
     </div>
 
     <div class="space-y-5">
-        <div class="bg-white rounded-2xl shadow-sm p-6 space-y-4">
+        <div class="bg-white rounded-2xl shadow-sm p-6 space-y-4 sticky top-6">
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
                 <select name="status" class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
@@ -190,6 +487,7 @@
                 <label class="block text-sm font-medium text-gray-700 mb-1">Price Override <span class="text-gray-400 font-normal">(optional)</span></label>
                 <input type="number" step="0.01" min="0" name="price_override" value="{{ old('price_override', $lp->price_override ?? '') }}" placeholder="Leave blank to use the linked product's price"
                     class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                <p class="text-xs text-gray-400 mt-1">This is the final price shown big in the offer box and order form — set Compare-at Price above to show it struck through against a higher "was" price.</p>
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Order Button Text</label>
@@ -210,6 +508,10 @@
                 <img src="{{ Storage::url($lp->header_logo) }}" class="h-10 object-contain mb-2 border border-gray-100 rounded-lg p-1">
             @endif
             <input type="file" name="header_logo" accept="image/*" class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm">
+        </div>
+
+        <div class="bg-indigo-50 border border-indigo-100 rounded-2xl p-4 text-xs text-indigo-700 leading-relaxed">
+            💵 All landing page orders are Cash on Delivery — there's no payment method picker on the order form by design, to keep it as short and high-converting as possible.
         </div>
     </div>
 </div>

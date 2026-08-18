@@ -36,6 +36,11 @@ class LandingPageController extends Controller
         if ($landingPage->collect_address) {
             $rules['address'] = ($landingPage->require_address ? 'required' : 'nullable') . '|string|max:500';
         }
+        if (filled($landingPage->delivery_zones)) {
+            // Required once zones exist at all — a page with a shipping-charge picker can't
+            // compute a total without knowing which zone applies.
+            $rules['delivery_zone'] = 'required|integer|min:0|max:' . (count($landingPage->delivery_zones) - 1);
+        }
         foreach ($landingPage->order_form_fields ?? [] as $field) {
             $rule = $field['required'] ? 'required' : 'nullable';
             $rule .= match ($field['type']) {
@@ -49,18 +54,34 @@ class LandingPageController extends Controller
 
         $validated = $request->validate($rules);
 
-        $quantity  = max(1, (int) ($validated['quantity'] ?? 1));
+        $quantity = max(1, (int) ($validated['quantity'] ?? 1));
         $unitPrice = (float) ($landingPage->effective_price ?? 0);
-        $total     = round($unitPrice * $quantity, 2);
+        $subtotal = round($unitPrice * $quantity, 2);
 
-        $order = DB::transaction(function () use ($landingPage, $validated, $quantity, $unitPrice, $total, $request) {
+        $zone = null;
+        $shippingCharge = 0.0;
+        if (filled($landingPage->delivery_zones) && isset($validated['delivery_zone'])) {
+            $zone = $landingPage->delivery_zones[(int) $validated['delivery_zone']] ?? null;
+            $shippingCharge = (float) ($zone['charge'] ?? 0);
+        }
+        $total = round($subtotal + $shippingCharge, 2);
+
+        // The zone label rides along in landing_page_data purely for display in the admin's
+        // Landing Orders screen — shipping_charge itself already landed on the order's own
+        // `shipping` column, which is what actually drives the total.
+        $customData = $request->input('custom', []);
+        if ($zone) {
+            $customData = ['delivery_zone' => $zone['label']] + $customData;
+        }
+
+        $order = DB::transaction(function () use ($landingPage, $validated, $quantity, $unitPrice, $subtotal, $shippingCharge, $total, $customData) {
             $order = Order::create([
                 'landing_page_id'   => $landingPage->id,
                 'order_number'      => Order::generateOrderNumber(),
                 'status'            => 'pending',
-                'subtotal'          => $total,
+                'subtotal'          => $subtotal,
                 'discount'          => 0,
-                'shipping'          => 0,
+                'shipping'          => $shippingCharge,
                 'tax'               => 0,
                 'total'             => $total,
                 // Landing pages are a single-product, high-conversion COD funnel by design —
@@ -70,7 +91,7 @@ class LandingPageController extends Controller
                 'shipping_name'     => $validated['name'],
                 'shipping_phone'    => $validated['phone'],
                 'shipping_address'  => $validated['address'] ?? null,
-                'landing_page_data' => $request->input('custom', []),
+                'landing_page_data' => $customData,
             ]);
 
             OrderItem::create([
@@ -79,7 +100,7 @@ class LandingPageController extends Controller
                 'product_name' => $landingPage->product->name ?? $landingPage->title,
                 'price'       => $unitPrice,
                 'quantity'    => $quantity,
-                'subtotal'    => $total,
+                'subtotal'    => $subtotal,
             ]);
 
             if ($landingPage->product_id) {

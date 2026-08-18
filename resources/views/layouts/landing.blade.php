@@ -27,32 +27,50 @@
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-<body class="bg-white text-gray-900 antialiased">
+<body class="bg-gray-100 text-gray-900 antialiased">
+{{-- Single narrow column at every viewport width — deliberately not a responsive
+     multi-column desktop layout. These funnels are built once for mobile ad traffic
+     (the overwhelming majority of clicks) and look identical, centered, on desktop
+     rather than stretching into a different design nobody designed for. --}}
+<div class="max-w-md mx-auto bg-white min-h-screen shadow-xl">
 
-<header class="border-b border-gray-100 sticky top-0 bg-white/95 backdrop-blur z-40">
-    <div class="max-w-3xl mx-auto px-4 h-16 flex items-center justify-between">
-        <a href="{{ url($landingPage->slug) }}" class="flex items-center gap-2">
-            @if($logoUrl)
-                <img src="{{ $logoUrl }}" alt="{{ $siteName }}" class="h-9 max-w-[150px] object-contain">
-            @else
-                <span class="font-extrabold text-lg text-gray-800">{{ $siteName }}</span>
-            @endif
-        </a>
-        @unless(session('order_success'))
-        <a href="#order-form" class="text-sm font-bold text-white px-4 py-2 rounded-full transition hover:opacity-90"
-           style="background-color: {{ $primaryColor }};">
-            {{ $landingPage->order_button_text }}
-        </a>
-        @endunless
+    @if($landingPage->urgency_bar_enabled && $landingPage->urgency_bar_text)
+    <div x-data="{
+            left: {{ max(1, (int) $landingPage->urgency_bar_minutes) * 60 }},
+            get mm() { return String(Math.floor(this.left / 60)).padStart(2, '0'); },
+            get ss() { return String(this.left % 60).padStart(2, '0'); },
+        }"
+        x-init="setInterval(() => { if (left > 0) left--; }, 1000)"
+        class="bg-green-50 border-b border-green-100 text-green-800 text-xs sm:text-sm font-medium px-3 py-2 flex items-center justify-center gap-2 text-center sticky top-0 z-50">
+        <span>{{ $landingPage->urgency_bar_text }}</span>
+        <span class="font-mono font-bold bg-white border border-green-200 rounded px-1.5 py-0.5" x-text="mm + ':' + ss"></span>
     </div>
-</header>
+    @endif
 
-<main>
-    @yield('content')
-</main>
+    <header class="border-b border-gray-100 sticky z-40 bg-white/95 backdrop-blur" style="top: {{ $landingPage->urgency_bar_enabled && $landingPage->urgency_bar_text ? '2.25rem' : '0' }};">
+        <div class="px-4 h-16 flex items-center justify-between">
+            <a href="{{ url($landingPage->slug) }}" class="flex items-center gap-2">
+                @if($logoUrl)
+                    <img src="{{ $logoUrl }}" alt="{{ $siteName }}" class="h-9 max-w-[150px] object-contain">
+                @else
+                    <span class="font-extrabold text-lg text-gray-800">{{ $siteName }}</span>
+                @endif
+            </a>
+            @unless(session('order_success'))
+            <a href="#order-form" class="text-sm font-bold text-white px-4 py-2 rounded-full transition hover:opacity-90"
+               style="background-color: {{ $primaryColor }};">
+                {{ $landingPage->order_button_text }}
+            </a>
+            @endunless
+        </div>
+    </header>
 
-<footer class="border-t border-gray-100 bg-gray-50">
-    <div class="max-w-3xl mx-auto px-4 py-8 text-center">
+    <main>
+        @yield('content')
+    </main>
+
+    <footer class="border-t border-gray-100 bg-gray-50">
+        <div class="px-4 py-8 text-center">
         @php
             $socials = [
                 'facebook_url'  => ['label' => 'Facebook',  'icon' => 'M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.988C18.343 21.128 22 16.991 22 12z'],
@@ -71,8 +89,9 @@
             @endforeach
         </div>
         <p class="text-xs text-gray-400">&copy; {{ date('Y') }} {{ $siteName }}. All rights reserved.</p>
-    </div>
-</footer>
+        </div>
+    </footer>
 
+</div>
 </body>
 </html>

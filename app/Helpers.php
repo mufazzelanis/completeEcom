@@ -152,6 +152,35 @@ if (!function_exists('format_currency')) {
     }
 }
 
+if (!function_exists('embed_video_url')) {
+    /**
+     * Landing pages let the admin paste any video link (YouTube share/watch/shorts URL,
+     * Facebook video URL, or a direct .mp4) into a plain text field — this normalizes
+     * whatever they pasted into something actually embeddable in an <iframe>/<video>.
+     * Returns null (caller falls back to a plain "watch" link) for anything unrecognized.
+     */
+    function embed_video_url(?string $url): ?array
+    {
+        if (blank($url)) {
+            return null;
+        }
+
+        if (preg_match('/youtu\.be\/([a-zA-Z0-9_-]+)/', $url, $m) || preg_match('/[?&]v=([a-zA-Z0-9_-]+)/', $url, $m) || preg_match('/youtube\.com\/embed\/([a-zA-Z0-9_-]+)/', $url, $m) || preg_match('/youtube\.com\/shorts\/([a-zA-Z0-9_-]+)/', $url, $m)) {
+            return ['type' => 'iframe', 'src' => 'https://www.youtube.com/embed/' . $m[1]];
+        }
+
+        if (preg_match('/facebook\.com|fb\.watch/', $url)) {
+            return ['type' => 'iframe', 'src' => 'https://www.facebook.com/plugins/video.php?href=' . urlencode($url) . '&show_text=0'];
+        }
+
+        if (preg_match('/\.(mp4|webm|ogg)(\?.*)?$/i', $url)) {
+            return ['type' => 'video', 'src' => $url];
+        }
+
+        return null;
+    }
+}
+
 if (!function_exists('hex_to_hsl')) {
     function hex_to_hsl(string $hex): array
     {
