@@ -55,6 +55,14 @@ class LandingPageController extends Controller
         $validated = $request->validate($rules);
 
         $quantity = max(1, (int) ($validated['quantity'] ?? 1));
+
+        // Same stock check the regular storefront checkout does (CheckoutController) —
+        // without it, a landing page under a burst of ad traffic could decrement a
+        // product's stock into the negative with no warning to the customer at all.
+        if ($landingPage->product_id && $landingPage->product && $quantity > $landingPage->product->available_stock) {
+            return back()->withInput()->withErrors(['quantity' => 'Sorry, only ' . max(0, $landingPage->product->available_stock) . ' left in stock.']);
+        }
+
         $unitPrice = (float) ($landingPage->effective_price ?? 0);
         $subtotal = round($unitPrice * $quantity, 2);
 
@@ -68,10 +76,12 @@ class LandingPageController extends Controller
 
         // The zone label rides along in landing_page_data purely for display in the admin's
         // Landing Orders screen — shipping_charge itself already landed on the order's own
-        // `shipping` column, which is what actually drives the total.
+        // `shipping` column, which is what actually drives the total. Underscore-prefixed key
+        // (rather than plain 'delivery_zone') so it can never collide with an admin-defined
+        // custom field slugging to that same key (e.g. one literally labeled "Delivery Zone").
         $customData = $request->input('custom', []);
         if ($zone) {
-            $customData = ['delivery_zone' => $zone['label']] + $customData;
+            $customData = ['_delivery_zone' => $zone['label']] + $customData;
         }
 
         $order = DB::transaction(function () use ($landingPage, $validated, $quantity, $unitPrice, $subtotal, $shippingCharge, $total, $customData) {
@@ -97,7 +107,7 @@ class LandingPageController extends Controller
             OrderItem::create([
                 'order_id'    => $order->id,
                 'product_id'  => $landingPage->product_id,
-                'product_name' => $landingPage->product->name ?? $landingPage->title,
+                'product_name' => $landingPage->product?->name ?? $landingPage->title,
                 'price'       => $unitPrice,
                 'quantity'    => $quantity,
                 'subtotal'    => $subtotal,

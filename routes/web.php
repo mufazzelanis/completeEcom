@@ -568,15 +568,23 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
 
 });
 
+// auth.php's routes (login, register, forgot-password, two-factor-challenge, verify-email,
+// confirm-password) are ALL single top-level segments too — this require MUST come before
+// the landing-page catch-all below, not after. Laravel matches routes in registration
+// order and commits to the first URI match it finds; once /{landingPage:slug} is
+// registered, a request for GET /login matches that wildcard pattern first and 404s on
+// the (nonexistent) "login" landing page, never even reaching auth.php's real /login route
+// below. (This exact bug shipped once already — caught by testing /login directly after
+// building the landing page feature, not by reading the code.)
+require __DIR__.'/auth.php';
+
 // Landing pages — bare top-level URL (mitavin.com/{slug}), no /pages/ or other prefix,
 // which is the whole point of the feature. MUST be the last route registered: Laravel
 // matches routes in registration order, and every other route above this point is either
 // a literal multi-segment path or a specific single-segment literal (/shop, /cart, /faq,
-// /blog, /sitemap.xml, ...) that will always out-match this single-segment wildcard first
-// when there's a real collision — but a careless future edit adding another bare
-// single-segment route below this one WOULD get shadowed by it, so nothing else belongs
-// after this in the file.
+// /blog, /sitemap.xml, /login, /register, ...) that will always out-match this
+// single-segment wildcard first when there's a real collision — but a careless future edit
+// adding another bare single-segment route (or another require) below this one WOULD get
+// shadowed by it, so nothing else belongs after this in the file.
 Route::get('/{landingPage:slug}', [LandingPageController::class, 'show'])->name('landing.show');
 Route::post('/{landingPage:slug}', [LandingPageController::class, 'order'])->middleware('throttle:10,1')->name('landing.order');
-
-require __DIR__.'/auth.php';

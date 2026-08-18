@@ -63,12 +63,21 @@
                         @php
                             $fieldLabels = collect($order->landingPage->order_form_fields ?? [])->keyBy('key');
                         @endphp
-                        @forelse($order->landing_page_data ?? [] as $key => $value)
+                        {{-- _delivery_zone is a reserved key set by LandingPageController@order (never an
+                             admin-defined custom field — see the underscore prefix), shown with its own
+                             friendly label instead of falling into the generic key:value dump below. --}}
+                        @php $otherData = collect($order->landing_page_data ?? [])->except('_delivery_zone'); @endphp
+                        @if(!empty($order->landing_page_data['_delivery_zone']))
+                            <div><span class="text-gray-400">Delivery Zone:</span> {{ $order->landing_page_data['_delivery_zone'] }}</div>
+                        @endif
+                        @forelse($otherData as $key => $value)
                             @if($value !== null && $value !== '')
                                 <div><span class="text-gray-400">{{ $fieldLabels[$key]['label'] ?? $key }}:</span> {{ is_bool($value) ? ($value ? 'Yes' : 'No') : $value }}</div>
                             @endif
                         @empty
-                            —
+                            @if(empty($order->landing_page_data['_delivery_zone']))
+                                —
+                            @endif
                         @endforelse
                     </td>
                     <td class="px-6 py-4 text-right font-semibold text-gray-900 text-sm">৳{{ number_format($order->total) }}</td>
