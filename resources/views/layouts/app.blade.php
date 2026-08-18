@@ -400,6 +400,11 @@ $navCategories = \App\Models\Category::with(['children' => fn($q) => $q->active(
     {{-- Mobile Menu --}}
     <div x-show="mobileOpen" x-cloak x-transition @click.outside="mobileOpen = false" @keydown.escape.window="mobileOpen = false" class="md:hidden bg-white dark:bg-gray-900 border-t border-gray-100 dark:border-gray-700 shadow-xl">
         <div class="p-4">
+            {{-- Lazy-mounted (x-if, not x-show) — this has its own x-data/fetch/debounce
+                 wiring, so this way Alpine never sets any of that up on page load for the
+                 ~most visitors who never open the mobile menu; only when mobileOpen flips
+                 true does it actually get built. --}}
+            <template x-if="mobileOpen">
             <div class="relative mb-4" x-data="{
                     query: '{{ addslashes(request('search', '')) }}',
                     results: { products: [], categories: [] },
@@ -465,6 +470,7 @@ $navCategories = \App\Models\Category::with(['children' => fn($q) => $q->active(
                     </template>
                 </div>
             </div>
+            </template>
             @auth
                 <div class="flex items-center gap-3 pb-3 border-b border-gray-100 dark:border-gray-700 mb-3">
                     <div class="w-10 h-10 bg-gradient-to-br from-orange-400 to-red-500 rounded-full flex items-center justify-center">
