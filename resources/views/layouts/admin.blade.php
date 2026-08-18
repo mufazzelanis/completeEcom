@@ -85,7 +85,7 @@ $adminNavIndex = [
     ['label' => 'FAQs', 'url' => route('admin.faqs.index'), 'group' => 'CMS'],
     ['label' => 'Landing Pages', 'url' => route('admin.landing-pages.index'), 'group' => 'Landing Pages'],
     ['label' => 'Landing Report', 'url' => route('admin.landing-pages.report'), 'group' => 'Landing Pages'],
-    ['label' => 'Landing Page Orders', 'url' => route('admin.orders.index', ['from_landing' => 1]), 'group' => 'Landing Pages'],
+    ['label' => 'Landing Page Orders', 'url' => route('admin.landing-pages.orders'), 'group' => 'Landing Pages'],
     ['label' => 'Marketing Overview', 'url' => route('admin.marketing.index'), 'group' => 'Marketing'],
     ['label' => 'Flash Sales', 'url' => route('admin.flash-sales.index'), 'group' => 'Marketing'],
     ['label' => 'Promo Codes', 'url' => route('admin.promo-codes.index'), 'group' => 'Marketing'],
@@ -460,8 +460,8 @@ $adminNavIndex = [
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
                 <span>Landing Report</span>
             </a>
-            <a href="{{ route('admin.orders.index', ['from_landing' => 1]) }}"
-                class="flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium transition {{ request()->routeIs('admin.orders.index') && (request('from_landing') || request()->filled('landing_page_id')) ? 'bg-orange-600 text-white' : 'text-gray-300 hover:bg-gray-800' }}">
+            <a href="{{ route('admin.landing-pages.orders') }}"
+                class="flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium transition {{ request()->routeIs('admin.landing-pages.orders') ? 'bg-orange-600 text-white' : 'text-gray-300 hover:bg-gray-800' }}">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
                 <span>Orders</span>
             </a>

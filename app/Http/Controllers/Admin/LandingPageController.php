@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\LandingPage;
+use App\Models\Order;
 use App\Models\Product;
 use App\Services\AuditLogger;
 use App\Support\ImageOptimizer;
@@ -113,6 +114,38 @@ class LandingPageController extends Controller
         $totals['conversion'] = $totals['views'] > 0 ? round($totals['orders'] / $totals['views'] * 100, 1) : 0;
 
         return view('admin.landing-pages.report', compact('pages', 'totals'));
+    }
+
+    /**
+     * Landing orders live entirely on their own screen, deliberately not mixed into the
+     * regular Admin\OrderController@index list — a landing order has no user_id/account
+     * behind it (see LandingPageController@order in the public namespace: it never touches
+     * `user_id`, only the shipping_name/phone typed into the funnel's own form) and carries
+     * landing-specific data (which page, its custom form field answers) the generic orders
+     * table doesn't show. Same underlying `orders` row, but its own dedicated list.
+     */
+    public function orders(Request $request)
+    {
+        $query = Order::whereNotNull('landing_page_id')->with('landingPage');
+
+        if ($request->filled('landing_page_id')) {
+            $query->where('landing_page_id', $request->landing_page_id);
+        }
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+        if ($request->filled('search')) {
+            $query->where(function ($q) use ($request) {
+                $q->where('order_number', 'like', '%' . $request->search . '%')
+                    ->orWhere('shipping_name', 'like', '%' . $request->search . '%')
+                    ->orWhere('shipping_phone', 'like', '%' . $request->search . '%');
+            });
+        }
+
+        $orders = $query->latest()->paginate(15)->withQueryString();
+        $pages = LandingPage::orderBy('title')->get(['id', 'title']);
+
+        return view('admin.landing-pages.orders', compact('orders', 'pages'));
     }
 
     private function validated(Request $request, ?int $exceptId = null): array

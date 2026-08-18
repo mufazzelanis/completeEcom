@@ -28,19 +28,6 @@
         Fraud Flagged <span class="bg-red-600 text-white text-xs px-1.5 py-0.5 rounded-full font-bold">{{ $flaggedCount }}</span>
     </a>
     @endif
-    @if(request()->filled('landing_page_id'))
-    <span class="flex items-center gap-2 bg-indigo-50 border border-indigo-200 text-indigo-700 px-3 py-2 rounded-xl text-sm font-medium">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-        Orders from: {{ \App\Models\LandingPage::find(request('landing_page_id'))?->title }}
-        <a href="{{ route('admin.orders.index') }}" class="text-indigo-400 hover:text-indigo-600" title="Clear filter">✕</a>
-    </span>
-    @elseif(request()->boolean('from_landing'))
-    <span class="flex items-center gap-2 bg-indigo-50 border border-indigo-200 text-indigo-700 px-3 py-2 rounded-xl text-sm font-medium">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-        All Landing Page Orders
-        <a href="{{ route('admin.orders.index') }}" class="text-indigo-400 hover:text-indigo-600" title="Clear filter">✕</a>
-    </span>
-    @endif
 </div>
 
 <div class="bg-white rounded-2xl shadow-sm overflow-hidden">
@@ -71,12 +58,7 @@
                             @endif
                         </div>
                     </td>
-                    <td class="px-6 py-4 text-sm text-gray-700">
-                        {{ $order->user->name ?? 'Guest' }}
-                        @if($order->relationLoaded('landingPage') && $order->landingPage)
-                            <span class="block text-xs text-indigo-500 mt-0.5">via {{ $order->landingPage->title }}</span>
-                        @endif
-                    </td>
+                    <td class="px-6 py-4 text-sm text-gray-700">{{ $order->user->name ?? 'Guest' }}</td>
                     <td class="px-6 py-4 text-right font-semibold text-gray-900 text-sm">৳{{ number_format($order->total) }}</td>
                     <td class="px-6 py-4 text-center">
                         <span class="px-2 py-1 rounded-full text-xs font-medium capitalize {{ $order->payment_status === 'paid' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700' }}">

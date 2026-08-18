@@ -55,7 +55,7 @@
                     <td class="px-6 py-4 text-right text-sm font-semibold text-gray-900">৳{{ number_format($page->orders_sum_total ?? 0) }}</td>
                     <td class="px-6 py-4 text-right text-sm text-gray-700">{{ $conv }}%</td>
                     <td class="px-6 py-4 text-center">
-                        <a href="{{ route('admin.orders.index', ['landing_page_id' => $page->id]) }}" class="text-indigo-600 hover:text-indigo-800 text-sm font-medium">View Orders</a>
+                        <a href="{{ route('admin.landing-pages.orders', ['landing_page_id' => $page->id]) }}" class="text-indigo-600 hover:text-indigo-800 text-sm font-medium">View Orders</a>
                     </td>
                 </tr>
             @empty
