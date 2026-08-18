@@ -371,14 +371,14 @@ $navCategories = \App\Models\Category::with(['children' => fn($q) => $q->active(
 
     {{-- Category Navigation Bar --}}
     @if($headerLayout !== 'minimal')
-    <div class="bg-orange-500 hidden md:block border-t border-orange-400">
+    <div class="bg-orange-700 hidden md:block border-t border-orange-600">
         <div class="max-w-[1200px] mx-auto px-4 flex items-center overflow-x-auto scrollbar-hide">
             @foreach($navCategories as $navCat)
                 <div class="relative flex-shrink-0" x-data="{ open: false, top: 0, left: 0 }"
                      @mouseenter="open = true; const r = $el.getBoundingClientRect(); top = r.bottom; left = r.left;"
                      @mouseleave="open = false">
                     <a href="{{ route('shop.category', $navCat->slug) }}"
-                       class="inline-flex items-center gap-1 text-sm text-white whitespace-nowrap hover:bg-orange-600 px-3 py-2.5 transition font-medium">
+                       class="inline-flex items-center gap-1 text-sm text-white whitespace-nowrap hover:bg-orange-800 px-3 py-2.5 transition font-medium">
                         {{ $navCat->name }}
                         @if($navCat->children->count() > 0)
                             <svg class="w-3 h-3 opacity-75" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
@@ -398,7 +398,7 @@ $navCategories = \App\Models\Category::with(['children' => fn($q) => $q->active(
                     @endif
                 </div>
             @endforeach
-            <a href="{{ route('shop.index') }}" class="inline-flex items-center text-sm text-white/80 whitespace-nowrap hover:text-white px-3 py-2.5 ml-auto font-medium transition">{{ t('header.all_products', 'All Products', [], 'header') }} →</a>
+            <a href="{{ route('shop.index') }}" class="inline-flex items-center text-sm text-white whitespace-nowrap hover:text-white px-3 py-2.5 ml-auto font-medium transition">{{ t('header.all_products', 'All Products', [], 'header') }} →</a>
         </div>
     </div>
     @endif
@@ -431,7 +431,7 @@ $navCategories = \App\Models\Category::with(['children' => fn($q) => $q->active(
                         @keydown.escape="open = false"
                         placeholder="Search products..." aria-label="Search products" autocomplete="off"
                         class="flex-1 border-2 border-orange-400 rounded-l-md px-4 py-2 text-sm focus:outline-none focus:border-orange-500">
-                    <button type="submit" class="bg-orange-500 text-white px-4 py-2 rounded-r-md flex-shrink-0">
+                    <button type="submit" aria-label="Search" class="bg-orange-500 text-white px-4 py-2 rounded-r-md flex-shrink-0">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
                     </button>
                 </form>
