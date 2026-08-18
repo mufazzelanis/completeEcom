@@ -359,7 +359,7 @@ $navCategories = \App\Models\Category::with(['children' => fn($q) => $q->active(
             </div>
         @else
             {{-- Default / minimal layout: single row --}}
-            <div class="flex items-center justify-between h-14 md:h-16 gap-4">
+            <div class="flex items-center justify-between h-16 md:h-20 gap-4">
                 @include('partials.storefront.header-logo')
                 @if($headerLayout !== 'minimal')
                     @include('partials.storefront.header-search')
