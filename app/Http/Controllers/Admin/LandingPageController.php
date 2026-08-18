@@ -84,7 +84,10 @@ class LandingPageController extends Controller
 
         AuditLogger::log('landing_page.updated', "Updated landing page \"{$landingPage->title}\"", $landingPage);
 
-        return redirect()->route('admin.landing-pages.edit', $landingPage)->with('success', 'Landing page updated.');
+        // store() redirects back to edit (so the admin can keep filling in images/sections
+        // right after creating), but update()'s Save button is the "I'm done" action — send
+        // them back to the list, same as every other admin CRUD screen in this app.
+        return redirect()->route('admin.landing-pages.index')->with('success', 'Landing page updated.');
     }
 
     public function destroy(LandingPage $landingPage)
