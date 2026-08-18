@@ -89,6 +89,10 @@ class OrderController extends Controller
             ['payment_status' => $request->payment_status]
         );
 
+        if ($request->expectsJson()) {
+            return response()->json(['message' => 'Payment status updated.', 'payment_status' => $order->payment_status]);
+        }
+
         return back()->with('success', 'Order updated.');
     }
 
@@ -126,6 +130,10 @@ class OrderController extends Controller
                 'new_status' => ucfirst($request->status),
                 'url' => route('orders.show', $order),
             ]);
+        }
+
+        if ($request->expectsJson()) {
+            return response()->json(['message' => 'Order status updated.', 'status' => $order->status]);
         }
 
         return back()->with('success', 'Order status updated.');

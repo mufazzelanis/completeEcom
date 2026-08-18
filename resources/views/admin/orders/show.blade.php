@@ -152,31 +152,41 @@ $rc = $riskColors[$riskLevel];
             @endif
         </div>
 
-        <!-- Update Status -->
-        <div class="bg-white rounded-2xl shadow-sm p-6">
+        {{-- Update Status — submits via fetch so this doesn't reload the whole order page
+             just to change one field; falls back to a normal form post (full reload) if JS
+             is unavailable, since the <form> itself is still a real, working form. --}}
+        <div class="bg-white rounded-2xl shadow-sm p-6" x-data="ajaxStatusForm()">
             <h2 class="font-semibold text-gray-800 mb-4">Update Status</h2>
-            <form action="{{ route('admin.orders.status', $order->id) }}" method="POST">
+            <form action="{{ route('admin.orders.status', $order->id) }}" method="POST" @submit.prevent="submit($event)">
                 @csrf @method('PATCH')
-                <select name="status" class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm mb-3 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                <select name="status" :disabled="saving" class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm mb-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:bg-gray-50">
                     @foreach(['pending', 'processing', 'shipped', 'delivered', 'cancelled', 'refunded'] as $s)
                         <option value="{{ $s }}" {{ $order->status === $s ? 'selected' : '' }}>{{ ucfirst($s) }}</option>
                     @endforeach
                 </select>
-                <button type="submit" class="w-full bg-indigo-600 text-white py-2 rounded-xl text-sm font-medium hover:bg-indigo-700 transition">Update Status</button>
+                <button type="submit" :disabled="saving" class="w-full bg-indigo-600 text-white py-2 rounded-xl text-sm font-medium hover:bg-indigo-700 transition disabled:opacity-60 flex items-center justify-center gap-2">
+                    <svg x-show="saving" x-cloak class="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+                    <span x-text="saving ? 'Updating…' : 'Update Status'"></span>
+                </button>
+                <p x-show="message" x-cloak x-text="message" class="text-xs mt-2 text-center" :class="error ? 'text-red-600' : 'text-green-600'"></p>
             </form>
         </div>
 
-        <!-- Update Payment -->
-        <div class="bg-white rounded-2xl shadow-sm p-6">
+        {{-- Update Payment — same fetch-based pattern as Update Status above --}}
+        <div class="bg-white rounded-2xl shadow-sm p-6" x-data="ajaxStatusForm()">
             <h2 class="font-semibold text-gray-800 mb-4">Payment Status</h2>
-            <form action="{{ route('admin.orders.update', $order->id) }}" method="POST">
+            <form action="{{ route('admin.orders.update', $order->id) }}" method="POST" @submit.prevent="submit($event)">
                 @csrf @method('PUT')
-                <select name="payment_status" class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm mb-3 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                <select name="payment_status" :disabled="saving" class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm mb-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:bg-gray-50">
                     @foreach(['pending', 'paid', 'failed', 'refunded'] as $s)
                         <option value="{{ $s }}" {{ $order->payment_status === $s ? 'selected' : '' }}>{{ ucfirst($s) }}</option>
                     @endforeach
                 </select>
-                <button type="submit" class="w-full bg-green-600 text-white py-2 rounded-xl text-sm font-medium hover:bg-green-700 transition">Update Payment</button>
+                <button type="submit" :disabled="saving" class="w-full bg-green-600 text-white py-2 rounded-xl text-sm font-medium hover:bg-green-700 transition disabled:opacity-60 flex items-center justify-center gap-2">
+                    <svg x-show="saving" x-cloak class="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+                    <span x-text="saving ? 'Updating…' : 'Update Payment'"></span>
+                </button>
+                <p x-show="message" x-cloak x-text="message" class="text-xs mt-2 text-center" :class="error ? 'text-red-600' : 'text-green-600'"></p>
             </form>
         </div>
 
@@ -203,4 +213,46 @@ $rc = $riskColors[$riskLevel];
         </div>
     </div>
 </div>
+
+@push('scripts')
+<script>
+    // Shared by the Update Status and Payment Status forms above — plain fetch() POST
+    // (with Laravel's _method spoofing field, already in the form via the method directive)
+    // instead of a normal form submit, so picking a new status doesn't reload the whole page.
+    function ajaxStatusForm() {
+        return {
+            saving: false,
+            message: null,
+            error: false,
+            submit(event) {
+                this.saving = true;
+                this.message = null;
+                this.error = false;
+                const form = event.target;
+
+                fetch(form.action, {
+                    method: 'POST',
+                    headers: { 'Accept': 'application/json' },
+                    body: new FormData(form),
+                })
+                    .then(async (response) => {
+                        const data = await response.json().catch(() => ({}));
+                        this.saving = false;
+                        this.error = !response.ok;
+                        this.message = data.message
+                            || (data.errors ? Object.values(data.errors)[0][0] : null)
+                            || (response.ok ? 'Updated.' : 'Something went wrong.');
+                        setTimeout(() => { this.message = null; }, 4000);
+                    })
+                    .catch(() => {
+                        this.saving = false;
+                        this.error = true;
+                        this.message = 'Network error — please try again.';
+                        setTimeout(() => { this.message = null; }, 4000);
+                    });
+            },
+        };
+    }
+</script>
+@endpush
 @endsection
