@@ -255,26 +255,22 @@
                         @endif
                         @if($usesZones)
                         <div class="sm:col-span-2">
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Delivery Area <span class="text-red-500">*</span></label>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Delivery Area <span class="text-red-500">*</span></label>
                             <div class="grid grid-cols-2 gap-3">
-                                <label class="flex items-center justify-between gap-2 border rounded-lg px-4 py-2.5 cursor-pointer transition"
-                                    :class="zone === 'dhaka' ? 'border-orange-500 bg-orange-50' : 'border-gray-200'">
-                                    <span class="text-sm font-medium text-gray-700">Inside Dhaka</span>
-                                    <span class="flex items-center gap-2">
-                                        <span class="text-xs text-gray-400">৳{{ number_format($shippingByZone['dhaka']) }}</span>
-                                        <input type="radio" name="shipping_zone" value="dhaka" x-model="zone" class="text-orange-500">
-                                    </span>
+                                <label class="relative flex flex-col gap-1 border-2 rounded-xl px-4 py-3 cursor-pointer transition"
+                                    :class="zone === 'dhaka' ? 'border-orange-500 bg-orange-50 dark:bg-orange-500/10' : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'">
+                                    <input type="radio" name="shipping_zone" value="dhaka" x-model="zone" class="absolute top-3 right-3 w-4 h-4 text-orange-600 focus:ring-orange-500">
+                                    <span class="text-sm font-medium text-gray-600 dark:text-gray-400 pr-6">Inside Dhaka</span>
+                                    <span class="text-xl font-extrabold" :class="zone === 'dhaka' ? 'text-orange-600' : 'text-gray-900 dark:text-gray-100'">৳{{ number_format($shippingByZone['dhaka']) }}</span>
                                 </label>
-                                <label class="flex items-center justify-between gap-2 border rounded-lg px-4 py-2.5 cursor-pointer transition"
-                                    :class="zone === 'outside_dhaka' ? 'border-orange-500 bg-orange-50' : 'border-gray-200'">
-                                    <span class="text-sm font-medium text-gray-700">Outside Dhaka</span>
-                                    <span class="flex items-center gap-2">
-                                        <span class="text-xs text-gray-400">৳{{ number_format($shippingByZone['outside_dhaka']) }}</span>
-                                        <input type="radio" name="shipping_zone" value="outside_dhaka" x-model="zone" class="text-orange-500">
-                                    </span>
+                                <label class="relative flex flex-col gap-1 border-2 rounded-xl px-4 py-3 cursor-pointer transition"
+                                    :class="zone === 'outside_dhaka' ? 'border-orange-500 bg-orange-50 dark:bg-orange-500/10' : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'">
+                                    <input type="radio" name="shipping_zone" value="outside_dhaka" x-model="zone" class="absolute top-3 right-3 w-4 h-4 text-orange-600 focus:ring-orange-500">
+                                    <span class="text-sm font-medium text-gray-600 dark:text-gray-400 pr-6">Outside Dhaka</span>
+                                    <span class="text-xl font-extrabold" :class="zone === 'outside_dhaka' ? 'text-orange-600' : 'text-gray-900 dark:text-gray-100'">৳{{ number_format($shippingByZone['outside_dhaka']) }}</span>
                                 </label>
                             </div>
-                            @error('shipping_zone')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
+                            @error('shipping_zone')<p class="text-red-500 text-xs mt-1.5">{{ $message }}</p>@enderror
                         </div>
                         @endif
                         @if($checkoutFields['state']['mode'] !== 'hidden')
