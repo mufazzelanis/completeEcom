@@ -176,7 +176,11 @@ class LandingPageController extends Controller
             'header_logo'              => 'nullable|image|max:2048',
             'og_image'                 => 'nullable|image|max:4096',
             'urgency_bar_text'         => 'nullable|string|max:255',
-            'urgency_bar_minutes'      => 'nullable|integer|min:1|max:1440',
+            // Clamped 0-9 / 0-59 so the total always stays under 10 minutes — matches the
+            // urgency bar's own "order within 10 minutes" copy; a longer countdown than the
+            // text itself promises would just look broken.
+            'urgency_bar_minutes'      => 'nullable|integer|min:0|max:9',
+            'urgency_bar_seconds'      => 'nullable|integer|min:0|max:59',
             'rating_value'             => 'nullable|numeric|min:0|max:5',
             'rating_count'             => 'nullable|integer|min:0',
             'how_it_works_heading'     => 'nullable|string|max:255',
@@ -210,7 +214,13 @@ class LandingPageController extends Controller
         $data['order_button_text']   = $request->filled('order_button_text') ? $request->order_button_text : 'Order Now';
         $data['thank_you_heading']   = $request->filled('thank_you_heading') ? $request->thank_you_heading : 'Thank You!';
         $data['urgency_bar_enabled'] = $request->boolean('urgency_bar_enabled');
-        $data['urgency_bar_minutes'] = $request->filled('urgency_bar_minutes') ? (int) $request->urgency_bar_minutes : 10;
+        $data['urgency_bar_minutes'] = $request->filled('urgency_bar_minutes') ? (int) $request->urgency_bar_minutes : 9;
+        $data['urgency_bar_seconds'] = $request->filled('urgency_bar_seconds') ? (int) $request->urgency_bar_seconds : 45;
+        // A 0:00 countdown would just sit there reading "00:00" the instant the page loads —
+        // treat it as "not really set" and give it a sane floor instead.
+        if ($data['urgency_bar_minutes'] === 0 && $data['urgency_bar_seconds'] === 0) {
+            $data['urgency_bar_seconds'] = 30;
+        }
 
         return $data;
     }

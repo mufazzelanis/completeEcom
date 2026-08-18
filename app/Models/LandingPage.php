@@ -17,7 +17,7 @@ class LandingPage extends Model
         'meta_title', 'meta_description', 'og_image',
         'views_count',
         // Urgency bar
-        'urgency_bar_enabled', 'urgency_bar_text', 'urgency_bar_minutes',
+        'urgency_bar_enabled', 'urgency_bar_text', 'urgency_bar_minutes', 'urgency_bar_seconds',
         // Rating line + trust badges
         'rating_value', 'rating_count', 'trust_badges',
         // How it works video
@@ -45,6 +45,7 @@ class LandingPage extends Model
         'price_override'       => 'decimal:2',
         'urgency_bar_enabled'  => 'boolean',
         'urgency_bar_minutes'  => 'integer',
+        'urgency_bar_seconds'  => 'integer',
         'rating_value'         => 'decimal:1',
         'rating_count'         => 'integer',
         'trust_badges'         => 'array',

@@ -65,17 +65,22 @@
                 </span>
                 <input type="checkbox" name="urgency_bar_enabled" value="1" {{ old('urgency_bar_enabled', $lp->urgency_bar_enabled ?? false) ? 'checked' : '' }} class="rounded text-indigo-600 w-5 h-5 shrink-0 ml-3">
             </label>
-            <div class="grid grid-cols-3 gap-3">
-                <div class="col-span-2">
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Bar Text</label>
-                    <input type="text" name="urgency_bar_text" value="{{ old('urgency_bar_text', $lp->urgency_bar_text ?? '') }}" placeholder="১০ মিনিটের মধ্যে অর্ডার করলেই পাবেন ফ্রি ডেলিভারি"
-                        class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Bar Text</label>
+                <input type="text" name="urgency_bar_text" value="{{ old('urgency_bar_text', $lp->urgency_bar_text ?? '') }}" placeholder="১০ মিনিটের মধ্যে অর্ডার করলেই পাবেন ফ্রি ডেলিভারি"
+                    class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Countdown Length</label>
+                <div class="flex items-center gap-2">
+                    <input type="number" min="0" max="9" name="urgency_bar_minutes" value="{{ old('urgency_bar_minutes', $lp->urgency_bar_minutes ?? 9) }}"
+                        class="w-20 border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-center focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    <span class="text-sm text-gray-400">min</span>
+                    <input type="number" min="0" max="59" name="urgency_bar_seconds" value="{{ old('urgency_bar_seconds', $lp->urgency_bar_seconds ?? 45) }}"
+                        class="w-20 border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-center focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    <span class="text-sm text-gray-400">sec</span>
                 </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Minutes</label>
-                    <input type="number" min="1" max="1440" name="urgency_bar_minutes" value="{{ old('urgency_bar_minutes', $lp->urgency_bar_minutes ?? 10) }}"
-                        class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                </div>
+                <p class="text-xs text-gray-400 mt-1">Set any exact time you like — capped under 10 minutes total, to match the bar text's own "within 10 minutes" promise.</p>
             </div>
         </div>
 

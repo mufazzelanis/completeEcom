@@ -36,7 +36,7 @@
 
     @if($landingPage->urgency_bar_enabled && $landingPage->urgency_bar_text)
     <div x-data="{
-            left: {{ max(1, (int) $landingPage->urgency_bar_minutes) * 60 }},
+            left: {{ max(1, (int) $landingPage->urgency_bar_minutes * 60 + (int) $landingPage->urgency_bar_seconds) }},
             get mm() { return String(Math.floor(this.left / 60)).padStart(2, '0'); },
             get ss() { return String(this.left % 60).padStart(2, '0'); },
         }"
