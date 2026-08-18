@@ -15,6 +15,7 @@ use App\Models\PromoCode;
 use App\Models\ReferralCode;
 use App\Models\Setting;
 use App\Models\User;
+use App\Services\ActivityLogger;
 use App\Services\Notifications\NotificationDispatcher;
 use App\Services\ReferralService;
 use App\Services\ShippingCalculator;
@@ -481,6 +482,17 @@ class CheckoutController extends Controller
         });
 
         session()->forget(['coupon', 'promo_code', 'points_redeemed']);
+
+        // The order log entries the previous ActivityLogger calls produced were all
+        // "viewed order #X" — nothing recorded the order actually being placed. Phone
+        // goes in properties (not just the description text) so the activity log table
+        // can show it as its own column instead of admins having to parse the sentence.
+        ActivityLogger::log(
+            'order.place',
+            "Placed order #{$order->order_number} — {$order->shipping_name}, {$order->shipping_phone}",
+            $order,
+            ['phone' => $order->shipping_phone, 'name' => $order->shipping_name, 'total' => $order->total]
+        );
 
         $user = auth()->user();
         NotificationDispatcher::customer('order_placed', $user, [

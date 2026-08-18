@@ -11,7 +11,7 @@
 </div>
 
 {{-- Stats --}}
-<div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+<div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
     <div class="bg-white rounded-2xl shadow-sm p-4">
         <p class="text-xs text-gray-400 uppercase tracking-wider font-medium">Logins Today</p>
         <p class="text-2xl font-bold text-gray-800 mt-1">{{ $stats['logins_today'] }}</p>
@@ -23,6 +23,10 @@
     <div class="bg-white rounded-2xl shadow-sm p-4">
         <p class="text-xs text-gray-400 uppercase tracking-wider font-medium">Cart Adds Today</p>
         <p class="text-2xl font-bold text-gray-800 mt-1">{{ $stats['cart_adds_today'] }}</p>
+    </div>
+    <div class="bg-white rounded-2xl shadow-sm p-4 ring-1 ring-emerald-100">
+        <p class="text-xs text-emerald-600 uppercase tracking-wider font-medium">Orders Placed Today</p>
+        <p class="text-2xl font-bold text-emerald-700 mt-1">{{ $stats['orders_placed_today'] }}</p>
     </div>
     <div class="bg-white rounded-2xl shadow-sm p-4">
         <p class="text-xs text-gray-400 uppercase tracking-wider font-medium">Order Views Today</p>
@@ -88,6 +92,7 @@
             <tr class="text-xs text-gray-500 uppercase tracking-wider">
                 <th class="px-5 py-3 text-left">Time</th>
                 <th class="px-5 py-3 text-left">User</th>
+                <th class="px-5 py-3 text-left">Phone</th>
                 <th class="px-5 py-3 text-left">Event</th>
                 <th class="px-5 py-3 text-left">Description</th>
                 <th class="px-5 py-3 text-left">Device</th>
@@ -120,12 +125,23 @@
                     <span class="text-gray-400 text-xs italic">Guest</span>
                     @endif
                 </td>
+                <td class="px-5 py-3 text-xs text-gray-600 font-mono whitespace-nowrap">
+                    @php
+                        // order.place captures the shipping phone as of that specific order
+                        // (properties), which stays accurate even if the account's phone changes
+                        // later — falls back to the account's current phone for every other event.
+                        $orderPhone = $log->properties ? (json_decode($log->properties, true)['phone'] ?? null) : null;
+                        $phone = $orderPhone ?: $log->user_phone;
+                    @endphp
+                    {{ $phone ?: '—' }}
+                </td>
                 <td class="px-5 py-3">
                     @php
                         $color = match(true) {
                             $log->event_type === 'login' => 'bg-green-100 text-green-700',
                             $log->event_type === 'logout' => 'bg-gray-100 text-gray-600',
                             str_starts_with($log->event_type, 'product.') => 'bg-blue-100 text-blue-700',
+                            $log->event_type === 'order.place' => 'bg-emerald-100 text-emerald-700',
                             str_starts_with($log->event_type, 'order.') => 'bg-purple-100 text-purple-700',
                             $log->event_type === 'cart.add' => 'bg-orange-100 text-orange-700',
                             $log->event_type === 'cart.remove' => 'bg-red-100 text-red-700',
@@ -157,7 +173,7 @@
             </tr>
             @empty
             <tr>
-                <td colspan="6" class="px-5 py-16 text-center">
+                <td colspan="7" class="px-5 py-16 text-center">
                     <svg class="w-12 h-12 text-gray-200 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
                     <p class="text-gray-400">No activity found.</p>
                 </td>

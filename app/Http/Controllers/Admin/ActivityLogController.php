@@ -28,10 +28,15 @@ class ActivityLogController extends Controller
                 'activity_logs.user_id',
                 'users.name as user_name',
                 'users.role as user_role',
+                'users.phone as user_phone',
                 'activity_logs.event as event_type',
                 'activity_logs.description',
                 'activity_logs.subject_type',
                 'activity_logs.subject_id',
+                // order.place stores the shipping phone as it was AT THAT ORDER, which stays
+                // accurate even if the customer's account phone changes later — preferred over
+                // users.phone (the view falls back to that) for exactly this reason.
+                'activity_logs.properties',
                 'activity_logs.ip_address',
                 'activity_logs.device',
                 'activity_logs.browser',
@@ -47,10 +52,12 @@ class ActivityLogController extends Controller
                 'audit_logs.user_id',
                 'users.name as user_name',
                 'users.role as user_role',
+                'users.phone as user_phone',
                 'audit_logs.action as event_type',
                 'audit_logs.description',
                 'audit_logs.model_type as subject_type',
                 'audit_logs.model_id as subject_id',
+                DB::raw('NULL as properties'),
                 'audit_logs.ip_address',
                 DB::raw('NULL as device'),
                 DB::raw('NULL as browser'),
@@ -108,6 +115,7 @@ class ActivityLogController extends Controller
             'logins_today'        => ActivityLog::where('event', 'login')->where('created_at', '>=', $today)->count(),
             'product_views_today' => ActivityLog::where('event', 'product.view')->where('created_at', '>=', $today)->count(),
             'cart_adds_today'     => ActivityLog::where('event', 'cart.add')->where('created_at', '>=', $today)->count(),
+            'orders_placed_today' => ActivityLog::where('event', 'order.place')->where('created_at', '>=', $today)->count(),
             'order_views_today'   => ActivityLog::where('event', 'order.view')->where('created_at', '>=', $today)->count(),
         ];
 
