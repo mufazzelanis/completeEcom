@@ -398,7 +398,7 @@ $navCategories = \App\Models\Category::with(['children' => fn($q) => $q->active(
     @endif
 
     {{-- Mobile Menu --}}
-    <div x-show="mobileOpen" x-cloak x-transition class="md:hidden bg-white dark:bg-gray-900 border-t border-gray-100 dark:border-gray-700 shadow-xl">
+    <div x-show="mobileOpen" x-cloak x-transition @click.outside="mobileOpen = false" @keydown.escape.window="mobileOpen = false" class="md:hidden bg-white dark:bg-gray-900 border-t border-gray-100 dark:border-gray-700 shadow-xl">
         <div class="p-4">
             <form action="{{ route('shop.index') }}" method="GET" class="flex mb-4">
                 <input type="text" name="search" placeholder="Search products..." class="flex-1 border-2 border-orange-400 rounded-l-md px-4 py-2 text-sm focus:outline-none focus:border-orange-500">
