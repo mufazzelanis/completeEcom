@@ -151,16 +151,18 @@ $adminNavIndex = [
             <div class="flex items-center space-x-3">
                 @php $logoUrl = setting_file_url('site_logo'); @endphp
                 @if($logoUrl)
-                <img src="{{ $logoUrl }}" alt="{{ setting('site_name','ShopVista') }}" class="h-8 max-w-[120px] object-contain">
+                {{-- Logo only when one's set — the name/"Admin Panel" label was redundant
+                     clutter next to an already-identifiable logo. --}}
+                <img src="{{ $logoUrl }}" alt="{{ setting('site_name','ShopVista') }}" class="h-11 max-w-[170px] object-contain">
                 @else
                 <div class="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center flex-shrink-0">
                     <span class="text-white font-bold">{{ strtoupper(substr(setting('site_name','S'),0,1)) }}</span>
                 </div>
-                @endif
                 <div>
                     <div class="text-white font-bold text-sm">{{ setting('site_name', 'ShopVista') }}</div>
                     <div class="text-gray-400 text-xs">Admin Panel</div>
                 </div>
+                @endif
             </div>
             <button @click="sidebarOpen = false" class="lg:hidden text-gray-400 hover:text-white">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
