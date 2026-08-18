@@ -49,7 +49,10 @@ class SecurityHeaders
             // sends its conversion/remarketing beacons (rmkt/collect, ccm/collect) to
             // these once a Conversion ID is configured.
             "connect-src 'self' https://www.google-analytics.com https://analytics.google.com https://www.googletagmanager.com https://www.facebook.com https://www.google.com https://googleads.g.doubleclick.net https://*.doubleclick.net https://www.googleadservices.com",
-            "frame-src 'self' https://www.google.com https://www.facebook.com",
+            // www.youtube.com added for landing page video embeds (how-it-works video,
+            // testimonial videos — see embed_video_url() in app/Helpers.php, which always
+            // rewrites whatever URL the admin pastes to a youtube.com/embed/... iframe src).
+            "frame-src 'self' https://www.google.com https://www.facebook.com https://www.youtube.com",
             "object-src 'none'",
             "base-uri 'self'",
             "frame-ancestors 'self'",
