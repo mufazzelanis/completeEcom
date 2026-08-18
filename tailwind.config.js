@@ -10,7 +10,10 @@ const dynamicColors = [
     'blue', 'green', 'red', 'yellow', 'amber', 'purple', 'emerald',
     'indigo', 'teal', 'pink', 'orange', 'sky', 'gray',
 ];
-const dynamicShades = ['50', '100', '200', '300', '400', '500', '600', '700', '800', '900'];
+// Only 100/500/600/700 are ever actually assembled at runtime (bg-{color}-100,
+// text-{color}-500/600/700) — grepped every `(bg|text|border|ring)-{{ }}-<n>` in
+// resources/views to confirm. The full 50–900 range was pure dead-weight CSS.
+const dynamicShades = ['100', '500', '600', '700'];
 
 /** @type {import('tailwindcss').Config} */
 export default {
@@ -26,7 +29,9 @@ export default {
     ],
     safelist: [
         {
-            pattern: new RegExp(`^(bg|text|border|ring)-(${dynamicColors.join('|')})-(${dynamicShades.join('|')})$`),
+            // border- was never actually needed either (grepped, zero dynamic border-{{ }}
+            // usages) — just bg/text/ring.
+            pattern: new RegExp(`^(bg|text|ring)-(${dynamicColors.join('|')})-(${dynamicShades.join('|')})$`),
             // Only `peer-checked:bg-{color}-600` is actually built dynamically anywhere
             // (the notification-channel toggle switches) — no dynamic hover:/focus: color
             // classes exist, so no need to safelist those variant combinations too.

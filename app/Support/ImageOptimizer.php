@@ -14,11 +14,11 @@ use Illuminate\Support\Str;
  * banner — a photo saved as PNG, with no transparency — was directly responsible for a 22s
  * Largest Contentful Paint in production.
  *
- * This resizes (never upscales) to a sane max dimension and re-encodes at a reasonable quality.
- * PNGs with no actual transparency get converted to JPEG (PNG is a poor format for photographic
- * content — lossless compression can't touch what JPEG does with gradients/photos); PNGs that DO
- * use transparency are kept as PNG so nothing breaks. GIFs are stored untouched, since GD's GIF
- * decoder only reads the first frame and would silently kill any animation.
+ * This resizes (never upscales) to a sane max dimension and re-encodes at a reasonable quality,
+ * converting to WebP (smaller than both JPEG and PNG, and — unlike JPEG — still supports
+ * transparency, so this covers photos and transparent logos/icons alike) whenever GD can encode
+ * it, which on any reasonably current PHP build is always. GIFs are stored untouched, since GD's
+ * GIF decoder only reads the first frame and would silently kill any animation.
  */
 class ImageOptimizer
 {
@@ -102,17 +102,25 @@ class ImageOptimizer
                 $height = $newHeight;
             }
 
-            // A PNG with no actual transparent/translucent pixels is almost always a photo
-            // that got exported to the wrong format — JPEG will compress it dramatically
-            // better. Only keep PNG when transparency is genuinely used (logos, icons).
-            $outputMime = $mime;
-            if ($mime === 'image/png' && ! self::hasTransparency($image, $width, $height)) {
+            // WebP beats both JPEG and PNG for basically any content — photos *and* the
+            // transparency PNG was carrying — so it's always the preferred output when GD
+            // can encode it (near-universal browser support today; every mainstream browser
+            // has supported it for years). Only fall back to the old JPEG/PNG choice on a GD
+            // build without WebP encoding, where a non-transparent PNG still becomes a JPEG
+            // (PNG is a poor format for photographic content — lossless can't touch what
+            // lossy JPEG/WebP does with gradients/photos) and a transparent one stays PNG.
+            if (function_exists('imagewebp')) {
+                $outputMime = 'image/webp';
+                imagesavealpha($image, true);
+            } elseif ($mime === 'image/png' && ! self::hasTransparency($image, $width, $height)) {
                 $outputMime = 'image/jpeg';
                 $flattened = imagecreatetruecolor($width, $height);
                 imagefill($flattened, 0, 0, imagecolorallocate($flattened, 255, 255, 255));
                 imagecopy($flattened, $image, 0, 0, 0, 0, $width, $height);
                 imagedestroy($image);
                 $image = $flattened;
+            } else {
+                $outputMime = $mime;
             }
 
             ob_start();
