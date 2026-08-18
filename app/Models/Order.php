@@ -15,6 +15,7 @@ class Order extends Model
         'shipping_state', 'shipping_zip', 'shipping_country', 'shipping_zone', 'notes',
         'fraud_score', 'fraud_flags', 'is_fraud_flagged', 'fraud_checked_at',
         'points_awarded_at', 'points_redeemed', 'points_discount_value',
+        'landing_page_id', 'landing_page_data',
     ];
 
     protected $casts = [
@@ -28,6 +29,7 @@ class Order extends Model
         'is_fraud_flagged'       => 'boolean',
         'fraud_checked_at'       => 'datetime',
         'points_awarded_at'      => 'datetime',
+        'landing_page_data'      => 'array',
     ];
 
     protected static function boot()
@@ -48,6 +50,11 @@ class Order extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function landingPage()
+    {
+        return $this->belongsTo(LandingPage::class);
     }
 
     public function items()

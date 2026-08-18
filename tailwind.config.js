@@ -1,5 +1,6 @@
 import defaultTheme from 'tailwindcss/defaultTheme';
 import forms from '@tailwindcss/forms';
+import typography from '@tailwindcss/typography';
 
 // Colors used only via runtime interpolation (e.g. `bg-{{ $channel['color'] }}-600` in
 // notification/payment-method admin screens) — Tailwind's scanner can't see a class name
@@ -57,5 +58,8 @@ export default {
         },
     },
 
-    plugins: [forms],
+    // typography: renders admin-authored WYSIWYG content (Summernote output — landing pages,
+    // blog posts, CMS pages) with sane default spacing/heading sizes instead of raw
+    // unstyled HTML, via the `prose` class.
+    plugins: [forms, typography],
 };

@@ -21,6 +21,7 @@ use App\Http\Controllers\Admin\EmailCampaignController as AdminEmailCampaignCont
 use App\Http\Controllers\Admin\FaqController as AdminFaqController;
 use App\Http\Controllers\Admin\FlashSaleController as AdminFlashSaleController;
 use App\Http\Controllers\Admin\HomeSectionController as AdminHomeSectionController;
+use App\Http\Controllers\Admin\LandingPageController as AdminLandingPageController;
 use App\Http\Controllers\Admin\LanguageController as AdminLanguageController;
 use App\Http\Controllers\Admin\LowStockController as AdminLowStockController;
 use App\Http\Controllers\Admin\NewsletterController as AdminNewsletterController;
@@ -64,6 +65,7 @@ use App\Http\Controllers\CustomerReferralController;
 use App\Http\Controllers\CustomerReviewController;
 use App\Http\Controllers\EmailUnsubscribeController;
 use App\Http\Controllers\HomeController;
+use App\Http\Controllers\LandingPageController;
 use App\Http\Controllers\NewsletterSubscriptionController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\PageController;
@@ -480,6 +482,11 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     // CMS — Pages
     Route::resource('pages', AdminPageController::class)->except(['show']);
 
+    // CMS — Landing Pages (bare top-level public URL: mitavin.com/{slug} — see the
+    // catch-all route at the very end of this file)
+    Route::resource('landing-pages', AdminLandingPageController::class)->except(['show']);
+    Route::patch('landing-pages/{landingPage}/toggle', [AdminLandingPageController::class, 'toggle'])->name('landing-pages.toggle');
+
     // CMS — FAQs
     Route::get('faqs', [AdminFaqController::class, 'index'])->name('faqs.index');
     Route::post('faqs', [AdminFaqController::class, 'store'])->name('faqs.store');
@@ -558,5 +565,16 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     });
 
 });
+
+// Landing pages — bare top-level URL (mitavin.com/{slug}), no /pages/ or other prefix,
+// which is the whole point of the feature. MUST be the last route registered: Laravel
+// matches routes in registration order, and every other route above this point is either
+// a literal multi-segment path or a specific single-segment literal (/shop, /cart, /faq,
+// /blog, /sitemap.xml, ...) that will always out-match this single-segment wildcard first
+// when there's a real collision — but a careless future edit adding another bare
+// single-segment route below this one WOULD get shadowed by it, so nothing else belongs
+// after this in the file.
+Route::get('/{landingPage:slug}', [LandingPageController::class, 'show'])->name('landing.show');
+Route::post('/{landingPage:slug}', [LandingPageController::class, 'order'])->middleware('throttle:10,1')->name('landing.order');
 
 require __DIR__.'/auth.php';
