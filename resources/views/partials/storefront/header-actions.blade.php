@@ -29,10 +29,13 @@
         <svg x-show="$store.theme.dark" x-cloak class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
     </button>
 
-    {{-- Mobile Search --}}
-    <a href="{{ route('shop.index') }}" class="md:hidden p-2 text-gray-600 dark:text-gray-300 hover:text-orange-500">
+    {{-- Mobile Search — opens the mobile menu (its search field sits right at the top)
+         instead of just navigating to the shop page, so tapping this actually lets you
+         type a search rather than dropping you on an unfiltered product listing. --}}
+    <button type="button" @click="mobileOpen = true; $nextTick(() => $refs.mobileSearchInput.focus())"
+        class="md:hidden p-2 text-gray-600 dark:text-gray-300 hover:text-orange-500" aria-label="Search">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-    </a>
+    </button>
 
     {{-- Cart --}}
     <a href="{{ route('cart.index') }}" class="relative p-2 text-gray-600 dark:text-gray-300 hover:text-orange-500 transition group">
