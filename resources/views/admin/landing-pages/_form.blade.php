@@ -155,23 +155,56 @@
         </div>
 
         {{-- Trust Badges --}}
+        @php
+            // :key must be a stable per-row id, not the array index — with an <input
+            // type="file"> in the row, removing a middle row and letting Alpine re-key by
+            // index would reuse/shift DOM nodes and could leave a file "selected" on the
+            // wrong row (browsers won't let JS move a chosen file between inputs to fix
+            // that up afterward). Each seeded row gets 'row-N'; add() mints 'new-N'.
+            $trustBadgeSeed = collect($seed(['icon' => 'tb_icon', 'text' => 'tb_text', 'image' => 'tb_existing_image'], 'text', collect($lp->trust_badges ?? [])->toArray()))
+                ->values()
+                ->map(fn ($r, $i) => [
+                    'icon'        => $r['icon'] ?? '',
+                    'text'        => $r['text'] ?? '',
+                    'image'       => $r['image'] ?? '',
+                    'imageUrl'    => filled($r['image'] ?? null) ? Storage::url($r['image']) : '',
+                    'removeImage' => false,
+                    '_key'        => 'row-' . $i,
+                ]);
+        @endphp
         <div class="bg-white rounded-2xl shadow-sm p-6 space-y-4" x-data="{
-                rows: {{ Js::from($seed(['icon' => 'tb_icon', 'text' => 'tb_text'], 'text', collect($lp->trust_badges ?? [])->toArray())) }},
-                add() { this.rows.push({ icon: '✅', text: '' }); },
+                rows: {{ Js::from($trustBadgeSeed) }},
+                nextKey: {{ $trustBadgeSeed->count() }},
+                add() { this.rows.push({ icon: '✅', text: '', image: '', imageUrl: '', removeImage: false, _key: 'new-' + (this.nextKey++) }); },
                 remove(i) { this.rows.splice(i, 1); },
             }">
             <div>
                 <h3 class="font-medium text-gray-800">Trust Badges</h3>
-                <p class="text-xs text-gray-400 mt-0.5">Small icon + label strip shown under the hero and again near the price (e.g. "Cash on Delivery", "100% Original", "Fast Delivery"). First 6 shown near the top, first 2 repeated near the price.</p>
+                <p class="text-xs text-gray-400 mt-0.5">Small icon + label strip shown under the hero and again near the price (e.g. "Cash on Delivery", "100% Original", "Fast Delivery"). First 6 shown near the top, first 2 repeated near the price. Upload your own icon image per badge, or just leave it as an emoji — either works.</p>
             </div>
             <div class="space-y-2">
-                <template x-for="(row, i) in rows" :key="i">
-                    <div class="flex items-center gap-2">
-                        <input type="text" name="tb_icon[]" x-model="row.icon" placeholder="✅" maxlength="4"
-                            class="w-16 border border-gray-200 rounded-lg px-3 py-2 text-sm text-center focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                        <input type="text" name="tb_text[]" x-model="row.text" placeholder="Cash on Delivery"
-                            class="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                        <button type="button" @click="remove(i)" class="text-red-400 hover:text-red-600 p-2" aria-label="Remove"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
+                <template x-for="(row, i) in rows" :key="row._key">
+                    <div class="border border-gray-100 rounded-xl p-3 space-y-2">
+                        <div class="flex items-center gap-2">
+                            <input type="text" name="tb_icon[]" x-model="row.icon" placeholder="✅" maxlength="4"
+                                class="w-16 border border-gray-200 rounded-lg px-3 py-2 text-sm text-center focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            <input type="text" name="tb_text[]" x-model="row.text" placeholder="Cash on Delivery"
+                                class="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            <button type="button" @click="remove(i)" class="text-red-400 hover:text-red-600 p-2" aria-label="Remove"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
+                        </div>
+                        <div class="flex items-center gap-2 pl-0.5">
+                            <template x-if="row.imageUrl && !row.removeImage">
+                                <img :src="row.imageUrl" class="w-8 h-8 object-contain border border-gray-100 rounded p-0.5 shrink-0">
+                            </template>
+                            <template x-if="!row.imageUrl || row.removeImage">
+                                <input type="file" name="tb_image[]" accept="image/*"
+                                    class="flex-1 text-xs text-gray-500 file:mr-2 file:py-1 file:px-2 file:rounded-md file:border-0 file:text-xs file:bg-gray-100 file:text-gray-600 file:cursor-pointer">
+                            </template>
+                            <button type="button" x-show="row.imageUrl && !row.removeImage" @click="row.removeImage = true" class="text-xs text-red-500 hover:text-red-700 shrink-0">Remove custom icon</button>
+                            <span class="text-[11px] text-gray-400" x-show="!row.imageUrl">optional custom icon — falls back to the emoji above</span>
+                            <input type="hidden" name="tb_existing_image[]" :value="row.image || ''">
+                            <input type="hidden" name="tb_remove_image[]" :value="row.removeImage ? '1' : '0'">
+                        </div>
                     </div>
                 </template>
             </div>

@@ -58,7 +58,11 @@
         <div class="grid gap-2" style="grid-template-columns: repeat({{ min(3, count($landingPage->trust_badges)) }}, minmax(0,1fr));">
             @foreach(array_slice($landingPage->trust_badges, 0, 6) as $badge)
             <div class="flex flex-col items-center text-center gap-1">
-                <span class="text-xl leading-none">{{ $badge['icon'] ?: '✅' }}</span>
+                @if(!empty($badge['image']))
+                    <img src="{{ Storage::url($badge['image']) }}" alt="" class="w-6 h-6 object-contain">
+                @else
+                    <span class="text-xl leading-none">{{ $badge['icon'] ?: '✅' }}</span>
+                @endif
                 <span class="text-[11px] text-green-800 font-medium leading-tight">{{ $badge['text'] }}</span>
             </div>
             @endforeach
@@ -218,7 +222,12 @@
         <div class="flex items-center justify-center gap-6 mt-4">
             @foreach(array_slice($landingPage->trust_badges, 0, 2) as $badge)
             <span class="flex items-center gap-1.5 text-xs text-gray-500 font-medium">
-                <span class="text-base">{{ $badge['icon'] ?: '✅' }}</span> {{ $badge['text'] }}
+                @if(!empty($badge['image']))
+                    <img src="{{ Storage::url($badge['image']) }}" alt="" class="w-4 h-4 object-contain">
+                @else
+                    <span class="text-base">{{ $badge['icon'] ?: '✅' }}</span>
+                @endif
+                {{ $badge['text'] }}
             </span>
             @endforeach
         </div>
