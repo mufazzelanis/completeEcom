@@ -466,8 +466,9 @@
             <h3 class="font-medium text-gray-800">SEO</h3>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Meta Title</label>
-                <input type="text" name="meta_title" value="{{ old('meta_title', $lp->meta_title ?? '') }}"
+                <input type="text" name="meta_title" value="{{ old('meta_title', $lp->meta_title ?? '') }}" placeholder="{{ $lp->title ?? 'Defaults to the page Title above' }}"
                     class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                <p class="text-xs text-gray-400 mt-1">This is also what shows as the browser tab title — leave blank to just use the page Title above.</p>
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Meta Description</label>
@@ -511,12 +512,21 @@
             @endif
         </div>
 
-        <div class="bg-white rounded-2xl shadow-sm p-6">
-            <label class="block text-sm font-medium text-gray-700 mb-2">Header Logo <span class="text-gray-400 font-normal block text-xs mt-0.5">Optional — falls back to your site logo</span></label>
-            @if($lp?->header_logo)
-                <img src="{{ Storage::url($lp->header_logo) }}" class="h-10 object-contain mb-2 border border-gray-100 rounded-lg p-1">
-            @endif
-            <input type="file" name="header_logo" accept="image/*" class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm">
+        <div class="bg-white rounded-2xl shadow-sm p-6 space-y-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Header Logo <span class="text-gray-400 font-normal block text-xs mt-0.5">Optional — falls back to your site logo</span></label>
+                @if($lp?->header_logo)
+                    <img src="{{ Storage::url($lp->header_logo) }}" class="h-10 object-contain mb-2 border border-gray-100 rounded-lg p-1">
+                @endif
+                <input type="file" name="header_logo" accept="image/*" class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm">
+            </div>
+            <div class="pt-4 border-t border-gray-100">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Favicon <span class="text-gray-400 font-normal block text-xs mt-0.5">Optional — the small icon next to the browser tab title. Falls back to your site favicon.</span></label>
+                @if($lp?->favicon)
+                    <img src="{{ Storage::url($lp->favicon) }}" class="h-8 w-8 object-contain mb-2 border border-gray-100 rounded-lg p-1">
+                @endif
+                <input type="file" name="favicon" accept="image/*" class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm">
+            </div>
         </div>
 
         <div class="bg-indigo-50 border border-indigo-100 rounded-2xl p-4 text-xs text-indigo-700 leading-relaxed">

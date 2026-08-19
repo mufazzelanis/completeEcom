@@ -11,7 +11,7 @@ class LandingPage extends Model
         'title', 'slug', 'product_id', 'status',
         'hero_heading', 'hero_subheading', 'hero_image', 'content',
         'price_override',
-        'header_logo', 'order_button_text',
+        'header_logo', 'favicon', 'order_button_text',
         'collect_address', 'require_address', 'order_form_fields',
         'thank_you_heading', 'thank_you_message', 'thank_you_redirect_url',
         'meta_title', 'meta_description', 'og_image',

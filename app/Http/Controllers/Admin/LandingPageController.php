@@ -177,6 +177,7 @@ class LandingPageController extends Controller
             'meta_description'         => 'nullable|string|max:500',
             'hero_image'               => 'nullable|image|max:4096',
             'header_logo'              => 'nullable|image|max:2048',
+            'favicon'                  => 'nullable|image|max:512',
             'og_image'                 => 'nullable|image|max:4096',
             'urgency_bar_text'         => 'nullable|string|max:255',
             // Clamped 0-9 / 0-59 so the total always stays under 10 minutes — matches the
@@ -318,6 +319,9 @@ class LandingPageController extends Controller
         }
         if ($request->hasFile('header_logo')) {
             $data['header_logo'] = ImageOptimizer::store($request->file('header_logo'), 'landing-pages', 'public', 400);
+        }
+        if ($request->hasFile('favicon')) {
+            $data['favicon'] = ImageOptimizer::store($request->file('favicon'), 'landing-pages', 'public', 256);
         }
         if ($request->hasFile('og_image')) {
             $data['og_image'] = ImageOptimizer::store($request->file('og_image'), 'landing-pages', 'public', 1200);

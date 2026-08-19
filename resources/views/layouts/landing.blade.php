@@ -5,7 +5,7 @@
     // visitor away before they order. Just logo, the page itself, and an order button.
     $siteName = setting('site_name', 'ShopVista');
     $logoUrl  = $landingPage->header_logo ? \Illuminate\Support\Facades\Storage::url($landingPage->header_logo) : setting_file_url('site_logo');
-    $faviconUrl = setting_file_url('favicon');
+    $faviconUrl = $landingPage->favicon ? \Illuminate\Support\Facades\Storage::url($landingPage->favicon) : setting_file_url('favicon');
     $primaryColor = setting('primary_color', '#ea580c');
 @endphp
 <!DOCTYPE html>
