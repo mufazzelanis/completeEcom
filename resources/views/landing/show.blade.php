@@ -29,7 +29,7 @@
         <a href="{{ route('shop.index') }}" class="inline-flex w-full items-center justify-center gap-2 border-2 font-bold py-3.5 rounded-xl text-base transition hover:opacity-80 active:scale-[0.99]"
            style="border-color: {{ $primary }}; color: {{ $primary }};">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
-            আরও প্রোডাক্ট দেখুন
+            {{ $landingPage->thank_you_button_text ?: 'আরও প্রোডাক্ট দেখুন' }}
         </a>
     </div>
 @else

@@ -13,7 +13,7 @@ class LandingPage extends Model
         'price_override',
         'header_logo', 'favicon', 'order_button_text', 'brand_color',
         'collect_address', 'require_address', 'order_form_fields',
-        'thank_you_heading', 'thank_you_message', 'thank_you_redirect_url',
+        'thank_you_heading', 'thank_you_message', 'thank_you_redirect_url', 'thank_you_button_text',
         'meta_title', 'meta_description', 'og_image',
         'views_count',
         // Urgency bar

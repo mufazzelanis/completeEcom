@@ -173,6 +173,7 @@ class LandingPageController extends Controller
             'thank_you_heading'        => 'nullable|string|max:255',
             'thank_you_message'        => 'nullable|string',
             'thank_you_redirect_url'   => 'nullable|url|max:255',
+            'thank_you_button_text'    => 'nullable|string|max:60',
             'meta_title'               => 'nullable|string|max:255',
             'meta_description'         => 'nullable|string|max:500',
             'hero_image'               => 'nullable|image|max:4096',
@@ -221,6 +222,7 @@ class LandingPageController extends Controller
         $data['require_address']     = $request->boolean('require_address');
         $data['order_button_text']   = $request->filled('order_button_text') ? $request->order_button_text : 'Order Now';
         $data['thank_you_heading']   = $request->filled('thank_you_heading') ? $request->thank_you_heading : 'Thank You!';
+        $data['thank_you_button_text'] = $request->filled('thank_you_button_text') ? $request->thank_you_button_text : 'আরও প্রোডাক্ট দেখুন';
         $data['urgency_bar_enabled'] = $request->boolean('urgency_bar_enabled');
         $data['urgency_bar_minutes'] = $request->filled('urgency_bar_minutes') ? (int) $request->urgency_bar_minutes : 9;
         $data['urgency_bar_seconds'] = $request->filled('urgency_bar_seconds') ? (int) $request->urgency_bar_seconds : 45;
