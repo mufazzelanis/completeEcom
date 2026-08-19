@@ -124,7 +124,7 @@
             @foreach($landingPage->who_for as $w)
             <div class="flex items-center gap-3 border border-gray-100 rounded-xl p-3 bg-gray-50">
                 <span class="text-xl leading-none shrink-0">{{ $w['icon'] ?: '👤' }}</span>
-                <span class="text-sm text-gray-700">{{ $w['text'] }}</span>
+                <span class="text-sm text-gray-700 min-w-0 flex-1">{{ $w['text'] }}</span>
             </div>
             @endforeach
         </div>
@@ -198,9 +198,9 @@
             @if(filled($landingPage->pricing_items))
             <div class="space-y-1.5 mb-3">
                 @foreach($landingPage->pricing_items as $item)
-                <div class="flex justify-between text-sm text-gray-600">
-                    <span>{{ $item['label'] }}</span>
-                    <span class="font-medium text-gray-800">{{ $item['price'] }}</span>
+                <div class="flex justify-between gap-3 text-sm text-gray-600">
+                    <span class="min-w-0 flex-1">{{ $item['label'] }}</span>
+                    <span class="font-medium text-gray-800 shrink-0">{{ $item['price'] }}</span>
                 </div>
                 @endforeach
             </div>
@@ -225,13 +225,13 @@
         @if(filled($landingPage->trust_badges))
         <div class="flex items-center justify-center gap-6 mt-4">
             @foreach(array_slice($landingPage->trust_badges, 0, 2) as $badge)
-            <span class="flex items-center gap-1.5 text-xs text-gray-500 font-medium">
+            <span class="flex items-center gap-1.5 text-xs text-gray-500 font-medium min-w-0">
                 @if(!empty($badge['image']))
-                    <img src="{{ Storage::url($badge['image']) }}" alt="" class="w-4 h-4 object-contain">
+                    <img src="{{ Storage::url($badge['image']) }}" alt="" class="w-4 h-4 object-contain shrink-0">
                 @else
-                    <span class="text-base">{{ $badge['icon'] ?: '✅' }}</span>
+                    <span class="text-base shrink-0">{{ $badge['icon'] ?: '✅' }}</span>
                 @endif
-                {{ $badge['text'] }}
+                <span class="min-w-0">{{ $badge['text'] }}</span>
             </span>
             @endforeach
         </div>
@@ -246,7 +246,7 @@
             @foreach($landingPage->faqs as $i => $faq)
             <div class="py-3">
                 <button type="button" @click="open = open === {{ $i }} ? null : {{ $i }}" class="w-full flex items-center justify-between gap-3 text-left">
-                    <span class="text-sm font-semibold text-gray-800">{{ $faq['question'] }}</span>
+                    <span class="text-sm font-semibold text-gray-800 min-w-0 flex-1">{{ $faq['question'] }}</span>
                     <svg class="w-4 h-4 text-gray-400 shrink-0 transition-transform" :class="open === {{ $i }} ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
                 </button>
                 <p class="text-sm text-gray-500 mt-2 leading-relaxed" x-show="open === {{ $i }}" x-transition x-cloak>{{ $faq['answer'] }}</p>
@@ -333,11 +333,11 @@
                         <label class="flex items-center justify-between border rounded-xl px-4 py-3 cursor-pointer transition"
                                :class="zoneIndex === {{ $i }} ? 'ring-2' : 'border-gray-200'"
                                :style="zoneIndex === {{ $i }} ? 'border-color:{{ $primary }};--tw-ring-color:{{ $primary }}' : ''">
-                            <span class="flex items-center gap-2 text-sm text-gray-700">
-                                <input type="radio" x-model.number="zoneIndex" value="{{ $i }}" class="text-orange-600 focus:ring-orange-500">
-                                {{ $zone['label'] }}
+                            <span class="flex items-center gap-2 text-sm text-gray-700 min-w-0">
+                                <input type="radio" x-model.number="zoneIndex" value="{{ $i }}" class="text-orange-600 focus:ring-orange-500 shrink-0">
+                                <span class="min-w-0">{{ $zone['label'] }}</span>
                             </span>
-                            <span class="text-sm font-semibold text-gray-800">{{ $currencySymbol }}{{ number_format((float) $zone['charge'], $decimals) }}</span>
+                            <span class="text-sm font-semibold text-gray-800 shrink-0">{{ $currencySymbol }}{{ number_format((float) $zone['charge'], $decimals) }}</span>
                         </label>
                         @endforeach
                     </div>

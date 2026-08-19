@@ -27,12 +27,18 @@
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-<body class="bg-gray-100 text-gray-900 antialiased">
+<body class="bg-gray-100 text-gray-900 antialiased overflow-x-hidden">
 {{-- Single narrow column at every viewport width — deliberately not a responsive
      multi-column desktop layout. These funnels are built once for mobile ad traffic
      (the overwhelming majority of clicks) and look identical, centered, on desktop
-     rather than stretching into a different design nobody designed for. --}}
-<div class="max-w-md mx-auto bg-white min-h-screen shadow-xl">
+     rather than stretching into a different design nobody designed for.
+
+     break-words (overflow-wrap: break-word) cascades to every descendant by
+     inheritance — a single long unbroken run of characters in any admin-entered field
+     (a badge label, a FAQ answer, anything) wraps inside its own container instead of
+     forcing the whole fixed-width column wider than the viewport. overflow-x-hidden on
+     body above is the hard backstop in case anything still manages to overflow anyway. --}}
+<div class="max-w-md mx-auto bg-white min-h-screen shadow-xl break-words">
 
     @if($landingPage->urgency_bar_enabled && $landingPage->urgency_bar_text)
     <div x-data="{
@@ -42,8 +48,8 @@
         }"
         x-init="setInterval(() => { if (left > 0) left--; }, 1000)"
         class="bg-green-50 border-b border-green-100 text-green-800 text-xs sm:text-sm font-medium px-3 py-2 flex items-center justify-center gap-2 text-center sticky top-0 z-50">
-        <span>{{ $landingPage->urgency_bar_text }}</span>
-        <span class="font-mono font-bold bg-white border border-green-200 rounded px-1.5 py-0.5" x-text="mm + ':' + ss"></span>
+        <span class="min-w-0">{{ $landingPage->urgency_bar_text }}</span>
+        <span class="font-mono font-bold bg-white border border-green-200 rounded px-1.5 py-0.5 shrink-0" x-text="mm + ':' + ss"></span>
     </div>
     @endif
 
