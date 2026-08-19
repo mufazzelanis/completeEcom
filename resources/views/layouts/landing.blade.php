@@ -40,7 +40,9 @@
      body above is the hard backstop in case anything still manages to overflow anyway. --}}
 <div class="max-w-md mx-auto bg-white min-h-screen shadow-xl break-words">
 
-    @if($landingPage->urgency_bar_enabled && $landingPage->urgency_bar_text)
+    {{-- Hidden on the thank-you state — the order's already placed, there's nothing left to
+         rush the visitor into, and a live countdown there just reads as broken/confusing. --}}
+    @if($landingPage->urgency_bar_enabled && $landingPage->urgency_bar_text && !session('order_success'))
     <div x-data="{
             left: {{ max(1, (int) $landingPage->urgency_bar_minutes * 60 + (int) $landingPage->urgency_bar_seconds) }},
             get mm() { return String(Math.floor(this.left / 60)).padStart(2, '0'); },
@@ -53,7 +55,7 @@
     </div>
     @endif
 
-    <header class="border-b border-gray-100 sticky z-40 bg-white/95 backdrop-blur" style="top: {{ $landingPage->urgency_bar_enabled && $landingPage->urgency_bar_text ? '2.25rem' : '0' }};">
+    <header class="border-b border-gray-100 sticky z-40 bg-white/95 backdrop-blur" style="top: {{ $landingPage->urgency_bar_enabled && $landingPage->urgency_bar_text && !session('order_success') ? '2.25rem' : '0' }};">
         <div class="px-4 h-16 flex items-center justify-between">
             <a href="{{ url($landingPage->slug) }}" class="flex items-center gap-2">
                 @if($logoUrl)
