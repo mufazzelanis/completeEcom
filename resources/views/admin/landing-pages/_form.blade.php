@@ -311,24 +311,60 @@
         </div>
 
         {{-- Who Is This For --}}
+        @php
+            $whoForSeed = collect($seed(['icon' => 'wf_icon', 'text' => 'wf_text', 'image' => 'wf_existing_image'], 'text', collect($lp->who_for ?? [])->toArray()))
+                ->values()
+                ->map(fn ($r, $i) => [
+                    'icon'        => $r['icon'] ?? '',
+                    'text'        => $r['text'] ?? '',
+                    'image'       => $r['image'] ?? '',
+                    'imageUrl'    => filled($r['image'] ?? null) ? Storage::url($r['image']) : '',
+                    'removeImage' => false,
+                    '_key'        => 'row-' . $i,
+                ]);
+        @endphp
         <div class="bg-white rounded-2xl shadow-sm p-6 space-y-4" x-data="{
-                rows: {{ Js::from($seed(['icon' => 'wf_icon', 'text' => 'wf_text'], 'text', collect($lp->who_for ?? [])->toArray())) }},
-                add() { this.rows.push({ icon: '👤', text: '' }); },
+                rows: {{ Js::from($whoForSeed) }},
+                nextKey: {{ $whoForSeed->count() }},
+                add() { this.rows.push({ icon: '👤', text: '', image: '', imageUrl: '', previewUrl: '', removeImage: false, _key: 'new-' + (this.nextKey++) }); },
                 remove(i) { this.rows.splice(i, 1); },
+                pickFile(row, event) {
+                    const f = event.target.files[0];
+                    if (!f) return;
+                    const reader = new FileReader();
+                    reader.onload = e => { row.previewUrl = e.target.result; row.removeImage = false; };
+                    reader.readAsDataURL(f);
+                },
             }">
             <div>
                 <h3 class="font-medium text-gray-800">Who Is This For</h3>
                 <input type="text" name="who_for_heading" value="{{ old('who_for_heading', $lp->who_for_heading ?? '') }}" placeholder="Section heading (defaults to 'Who Is This For')"
                     class="w-full mt-2 border border-gray-200 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                <p class="text-xs text-gray-400 mt-1">Each row can have its own uploaded icon image — pick a different file per row and every one is kept separate; leave any of them blank and that row just uses its emoji instead.</p>
             </div>
             <div class="space-y-2">
-                <template x-for="(row, i) in rows" :key="i">
-                    <div class="flex items-center gap-2">
-                        <input type="text" name="wf_icon[]" x-model="row.icon" placeholder="👤" maxlength="4"
-                            class="w-16 border border-gray-200 rounded-lg px-3 py-2 text-sm text-center focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                        <input type="text" name="wf_text[]" x-model="row.text" placeholder="e.g. Anyone managing diabetes"
-                            class="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                        <button type="button" @click="remove(i)" class="text-red-400 hover:text-red-600 p-2" aria-label="Remove"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
+                <template x-for="(row, i) in rows" :key="row._key">
+                    <div class="border border-gray-100 rounded-xl p-3 space-y-2">
+                        <div class="flex items-center gap-2">
+                            <input type="text" name="wf_icon[]" x-model="row.icon" placeholder="👤" maxlength="4"
+                                class="w-16 border border-gray-200 rounded-lg px-3 py-2 text-sm text-center focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            <input type="text" name="wf_text[]" x-model="row.text" placeholder="e.g. Anyone managing diabetes"
+                                class="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            <button type="button" @click="remove(i)" class="text-red-400 hover:text-red-600 p-2" aria-label="Remove"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
+                        </div>
+                        <div class="flex items-center gap-2 pl-0.5">
+                            <img x-show="row.previewUrl || (row.image && !row.removeImage)" :src="row.previewUrl || row.imageUrl"
+                                class="w-8 h-8 object-contain border border-gray-100 rounded p-0.5 shrink-0">
+                            <input type="file" name="wf_image[]" accept="image/*" @change="pickFile(row, $event)"
+                                x-show="!(row.previewUrl || (row.image && !row.removeImage))"
+                                class="flex-1 text-xs text-gray-500 file:mr-2 file:py-1 file:px-2 file:rounded-md file:border-0 file:text-xs file:bg-gray-100 file:text-gray-600 file:cursor-pointer">
+                            <button type="button" x-show="row.previewUrl || (row.image && !row.removeImage)"
+                                @click="row.previewUrl = ''; row.removeImage = true; $el.parentElement.querySelector('input[type=file]').value = ''"
+                                class="text-xs text-red-500 hover:text-red-700 shrink-0">Remove custom icon</button>
+                            <span class="text-[11px] text-gray-400" x-show="!(row.previewUrl || (row.image && !row.removeImage))">optional custom icon — falls back to the emoji above</span>
+                            <input type="hidden" name="wf_existing_image[]" :value="row.image || ''">
+                            <input type="hidden" name="wf_remove_image[]" :value="row.removeImage ? '1' : '0'">
+                        </div>
                     </div>
                 </template>
             </div>

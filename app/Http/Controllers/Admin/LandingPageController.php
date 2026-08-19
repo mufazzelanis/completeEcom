@@ -201,6 +201,7 @@ class LandingPageController extends Controller
             'certificates.*'           => 'nullable|image|max:4096',
             'tb_image.*'               => 'nullable|image|max:512',
             'benefit_image.*'          => 'nullable|image|max:512',
+            'wf_image.*'               => 'nullable|image|max:512',
         ]);
 
         $data = $request->only([
@@ -244,7 +245,7 @@ class LandingPageController extends Controller
         return [
             'trust_badges'    => $this->normalizeRepeaterWithImage($request, ['icon' => 'tb_icon', 'text' => 'tb_text'], 'text', 'tb'),
             'benefits'        => $this->normalizeRepeaterWithImage($request, ['icon' => 'benefit_icon', 'title' => 'benefit_title', 'description' => 'benefit_desc'], 'title', 'benefit'),
-            'who_for'         => $this->normalizeRepeater($request, ['icon' => 'wf_icon', 'text' => 'wf_text'], 'text'),
+            'who_for'         => $this->normalizeRepeaterWithImage($request, ['icon' => 'wf_icon', 'text' => 'wf_text'], 'text', 'wf'),
             'testimonial_videos' => $this->normalizeRepeater($request, ['video_url' => 'tv_url', 'name' => 'tv_name'], 'video_url'),
             'faqs'            => $this->normalizeRepeater($request, ['question' => 'faq_q', 'answer' => 'faq_a'], 'question'),
             'pricing_items'   => $this->normalizeRepeater($request, ['label' => 'price_label', 'price' => 'price_amount'], 'label'),

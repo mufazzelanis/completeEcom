@@ -123,7 +123,11 @@
         <div class="space-y-2">
             @foreach($landingPage->who_for as $w)
             <div class="flex items-center gap-3 border border-gray-100 rounded-xl p-3 bg-gray-50">
-                <span class="text-xl leading-none shrink-0">{{ $w['icon'] ?: '👤' }}</span>
+                @if(!empty($w['image']))
+                    <img src="{{ Storage::url($w['image']) }}" alt="" class="w-6 h-6 object-contain shrink-0">
+                @else
+                    <span class="text-xl leading-none shrink-0">{{ $w['icon'] ?: '👤' }}</span>
+                @endif
                 <span class="text-sm text-gray-700 min-w-0 flex-1">{{ $w['text'] }}</span>
             </div>
             @endforeach
