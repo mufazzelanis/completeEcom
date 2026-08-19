@@ -4,7 +4,7 @@
 @php
     $currencySymbol = html_entity_decode(setting('currency_symbol', '৳'));
     $decimals = (int) setting('decimal_places', 0);
-    $primary = setting('primary_color', '#ea580c');
+    $primary = $landingPage->brand_color ?: setting('primary_color', '#ea580c');
 @endphp
 <style>
     .no-scrollbar::-webkit-scrollbar{display:none}

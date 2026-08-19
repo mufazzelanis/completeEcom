@@ -648,6 +648,24 @@
                 <input type="text" name="order_button_text" value="{{ old('order_button_text', $lp->order_button_text ?? 'Order Now') }}"
                     class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
             </div>
+            <div x-data="{ useCustom: {{ old('brand_color', $lp->brand_color ?? null) ? 'true' : 'false' }} }">
+                <label class="flex items-center gap-2 cursor-pointer mb-2">
+                    <input type="checkbox" x-model="useCustom" class="rounded text-indigo-600">
+                    <span class="text-sm font-medium text-gray-700">Custom Brand Color</span>
+                </label>
+                <div x-show="useCustom" x-cloak class="flex items-center gap-2">
+                    <input type="color" name="brand_color"
+                        value="{{ old('brand_color', $lp->brand_color ?? setting('primary_color', '#ea580c')) }}"
+                        class="w-12 h-10 border border-gray-200 rounded-lg cursor-pointer shrink-0">
+                    <span class="text-xs text-gray-400">Buttons, prices, and borders on this page use this instead of your site's brand color.</span>
+                </div>
+                <p class="text-xs text-gray-400" x-show="!useCustom">Uses your site's brand color (Settings → Branding) unless you set one here.</p>
+                {{-- Unchecking must actually CLEAR a previously-saved color, not just hide the
+                     picker — a plain unsubmitted/disabled input wouldn't tell the server "the
+                     admin wants this reset," it would just look identical to "field untouched"
+                     and leave the old color in place. --}}
+                <input type="hidden" name="brand_color_enabled" :value="useCustom ? '1' : '0'">
+            </div>
             <button type="submit" class="w-full bg-indigo-600 text-white px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-indigo-700 transition">
                 {{ $lp ? 'Save Changes' : 'Create Landing Page' }}
             </button>

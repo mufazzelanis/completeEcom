@@ -197,6 +197,7 @@ class LandingPageController extends Controller
             'faqs_heading'             => 'nullable|string|max:255',
             'certificates_heading'     => 'nullable|string|max:255',
             'certificates_subheading'  => 'nullable|string|max:500',
+            'brand_color'              => 'nullable|regex:/^#[0-9a-fA-F]{6}$/',
             'testimonial_images.*'     => 'nullable|image|max:4096',
             'certificates.*'           => 'nullable|image|max:4096',
             'tb_image.*'               => 'nullable|image|max:512',
@@ -228,6 +229,12 @@ class LandingPageController extends Controller
         if ($data['urgency_bar_minutes'] === 0 && $data['urgency_bar_seconds'] === 0) {
             $data['urgency_bar_seconds'] = 30;
         }
+        // Explicit '1'/'0' flag rather than just checking whether brand_color was posted —
+        // an unchecked "Custom Brand Color" toggle must actively clear a previously-saved
+        // color back to the site default, not merely leave it untouched.
+        $data['brand_color'] = $request->boolean('brand_color_enabled') && $request->filled('brand_color')
+            ? $request->brand_color
+            : null;
 
         return $data;
     }
