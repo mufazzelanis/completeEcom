@@ -184,7 +184,7 @@
             @endif
 
             @if($landingPage->product?->image)
-                <img src="{{ Storage::url($landingPage->product->image) }}" alt="{{ $landingPage->title }}" class="w-24 h-24 object-cover rounded-2xl mx-auto mb-3 shadow-sm">
+                <img src="{{ Storage::url($landingPage->product->image) }}" alt="{{ $landingPage->title }}" class="w-44 h-44 object-cover rounded-2xl mx-auto mb-3 shadow-md">
             @endif
 
             @if(filled($landingPage->pricing_items))
