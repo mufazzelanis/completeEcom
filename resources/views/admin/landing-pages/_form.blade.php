@@ -175,12 +175,19 @@
         <div class="bg-white rounded-2xl shadow-sm p-6 space-y-4" x-data="{
                 rows: {{ Js::from($trustBadgeSeed) }},
                 nextKey: {{ $trustBadgeSeed->count() }},
-                add() { this.rows.push({ icon: '✅', text: '', image: '', imageUrl: '', removeImage: false, _key: 'new-' + (this.nextKey++) }); },
+                add() { this.rows.push({ icon: '✅', text: '', image: '', imageUrl: '', previewUrl: '', removeImage: false, _key: 'new-' + (this.nextKey++) }); },
                 remove(i) { this.rows.splice(i, 1); },
+                pickFile(row, event) {
+                    const f = event.target.files[0];
+                    if (!f) return;
+                    const reader = new FileReader();
+                    reader.onload = e => { row.previewUrl = e.target.result; row.removeImage = false; };
+                    reader.readAsDataURL(f);
+                },
             }">
             <div>
                 <h3 class="font-medium text-gray-800">Trust Badges</h3>
-                <p class="text-xs text-gray-400 mt-0.5">Small icon + label strip shown under the hero and again near the price (e.g. "Cash on Delivery", "100% Original", "Fast Delivery"). First 6 shown near the top, first 2 repeated near the price. Upload your own icon image per badge, or just leave it as an emoji — either works.</p>
+                <p class="text-xs text-gray-400 mt-0.5">Small icon + label strip shown under the hero and again near the price (e.g. "Cash on Delivery", "100% Original", "Fast Delivery"). First 6 shown near the top, first 2 repeated near the price. Each badge can have its own uploaded icon image — pick a different file per row and every one is kept separate; leave any of them blank and that badge just uses its emoji instead.</p>
             </div>
             <div class="space-y-2">
                 <template x-for="(row, i) in rows" :key="row._key">
@@ -192,16 +199,19 @@
                                 class="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
                             <button type="button" @click="remove(i)" class="text-red-400 hover:text-red-600 p-2" aria-label="Remove"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
                         </div>
+                        {{-- x-show (not x-if) below — the file input must stay in the DOM even
+                             once a preview is showing, or the browser drops the file it holds
+                             and nothing gets uploaded on submit. Only its visibility toggles. --}}
                         <div class="flex items-center gap-2 pl-0.5">
-                            <template x-if="row.imageUrl && !row.removeImage">
-                                <img :src="row.imageUrl" class="w-8 h-8 object-contain border border-gray-100 rounded p-0.5 shrink-0">
-                            </template>
-                            <template x-if="!row.imageUrl || row.removeImage">
-                                <input type="file" name="tb_image[]" accept="image/*"
-                                    class="flex-1 text-xs text-gray-500 file:mr-2 file:py-1 file:px-2 file:rounded-md file:border-0 file:text-xs file:bg-gray-100 file:text-gray-600 file:cursor-pointer">
-                            </template>
-                            <button type="button" x-show="row.imageUrl && !row.removeImage" @click="row.removeImage = true" class="text-xs text-red-500 hover:text-red-700 shrink-0">Remove custom icon</button>
-                            <span class="text-[11px] text-gray-400" x-show="!row.imageUrl">optional custom icon — falls back to the emoji above</span>
+                            <img x-show="row.previewUrl || (row.image && !row.removeImage)" :src="row.previewUrl || row.imageUrl"
+                                class="w-8 h-8 object-contain border border-gray-100 rounded p-0.5 shrink-0">
+                            <input type="file" name="tb_image[]" accept="image/*" @change="pickFile(row, $event)"
+                                x-show="!(row.previewUrl || (row.image && !row.removeImage))"
+                                class="flex-1 text-xs text-gray-500 file:mr-2 file:py-1 file:px-2 file:rounded-md file:border-0 file:text-xs file:bg-gray-100 file:text-gray-600 file:cursor-pointer">
+                            <button type="button" x-show="row.previewUrl || (row.image && !row.removeImage)"
+                                @click="row.previewUrl = ''; row.removeImage = true; $el.parentElement.querySelector('input[type=file]').value = ''"
+                                class="text-xs text-red-500 hover:text-red-700 shrink-0">Remove custom icon</button>
+                            <span class="text-[11px] text-gray-400" x-show="!(row.previewUrl || (row.image && !row.removeImage))">optional custom icon — falls back to the emoji above</span>
                             <input type="hidden" name="tb_existing_image[]" :value="row.image || ''">
                             <input type="hidden" name="tb_remove_image[]" :value="row.removeImage ? '1' : '0'">
                         </div>
@@ -251,14 +261,21 @@
         <div class="bg-white rounded-2xl shadow-sm p-6 space-y-4" x-data="{
                 rows: {{ Js::from($benefitSeed) }},
                 nextKey: {{ $benefitSeed->count() }},
-                add() { this.rows.push({ icon: '✨', title: '', description: '', image: '', imageUrl: '', removeImage: false, _key: 'new-' + (this.nextKey++) }); },
+                add() { this.rows.push({ icon: '✨', title: '', description: '', image: '', imageUrl: '', previewUrl: '', removeImage: false, _key: 'new-' + (this.nextKey++) }); },
                 remove(i) { this.rows.splice(i, 1); },
+                pickFile(row, event) {
+                    const f = event.target.files[0];
+                    if (!f) return;
+                    const reader = new FileReader();
+                    reader.onload = e => { row.previewUrl = e.target.result; row.removeImage = false; };
+                    reader.readAsDataURL(f);
+                },
             }">
             <div>
                 <h3 class="font-medium text-gray-800">Benefits Grid</h3>
                 <input type="text" name="benefits_heading" value="{{ old('benefits_heading', $lp->benefits_heading ?? '') }}" placeholder="Section heading (defaults to 'Benefits')"
                     class="w-full mt-2 border border-gray-200 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                <p class="text-xs text-gray-400 mt-1">Upload your own icon image per benefit, or just leave it as an emoji — either works.</p>
+                <p class="text-xs text-gray-400 mt-1">Each benefit can have its own uploaded icon image — pick a different file per row and every one is kept separate; leave any of them blank and that benefit just uses its emoji instead.</p>
             </div>
             <div class="space-y-2">
                 <template x-for="(row, i) in rows" :key="row._key">
@@ -273,15 +290,15 @@
                         <input type="text" name="benefit_desc[]" x-model="row.description" placeholder="Short description (optional)"
                             class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
                         <div class="flex items-center gap-2 pl-0.5">
-                            <template x-if="row.imageUrl && !row.removeImage">
-                                <img :src="row.imageUrl" class="w-8 h-8 object-contain border border-gray-100 rounded p-0.5 shrink-0">
-                            </template>
-                            <template x-if="!row.imageUrl || row.removeImage">
-                                <input type="file" name="benefit_image[]" accept="image/*"
-                                    class="flex-1 text-xs text-gray-500 file:mr-2 file:py-1 file:px-2 file:rounded-md file:border-0 file:text-xs file:bg-gray-100 file:text-gray-600 file:cursor-pointer">
-                            </template>
-                            <button type="button" x-show="row.imageUrl && !row.removeImage" @click="row.removeImage = true" class="text-xs text-red-500 hover:text-red-700 shrink-0">Remove custom icon</button>
-                            <span class="text-[11px] text-gray-400" x-show="!row.imageUrl">optional custom icon — falls back to the emoji above</span>
+                            <img x-show="row.previewUrl || (row.image && !row.removeImage)" :src="row.previewUrl || row.imageUrl"
+                                class="w-8 h-8 object-contain border border-gray-100 rounded p-0.5 shrink-0">
+                            <input type="file" name="benefit_image[]" accept="image/*" @change="pickFile(row, $event)"
+                                x-show="!(row.previewUrl || (row.image && !row.removeImage))"
+                                class="flex-1 text-xs text-gray-500 file:mr-2 file:py-1 file:px-2 file:rounded-md file:border-0 file:text-xs file:bg-gray-100 file:text-gray-600 file:cursor-pointer">
+                            <button type="button" x-show="row.previewUrl || (row.image && !row.removeImage)"
+                                @click="row.previewUrl = ''; row.removeImage = true; $el.parentElement.querySelector('input[type=file]').value = ''"
+                                class="text-xs text-red-500 hover:text-red-700 shrink-0">Remove custom icon</button>
+                            <span class="text-[11px] text-gray-400" x-show="!(row.previewUrl || (row.image && !row.removeImage))">optional custom icon — falls back to the emoji above</span>
                             <input type="hidden" name="benefit_existing_image[]" :value="row.image || ''">
                             <input type="hidden" name="benefit_remove_image[]" :value="row.removeImage ? '1' : '0'">
                         </div>
