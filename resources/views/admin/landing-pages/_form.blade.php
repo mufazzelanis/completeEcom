@@ -235,18 +235,33 @@
         </div>
 
         {{-- Benefits --}}
+        @php
+            $benefitSeed = collect($seed(['icon' => 'benefit_icon', 'title' => 'benefit_title', 'description' => 'benefit_desc', 'image' => 'benefit_existing_image'], 'title', collect($lp->benefits ?? [])->toArray()))
+                ->values()
+                ->map(fn ($r, $i) => [
+                    'icon'        => $r['icon'] ?? '',
+                    'title'       => $r['title'] ?? '',
+                    'description' => $r['description'] ?? '',
+                    'image'       => $r['image'] ?? '',
+                    'imageUrl'    => filled($r['image'] ?? null) ? Storage::url($r['image']) : '',
+                    'removeImage' => false,
+                    '_key'        => 'row-' . $i,
+                ]);
+        @endphp
         <div class="bg-white rounded-2xl shadow-sm p-6 space-y-4" x-data="{
-                rows: {{ Js::from($seed(['icon' => 'benefit_icon', 'title' => 'benefit_title', 'description' => 'benefit_desc'], 'title', collect($lp->benefits ?? [])->toArray())) }},
-                add() { this.rows.push({ icon: '✨', title: '', description: '' }); },
+                rows: {{ Js::from($benefitSeed) }},
+                nextKey: {{ $benefitSeed->count() }},
+                add() { this.rows.push({ icon: '✨', title: '', description: '', image: '', imageUrl: '', removeImage: false, _key: 'new-' + (this.nextKey++) }); },
                 remove(i) { this.rows.splice(i, 1); },
             }">
             <div>
                 <h3 class="font-medium text-gray-800">Benefits Grid</h3>
                 <input type="text" name="benefits_heading" value="{{ old('benefits_heading', $lp->benefits_heading ?? '') }}" placeholder="Section heading (defaults to 'Benefits')"
                     class="w-full mt-2 border border-gray-200 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                <p class="text-xs text-gray-400 mt-1">Upload your own icon image per benefit, or just leave it as an emoji — either works.</p>
             </div>
             <div class="space-y-2">
-                <template x-for="(row, i) in rows" :key="i">
+                <template x-for="(row, i) in rows" :key="row._key">
                     <div class="border border-gray-100 rounded-xl p-3 space-y-2">
                         <div class="flex items-center gap-2">
                             <input type="text" name="benefit_icon[]" x-model="row.icon" placeholder="✨" maxlength="4"
@@ -257,6 +272,19 @@
                         </div>
                         <input type="text" name="benefit_desc[]" x-model="row.description" placeholder="Short description (optional)"
                             class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <div class="flex items-center gap-2 pl-0.5">
+                            <template x-if="row.imageUrl && !row.removeImage">
+                                <img :src="row.imageUrl" class="w-8 h-8 object-contain border border-gray-100 rounded p-0.5 shrink-0">
+                            </template>
+                            <template x-if="!row.imageUrl || row.removeImage">
+                                <input type="file" name="benefit_image[]" accept="image/*"
+                                    class="flex-1 text-xs text-gray-500 file:mr-2 file:py-1 file:px-2 file:rounded-md file:border-0 file:text-xs file:bg-gray-100 file:text-gray-600 file:cursor-pointer">
+                            </template>
+                            <button type="button" x-show="row.imageUrl && !row.removeImage" @click="row.removeImage = true" class="text-xs text-red-500 hover:text-red-700 shrink-0">Remove custom icon</button>
+                            <span class="text-[11px] text-gray-400" x-show="!row.imageUrl">optional custom icon — falls back to the emoji above</span>
+                            <input type="hidden" name="benefit_existing_image[]" :value="row.image || ''">
+                            <input type="hidden" name="benefit_remove_image[]" :value="row.removeImage ? '1' : '0'">
+                        </div>
                     </div>
                 </template>
             </div>

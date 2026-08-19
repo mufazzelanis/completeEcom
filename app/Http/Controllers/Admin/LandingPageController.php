@@ -200,6 +200,7 @@ class LandingPageController extends Controller
             'testimonial_images.*'     => 'nullable|image|max:4096',
             'certificates.*'           => 'nullable|image|max:4096',
             'tb_image.*'               => 'nullable|image|max:512',
+            'benefit_image.*'          => 'nullable|image|max:512',
         ]);
 
         $data = $request->only([
@@ -241,8 +242,8 @@ class LandingPageController extends Controller
     private function normalizeSections(Request $request): array
     {
         return [
-            'trust_badges'    => $this->normalizeTrustBadges($request),
-            'benefits'        => $this->normalizeRepeater($request, ['icon' => 'benefit_icon', 'title' => 'benefit_title', 'description' => 'benefit_desc'], 'title'),
+            'trust_badges'    => $this->normalizeRepeaterWithImage($request, ['icon' => 'tb_icon', 'text' => 'tb_text'], 'text', 'tb'),
+            'benefits'        => $this->normalizeRepeaterWithImage($request, ['icon' => 'benefit_icon', 'title' => 'benefit_title', 'description' => 'benefit_desc'], 'title', 'benefit'),
             'who_for'         => $this->normalizeRepeater($request, ['icon' => 'wf_icon', 'text' => 'wf_text'], 'text'),
             'testimonial_videos' => $this->normalizeRepeater($request, ['video_url' => 'tv_url', 'name' => 'tv_name'], 'video_url'),
             'faqs'            => $this->normalizeRepeater($request, ['question' => 'faq_q', 'answer' => 'faq_a'], 'question'),
@@ -274,27 +275,34 @@ class LandingPageController extends Controller
     }
 
     /**
-     * Trust badges get their own normalizer instead of the generic normalizeRepeater()
-     * because each row can carry an uploaded image (a custom icon) alongside its emoji
-     * fallback — see admin/landing-pages/_form.blade.php's tb_image[]/tb_existing_image[]/
-     * tb_remove_image[] inputs, one row's worth per array index, same as tb_icon[]/tb_text[].
-     * A brand-new upload replaces any existing image; the remove checkbox clears it back to
-     * emoji-only; a row dropped from the form entirely (blank text) has its stored image
-     * file deleted rather than left orphaned on disk.
+     * Same shape as normalizeRepeater(), for repeaters where each row can also carry an
+     * uploaded image (a custom icon) alongside its text fields — see
+     * admin/landing-pages/_form.blade.php's {$prefix}_image[]/{$prefix}_existing_image[]/
+     * {$prefix}_remove_image[] inputs, one row's worth per array index, same alignment as
+     * the text columns. A brand-new upload replaces any existing image; the remove checkbox
+     * clears it back to text/emoji-only; a row dropped from the form entirely (blank
+     * primary field) has its stored image file deleted rather than left orphaned on disk.
      */
-    private function normalizeTrustBadges(Request $request): array
+    private function normalizeRepeaterWithImage(Request $request, array $fields, string $primaryKey, string $prefix): array
     {
-        $icons    = $request->input('tb_icon', []);
-        $texts    = $request->input('tb_text', []);
-        $existing = $request->input('tb_existing_image', []);
-        $removes  = $request->input('tb_remove_image', []);
-        $files    = $request->file('tb_image', []);
+        $columns = [];
+        foreach ($fields as $outKey => $inputName) {
+            $columns[$outKey] = $request->input($inputName, []);
+        }
+        $existing = $request->input($prefix . '_existing_image', []);
+        $removes  = $request->input($prefix . '_remove_image', []);
+        $files    = $request->file($prefix . '_image', []);
 
         $rows = [];
         $kept = [];
-        foreach ($texts as $i => $text) {
-            if (trim((string) $text) === '') {
+        foreach ($columns[$primaryKey] ?? [] as $i => $primaryValue) {
+            if (trim((string) $primaryValue) === '') {
                 continue;
+            }
+
+            $row = [];
+            foreach ($columns as $outKey => $values) {
+                $row[$outKey] = trim((string) ($values[$i] ?? ''));
             }
 
             $image = filled($existing[$i] ?? null) ? $existing[$i] : null;
@@ -309,18 +317,15 @@ class LandingPageController extends Controller
                 $image = ImageOptimizer::store($files[$i], 'landing-pages', 'public', 200);
             }
 
-            $rows[] = [
-                'icon'  => trim((string) ($icons[$i] ?? '')),
-                'text'  => trim((string) $text),
-                'image' => $image,
-            ];
+            $row['image'] = $image;
             if ($image) {
                 $kept[] = $image;
             }
+            $rows[] = $row;
         }
 
-        // Rows removed outright (blank label) still had their old image path in
-        // tb_existing_image[] — clean those up too rather than leaving them on disk forever.
+        // Rows removed outright (blank primary field) still had their old image path in
+        // {$prefix}_existing_image[] — clean those up too rather than leaving them on disk.
         foreach (array_diff(array_filter($existing), $kept) as $orphan) {
             Storage::disk('public')->delete($orphan);
         }

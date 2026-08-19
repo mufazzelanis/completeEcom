@@ -103,7 +103,11 @@
         <div class="grid grid-cols-2 gap-3">
             @foreach($landingPage->benefits as $b)
             <div class="border border-gray-100 rounded-2xl p-3 shadow-sm text-center">
-                <span class="text-2xl leading-none block mb-1.5">{{ $b['icon'] ?: '✨' }}</span>
+                @if(!empty($b['image']))
+                    <img src="{{ Storage::url($b['image']) }}" alt="" class="w-8 h-8 object-contain mx-auto mb-1.5">
+                @else
+                    <span class="text-2xl leading-none block mb-1.5">{{ $b['icon'] ?: '✨' }}</span>
+                @endif
                 <p class="font-semibold text-gray-800 text-xs mb-0.5">{{ $b['title'] }}</p>
                 @if(!empty($b['description']))<p class="text-[11px] text-gray-500 leading-snug">{{ $b['description'] }}</p>@endif
             </div>
