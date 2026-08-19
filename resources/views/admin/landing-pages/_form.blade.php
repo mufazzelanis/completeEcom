@@ -46,12 +46,42 @@
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Link to Product <span class="text-gray-400 font-normal">(optional)</span></label>
-                <select name="product_id" class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                    <option value="">— None —</option>
-                    @foreach($products as $p)
-                        <option value="{{ $p->id }}" {{ (int) old('product_id', $lp->product_id ?? 0) === $p->id ? 'selected' : '' }}>{{ $p->name }}</option>
-                    @endforeach
-                </select>
+                @php
+                    $allProducts = $products->map(fn ($p) => ['id' => $p->id, 'name' => $p->name])->values();
+                    $selectedId = (int) old('product_id', $lp->product_id ?? 0);
+                    $selectedName = $allProducts->firstWhere('id', $selectedId)['name'] ?? '';
+                @endphp
+                {{-- Plain client-side filter over the already-loaded product list (13 today,
+                     still fine into the low hundreds) — no new JS library, no new AJAX
+                     endpoint, nothing that touches anything outside this one field. --}}
+                <div class="relative" x-data="{
+                        products: {{ Js::from($allProducts) }},
+                        query: {{ Js::from($selectedName) }},
+                        selectedId: {{ $selectedId ?: 'null' }},
+                        open: false,
+                        get filtered() {
+                            const q = this.query.trim().toLowerCase();
+                            if (!q) return this.products;
+                            return this.products.filter(p => p.name.toLowerCase().includes(q));
+                        },
+                        pick(p) { this.selectedId = p ? p.id : null; this.query = p ? p.name : ''; this.open = false; },
+                    }" @click.outside="open = false">
+                    <input type="text" x-model="query" @focus="open = true" @input="open = true; if (!query) pick(null)"
+                        placeholder="Search products by name…" autocomplete="off"
+                        class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    <input type="hidden" name="product_id" :value="selectedId">
+                    <div x-show="open" x-cloak x-transition
+                        class="absolute z-20 mt-1 w-full max-h-64 overflow-y-auto bg-white border border-gray-200 rounded-xl shadow-lg py-1">
+                        <button type="button" @click="pick(null)" class="w-full text-left px-4 py-2 text-sm text-gray-400 hover:bg-gray-50">— None —</button>
+                        <template x-for="p in filtered" :key="p.id">
+                            <button type="button" @click="pick(p)"
+                                class="w-full text-left px-4 py-2 text-sm hover:bg-indigo-50"
+                                :class="selectedId === p.id ? 'bg-indigo-50 text-indigo-700 font-medium' : 'text-gray-700'"
+                                x-text="p.name"></button>
+                        </template>
+                        <p x-show="filtered.length === 0" class="px-4 py-2 text-sm text-gray-400">No products match.</p>
+                    </div>
+                </div>
                 <p class="text-xs text-gray-400 mt-1">Pulls price/stock from this product unless you set a price override below.</p>
             </div>
         </div>
