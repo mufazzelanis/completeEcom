@@ -37,7 +37,15 @@
     {{-- Hero --}}
     <div class="text-center px-4 pt-6 pb-5" style="background: linear-gradient(180deg, {{ $primary }}14, transparent);">
         @if($landingPage->hero_image)
-            <img src="{{ Storage::url($landingPage->hero_image) }}" alt="{{ $landingPage->title }}" class="w-full max-h-80 object-cover rounded-2xl shadow-lg mb-4">
+            {{-- object-contain (not cover) so any uploaded photo — wide banner, square product
+                 shot, tall bottle on a white background, whatever the admin uploads — shows in
+                 full without an ugly crop. The soft color glow behind + drop-shadow on the image
+                 itself give it depth so plain white-background product photos don't look like a
+                 flat catalog thumbnail sitting on the page. --}}
+            <div class="relative mb-4 px-4">
+                <div class="absolute inset-x-10 inset-y-3 rounded-[2rem]" style="background: radial-gradient(ellipse at center, {{ $primary }}26, transparent 72%);"></div>
+                <img src="{{ Storage::url($landingPage->hero_image) }}" alt="{{ $landingPage->title }}" class="relative w-full max-h-72 object-contain drop-shadow-xl">
+            </div>
         @endif
         @if($landingPage->hero_heading)
             <h1 class="text-xl font-extrabold text-gray-900 leading-snug mb-2">{{ $landingPage->hero_heading }}</h1>
@@ -202,7 +210,11 @@
             @endif
 
             @if($landingPage->product?->image)
-                <img src="{{ Storage::url($landingPage->product->image) }}" alt="{{ $landingPage->title }}" class="w-44 h-44 object-cover rounded-2xl mx-auto mb-3 shadow-md">
+                {{-- Fixed-size rounded "card" frame with a soft brand-tinted backdrop; the photo
+                     itself uses object-contain so it never gets cropped, whatever its shape. --}}
+                <div class="w-44 h-44 mx-auto mb-3 rounded-2xl flex items-center justify-center p-4" style="background: linear-gradient(145deg, {{ $primary }}14, {{ $primary }}05);">
+                    <img src="{{ Storage::url($landingPage->product->image) }}" alt="{{ $landingPage->title }}" class="max-w-full max-h-full object-contain drop-shadow-md">
+                </div>
             @endif
 
             @if(filled($landingPage->pricing_items))
