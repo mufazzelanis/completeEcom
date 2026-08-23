@@ -158,6 +158,15 @@ class LandingPageController extends Controller
 
     private function validated(Request $request, ?int $exceptId = null): array
     {
+        // Trimmed before validation (not just after, in the normalization loop below) — a
+        // pixel ID pasted with accidental leading/trailing whitespace (common copy-pasting
+        // out of Meta Events Manager / Google Ads) would otherwise fail its own format regex
+        // before ever reaching that trim().
+        $request->merge(array_map(
+            fn ($v) => is_string($v) ? trim($v) : $v,
+            $request->only(['fb_pixel_id', 'ga_measurement_id', 'google_ads_conversion_id', 'google_ads_conversion_label'])
+        ));
+
         $request->validate([
             'title'                    => 'required|string|max:255',
             'slug'                     => 'nullable|alpha_dash|max:255|unique:landing_pages,slug,' . ($exceptId ?? 'NULL') . ',id',
@@ -199,6 +208,14 @@ class LandingPageController extends Controller
             'certificates_heading'     => 'nullable|string|max:255',
             'certificates_subheading'  => 'nullable|string|max:500',
             'brand_color'              => 'nullable|regex:/^#[0-9a-fA-F]{6}$/',
+            // Pixel IDs — loosely shaped rather than byte-exact, so a pasted value with
+            // stray whitespace or a slightly different but still valid format doesn't
+            // bounce the whole form. Each one independently optional; leaving any blank
+            // just means that platform's site-wide default (or nothing) applies instead.
+            'fb_pixel_id'                 => 'nullable|string|max:32|regex:/^[0-9]{5,32}$/',
+            'ga_measurement_id'           => 'nullable|string|max:20|regex:/^G-[A-Za-z0-9]+$/',
+            'google_ads_conversion_id'    => 'nullable|string|max:20|regex:/^AW-[0-9]+$/',
+            'google_ads_conversion_label' => 'nullable|string|max:60|regex:/^[A-Za-z0-9_-]+$/',
             'testimonial_images.*'     => 'nullable|image|max:4096',
             'certificates.*'           => 'nullable|image|max:4096',
             'tb_image.*'               => 'nullable|image|max:512',
@@ -216,6 +233,14 @@ class LandingPageController extends Controller
             'offer_badge_text', 'compare_at_price',
             'faqs_heading', 'certificates_heading', 'certificates_subheading',
         ]);
+
+        // Trimmed and coerced to null (not '') when left blank — so `?:` fallbacks to the
+        // site-wide setting elsewhere (layouts/landing.blade.php, show.blade.php) work the
+        // same way brand_color's do, rather than an empty string silently "winning" over null.
+        foreach (['fb_pixel_id', 'ga_measurement_id', 'google_ads_conversion_id', 'google_ads_conversion_label'] as $pixelField) {
+            $value = trim((string) $request->input($pixelField, ''));
+            $data[$pixelField] = $value !== '' ? $value : null;
+        }
 
         $data['status']              = $request->status;
         $data['collect_address']     = $request->boolean('collect_address');

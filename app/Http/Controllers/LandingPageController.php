@@ -137,6 +137,19 @@ class LandingPageController extends Controller
             return redirect()->away($landingPage->thank_you_redirect_url);
         }
 
-        return redirect()->route('landing.show', $landingPage)->with('order_success', $order->order_number);
+        // Flashed alongside order_success purely for the Purchase pixel event on the
+        // thank-you page (see show.blade.php) — value/currency to report the conversion at,
+        // plus whatever of the customer's name/phone can feed Meta Advanced Matching /
+        // Google Enhanced Conversions (no email field on a landing order form, so that side
+        // of pixel_advanced_matching_data() stays empty here). Same one-request flash
+        // lifetime as order_success itself, so a refresh naturally stops re-reporting it.
+        $tracking = pixel_advanced_matching_data($order->shipping_name, null, $order->shipping_phone);
+
+        return redirect()->route('landing.show', $landingPage)->with([
+            'order_success'        => $order->order_number,
+            'order_success_value'  => (float) $order->total,
+            'order_success_fb'     => $tracking['fb'],
+            'order_success_google' => $tracking['google'],
+        ]);
     }
 }

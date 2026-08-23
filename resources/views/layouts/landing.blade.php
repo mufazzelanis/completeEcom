@@ -7,6 +7,27 @@
     $logoUrl  = $landingPage->header_logo ? \Illuminate\Support\Facades\Storage::url($landingPage->header_logo) : setting_file_url('site_logo');
     $faviconUrl = $landingPage->favicon ? \Illuminate\Support\Facades\Storage::url($landingPage->favicon) : setting_file_url('favicon');
     $primaryColor = $landingPage->brand_color ?: setting('primary_color', '#ea580c');
+
+    // Pixel tracking — this page's own Facebook/Google IDs (Admin → Landing Pages → edit →
+    // Pixel Tracking) override the site-wide Settings → Facebook Pixel / Google Analytics &
+    // Ads ones, same override-or-inherit pattern as brand_color above. A page-level pixel ID
+    // is always considered "on" (the admin explicitly set it for this campaign); the
+    // site-wide "Enable Pixel tracking" toggle only gates the inherited default.
+    $fbPixelId = $landingPage->fb_pixel_id ?: setting('facebook_pixel_id', '');
+    $fbPixelOn = $fbPixelId && ($landingPage->fb_pixel_id || setting('facebook_pixel_enabled', $fbPixelId ? '1' : '0') == '1');
+    $fbAdvancedMatchingOn = setting('facebook_advanced_matching_enabled', '0') == '1';
+
+    $gaId = $landingPage->ga_measurement_id ?: setting('google_analytics_id', '');
+    $adsConversionId = $landingPage->google_ads_conversion_id ?: setting('google_ads_conversion_id', '');
+    $adsPurchaseLabel = $landingPage->google_ads_conversion_label ?: setting('google_ads_purchase_label', '');
+    $googleEnhancedOn = setting('google_enhanced_conversions_enabled', '0') == '1';
+
+    $trackCurrency = setting('currency_code', 'BDT');
+    $trackProduct = [
+        'id'    => $landingPage->product_id ? ($landingPage->product?->sku ?: (string) $landingPage->product_id) : $landingPage->slug,
+        'name'  => $landingPage->product?->name ?: $landingPage->title,
+        'value' => (float) ($landingPage->effective_price ?? 0),
+    ];
 @endphp
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
@@ -26,6 +47,46 @@
     <meta property="og:url" content="{{ url()->current() }}">
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+
+    {{-- Pixel Tracking — base install + PageView/ViewContent, mirroring layouts/app.blade.php's
+         site-wide setup. InitiateCheckout fires on order-form submit and Purchase on the
+         thank-you state — see show.blade.php. --}}
+    @if($gaId || $adsConversionId)
+    <script async src="https://www.googletagmanager.com/gtag/js?id={{ $gaId ?: $adsConversionId }}"></script>
+    <script>
+        window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());
+        @if($gaId)gtag('config','{{ $gaId }}');@endif
+        @if($adsConversionId)gtag('config','{{ $adsConversionId }}');@endif
+    </script>
+    @endif
+    @if($fbPixelOn)
+    <script>
+        !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');
+        fbq('init', {!! Js::from($fbPixelId) !!});
+        fbq('track', 'PageView');
+    </script>
+    <noscript><img height="1" width="1" style="display:none" src="https://www.facebook.com/tr?id={{ $fbPixelId }}&ev=PageView&noscript=1" alt=""></noscript>
+    @endif
+    @if(!session('order_success'))
+    <script>
+    (function () {
+        var product = @json($trackProduct);
+        var currency = @json($trackCurrency);
+        if (typeof fbq === 'function') {
+            fbq('track', 'ViewContent', {
+                content_ids: [product.id], content_type: 'product',
+                content_name: product.name, value: product.value, currency: currency,
+            });
+        }
+        if (typeof gtag === 'function') {
+            gtag('event', 'view_item', {
+                currency: currency, value: product.value,
+                items: [{ item_id: product.id, item_name: product.name, price: product.value }],
+            });
+        }
+    })();
+    </script>
+    @endif
 </head>
 <body class="bg-gray-100 text-gray-900 antialiased overflow-x-hidden">
 {{-- Single narrow column at every viewport width — deliberately not a responsive

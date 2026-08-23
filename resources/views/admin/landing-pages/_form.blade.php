@@ -631,6 +631,50 @@
                 <input type="file" name="og_image" accept="image/*" class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm">
             </div>
         </div>
+
+        {{-- Pixel Tracking --}}
+        <div class="bg-white rounded-2xl shadow-sm p-6 space-y-4">
+            <div>
+                <h3 class="font-medium text-gray-800">Pixel Tracking</h3>
+                <p class="text-xs text-gray-400 mt-0.5">
+                    Leave any of these blank to use your site-wide default from
+                    <a href="{{ route('admin.settings.show', 'facebook_pixel') }}" target="_blank" class="text-indigo-600 hover:underline">Settings → Facebook Pixel</a>
+                    /
+                    <a href="{{ route('admin.settings.show', 'google_ads') }}" target="_blank" class="text-indigo-600 hover:underline">Google Analytics &amp; Ads</a>
+                    instead. Set one here when this specific campaign runs through its own ad account's pixel — e.g. an agency-run page, or a separate product line with its own Meta/Google account.
+                </p>
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Facebook / Meta Pixel ID</label>
+                <input type="text" name="fb_pixel_id" value="{{ old('fb_pixel_id', $lp->fb_pixel_id ?? '') }}" placeholder="{{ setting('facebook_pixel_id') ?: 'e.g. 123456789012345' }}"
+                    class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                <p class="text-xs text-gray-400 mt-1">Meta Events Manager → Data Sources → your pixel. Fires PageView, ViewContent, InitiateCheckout, and Purchase automatically.</p>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">GA4 Measurement ID</label>
+                    <input type="text" name="ga_measurement_id" value="{{ old('ga_measurement_id', $lp->ga_measurement_id ?? '') }}" placeholder="{{ setting('google_analytics_id') ?: 'G-XXXXXXXXXX' }}"
+                        class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Google Ads Conversion ID</label>
+                    <input type="text" name="google_ads_conversion_id" value="{{ old('google_ads_conversion_id', $lp->google_ads_conversion_id ?? '') }}" placeholder="{{ setting('google_ads_conversion_id') ?: 'AW-XXXXXXXXX' }}"
+                        class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Google Ads Purchase Conversion Label</label>
+                <input type="text" name="google_ads_conversion_label" value="{{ old('google_ads_conversion_label', $lp->google_ads_conversion_label ?? '') }}" placeholder="{{ setting('google_ads_purchase_label') ?: 'AbCdEfGhIj-kLmNoPqR' }}"
+                    class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                <p class="text-xs text-gray-400 mt-1">Both from Google Ads → Tools &amp; Settings → Conversions → your Purchase action → "Use Google tag". Needs both fields to fire — a Conversion ID with no label here just skips the Ads conversion tag and only sends the plain GA4 purchase event.</p>
+            </div>
+
+            <div class="bg-gray-50 rounded-xl p-3 text-xs text-gray-500 leading-relaxed">
+                📊 Events fired: <span class="font-medium text-gray-700">PageView / ViewContent</span> on page load, <span class="font-medium text-gray-700">InitiateCheckout</span> when the order form is submitted, <span class="font-medium text-gray-700">Purchase</span> once the order goes through — valued at the actual order total, with the customer's name/phone attached for Meta Advanced Matching &amp; Google Enhanced Conversions (same as the main store's checkout).
+            </div>
+        </div>
     </div>
 
     <div class="space-y-5">

@@ -5,6 +5,8 @@
     $currencySymbol = html_entity_decode(setting('currency_symbol', '৳'));
     $decimals = (int) setting('decimal_places', 0);
     $primary = $landingPage->brand_color ?: setting('primary_color', '#ea580c');
+    $currencyCode = setting('currency_code', 'BDT');
+    $trackProductId = $landingPage->product_id ? ($landingPage->product?->sku ?: (string) $landingPage->product_id) : $landingPage->slug;
 @endphp
 <style>
     .no-scrollbar::-webkit-scrollbar{display:none}
@@ -32,6 +34,56 @@
             {{ $landingPage->thank_you_button_text ?: 'আরও প্রোডাক্ট দেখুন' }}
         </a>
     </div>
+
+    @php
+        $adsConversionId = $landingPage->google_ads_conversion_id ?: setting('google_ads_conversion_id', '');
+        $adsPurchaseLabel = $landingPage->google_ads_conversion_label ?: setting('google_ads_purchase_label', '');
+        $googleEnhancedOn = setting('google_enhanced_conversions_enabled', '0') == '1';
+        $fbAdvancedMatchingOn = setting('facebook_advanced_matching_enabled', '0') == '1';
+    @endphp
+    <script>
+    {{-- Fires exactly once: order_success_* only exists in session for this one flashed
+         request (see LandingPageController@order), so a page refresh drops back to the
+         plain landing page state and this block simply never runs again for that order. --}}
+    (function () {
+        var orderId = @json(session('order_success'));
+        var value = @json((float) session('order_success_value', 0));
+        var currency = @json($currencyCode);
+        var fbData = @json(session('order_success_fb', []));
+        var googleData = @json(session('order_success_google', []));
+
+        @if($googleEnhancedOn)
+        if (typeof gtag === 'function' && Object.keys(googleData).length) {
+            gtag('set', 'user_data', googleData);
+        }
+        @endif
+
+        if (typeof gtag === 'function') {
+            gtag('event', 'purchase', {
+                transaction_id: orderId, value: value, currency: currency,
+                items: [{ item_id: {{ Js::from($trackProductId) }}, item_name: {{ Js::from($landingPage->product?->name ?: $landingPage->title) }}, price: value }],
+            });
+            @if($adsConversionId && $adsPurchaseLabel)
+            gtag('event', 'conversion', {
+                send_to: {!! Js::from($adsConversionId . '/' . $adsPurchaseLabel) !!},
+                value: value, currency: currency, transaction_id: orderId,
+            });
+            @endif
+        }
+
+        if (typeof fbq === 'function') {
+            @if($fbAdvancedMatchingOn)
+            if (Object.keys(fbData).length) {
+                fbq('init', {{ Js::from($landingPage->fb_pixel_id ?: setting('facebook_pixel_id', '')) }}, fbData);
+            }
+            @endif
+            fbq('track', 'Purchase', {
+                value: value, currency: currency,
+                content_type: 'product', content_ids: [{{ Js::from($trackProductId) }}],
+            });
+        }
+    })();
+    </script>
 @else
 
     {{-- Hero --}}
@@ -307,7 +359,26 @@
             get zoneCharge() { return (this.zoneIndex !== null && this.zones[this.zoneIndex]) ? parseFloat(this.zones[this.zoneIndex].charge || 0) : 0; },
             get subtotal() { return this.unit * this.qty; },
             get total() { return this.subtotal + this.zoneCharge; },
-        }">
+            trackInitiateCheckout() {
+                if (typeof fbq === 'function') {
+                    fbq('track', 'InitiateCheckout', {
+                        value: this.total, currency: {{ Js::from($currencyCode) }},
+                        content_type: 'product', content_ids: [{{ Js::from($trackProductId) }}],
+                    });
+                }
+                if (typeof gtag === 'function') {
+                    gtag('event', 'begin_checkout', {
+                        currency: {{ Js::from($currencyCode) }}, value: this.total,
+                        items: [{ item_id: {{ Js::from($trackProductId) }}, item_name: {{ Js::from($landingPage->product?->name ?: $landingPage->title) }}, price: this.unit }],
+                    });
+                }
+            },
+        }"
+        {{-- Fires once — the moment the order form actually scrolls into view (however the
+             visitor got there: a CTA click, or just scrolling), same "reached checkout"
+             semantic as the main store's InitiateCheckout, without needing a handler wired
+             onto every "Order Now" button on the page individually. --}}
+        x-init="new IntersectionObserver((entries, obs) => { if (entries[0].isIntersecting) { trackInitiateCheckout(); obs.disconnect(); } }, { threshold: 0.3 }).observe($el)">
         <div class="bg-white rounded-2xl shadow-xl p-5">
             <div class="text-center mb-5">
                 <h2 class="text-lg font-extrabold text-gray-900">{{ $landingPage->title }}</h2>
