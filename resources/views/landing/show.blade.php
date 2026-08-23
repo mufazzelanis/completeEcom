@@ -147,10 +147,15 @@
     </div>
     @endif
 
-    {{-- Admin's free-form content --}}
+    {{-- Admin's free-form content — sits on a soft brand-tinted card rather than bare on the
+         page background, so a long, heavily-bolded pitch (the common case here) reads as a
+         designed "info panel" instead of a plain wall of text floating on white. --}}
     @if($landingPage->content)
-        <div class="px-4 py-8 prose prose-sm max-w-none prose-headings:font-extrabold prose-a:text-orange-600">
-            {!! $landingPage->content !!}
+        <div class="px-4 py-6">
+            <div class="prose prose-sm max-w-none leading-relaxed prose-headings:font-extrabold prose-a:text-orange-600 prose-strong:text-gray-900 rounded-2xl border border-gray-100 shadow-sm p-5"
+                 style="background: linear-gradient(160deg, {{ $primary }}0d, {{ $primary }}03);">
+                {!! $landingPage->content !!}
+            </div>
         </div>
     @endif
 
