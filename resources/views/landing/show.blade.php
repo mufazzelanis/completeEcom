@@ -12,6 +12,10 @@
     .no-scrollbar::-webkit-scrollbar{display:none}
     .no-scrollbar{-ms-overflow-style:none;scrollbar-width:none}
     [x-cloak]{display:none!important}
+    @keyframes lp-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+    .lp-float{animation:lp-float 3.5s ease-in-out infinite}
+    @keyframes lp-pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.07)}}
+    .lp-pulse{animation:lp-pulse 1.7s ease-in-out infinite}
 </style>
 
 @if(session('order_success'))
@@ -96,7 +100,23 @@
                  flat catalog thumbnail sitting on the page. --}}
             <div class="relative mb-4 px-4">
                 <div class="absolute inset-x-10 inset-y-3 rounded-[2rem]" style="background: radial-gradient(ellipse at center, {{ $primary }}26, transparent 72%);"></div>
-                <img src="{{ Storage::url($landingPage->hero_image) }}" alt="{{ $landingPage->title }}" class="relative w-full max-h-72 object-contain drop-shadow-xl">
+                {{-- Soft "ground shadow" ellipse beneath the product — makes it feel like it's
+                     actually sitting/photographed somewhere rather than pasted flat on a page. --}}
+                <div class="absolute left-1/2 bottom-1 -translate-x-1/2 w-2/3 h-4 rounded-full blur-md" style="background: {{ $primary }}30;"></div>
+                <img src="{{ Storage::url($landingPage->hero_image) }}" alt="{{ $landingPage->title }}" class="relative w-full max-h-72 object-contain drop-shadow-2xl lp-float">
+
+                @if($landingPage->rating_value)
+                    <span class="absolute bottom-2 right-3 inline-flex items-center gap-1 bg-white text-gray-800 text-xs font-bold pl-1.5 pr-2.5 py-1 rounded-full shadow-lg border border-gray-100">
+                        <span class="text-amber-400">★</span> {{ $landingPage->rating_value }}
+                    </span>
+                @endif
+
+                @if($landingPage->compare_at_price && $landingPage->effective_price && $landingPage->compare_at_price > $landingPage->effective_price)
+                    @php $heroDiscountPct = round((($landingPage->compare_at_price - $landingPage->effective_price) / $landingPage->compare_at_price) * 100); @endphp
+                    <span class="lp-pulse absolute top-1 left-3 inline-flex items-center gap-1 text-white text-xs font-extrabold px-3 py-1.5 rounded-full shadow-lg" style="background-color: {{ $primary }};">
+                        🔥 -{{ $heroDiscountPct }}%
+                    </span>
+                @endif
             </div>
         @endif
         @if($landingPage->hero_heading || $landingPage->hero_subheading)
