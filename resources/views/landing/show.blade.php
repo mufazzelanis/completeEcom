@@ -105,12 +105,6 @@
                 <div class="absolute left-1/2 bottom-1 -translate-x-1/2 w-2/3 h-4 rounded-full blur-md" style="background: {{ $primary }}30;"></div>
                 <img src="{{ Storage::url($landingPage->hero_image) }}" alt="{{ $landingPage->title }}" class="relative w-full max-h-72 object-contain drop-shadow-2xl lp-float">
 
-                @if($landingPage->rating_value)
-                    <span class="absolute bottom-2 right-3 inline-flex items-center gap-1 bg-white text-gray-800 text-xs font-bold pl-1.5 pr-2.5 py-1 rounded-full shadow-lg border border-gray-100">
-                        <span class="text-amber-400">★</span> {{ $landingPage->rating_value }}
-                    </span>
-                @endif
-
                 @if($landingPage->compare_at_price && $landingPage->effective_price && $landingPage->compare_at_price > $landingPage->effective_price)
                     @php $heroDiscountPct = round((($landingPage->compare_at_price - $landingPage->effective_price) / $landingPage->compare_at_price) * 100); @endphp
                     <span class="lp-pulse absolute top-1 left-3 inline-flex items-center gap-1 text-white text-xs font-extrabold px-3 py-1.5 rounded-full shadow-lg" style="background-color: {{ $primary }};">
