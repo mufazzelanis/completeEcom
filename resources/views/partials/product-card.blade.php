@@ -12,10 +12,15 @@
 @endphp
 <div class="h-full flex flex-col bg-white rounded-lg shadow-sm hover:shadow-lg transition-all duration-300 group overflow-hidden border border-transparent hover:border-orange-200 relative">
     <a href="{{ route('products.show', $product->slug) }}" class="block relative">
-        <div class="relative overflow-hidden bg-gray-50 aspect-square">
+        {{-- object-contain + padding (not cover) — a product photo can be any shape or have
+             any amount of its own white-background padding baked in (most do), and cropping
+             to fill a hard square either chops the product off or, if the source photo
+             already has margin around it, just leaves it looking small and off inside the
+             crop. Contain always shows the whole product, centered, same card size either way. --}}
+        <div class="relative overflow-hidden bg-gray-50 aspect-square p-3">
             @if($product->image)
                 <img src="{{ Storage::url($product->image) }}" alt="{{ $product->name }}" loading="lazy" decoding="async"
-                    class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500">
+                    class="w-full h-full object-contain group-hover:scale-110 transition-transform duration-500">
             @else
                 <div class="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200">
                     <svg class="w-16 h-16 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
