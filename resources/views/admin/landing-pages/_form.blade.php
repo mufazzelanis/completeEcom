@@ -341,6 +341,7 @@
                 <input type="text" name="who_for_heading" value="{{ old('who_for_heading', $lp->who_for_heading ?? '') }}" placeholder="Section heading (defaults to 'Who Is This For')"
                     class="w-full mt-2 border border-gray-200 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
                 <p class="text-xs text-gray-400 mt-1">Each row can have its own uploaded icon image — pick a different file per row and every one is kept separate; leave any of them blank and that row just uses its emoji instead.</p>
+                <p class="text-xs text-gray-400 mt-1">Select a word and hit <strong>B</strong> (or type <code class="font-mono">**word**</code> yourself) to make it bold on the live page.</p>
             </div>
             <div class="space-y-2">
                 <template x-for="(row, i) in rows" :key="row._key">
@@ -350,6 +351,14 @@
                                 class="w-16 border border-gray-200 rounded-lg px-3 py-2 text-sm text-center focus:outline-none focus:ring-2 focus:ring-indigo-500">
                             <input type="text" name="wf_text[]" x-model="row.text" placeholder="e.g. Anyone managing diabetes"
                                 class="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            <button type="button" title="Bold the selected word (or wraps the whole text if nothing's selected)"
+                                @click="
+                                    const el = $event.target.previousElementSibling;
+                                    const s = el.selectionStart ?? row.text.length, e = el.selectionEnd ?? row.text.length;
+                                    row.text = row.text.slice(0, s) + '**' + row.text.slice(s, e) + '**' + row.text.slice(e);
+                                    $nextTick(() => { el.focus(); el.setSelectionRange(s + 2, e + 2); });
+                                "
+                                class="w-8 h-8 shrink-0 rounded-lg border border-gray-200 text-xs font-extrabold text-gray-500 hover:text-indigo-600 hover:border-indigo-300 transition">B</button>
                             <button type="button" @click="remove(i)" class="text-red-400 hover:text-red-600 p-2" aria-label="Remove"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
                         </div>
                         <div class="flex items-center gap-2 pl-0.5">

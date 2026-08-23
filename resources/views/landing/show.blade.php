@@ -194,7 +194,7 @@
                 @else
                     <span class="text-xl leading-none shrink-0">{{ $w['icon'] ?: '👤' }}</span>
                 @endif
-                <span class="text-sm text-gray-700 min-w-0 flex-1">{{ $w['text'] }}</span>
+                <span class="text-sm text-gray-700 min-w-0 flex-1">{!! bold_markup($w['text']) !!}</span>
             </div>
             @endforeach
         </div>

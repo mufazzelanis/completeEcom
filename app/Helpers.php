@@ -139,6 +139,24 @@ if (!function_exists('pixel_advanced_matching_data')) {
     }
 }
 
+if (!function_exists('bold_markup')) {
+    /**
+     * Lightweight **bold** markdown for plain <input type="text"> fields that need just one
+     * bit of emphasis (e.g. landing page "Who Is This For" rows) without pulling in a full
+     * rich-text editor. Escapes the whole string FIRST, then turns escaped **pairs** into
+     * <strong> — so the only HTML that can ever come out of admin-entered text is <strong>,
+     * never arbitrary markup (a stray "<script>" typed into the field stays inert text).
+     * Render with {!! bold_markup($text) !!}, never plain {{ $text }}.
+     */
+    function bold_markup(?string $text): string
+    {
+        if ($text === null || $text === '') {
+            return '';
+        }
+        return preg_replace('/\*\*(.+?)\*\*/s', '<strong>$1</strong>', e($text));
+    }
+}
+
 if (!function_exists('format_currency')) {
     function format_currency(float|int $amount): string
     {
