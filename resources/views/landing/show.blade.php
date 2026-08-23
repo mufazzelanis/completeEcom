@@ -99,11 +99,22 @@
                 <img src="{{ Storage::url($landingPage->hero_image) }}" alt="{{ $landingPage->title }}" class="relative w-full max-h-72 object-contain drop-shadow-xl">
             </div>
         @endif
-        @if($landingPage->hero_heading)
-            <h1 class="text-xl font-extrabold text-gray-900 leading-snug mb-2">{{ $landingPage->hero_heading }}</h1>
-        @endif
-        @if($landingPage->hero_subheading)
-            <p class="text-sm text-gray-500 mb-3">{{ $landingPage->hero_subheading }}</p>
+        @if($landingPage->hero_heading || $landingPage->hero_subheading)
+            {{-- A left-accent "callout" card rather than plain centered text — reads well
+                 whether the admin typed one punchy line or, as often happens, a whole
+                 paragraph pitch here: centered long paragraphs get a ragged, messy edge on
+                 both sides and no visual separation from the page background, which is what
+                 was making this look like an unstyled wall of text. Left-aligned inside a
+                 bordered card gives it proper typographic hierarchy and a designed feel
+                 regardless of how much text goes in. --}}
+            <div class="text-left bg-white rounded-r-2xl rounded-l-lg shadow-sm border border-gray-100 border-l-4 p-4 mb-4" style="border-left-color: {{ $primary }};">
+                @if($landingPage->hero_heading)
+                    <h1 class="text-lg font-bold text-gray-900 leading-relaxed">{{ $landingPage->hero_heading }}</h1>
+                @endif
+                @if($landingPage->hero_subheading)
+                    <p class="text-sm text-gray-500 leading-relaxed {{ $landingPage->hero_heading ? 'mt-2' : '' }}">{{ $landingPage->hero_subheading }}</p>
+                @endif
+            </div>
         @endif
         @if($landingPage->rating_value)
         <div class="flex items-center justify-center gap-1.5 mb-4 text-sm">
