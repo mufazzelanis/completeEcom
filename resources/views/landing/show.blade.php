@@ -398,19 +398,19 @@
             <form action="{{ route('landing.order', $landingPage) }}" method="POST" class="space-y-4">
                 @csrf
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">আপনার নাম <span class="text-red-500">*</span></label>
+                    <label class="block text-base font-medium text-gray-700 mb-1">আপনার নাম <span class="text-red-500">*</span></label>
                     <input type="text" name="name" value="{{ old('name') }}" required
                         class="w-full border border-gray-300 rounded-xl px-4 py-3 text-base focus:outline-none focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 transition">
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">মোবাইল নম্বর <span class="text-red-500">*</span></label>
+                    <label class="block text-base font-medium text-gray-700 mb-1">মোবাইল নম্বর <span class="text-red-500">*</span></label>
                     <input type="tel" inputmode="tel" name="phone" value="{{ old('phone') }}" required
                         class="w-full border border-gray-300 rounded-xl px-4 py-3 text-base focus:outline-none focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 transition">
                 </div>
 
                 @if($landingPage->collect_address)
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">
+                    <label class="block text-base font-medium text-gray-700 mb-1">
                         সম্পূর্ণ ঠিকানা @if($landingPage->require_address)<span class="text-red-500">*</span>@endif
                     </label>
                     <textarea name="address" rows="2" {{ $landingPage->require_address ? 'required' : '' }}
@@ -420,17 +420,17 @@
 
                 @if(filled($landingPage->delivery_zones))
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">ডেলিভারি এলাকা</label>
+                    <label class="block text-base font-medium text-gray-700 mb-2">ডেলিভারি এলাকা</label>
                     <div class="space-y-2">
                         @foreach($landingPage->delivery_zones as $i => $zone)
                         <label class="flex items-center justify-between border rounded-xl px-4 py-3 cursor-pointer transition"
                                :class="zoneIndex === {{ $i }} ? 'ring-2' : 'border-gray-200'"
                                :style="zoneIndex === {{ $i }} ? 'border-color:{{ $primary }};--tw-ring-color:{{ $primary }}' : ''">
-                            <span class="flex items-center gap-2 text-sm text-gray-700 min-w-0">
+                            <span class="flex items-center gap-2 text-base text-gray-700 min-w-0">
                                 <input type="radio" x-model.number="zoneIndex" value="{{ $i }}" class="text-orange-600 focus:ring-orange-500 shrink-0">
                                 <span class="min-w-0">{{ $zone['label'] }}</span>
                             </span>
-                            <span class="text-sm font-semibold text-gray-800 shrink-0">{{ $currencySymbol }}{{ number_format((float) $zone['charge'], $decimals) }}</span>
+                            <span class="text-base font-semibold text-gray-800 shrink-0">{{ $currencySymbol }}{{ number_format((float) $zone['charge'], $decimals) }}</span>
                         </label>
                         @endforeach
                     </div>
@@ -439,7 +439,7 @@
                 @endif
 
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">পরিমাণ</label>
+                    <label class="block text-base font-medium text-gray-700 mb-2">পরিমাণ</label>
                     <div class="flex items-center gap-3">
                         <button type="button" @click="qty = Math.max(1, qty - 1)" class="w-10 h-10 rounded-xl border border-gray-300 text-lg font-bold text-gray-600 hover:bg-gray-50 transition">−</button>
                         <span class="w-10 text-center font-semibold text-lg" x-text="qty"></span>
@@ -450,7 +450,7 @@
 
                 @foreach($landingPage->order_form_fields ?? [] as $field)
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">
+                    <label class="block text-base font-medium text-gray-700 mb-1">
                         {{ $field['label'] }} @if($field['required'])<span class="text-red-500">*</span>@endif
                     </label>
                     @if($field['type'] === 'textarea')
@@ -467,7 +467,7 @@
                     @elseif($field['type'] === 'checkbox')
                         <label class="flex items-center gap-2 cursor-pointer">
                             <input type="checkbox" name="custom[{{ $field['key'] }}]" value="1" {{ old('custom.' . $field['key']) ? 'checked' : '' }} class="rounded text-orange-600 w-5 h-5">
-                            <span class="text-sm text-gray-600">হ্যাঁ</span>
+                            <span class="text-base text-gray-600">হ্যাঁ</span>
                         </label>
                     @else
                         <input type="{{ $field['type'] }}" name="custom[{{ $field['key'] }}]" value="{{ old('custom.' . $field['key']) }}" {{ $field['required'] ? 'required' : '' }}
@@ -477,7 +477,7 @@
                 @endforeach
 
                 @if($landingPage->effective_price)
-                <div class="bg-gray-50 rounded-xl p-4 space-y-1.5 text-sm">
+                <div class="bg-gray-50 rounded-xl p-4 space-y-1.5 text-base">
                     <div class="flex justify-between text-gray-600">
                         <span>পণ্যের মূল্য</span>
                         <span x-text="'{{ $currencySymbol }}' + subtotal.toFixed({{ $decimals }})"></span>
