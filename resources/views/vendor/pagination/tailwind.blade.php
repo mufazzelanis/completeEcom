@@ -12,7 +12,11 @@
      never has to know which section it's in. --}}
 @if ($paginator->hasPages())
 <nav role="navigation" aria-label="{{ __('Pagination Navigation') }}" class="flex flex-col items-center gap-3">
-    @if ($paginator->total() > 0)
+    {{-- "Showing X to Y of Z results" — kept for admin/seller data lists (Orders, Products,
+         Users), where knowing the total record count is genuinely useful; dropped on the
+         customer-facing storefront/blog, where the page-number pills already say enough and
+         the precise count is just extra text nobody's asking for. --}}
+    @if ($paginator->total() > 0 && (request()->is('admin/*') || request()->is('seller/*')))
     <p class="text-xs text-gray-500 dark:text-gray-400">
         {{ __('Showing') }}
         <span class="font-medium text-gray-700 dark:text-gray-300">{{ $paginator->firstItem() }}</span>
