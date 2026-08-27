@@ -48,11 +48,33 @@ $radiusScale = [
     'xround' => ['rounded' => '16px',  'rounded-md' => '20px', 'rounded-lg' => '28px', 'rounded-xl' => '40px', 'rounded-2xl' => '48px'],
 ][$borderRadius] ?? null;
 
+// Every shadow SIZE the storefront actually uses (not just shadow-sm) gets a value per
+// intensity level, so picking "None"/"Strong" here visibly changes dropdowns, hero images,
+// and the sticky header too — not only the one class product cards happen to rest on.
+// 'soft' (the default) intentionally stays null/uncovered — that's Tailwind's own untouched
+// shadow scale, i.e. the site's current hand-tuned look, pixel-identical unless changed.
 $shadowScale = [
-    'none'   => 'none',
-    'soft'   => null, // Tailwind's own shadow-sm — nothing to override
-    'medium' => '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)',
-    'strong' => '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)',
+    'none' => [
+        'shadow-sm' => 'none', 'shadow' => 'none', 'shadow-md' => 'none',
+        'shadow-lg' => 'none', 'shadow-xl' => 'none', 'shadow-2xl' => 'none',
+    ],
+    'soft' => null,
+    'medium' => [
+        'shadow-sm' => '0 2px 4px 0 rgb(0 0 0 / 0.08)',
+        'shadow'    => '0 4px 8px -1px rgb(0 0 0 / 0.12), 0 2px 4px -2px rgb(0 0 0 / 0.08)',
+        'shadow-md' => '0 6px 10px -2px rgb(0 0 0 / 0.12), 0 3px 5px -3px rgb(0 0 0 / 0.08)',
+        'shadow-lg' => '0 12px 18px -4px rgb(0 0 0 / 0.14), 0 5px 8px -5px rgb(0 0 0 / 0.1)',
+        'shadow-xl' => '0 22px 30px -8px rgb(0 0 0 / 0.16), 0 10px 12px -8px rgb(0 0 0 / 0.1)',
+        'shadow-2xl'=> '0 30px 45px -10px rgb(0 0 0 / 0.2)',
+    ],
+    'strong' => [
+        'shadow-sm' => '0 3px 6px 0 rgb(0 0 0 / 0.12)',
+        'shadow'    => '0 6px 12px -1px rgb(0 0 0 / 0.18), 0 3px 6px -2px rgb(0 0 0 / 0.12)',
+        'shadow-md' => '0 10px 15px -3px rgb(0 0 0 / 0.18), 0 4px 6px -4px rgb(0 0 0 / 0.12)',
+        'shadow-lg' => '0 20px 25px -5px rgb(0 0 0 / 0.2), 0 8px 10px -6px rgb(0 0 0 / 0.14)',
+        'shadow-xl' => '0 30px 40px -8px rgb(0 0 0 / 0.24), 0 12px 16px -8px rgb(0 0 0 / 0.15)',
+        'shadow-2xl'=> '0 35px 60px -12px rgb(0 0 0 / 0.3)',
+    ],
 ][$shadowStyle] ?? null;
 
 $containerScale = [
@@ -238,7 +260,10 @@ $pageTwitterImage = trim($__env->yieldContent('twitter_image', $pageOgImage));
         @endforeach
         @endif
         @if($shadowScale)
-        .shadow-sm { box-shadow: {{ $shadowScale }} !important; }
+        @foreach($shadowScale as $shadowClass => $shadowValue)
+        .{{ $shadowClass }} { box-shadow: {{ $shadowValue }} !important; }
+        .hover\:{{ $shadowClass }}:hover { box-shadow: {{ $shadowValue }} !important; }
+        @endforeach
         @endif
         @if($containerScale)
         .max-w-\[1200px\] { max-width: {{ $containerScale }} !important; }
@@ -253,6 +278,13 @@ $pageTwitterImage = trim($__env->yieldContent('twitter_image', $pageOgImage));
         .bg-{{ $color }}-{{ $step }}.{{ $radiusClass }} { border-radius: {{ $buttonRadiusValue }} !important; }
         @endforeach
         @endforeach
+        @endforeach
+        {{-- The pink→fuchsia→orange gradient "Buy Now"/"Select Options" quick-action button
+             (partials.product-card, used on every product listing sitewide) has no plain
+             bg-{color}-{step} class for the loop above to match — it's brand-colored too,
+             just via a gradient, so it gets its own explicit selector here. --}}
+        @foreach($buttonRadiusClasses as $radiusClass)
+        .bg-gradient-to-r.from-pink-500.via-fuchsia-500.to-orange-400.{{ $radiusClass }} { border-radius: {{ $buttonRadiusValue }} !important; }
         @endforeach
         @endif
     </style>
@@ -285,7 +317,11 @@ $pageTwitterImage = trim($__env->yieldContent('twitter_image', $pageOgImage));
         .animate-marquee{animation:marquee 45s linear infinite}
         .marquee-pause:hover .animate-marquee{animation-play-state:paused}
     </style>
-    @if($customCss)<style>{{ $customCss }}</style>@endif
+    {{-- Raw, not escaped — this is admin-entered CSS source, not user content. {{ }} would
+         HTML-entity-escape every quote (font-family: 'Georgia' → &#039;Georgia&#039;), which
+         a <style> tag never decodes back — silently corrupting any real-world CSS that uses
+         quotes at all (which is most of it: quoted font names, content:"", url("...")). --}}
+    @if($customCss)<style>{!! $customCss !!}</style>@endif
     @if($gaId || $adsConversionId)
     <script async src="https://www.googletagmanager.com/gtag/js?id={{ $gaId ?: $adsConversionId }}"></script>
     <script>
@@ -847,6 +883,9 @@ async function toggleCartItem(productId, btn) {
 @endif
 
 @php $customJs = setting('custom_js', ''); @endphp
-@if($customJs)<script>{{ $customJs }}</script>@endif
+{{-- Raw, not escaped — same reasoning as Custom CSS above. Virtually all real JS uses
+     quotes, and {{ }}'s HTML-entity-escaping would corrupt every one of them into invalid
+     syntax the moment this admin pasted anything beyond a quote-free one-liner. --}}
+@if($customJs)<script>{!! $customJs !!}</script>@endif
 </body>
 </html>
