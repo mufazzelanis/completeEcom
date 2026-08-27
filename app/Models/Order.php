@@ -16,6 +16,7 @@ class Order extends Model
         'fraud_score', 'fraud_flags', 'is_fraud_flagged', 'fraud_checked_at',
         'points_awarded_at', 'points_redeemed', 'points_discount_value',
         'landing_page_id', 'landing_page_data',
+        'source', 'created_by',
     ];
 
     protected $casts = [
@@ -55,6 +56,13 @@ class Order extends Model
     public function landingPage()
     {
         return $this->belongsTo(LandingPage::class);
+    }
+
+    // Which admin typed this order in by hand (source === 'phone') — null for every
+    // customer-placed order (web checkout, guest checkout, landing pages).
+    public function createdBy()
+    {
+        return $this->belongsTo(User::class, 'created_by');
     }
 
     public function items()

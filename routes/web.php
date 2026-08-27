@@ -314,6 +314,14 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     // Tags
     Route::resource('tags', AdminTagController::class)->except(['show']);
     Route::post('tags/quick-create', [AdminTagController::class, 'quickCreate'])->name('tags.quick-create');
+    // Manual/phone order entry — MUST be registered before the orders resource below:
+    // that resource's 'show' route is GET orders/{order}, a wildcard that would otherwise
+    // swallow "orders/create" first (matching {order} = "create") and this route would
+    // never be reached. Named to match resource conventions (orders.create/orders.store)
+    // so the "Create Order" link/form work exactly like every other admin resource's
+    // create+store pair, even though the resource itself only registers index/show/update.
+    Route::get('orders/create', [AdminOrderController::class, 'create'])->name('orders.create');
+    Route::post('orders', [AdminOrderController::class, 'store'])->name('orders.store');
     Route::resource('orders', AdminOrderController::class)->only(['index', 'show', 'update']);
     Route::delete('orders/{order}', [AdminOrderController::class, 'destroy'])->middleware('permission:orders.delete')->name('orders.destroy');
     Route::patch('orders/{order}/status', [AdminOrderController::class, 'updateStatus'])->name('orders.status');

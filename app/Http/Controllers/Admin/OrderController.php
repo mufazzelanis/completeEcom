@@ -251,9 +251,121 @@ class OrderController extends Controller
         );
     }
 
-    public function create() {}
+    /**
+     * Manual/phone order entry — for a customer who called or messaged in rather than
+     * checking out on the website. Same Order/OrderItem shape as a normal web order (same
+     * status pipeline, same invoice, same stock behavior on cancel via OrderStockService),
+     * just entered by an admin instead of the customer, and flagged source='phone' so it's
+     * distinguishable in the orders list from actual web traffic.
+     */
+    public function create()
+    {
+        // Simple products only — variants/bundles need their own combination/component
+        // picker UI that this quick single-line-per-product form doesn't have room for
+        // (the same scope boundary the landing page order flow already draws).
+        $products = \App\Models\Product::query()
+            ->where('is_active', true)
+            ->where('type', 'simple')
+            ->orderBy('name')
+            ->get(['id', 'name', 'sku', 'price', 'sale_price', 'stock']);
 
-    public function store(Request $request) {}
+        $paymentMethods = \App\Models\PaymentMethod::where('is_active', true)->orderBy('sort_order')->get(['name', 'slug']);
+
+        return view('admin.orders.create', compact('products', 'paymentMethods'));
+    }
+
+    public function store(Request $request)
+    {
+        $validated = $request->validate([
+            'customer_id'      => 'nullable|exists:users,id',
+            'shipping_name'    => 'required|string|max:255',
+            'shipping_phone'   => 'required|string|max:30',
+            'shipping_address' => 'nullable|string|max:500',
+            'shipping_city'    => 'nullable|string|max:100',
+            'product_id'       => 'required|array|min:1',
+            'product_id.*'     => 'required|exists:products,id',
+            'quantity'         => 'required|array|min:1',
+            'quantity.*'       => 'required|integer|min:1|max:999',
+            'price'            => 'required|array|min:1',
+            'price.*'          => 'required|numeric|min:0',
+            'shipping_charge'  => 'nullable|numeric|min:0',
+            'discount'         => 'nullable|numeric|min:0',
+            'payment_method'   => 'required|string|max:50',
+            'payment_status'   => 'required|in:pending,paid',
+            'status'           => 'required|in:pending,processing,shipped,delivered,cancelled',
+            'notes'            => 'nullable|string|max:1000',
+        ]);
+
+        // Stock check up front — same reasoning as the landing page order flow: fail with
+        // a clear message before touching the database, rather than decrementing some
+        // lines and not others if one product runs short partway through the loop below.
+        $products = \App\Models\Product::whereIn('id', $validated['product_id'])->get()->keyBy('id');
+        foreach ($validated['product_id'] as $i => $productId) {
+            $product = $products->get($productId);
+            $qty = (int) $validated['quantity'][$i];
+            if (! $product || $qty > $product->available_stock) {
+                return back()->withInput()->withErrors([
+                    "quantity.$i" => ($product?->name ?? 'This product') . ' — only ' . max(0, $product?->available_stock ?? 0) . ' in stock.',
+                ]);
+            }
+        }
+
+        $shippingCharge = (float) ($validated['shipping_charge'] ?? 0);
+        $discount = (float) ($validated['discount'] ?? 0);
+
+        $order = \Illuminate\Support\Facades\DB::transaction(function () use ($validated, $products, $shippingCharge, $discount, $request) {
+            $subtotal = 0;
+            $lines = [];
+            foreach ($validated['product_id'] as $i => $productId) {
+                $qty = (int) $validated['quantity'][$i];
+                $unitPrice = (float) $validated['price'][$i];
+                $lineSubtotal = round($unitPrice * $qty, 2);
+                $subtotal += $lineSubtotal;
+                $lines[] = ['product' => $products->get($productId), 'qty' => $qty, 'price' => $unitPrice, 'subtotal' => $lineSubtotal];
+            }
+            $total = max(0, round($subtotal + $shippingCharge - $discount, 2));
+
+            $order = Order::create([
+                'user_id'          => $validated['customer_id'] ?? null,
+                'order_number'     => Order::generateOrderNumber(),
+                'status'           => $validated['status'],
+                'subtotal'         => $subtotal,
+                'discount'         => $discount,
+                'shipping'         => $shippingCharge,
+                'tax'              => 0,
+                'total'            => $total,
+                'payment_method'   => $validated['payment_method'],
+                'payment_status'   => $validated['payment_status'],
+                'shipping_name'    => $validated['shipping_name'],
+                'shipping_phone'   => $validated['shipping_phone'],
+                'shipping_address' => $validated['shipping_address'] ?? null,
+                'shipping_city'    => $validated['shipping_city'] ?? null,
+                'notes'            => $validated['notes'] ?? null,
+                'source'           => 'phone',
+                'created_by'       => $request->user()->id,
+            ]);
+
+            foreach ($lines as $line) {
+                \App\Models\OrderItem::create([
+                    'order_id'     => $order->id,
+                    'product_id'   => $line['product']->id,
+                    'product_name' => $line['product']->name,
+                    'price'        => $line['price'],
+                    'quantity'     => $line['qty'],
+                    'subtotal'     => $line['subtotal'],
+                ]);
+                $line['product']->decrement('stock', $line['qty']);
+            }
+
+            return $order;
+        });
+
+        AuditLogger::log('order.manual_create', "Manually created order #{$order->order_number} ({$order->shipping_name}, {$order->shipping_phone})", $order, [
+            'total' => $order->total, 'items' => count($validated['product_id']),
+        ]);
+
+        return redirect()->route('admin.orders.show', $order)->with('success', 'Order created.');
+    }
 
     public function edit(string $id) {}
 }

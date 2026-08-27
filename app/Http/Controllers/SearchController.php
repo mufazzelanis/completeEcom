@@ -70,12 +70,16 @@ class SearchController extends Controller
         ->limit(5)
         ->get(['id', 'order_number', 'status', 'total', 'shipping_name']);
 
+        // Phone included both in the search and the returned columns — an admin creating a
+        // manual/phone order (Admin > Orders > Create Order) is usually looking a customer
+        // up by the number they're calling from, not their name or email.
         $customers = User::where(fn($qb) => $qb
             ->where('name', 'like', "%$q%")
             ->orWhere('email', 'like', "%$q%")
+            ->orWhere('phone', 'like', "%$q%")
         )
         ->limit(5)
-        ->get(['id', 'name', 'email', 'role']);
+        ->get(['id', 'name', 'email', 'phone', 'role']);
 
         $categories = Category::where('name', 'like', "%$q%")
             ->limit(4)
@@ -102,8 +106,10 @@ class SearchController extends Controller
                 'url'          => route('admin.orders.show', $o->id),
             ]),
             'customers' => $customers->map(fn($u) => [
+                'id'    => $u->id,
                 'name'  => $u->name,
                 'email' => $u->email,
+                'phone' => $u->phone,
                 'role'  => $u->role,
                 'url'   => route('admin.users.edit', $u->id),
             ]),
