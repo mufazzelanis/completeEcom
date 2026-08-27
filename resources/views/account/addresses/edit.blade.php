@@ -13,7 +13,7 @@
 <div class="bg-white rounded-2xl shadow-sm p-6 max-w-2xl">
     <form action="{{ route('account.addresses.update', $address) }}" method="POST" class="space-y-4">
         @csrf @method('PUT')
-        <div class="grid grid-cols-2 gap-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Full Name <span class="text-red-500">*</span></label>
                 <input type="text" name="name" value="{{ old('name', $address->name) }}" required

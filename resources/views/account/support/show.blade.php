@@ -11,8 +11,8 @@
     <span class="text-xs px-2 py-0.5 rounded-full font-semibold flex-shrink-0 {{ $ticket->status_badge }}">{{ ucfirst($ticket->status) }}</span>
 </div>
 
-<div class="grid grid-cols-3 gap-5">
-    <div class="col-span-2">
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+    <div class="lg:col-span-2">
         {{-- Messages --}}
         <div class="space-y-4 mb-5">
             @foreach($ticket->messages as $msg)

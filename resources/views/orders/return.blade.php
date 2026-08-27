@@ -52,7 +52,7 @@
             {{-- Refund type --}}
             <div class="mb-6">
                 <label class="block text-sm font-semibold text-gray-700 mb-2">Preferred Resolution</label>
-                <div class="grid grid-cols-3 gap-3" x-data="{ type: '{{ old('refund_type', 'refund') }}' }">
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3" x-data="{ type: '{{ old('refund_type', 'refund') }}' }">
                     @foreach(['refund' => 'Cash Refund', 'exchange' => 'Exchange', 'store_credit' => 'Store Credit'] as $val => $label)
                     <label class="flex flex-col items-center p-3 border-2 rounded-xl cursor-pointer transition"
                            :class="type === '{{ $val }}' ? 'border-indigo-500 bg-indigo-50' : 'border-gray-200 hover:border-gray-300'">

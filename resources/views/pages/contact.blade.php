@@ -8,7 +8,7 @@
         @if($page?->excerpt)<p class="text-gray-500 mt-2">{{ $page->excerpt }}</p>@endif
     </div>
 
-    <div class="grid grid-cols-2 gap-10">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-10">
         {{-- Contact Form --}}
         <div class="bg-white rounded-2xl shadow-sm p-8">
             @if(session('success'))
