@@ -1,3 +1,89 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/*
+ * ── Site-wide dark mode retrofit ─────────────────────────────────────────────
+ * Dark mode (Tailwind's `darkMode: 'class'`, toggled via the theme switcher in
+ * both layouts/app.blade.php and layouts/admin.blade.php, which flips `.dark`
+ * on <html>) was only ever hand-wired into the layout shells — the header,
+ * sidebar, and a handful of pages. Every other template across the admin
+ * panel and storefront (products, orders, forms, cards — hundreds of files)
+ * was written with plain light-mode classes like `bg-white`/`text-gray-700`
+ * and no `dark:` variant at all. Toggling dark mode there did nothing but
+ * darken the page background behind still-bright-white content — which reads
+ * as "broken", not "dark mode."
+ *
+ * Retrofitting an explicit `dark:` variant onto every one of those thousands
+ * of individual class instances, file by file, isn't practical. Instead this
+ * block reopens Tailwind's own generated selectors for the handful of gray/
+ * white utility classes that make up the overwhelming majority of every
+ * surface, text color, and border in the app, and gives them a dark-mode
+ * value directly — so a plain `bg-white` card, anywhere in the codebase,
+ * with zero markup changes, is already dark-mode-correct.
+ *
+ * `@layer base` is what makes this safe to combine with the ~40 templates
+ * that DO already have hand-placed `dark:bg-gray-900`-style classes: Tailwind
+ * always emits `@layer base` before `@layer utilities` in the final
+ * stylesheet regardless of source order, so any element's own explicit
+ * `dark:` utility (a `utilities`-layer rule) naturally wins over these
+ * fallbacks for that one property, while everything else still gets covered.
+ *
+ * The one real trade-off: a few *decorative* light-on-color elements that
+ * are meant to read as "a white pill on a colorful banner image" regardless
+ * of site theme (e.g. a hero banner's CTA button) get swept up by the same
+ * `bg-white`/`text-gray-900` rule and darken too. That's an acceptable
+ * default for a blanket fix — flag any specific spot that looks wrong and
+ * it can be carved out with its own selector.
+ */
+@layer base {
+    /* Surfaces — from lightest to darkest in light mode, kept in the same
+       relative order (each a bit darker than the last) in dark mode too. */
+    html.dark .bg-white       { background-color: theme('colors.gray.900'); }
+    html.dark .bg-gray-50     { background-color: theme('colors.gray.800'); }
+    html.dark .bg-gray-100    { background-color: theme('colors.gray.950'); }
+    html.dark .bg-gray-200    { background-color: theme('colors.gray.700'); }
+    html.dark .hover\:bg-gray-50:hover  { background-color: theme('colors.gray.800'); }
+    html.dark .hover\:bg-gray-100:hover { background-color: theme('colors.gray.700'); }
+
+    /* Text — light mode's darkest grays become the lightest text, and so on
+       down the scale, so headings/body copy/muted captions keep the same
+       relative contrast hierarchy they have in light mode. */
+    html.dark .text-gray-900 { color: theme('colors.gray.100'); }
+    html.dark .text-gray-800 { color: theme('colors.gray.200'); }
+    html.dark .text-gray-700 { color: theme('colors.gray.300'); }
+    html.dark .text-gray-600 { color: theme('colors.gray.400'); }
+    html.dark .text-gray-500 { color: theme('colors.gray.400'); }
+    html.dark .text-gray-400 { color: theme('colors.gray.500'); }
+
+    /* Borders / dividers */
+    html.dark .border-gray-100  { border-color: theme('colors.gray.800'); }
+    html.dark .border-gray-200  { border-color: theme('colors.gray.700'); }
+    html.dark .border-gray-300  { border-color: theme('colors.gray.600'); }
+    html.dark .divide-gray-100 > :not([hidden]) ~ :not([hidden]) { border-color: theme('colors.gray.800'); }
+
+    /* Brand-tint highlight backgrounds (active nav items, hover states on
+       cards/dropdown rows) — kept as a translucent tint of the same orange
+       rather than a flat dark gray, so it still visibly reads as "the
+       highlighted one," not just "not-hovered." */
+    html.dark .bg-orange-50         { background-color: rgb(234 88 12 / 15%); }
+    html.dark .hover\:bg-orange-50:hover { background-color: rgb(234 88 12 / 15%); }
+
+    /* Plain form fields almost never carry an explicit bg-white class — text
+       inputs/selects/textareas just inherit the browser's own white default,
+       which this retrofit's class-based rules above can't touch. Without
+       this, every form on the site (checkout, every admin CRUD screen, the
+       landing page builder) would still show glaring white boxes in dark
+       mode regardless of everything above. */
+    html.dark input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]),
+    html.dark select,
+    html.dark textarea {
+        background-color: theme('colors.gray.900');
+        color: theme('colors.gray.100');
+        border-color: theme('colors.gray.700');
+    }
+    html.dark input::placeholder,
+    html.dark textarea::placeholder {
+        color: theme('colors.gray.500');
+    }
+}

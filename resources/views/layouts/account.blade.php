@@ -13,10 +13,43 @@ $cartCount = \App\Models\Cart::where('user_id', auth()->id())->sum('quantity');
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'My Account') - {{ $siteName }}</title>
     @if($faviconUrl = setting_file_url('favicon'))<link rel="icon" href="{{ $faviconUrl }}">@endif
+    {{-- Same pre-paint dark-mode detection + 'site-theme' localStorage key as
+         layouts/app.blade.php, so a customer's theme choice carries over consistently
+         between the main storefront and Account rather than this separate layout always
+         starting back at system/light. --}}
+    <script>
+        (function () {
+            var stored = localStorage.getItem('site-theme');
+            var adminDefault = {{ Js::from(setting('dark_mode_default', 'system')) }};
+            var isDark;
+            if (stored) {
+                isDark = stored === 'dark';
+            } else if (adminDefault === 'dark') {
+                isDark = true;
+            } else if (adminDefault === 'light') {
+                isDark = false;
+            } else {
+                isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            }
+            document.documentElement.classList.toggle('dark', isDark);
+        })();
+    </script>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <script>
+        document.addEventListener('alpine:init', () => {
+            Alpine.store('theme', {
+                dark: document.documentElement.classList.contains('dark'),
+                toggle() {
+                    this.dark = !this.dark;
+                    localStorage.setItem('site-theme', this.dark ? 'dark' : 'light');
+                    document.documentElement.classList.toggle('dark', this.dark);
+                },
+            });
+        });
+    </script>
     <style>[x-cloak]{display:none!important}</style>
 </head>
-<body class="bg-gray-50 font-sans antialiased pb-[calc(4rem_+_env(safe-area-inset-bottom))] md:pb-0" x-data="{ menuOpen: false }">
+<body class="bg-gray-50 dark:bg-gray-950 font-sans antialiased transition-colors pb-[calc(4rem_+_env(safe-area-inset-bottom))] md:pb-0" x-data="{ menuOpen: false }">
 
 {{-- Top Nav — same logo size as the main storefront header (partials.storefront.header-logo)
      so switching into Account doesn't visibly shrink the branding down to a different scale. --}}
@@ -48,6 +81,14 @@ $cartCount = \App\Models\Cart::where('user_id', auth()->id())->sum('quantity');
         </a>
 
         <div class="flex items-center gap-3">
+            {{-- Theme Toggle — same $store.theme as the main storefront header
+                 (partials.storefront.header-actions), sharing the 'site-theme' key. --}}
+            <button @click="$store.theme.toggle()" type="button"
+                class="p-1.5 rounded-lg text-gray-500 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition"
+                :aria-label="$store.theme.dark ? 'Switch to light mode' : 'Switch to dark mode'">
+                <svg x-show="!$store.theme.dark" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
+                <svg x-show="$store.theme.dark" x-cloak class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+            </button>
             <a href="{{ route('account.notifications') }}" class="relative text-gray-500 hover:text-orange-600 transition">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
                 @if($unread > 0)<span class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center font-bold">{{ $unread > 9 ? '9+' : $unread }}</span>@endif
