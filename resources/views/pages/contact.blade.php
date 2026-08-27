@@ -53,7 +53,7 @@
         {{-- Info --}}
         <div class="space-y-6">
             @if($page?->content)
-            <div class="prose prose-gray text-gray-600 text-sm">
+            <div class="prose prose-gray dark:prose-invert text-gray-600 text-sm">
                 {!! $page->content !!}
             </div>
             @else

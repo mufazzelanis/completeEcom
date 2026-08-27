@@ -17,7 +17,7 @@
     @endif
     <h1 class="text-3xl font-bold text-gray-900 mb-6">{{ $page->title }}</h1>
     @if($page->excerpt)<p class="text-lg text-gray-600 mb-8 leading-relaxed">{{ $page->excerpt }}</p>@endif
-    <div class="prose prose-gray max-w-none text-gray-700 leading-relaxed">
+    <div class="prose prose-gray dark:prose-invert max-w-none text-gray-700 leading-relaxed">
         {!! $page->content !!}
     </div>
 </div>

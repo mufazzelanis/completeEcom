@@ -467,7 +467,7 @@
             </div>
 
             <div x-show="tab === 'description'">
-                <div class="prose prose-sm max-w-none text-gray-600">
+                <div class="prose prose-sm dark:prose-invert max-w-none text-gray-600">
                     {!! $product->description ?? 'No description available.' !!}
                 </div>
             </div>
