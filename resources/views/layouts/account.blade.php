@@ -16,32 +16,33 @@ $cartCount = \App\Models\Cart::where('user_id', auth()->id())->sum('quantity');
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <style>[x-cloak]{display:none!important}</style>
 </head>
-<body class="bg-gray-50 font-sans antialiased" x-data="{ menuOpen: false }">
+<body class="bg-gray-50 font-sans antialiased pb-[calc(4rem_+_env(safe-area-inset-bottom))] md:pb-0" x-data="{ menuOpen: false }">
 
-{{-- Top Nav --}}
+{{-- Top Nav — same logo size as the main storefront header (partials.storefront.header-logo)
+     so switching into Account doesn't visibly shrink the branding down to a different scale. --}}
 <nav class="bg-white shadow-sm sticky top-0 z-50 border-b border-gray-100">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
         <a href="{{ route('home') }}" class="flex items-center gap-2">
             <div class="md:hidden flex items-center gap-2">
                 @if($logoMobileUrl)
-                    <img src="{{ $logoMobileUrl }}" alt="{{ $siteName }}" class="h-7 max-w-[120px] object-contain">
+                    <img src="{{ $logoMobileUrl }}" alt="{{ $siteName }}" class="h-11 max-w-[170px] object-contain">
                 @elseif($logoUrl)
-                    <img src="{{ $logoUrl }}" alt="{{ $siteName }}" class="h-7 max-w-[120px] object-contain">
+                    <img src="{{ $logoUrl }}" alt="{{ $siteName }}" class="h-11 max-w-[170px] object-contain">
                 @else
-                    <div class="w-7 h-7 bg-orange-500 rounded-lg flex items-center justify-center">
-                        <span class="text-white font-bold text-sm">{{ strtoupper(substr($siteName, 0, 1)) }}</span>
+                    <div class="w-9 h-9 bg-orange-500 rounded-lg flex items-center justify-center">
+                        <span class="text-white font-bold text-base">{{ strtoupper(substr($siteName, 0, 1)) }}</span>
                     </div>
-                    <span class="font-bold text-orange-600">{{ $siteName }}</span>
+                    <span class="font-bold text-lg text-orange-600">{{ $siteName }}</span>
                 @endif
             </div>
             <div class="hidden md:flex items-center gap-2">
                 @if($logoUrl)
-                    <img src="{{ $logoUrl }}" alt="{{ $siteName }}" class="h-7 max-w-[120px] object-contain">
+                    <img src="{{ $logoUrl }}" alt="{{ $siteName }}" class="h-11 max-w-[170px] object-contain">
                 @else
-                    <div class="w-7 h-7 bg-orange-500 rounded-lg flex items-center justify-center">
-                        <span class="text-white font-bold text-sm">{{ strtoupper(substr($siteName, 0, 1)) }}</span>
+                    <div class="w-9 h-9 bg-orange-500 rounded-lg flex items-center justify-center">
+                        <span class="text-white font-bold text-base">{{ strtoupper(substr($siteName, 0, 1)) }}</span>
                     </div>
-                    <span class="font-bold text-orange-600">{{ $siteName }}</span>
+                    <span class="font-bold text-lg text-orange-600">{{ $siteName }}</span>
                 @endif
             </div>
         </a>
@@ -247,6 +248,14 @@ $cartCount = \App\Models\Cart::where('user_id', auth()->id())->sum('quantity');
 
     </div>
 </div>
+
+{{-- Same global bottom tab bar as the rest of the storefront (layouts/app.blade.php) — this
+     is its own separate layout (not an @extends of layouts.app), so without this the tab bar
+     would vanish the moment a customer steps into Account, which is exactly the "why does
+     the bottom bar disappear here" inconsistency this fixes. The account section's own
+     avatar-triggered bottom-sheet menu above still handles the deeper account sub-navigation
+     (Profile, Addresses, Returns, etc.) — the two are complementary, not a duplicate. --}}
+@include('partials.storefront.bottom-nav')
 
 </body>
 </html>
