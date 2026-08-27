@@ -98,6 +98,11 @@
                 {!! $blogPost->content !!}
             </div>
 
+            {{-- Kept below the article body (not stacked with the AdSense in-article unit
+                 above the content) so both, if enabled together, don't sit right on top of
+                 each other. --}}
+            @include('partials.adsterra-unit', ['code' => setting('adsterra_code_article')])
+
             {{-- Share — a small but expected "real blog" affordance, and a mild positive
                  signal for anyone (including an ad-network reviewer) judging whether this
                  reads as a genuine content site. Native Web Share on mobile where supported,
@@ -125,6 +130,8 @@
 
         {{-- Sidebar --}}
         <aside class="space-y-5">
+            @include('partials.adsterra-unit', ['code' => setting('adsterra_code_sidebar')])
+
             @if(isset($related) && $related->count())
             <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-sm p-5">
                 <h3 class="font-semibold text-gray-800 mb-4">Related Posts</h3>

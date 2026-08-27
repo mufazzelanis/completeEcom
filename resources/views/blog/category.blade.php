@@ -40,6 +40,11 @@
                     @include('partials.adsense-unit', ['slot' => setting('adsense_slot_infeed')])
                 </div>
                 @endif
+                @if($loop->iteration === 8)
+                <div class="sm:col-span-2">
+                    @include('partials.adsterra-unit', ['code' => setting('adsterra_code_infeed')])
+                </div>
+                @endif
                 @empty
                 <div class="sm:col-span-2 py-16 text-center text-gray-400">No posts in this category yet.</div>
                 @endforelse

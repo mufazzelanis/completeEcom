@@ -52,6 +52,42 @@
     </div>
 </div>
 
+<div class="bg-white rounded-xl shadow-sm border p-6 space-y-4 mt-6">
+    <h2 class="text-base font-semibold text-gray-900 pb-2 border-b">Adsterra</h2>
+    <p class="text-xs text-gray-400 -mt-2">
+        Adsterra ships several ad formats (Banner, Native, Social Bar…), each with its own
+        snippet shape — rather than one fixed field, paste the <strong>entire code block</strong>
+        Adsterra gives you for each placement below (the <code class="font-mono">&lt;script&gt;</code> tags and all).
+        Leave any of them blank to skip that spot. Stick to Banner/Native formats here — a
+        popunder or direct-link snippet pasted into a placement will fire that popup/redirect
+        the moment the page loads, on a page still carrying your store's branding.
+    </p>
+    <label class="flex items-center gap-2 cursor-pointer">
+        <input type="hidden" name="adsterra_enabled" value="0">
+        <input type="checkbox" name="adsterra_enabled" value="1" class="rounded text-orange-600"
+               @checked(setting('adsterra_enabled', '0') == '1')>
+        <span class="text-sm text-gray-700">Enable Adsterra on the Blog</span>
+    </label>
+    <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">In-Feed Code <span class="text-gray-400 font-normal">(further down the Blog listing, separate from the AdSense in-feed slot above)</span></label>
+        <textarea name="adsterra_code_infeed" rows="4"
+                  class="w-full border rounded-lg px-3 py-2 text-xs font-mono focus:ring-2 focus:ring-orange-500"
+                  placeholder="<script>...</script>">{{ setting('adsterra_code_infeed', '') }}</textarea>
+    </div>
+    <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">In-Article Code <span class="text-gray-400 font-normal">(end of a post, after the content)</span></label>
+        <textarea name="adsterra_code_article" rows="4"
+                  class="w-full border rounded-lg px-3 py-2 text-xs font-mono focus:ring-2 focus:ring-orange-500"
+                  placeholder="<script>...</script>">{{ setting('adsterra_code_article', '') }}</textarea>
+    </div>
+    <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Sidebar Code <span class="text-gray-400 font-normal">(post page sidebar, above Related Posts)</span></label>
+        <textarea name="adsterra_code_sidebar" rows="4"
+                  class="w-full border rounded-lg px-3 py-2 text-xs font-mono focus:ring-2 focus:ring-orange-500"
+                  placeholder="<script>...</script>">{{ setting('adsterra_code_sidebar', '') }}</textarea>
+    </div>
+</div>
+
 <div class="flex justify-end mt-6">
     <button type="submit" class="px-6 py-2 bg-orange-600 text-white rounded-lg text-sm font-semibold hover:bg-orange-700 transition">Save Ad Settings</button>
 </div>
