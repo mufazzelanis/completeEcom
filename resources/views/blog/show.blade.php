@@ -87,6 +87,8 @@
             </div>
             @endif
 
+            @include('partials.adsense-unit', ['slot' => setting('adsense_slot_article')])
+
             {{-- dark:prose-invert — Tailwind Typography's own scoped color system (its own
                  `:where(p),:where(h2)` etc. selectors) isn't touched by the site-wide dark-mode
                  retrofit in app.css, which only targets plain utility classes. Without this,
@@ -150,6 +152,8 @@
                 </a>
             </div>
             @endif
+
+            @include('partials.adsense-unit', ['slot' => setting('adsense_slot_sidebar')])
         </aside>
     </div>
 </div>

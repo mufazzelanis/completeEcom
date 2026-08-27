@@ -138,6 +138,7 @@ $adminNavIndex = [
     ['label' => 'SEO Settings', 'url' => route('admin.settings.show', 'seo'), 'group' => 'Settings'],
     ['label' => 'Facebook Pixel Settings', 'url' => route('admin.settings.show', 'facebook_pixel'), 'group' => 'Settings'],
     ['label' => 'Google Analytics & Ads Settings', 'url' => route('admin.settings.show', 'google_ads'), 'group' => 'Settings'],
+    ['label' => 'Advertisements Settings', 'url' => route('admin.settings.show', 'ads'), 'group' => 'Settings'],
     ['label' => 'Social Media Settings', 'url' => route('admin.settings.show', 'social'), 'group' => 'Settings'],
     ['label' => 'Page Settings', 'url' => route('admin.settings.show', 'pages'), 'group' => 'Settings'],
     ['label' => 'Theme & Design Settings', 'url' => route('admin.settings.show', 'theme'), 'group' => 'Settings'],
