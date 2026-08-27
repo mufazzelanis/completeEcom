@@ -150,7 +150,11 @@
         ],
     ];
 @endphp
-<div class="bg-white mt-4">
+{{-- mx-3/rounded/shadow only below md — on mobile this floats as a distinct card on the
+     gray page background instead of a flat, edge-to-edge white band butting up against a
+     hard gray gap (what made the feed look "unfinished" rather than app-like); desktop's
+     look is untouched (mx-0/rounded-none/shadow-none resets it back to full-bleed there). --}}
+<div class="mx-3 md:mx-0 mt-3 md:mt-4 bg-white dark:bg-gray-900 rounded-2xl md:rounded-none shadow-sm md:shadow-none">
     <div class="max-w-[1200px] mx-auto px-4 py-3">
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
             @foreach($highlights as $f)
@@ -187,7 +191,7 @@
 
 {{-- ═══════════ FLASH SALE ═══════════ --}}
 @if($flashSale && $flashSaleProducts->count() > 0)
-<div class="bg-white mt-4" x-data="{
+<div class="mx-3 md:mx-0 mt-3 md:mt-4 bg-white dark:bg-gray-900 rounded-2xl md:rounded-none shadow-sm md:shadow-none" x-data="{
     hours: 0, minutes: 0, seconds: 0,
     end: '{{ $flashSale->ends_at->toIso8601String() }}',
     init() {
@@ -235,7 +239,7 @@
 
 {{-- ═══════════ CATEGORIES GRID ═══════════ --}}
 @if($categories->count() > 0)
-<div class="bg-white mt-4">
+<div class="mx-3 md:mx-0 mt-3 md:mt-4 bg-white dark:bg-gray-900 rounded-2xl md:rounded-none shadow-sm md:shadow-none">
     <div class="max-w-[1200px] mx-auto px-4 py-6">
         <div class="flex items-center justify-between mb-5">
             <h2 class="text-lg font-extrabold text-gray-900">Categories</h2>
@@ -249,7 +253,11 @@
                         @if($category->image)
                             <img src="{{ Storage::url($category->image) }}" alt="{{ $category->name }}" loading="lazy" decoding="async" class="w-full h-full object-cover">
                         @else
-                            <span class="text-orange-700 font-extrabold text-xl">{{ strtoupper(substr($category->name, 0, 2)) }}</span>
+                            {{-- A generic tag icon (not two-letter initials) reads as an
+                                 intentional, uniform icon set — initials look like a raw
+                                 unstyled fallback the moment more than a couple of
+                                 categories are missing a photo. --}}
+                            <svg class="w-7 h-7 md:w-8 md:h-8 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
                         @endif
                     </div>
                     <p class="text-[10px] md:text-xs font-semibold text-gray-700 text-center leading-tight group-hover:text-orange-600 transition line-clamp-2">{{ $category->name }}</p>
@@ -283,7 +291,7 @@
 {{-- ═══════════ HOMEPAGE PRODUCT SECTIONS (admin-managed) ═══════════ --}}
 @foreach($homeSections as $entry)
     @php $sec = $entry['section']; $totalCount = $entry['totalCount']; @endphp
-    <div class="mt-4 {{ $sec->theme === 'sale' ? 'bg-gradient-to-r from-red-500 to-orange-500' : 'bg-white' }}" x-data="{ expanded: false }">
+    <div class="mx-3 md:mx-0 mt-3 md:mt-4 rounded-2xl md:rounded-none shadow-sm md:shadow-none {{ $sec->theme === 'sale' ? 'bg-gradient-to-r from-red-500 to-orange-500' : 'bg-white dark:bg-gray-900' }}" x-data="{ expanded: false }">
         <div class="max-w-[1200px] mx-auto px-4 py-6">
             <div class="flex items-center justify-between mb-5">
                 <div class="flex items-center gap-3">
@@ -334,7 +342,7 @@ $reviewThemes = [
     ['bg' => 'from-purple-50 to-fuchsia-100', 'ring' => 'ring-purple-200', 'avatar' => 'from-purple-500 to-fuchsia-500', 'quote' => 'text-purple-300', 'star' => 'text-purple-500', 'bar' => 'from-purple-400 to-fuchsia-500'],
 ];
 @endphp
-<div class="mt-4 py-8 bg-gradient-to-r from-indigo-50 via-white to-orange-50 overflow-hidden">
+<div class="mx-3 md:mx-0 mt-3 md:mt-4 py-8 bg-gradient-to-r from-indigo-50 via-white to-orange-50 overflow-hidden rounded-2xl md:rounded-none shadow-sm md:shadow-none">
     <div class="max-w-[1200px] mx-auto px-4 mb-6 text-center">
         <h2 class="text-lg md:text-2xl font-extrabold bg-gradient-to-r from-pink-500 via-orange-500 to-indigo-500 bg-clip-text text-transparent inline-block">What Our Customers Say</h2>
         <p class="text-gray-500 text-xs md:text-sm mt-1">Real reviews from real, happy buyers</p>
@@ -374,7 +382,7 @@ $reviewThemes = [
 
 {{-- ═══════════ BRANDS ═══════════ --}}
 @if($brands->count() > 0)
-<div class="bg-white mt-4">
+<div class="mx-3 md:mx-0 mt-3 md:mt-4 bg-white dark:bg-gray-900 rounded-2xl md:rounded-none shadow-sm md:shadow-none">
     <div class="max-w-[1200px] mx-auto px-4 py-6">
         <div class="flex items-center justify-between mb-5">
             <h2 class="text-lg font-extrabold text-gray-900">Top Brands</h2>
@@ -398,7 +406,7 @@ $reviewThemes = [
 
 {{-- ═══════════ JUST FOR YOU (personalized feel — overflow from the New Arrivals section) ═══════════ --}}
 @if($justForYou->isNotEmpty())
-<div class="bg-white mt-4">
+<div class="mx-3 md:mx-0 mt-3 md:mt-4 bg-white dark:bg-gray-900 rounded-2xl md:rounded-none shadow-sm md:shadow-none">
     <div class="max-w-[1200px] mx-auto px-4 py-6">
         <div class="flex items-center justify-center mb-5">
             <div class="h-px bg-gray-200 flex-1"></div>

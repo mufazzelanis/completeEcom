@@ -9,6 +9,16 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Admin - @yield('title', 'Dashboard') | {{ setting('site_name', 'ShopVista') }}</title>
     @if($faviconUrl = setting_file_url('favicon'))<link rel="icon" href="{{ $faviconUrl }}">@endif
+
+    {{-- PWA — its own manifest/identity (route: admin.manifest), separate from the customer
+         storefront's, so an admin installing this to their phone gets an icon labeled for
+         the dashboard, not the shop itself — see App\Http\Controllers\ManifestController. --}}
+    <link rel="manifest" href="{{ route('admin.manifest') }}">
+    <meta name="theme-color" content="{{ setting('primary_color', '#ea580c') }}">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="{{ setting('site_name', 'ShopVista') }} Admin">
+    @if($faviconUrl)<link rel="apple-touch-icon" href="{{ $faviconUrl }}">@endif
     <script>
         // Applied before first paint so there's never a flash of the wrong theme.
         (function () {
@@ -28,6 +38,10 @@
                     document.documentElement.classList.toggle('dark', this.dark);
                 },
             });
+            // Global (not local x-data) so the mobile bottom quick-nav — a sibling of the
+            // sidebar/topbar wrapper, outside its x-data scope — can also open the sidebar
+            // drawer via its "More" tab, not just the topbar hamburger button.
+            Alpine.store('adminSidebar', { open: false });
         });
     </script>
     <style>[x-cloak]{display:none!important}</style>
@@ -133,11 +147,11 @@ $adminNavIndex = [
 ];
 @endphp
 
-<div class="flex h-screen overflow-hidden" x-data="{ sidebarOpen: false }">
+<div class="flex h-screen overflow-hidden" x-data>
     <!-- Mobile Sidebar Overlay -->
-    <div x-show="sidebarOpen" x-cloak
+    <div x-show="$store.adminSidebar.open" x-cloak
          class="fixed inset-0 bg-black/50 z-40 lg:hidden"
-         @click="sidebarOpen = false"
+         @click="$store.adminSidebar.open = false"
          x-transition:enter="transition-opacity duration-200"
          x-transition:enter-start="opacity-0"
          x-transition:enter-end="opacity-100"
@@ -148,7 +162,7 @@ $adminNavIndex = [
 
     <!-- Sidebar -->
     <aside class="fixed inset-y-0 left-0 z-50 w-64 bg-gray-900 text-white flex flex-col flex-shrink-0 overflow-y-auto transform transition-transform duration-200 ease-in-out lg:translate-x-0 lg:static lg:z-auto"
-           :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full'">
+           :class="$store.adminSidebar.open ? 'translate-x-0' : '-translate-x-full'">
         <!-- Logo -->
         <div class="flex items-center justify-between px-6 py-5 border-b border-gray-700">
             <div class="flex items-center space-x-3">
@@ -167,7 +181,7 @@ $adminNavIndex = [
                 </div>
                 @endif
             </div>
-            <button @click="sidebarOpen = false" class="lg:hidden text-gray-400 hover:text-white">
+            <button @click="$store.adminSidebar.open = false" class="lg:hidden text-gray-400 hover:text-white">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
             </button>
         </div>
@@ -624,7 +638,7 @@ $adminNavIndex = [
         <!-- Top Bar -->
         <header class="bg-white dark:bg-gray-900 shadow-sm px-4 sm:px-6 py-3 flex items-center gap-3 flex-shrink-0 transition-colors">
             <!-- Mobile hamburger -->
-            <button @click="sidebarOpen = true" class="lg:hidden text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white -ml-1 p-1">
+            <button @click="$store.adminSidebar.open = true" class="lg:hidden text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white -ml-1 p-1">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
             </button>
 
@@ -850,11 +864,13 @@ $adminNavIndex = [
         @endif
 
         <!-- Page Content -->
-        <main class="flex-1 overflow-y-auto p-4 sm:p-6">
+        <main class="flex-1 overflow-y-auto p-4 sm:p-6 pb-24 lg:pb-6">
             @yield('content')
         </main>
     </div>
 </div>
+
+@include('partials.admin.bottom-nav')
 
 @stack('scripts')
 </body>

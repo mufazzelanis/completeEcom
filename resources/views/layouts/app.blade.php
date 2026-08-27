@@ -116,6 +116,15 @@ $pageTwitterImage = trim($__env->yieldContent('twitter_image', $pageOgImage));
     <link rel="canonical" href="{{ $pageCanonical }}">
     @if($faviconUrl)<link rel="icon" href="{{ $faviconUrl }}">@endif
     @if(setting('google_site_verification'))<meta name="google-site-verification" content="{{ setting('google_site_verification') }}">@endif
+
+    {{-- PWA — lets a phone browser offer "Add to Home Screen" and, once installed, launch
+         full-screen under the store's own name/icon/color instead of inside browser chrome. --}}
+    <link rel="manifest" href="{{ route('manifest') }}">
+    <meta name="theme-color" content="{{ $primaryColor }}">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="{{ $siteName }}">
+    @if($faviconUrl)<link rel="apple-touch-icon" href="{{ $faviconUrl }}">@endif
     @if(!$isSystemFont)
     @php $fontHref = 'https://fonts.googleapis.com/css2?family=' . str_replace(' ', '+', $googleFontName) . ':wght@400;500;600;700;800&display=swap'; @endphp
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -297,7 +306,7 @@ $pageTwitterImage = trim($__env->yieldContent('twitter_image', $pageOgImage));
     </script>
     @endif
 </head>
-<body class="bg-gray-100 dark:bg-gray-950 font-sans antialiased transition-colors">
+<body class="bg-gray-100 dark:bg-gray-950 font-sans antialiased transition-colors pb-[calc(4rem_+_env(safe-area-inset-bottom))] md:pb-0">
 @if($gtmId)<noscript><iframe src="https://www.googletagmanager.com/ns.html?id={{ $gtmId }}" height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>@endif
 
 @php
@@ -695,10 +704,13 @@ $navCategories = \App\Models\Category::with(['children' => fn($q) => $q->active(
     </div>
 </footer>
 
-{{-- Back to Top --}}
+@include('partials.storefront.bottom-nav')
+
+{{-- Back to Top — nudged up on mobile (bottom-24 instead of bottom-6) so it floats above
+     the app-style bottom nav bar instead of overlapping it. --}}
 <div x-data="{ show: false }" @scroll.window="show = window.scrollY > 400"
      x-show="show" x-cloak x-transition
-     class="fixed bottom-6 right-6 z-40">
+     class="fixed bottom-24 right-6 md:bottom-6 z-40">
     <button onclick="window.scrollTo({top:0,behavior:'smooth'})" aria-label="Back to top" class="w-11 h-11 bg-orange-500 text-white rounded-full shadow-lg hover:bg-orange-600 transition flex items-center justify-center">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 15l7-7 7 7"/></svg>
     </button>

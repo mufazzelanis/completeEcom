@@ -66,6 +66,7 @@ use App\Http\Controllers\CustomerReviewController;
 use App\Http\Controllers\EmailUnsubscribeController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\LandingPageController;
+use App\Http\Controllers\ManifestController;
 use App\Http\Controllers\NewsletterSubscriptionController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\PageController;
@@ -114,6 +115,12 @@ Route::get('/pages/{page}', [PageController::class, 'show'])->name('pages.show')
 Route::post('/newsletter/subscribe', [NewsletterSubscriptionController::class, 'subscribe'])->middleware('throttle:5,1')->name('newsletter.subscribe');
 Route::get('/newsletter/unsubscribe/{token}', [NewsletterSubscriptionController::class, 'unsubscribe'])->name('newsletter.unsubscribe');
 Route::get('/email/unsubscribe/{token}', [EmailUnsubscribeController::class, 'unsubscribe'])->name('email.unsubscribe');
+
+// PWA manifests — deliberately public/unauthenticated (a browser fetches these itself when
+// deciding whether to offer "Add to Home Screen"; if the admin one required login, that
+// fetch would get redirected to an HTML login page instead of JSON and silently break).
+Route::get('/manifest.webmanifest', [ManifestController::class, 'customer'])->name('manifest');
+Route::get('/admin/manifest.webmanifest', [ManifestController::class, 'admin'])->name('admin.manifest');
 
 // Frontend Routes
 Route::get('/', [HomeController::class, 'index'])->name('home');
