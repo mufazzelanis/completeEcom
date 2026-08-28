@@ -110,3 +110,155 @@
         color: theme('colors.gray.500');
     }
 }
+
+/*
+ * ── Custom date/datetime picker (flatpickr) theme ────────────────────────────
+ * Every `<input type="date">`/`type="datetime-local">` is upgraded in JS
+ * (resources/js/datepicker.js) to a flatpickr instance — this is the visual
+ * theme for its calendar popup, replacing flatpickr's own default look so it
+ * reads as part of this app rather than a bolted-on widget: same rounded-2xl/
+ * shadow language as every other card, Figtree font, light+dark mode, and an
+ * accent color that matches whichever panel it's in (indigo for admin/seller,
+ * orange for the storefront — set via `data-accent` on the calendar root by
+ * the JS). Plain class selectors are safe here (unlike the dark-mode retrofit
+ * above) since none of flatpickr's own class names collide with a Tailwind
+ * utility class name.
+ */
+.flatpickr-calendar.app-datepicker {
+    background: #fff;
+    border: 1px solid theme('colors.gray.200');
+    border-radius: 1rem;
+    box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+    font-family: 'Figtree', ui-sans-serif, system-ui, sans-serif;
+    padding: .75rem;
+    width: auto !important;
+    --fp-accent: theme('colors.orange.500');
+    --fp-accent-fg: #fff;
+    --fp-accent-tint: theme('colors.orange.50');
+}
+.flatpickr-calendar.app-datepicker[data-accent="indigo"] {
+    --fp-accent: theme('colors.indigo.600');
+    --fp-accent-tint: theme('colors.indigo.50');
+}
+.flatpickr-calendar.app-datepicker .flatpickr-months { align-items: center; margin-bottom: .5rem; }
+.flatpickr-calendar.app-datepicker .flatpickr-month { color: theme('colors.gray.800'); fill: theme('colors.gray.800'); }
+.flatpickr-calendar.app-datepicker .flatpickr-current-month {
+    /* Flatpickr's own CSS absolutely-positions this inside `.flatpickr-month` (which is
+       what centers it between the prev/next arrows there) — reset to a normal-flow flex
+       row instead so it can't collapse/overlap depending on this override's other rules. */
+    position: static; width: auto; left: auto; height: auto; padding: 0 0 4px 0;
+    display: flex; align-items: center; justify-content: center; gap: .375rem; font-size: .875rem; font-weight: 600;
+}
+.flatpickr-calendar.app-datepicker .flatpickr-monthDropdown-months,
+.flatpickr-calendar.app-datepicker .numInputWrapper input.cur-year {
+    font-weight: 600; font-size: .875rem; border-radius: .5rem; padding: .25rem .375rem;
+    border: 1px solid transparent; background: transparent; color: inherit; cursor: pointer;
+}
+.flatpickr-calendar.app-datepicker .flatpickr-monthDropdown-months:hover,
+.flatpickr-calendar.app-datepicker .numInputWrapper:hover input.cur-year {
+    background: theme('colors.gray.100');
+}
+.flatpickr-calendar.app-datepicker .numInputWrapper { width: 4.2rem; }
+.flatpickr-calendar.app-datepicker .flatpickr-prev-month,
+.flatpickr-calendar.app-datepicker .flatpickr-next-month {
+    width: 2rem; height: 2rem; display: flex; align-items: center; justify-content: center;
+    border-radius: .625rem; padding: 0;
+}
+.flatpickr-calendar.app-datepicker .flatpickr-prev-month:hover,
+.flatpickr-calendar.app-datepicker .flatpickr-next-month:hover {
+    background: theme('colors.gray.100'); color: theme('colors.gray.800'); fill: theme('colors.gray.800');
+}
+.flatpickr-calendar.app-datepicker .flatpickr-prev-month svg,
+.flatpickr-calendar.app-datepicker .flatpickr-next-month svg { width: 14px; height: 14px; }
+
+.flatpickr-calendar.app-datepicker .flatpickr-weekday {
+    font-size: .6875rem; font-weight: 600; text-transform: uppercase; letter-spacing: .03em;
+    color: theme('colors.gray.400');
+}
+.flatpickr-calendar.app-datepicker .flatpickr-day {
+    border-radius: .625rem; color: theme('colors.gray.700'); font-size: .8125rem; max-width: none;
+    transition: background-color .12s ease, color .12s ease;
+}
+.flatpickr-calendar.app-datepicker .flatpickr-day:hover {
+    background: var(--fp-accent-tint); border-color: transparent;
+}
+.flatpickr-calendar.app-datepicker .flatpickr-day.today {
+    border-color: var(--fp-accent); font-weight: 700;
+}
+.flatpickr-calendar.app-datepicker .flatpickr-day.today:hover { color: theme('colors.gray.700'); }
+.flatpickr-calendar.app-datepicker .flatpickr-day.selected,
+.flatpickr-calendar.app-datepicker .flatpickr-day.selected:hover,
+.flatpickr-calendar.app-datepicker .flatpickr-day.startRange,
+.flatpickr-calendar.app-datepicker .flatpickr-day.endRange {
+    background: var(--fp-accent); border-color: var(--fp-accent); color: var(--fp-accent-fg); font-weight: 600;
+}
+.flatpickr-calendar.app-datepicker .flatpickr-day.prevMonthDay,
+.flatpickr-calendar.app-datepicker .flatpickr-day.nextMonthDay {
+    color: theme('colors.gray.300');
+}
+.flatpickr-calendar.app-datepicker .flatpickr-day.flatpickr-disabled {
+    color: theme('colors.gray.300'); cursor: not-allowed;
+}
+.flatpickr-calendar.app-datepicker .flatpickr-day.flatpickr-disabled:hover { background: transparent; }
+
+.flatpickr-calendar.app-datepicker .flatpickr-time {
+    border-top: 1px solid theme('colors.gray.100'); margin-top: .5rem; padding-top: .5rem; height: auto;
+}
+.flatpickr-calendar.app-datepicker .flatpickr-time input {
+    color: theme('colors.gray.800'); font-weight: 600;
+}
+.flatpickr-calendar.app-datepicker .flatpickr-time .flatpickr-am-pm {
+    font-weight: 600; border-radius: .5rem;
+}
+.flatpickr-calendar.app-datepicker .flatpickr-time .flatpickr-am-pm:hover,
+.flatpickr-calendar.app-datepicker .flatpickr-time input:hover { background: theme('colors.gray.100'); }
+.flatpickr-calendar.app-datepicker .flatpickr-time .numInputWrapper span.arrowUp:after { border-bottom-color: theme('colors.gray.400'); }
+.flatpickr-calendar.app-datepicker .flatpickr-time .numInputWrapper span.arrowDown:after { border-top-color: theme('colors.gray.400'); }
+
+/* Today / Clear footer links (added via the `onReady`-attached buttons in datepicker.js) */
+.flatpickr-calendar.app-datepicker .fp-footer {
+    display: flex; justify-content: space-between; border-top: 1px solid theme('colors.gray.100');
+    margin-top: .5rem; padding-top: .5rem;
+}
+.flatpickr-calendar.app-datepicker .fp-footer button {
+    font-size: .75rem; font-weight: 600; color: var(--fp-accent); background: none; border: 0; cursor: pointer; padding: .25rem .5rem; border-radius: .5rem;
+}
+.flatpickr-calendar.app-datepicker .fp-footer button:hover { background: var(--fp-accent-tint); }
+
+/* Dark mode — flatpickr's calendar is appended to <body>, still a descendant of <html.dark>. */
+html.dark .flatpickr-calendar.app-datepicker {
+    background: theme('colors.gray.900');
+    border-color: theme('colors.gray.700');
+    box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.4), 0 4px 6px -4px rgb(0 0 0 / 0.4);
+}
+html.dark .flatpickr-calendar.app-datepicker .flatpickr-month { color: theme('colors.gray.100'); fill: theme('colors.gray.100'); }
+html.dark .flatpickr-calendar.app-datepicker .flatpickr-monthDropdown-months,
+html.dark .flatpickr-calendar.app-datepicker .numInputWrapper input.cur-year { color: theme('colors.gray.100'); }
+html.dark .flatpickr-calendar.app-datepicker .flatpickr-monthDropdown-months option { background: theme('colors.gray.800'); color: theme('colors.gray.100'); }
+html.dark .flatpickr-calendar.app-datepicker .flatpickr-monthDropdown-months:hover,
+html.dark .flatpickr-calendar.app-datepicker .numInputWrapper:hover input.cur-year,
+html.dark .flatpickr-calendar.app-datepicker .flatpickr-prev-month:hover,
+html.dark .flatpickr-calendar.app-datepicker .flatpickr-next-month:hover,
+html.dark .flatpickr-calendar.app-datepicker .flatpickr-time .flatpickr-am-pm:hover,
+html.dark .flatpickr-calendar.app-datepicker .flatpickr-time input:hover {
+    background: theme('colors.gray.800');
+}
+html.dark .flatpickr-calendar.app-datepicker .flatpickr-next-month:hover,
+html.dark .flatpickr-calendar.app-datepicker .flatpickr-prev-month:hover { color: theme('colors.gray.100'); fill: theme('colors.gray.100'); }
+html.dark .flatpickr-calendar.app-datepicker .flatpickr-weekday { color: theme('colors.gray.500'); }
+html.dark .flatpickr-calendar.app-datepicker .flatpickr-day { color: theme('colors.gray.300'); }
+html.dark .flatpickr-calendar.app-datepicker .flatpickr-day.prevMonthDay,
+html.dark .flatpickr-calendar.app-datepicker .flatpickr-day.nextMonthDay,
+html.dark .flatpickr-calendar.app-datepicker .flatpickr-day.flatpickr-disabled { color: theme('colors.gray.600'); }
+html.dark .flatpickr-calendar.app-datepicker .flatpickr-day.today:hover { color: theme('colors.gray.100'); }
+html.dark .flatpickr-calendar.app-datepicker .flatpickr-time { border-color: theme('colors.gray.700'); }
+html.dark .flatpickr-calendar.app-datepicker .flatpickr-time input { color: theme('colors.gray.100'); }
+html.dark .flatpickr-calendar.app-datepicker .fp-footer { border-color: theme('colors.gray.700'); }
+
+/* Arrow-connector triangle flatpickr draws pointing at the input — recolor its fill (the
+   ":after" pseudo-element) to match the card background in each mode; its border half
+   (":before") is left at flatpickr's own neutral gray, which reads fine on both. */
+.flatpickr-calendar.app-datepicker.arrowTop:after { border-bottom-color: #fff; }
+.flatpickr-calendar.app-datepicker.arrowBottom:after { border-top-color: #fff; }
+html.dark .flatpickr-calendar.app-datepicker.arrowTop:after { border-bottom-color: theme('colors.gray.900'); }
+html.dark .flatpickr-calendar.app-datepicker.arrowBottom:after { border-top-color: theme('colors.gray.900'); }
