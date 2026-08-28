@@ -49,7 +49,7 @@
     </div>
 
     <div class="lg:col-span-2">
-        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm overflow-hidden">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm overflow-x-auto">
             <table class="w-full">
                 <thead class="bg-gray-50 dark:bg-gray-900 border-b border-gray-100 dark:border-gray-700 text-xs text-gray-500 dark:text-gray-400 uppercase">
                     <tr>

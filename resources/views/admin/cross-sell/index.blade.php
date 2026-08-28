@@ -11,7 +11,7 @@
     </div>
 </div>
 
-<div class="bg-white rounded-2xl shadow-sm overflow-hidden">
+<div class="bg-white rounded-2xl shadow-sm overflow-x-auto">
     <div class="px-6 py-4 border-b border-gray-100">
         <p class="text-sm text-gray-500">Products with recommendations. <a href="{{ route('admin.products.index') }}" class="text-indigo-600 hover:text-indigo-700">Open any product</a> to add recommendations.</p>
     </div>

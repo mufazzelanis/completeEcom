@@ -32,7 +32,7 @@
 <div class="bg-green-50 border border-green-200 text-green-700 rounded-xl px-4 py-3 mb-6 text-sm">{{ session('success') }}</div>
 @endif
 
-<div class="bg-white rounded-2xl shadow-sm overflow-hidden">
+<div class="bg-white rounded-2xl shadow-sm overflow-x-auto">
     <table class="w-full text-sm">
         <thead class="bg-gray-50 border-b border-gray-100">
             <tr class="text-xs text-gray-500 uppercase tracking-wider">

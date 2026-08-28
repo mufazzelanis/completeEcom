@@ -69,7 +69,7 @@
             </div>
 
             {{-- Order items --}}
-            <div class="bg-white rounded-2xl shadow-sm overflow-hidden">
+            <div class="bg-white rounded-2xl shadow-sm overflow-x-auto">
                 <div class="px-6 py-4 border-b border-gray-100">
                     <h3 class="font-semibold text-gray-800">Order Items — {{ $payment->order->order_number }}</h3>
                 </div>

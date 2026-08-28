@@ -28,7 +28,7 @@
 
 <div class="grid grid-cols-2 gap-6">
     {{-- Recent Points Activity --}}
-    <div class="col-span-2 bg-white rounded-2xl shadow-sm overflow-hidden">
+    <div class="col-span-2 bg-white rounded-2xl shadow-sm overflow-x-auto">
         <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
             <h2 class="font-semibold text-gray-800">Recent Points Activity</h2>
             <form action="{{ route('admin.referrals.index') }}" method="GET" class="flex items-center gap-2">
@@ -76,7 +76,7 @@
     </div>
 
     {{-- All Referral Codes --}}
-    <div class="col-span-2 bg-white rounded-2xl shadow-sm overflow-hidden">
+    <div class="col-span-2 bg-white rounded-2xl shadow-sm overflow-x-auto">
         <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
             <h2 class="font-semibold text-gray-800">Referral Codes</h2>
             <form action="{{ route('admin.referrals.index') }}" method="GET" class="flex items-center gap-2">

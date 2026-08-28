@@ -16,7 +16,7 @@
 @if(session('success'))<div class="mb-4 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-xl text-sm">{{ session('success') }}</div>@endif
 @if(session('error'))<div class="mb-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm">{{ session('error') }}</div>@endif
 
-<div class="bg-white rounded-2xl shadow-sm overflow-hidden">
+<div class="bg-white rounded-2xl shadow-sm overflow-x-auto">
     <table class="w-full">
         <thead class="bg-gray-50 border-b border-gray-100 text-xs text-gray-500 uppercase">
             <tr>

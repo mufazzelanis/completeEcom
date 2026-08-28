@@ -50,7 +50,7 @@
 
     {{-- FAQ List --}}
     @foreach($faqs->groupBy('category') as $categoryName => $items)
-    <div class="bg-white rounded-2xl shadow-sm overflow-hidden">
+    <div class="bg-white rounded-2xl shadow-sm overflow-x-auto">
         <div class="px-6 py-4 bg-gray-50 border-b border-gray-100 flex items-center justify-between">
             <h3 class="font-medium text-gray-700 text-sm">{{ $categoryName ?: 'Uncategorized' }}</h3>
             <span class="text-xs text-gray-400">{{ $items->count() }} questions</span>

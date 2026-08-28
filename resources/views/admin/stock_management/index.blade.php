@@ -53,7 +53,7 @@
 
 <form action="{{ route('admin.stock-management.update') }}" method="POST" id="bulkStockForm">
 @csrf
-<div class="bg-white rounded-2xl shadow-sm overflow-hidden">
+<div class="bg-white rounded-2xl shadow-sm overflow-x-auto">
     <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
         <p class="text-sm text-gray-500">Edit stock quantities inline, then click <strong>Save All Changes</strong>.</p>
         <button type="submit" class="bg-indigo-600 text-white px-5 py-2 rounded-xl text-sm font-semibold hover:bg-indigo-700 transition">

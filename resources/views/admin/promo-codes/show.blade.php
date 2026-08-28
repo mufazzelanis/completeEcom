@@ -32,7 +32,7 @@
     @endforeach
 </div>
 
-<div class="bg-white rounded-2xl shadow-sm overflow-hidden">
+<div class="bg-white rounded-2xl shadow-sm overflow-x-auto">
     <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
         <h2 class="font-semibold text-gray-800">Codes (showing latest 200)</h2>
         <span class="text-sm text-gray-400">

@@ -104,7 +104,7 @@
         </div>
 
         {{-- Current Products --}}
-        <div class="bg-white rounded-2xl shadow-sm overflow-hidden">
+        <div class="bg-white rounded-2xl shadow-sm overflow-x-auto">
             <div class="px-6 py-4 border-b border-gray-100">
                 <h2 class="font-semibold text-gray-800">Products in Sale ({{ $flashSale->products->count() }})</h2>
             </div>

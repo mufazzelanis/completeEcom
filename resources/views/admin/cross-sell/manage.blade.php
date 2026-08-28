@@ -74,7 +74,7 @@
     {{-- Current Recommendations --}}
     <div class="col-span-2 space-y-6">
         {{-- Cross-Sells --}}
-        <div class="bg-white rounded-2xl shadow-sm overflow-hidden">
+        <div class="bg-white rounded-2xl shadow-sm overflow-x-auto">
             <div class="px-6 py-4 border-b border-gray-100 flex items-center gap-2">
                 <span class="w-3 h-3 bg-green-500 rounded-full"></span>
                 <h2 class="font-semibold text-gray-800">Cross-Sell ({{ $crossSells->count() }})</h2>
@@ -102,7 +102,7 @@
         </div>
 
         {{-- Upsells --}}
-        <div class="bg-white rounded-2xl shadow-sm overflow-hidden">
+        <div class="bg-white rounded-2xl shadow-sm overflow-x-auto">
             <div class="px-6 py-4 border-b border-gray-100 flex items-center gap-2">
                 <span class="w-3 h-3 bg-indigo-500 rounded-full"></span>
                 <h2 class="font-semibold text-gray-800">Upsell ({{ $upsells->count() }})</h2>
