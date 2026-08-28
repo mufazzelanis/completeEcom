@@ -87,15 +87,17 @@
 
     {{-- Email Marketing --}}
     <a href="{{ route('admin.email-campaigns.index') }}" class="bg-white rounded-2xl shadow-sm p-6 hover:shadow-md transition group lg:col-span-3 col-span-2">
-        <div class="flex items-center gap-6">
-            <div class="w-12 h-12 bg-teal-100 rounded-2xl flex items-center justify-center group-hover:bg-teal-200 transition flex-shrink-0">
-                <svg class="w-6 h-6 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+        <div class="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6">
+            <div class="flex items-center gap-4 flex-1 min-w-0">
+                <div class="w-12 h-12 bg-teal-100 rounded-2xl flex items-center justify-center group-hover:bg-teal-200 transition flex-shrink-0">
+                    <svg class="w-6 h-6 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                </div>
+                <div class="flex-1 min-w-0">
+                    <h3 class="font-semibold text-gray-800">Email Marketing</h3>
+                    <p class="text-sm text-gray-500 mt-1">Compose and send email campaigns to your customers</p>
+                </div>
             </div>
-            <div class="flex-1">
-                <h3 class="font-semibold text-gray-800">Email Marketing</h3>
-                <p class="text-sm text-gray-500 mt-1">Compose and send email campaigns to your customers</p>
-            </div>
-            <div class="flex gap-6 text-center flex-shrink-0">
+            <div class="flex justify-between sm:justify-end gap-6 text-center flex-shrink-0 pl-16 sm:pl-0">
                 <div><p class="text-2xl font-bold text-gray-800">{{ \App\Models\EmailCampaign::count() }}</p><p class="text-xs text-gray-500">Total</p></div>
                 <div><p class="text-2xl font-bold text-green-600">{{ \App\Models\EmailCampaign::where('status','sent')->count() }}</p><p class="text-xs text-gray-500">Sent</p></div>
                 <div><p class="text-2xl font-bold text-purple-600">{{ \App\Models\EmailCampaign::where('status','scheduled')->count() }}</p><p class="text-xs text-gray-500">Scheduled</p></div>
