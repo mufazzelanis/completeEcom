@@ -22,6 +22,23 @@
  * value directly — so a plain `bg-white` card, anywhere in the codebase,
  * with zero markup changes, is already dark-mode-correct.
  *
+ * CRITICAL: these MUST be written as attribute selectors — `[class~="bg-white"]`
+ * — never as a literal class selector (`.bg-white`). This project's build
+ * (tailwindcss@3 running under @tailwindcss/vite@4, an unusual/mismatched
+ * pairing) corrupts any `@layer base` rule shaped like `html.dark .bg-white
+ * {...}`: its cascade-layer flattening treats the trailing `.bg-white` token
+ * as *redefining* Tailwind's own `.bg-white` utility outright, discarding the
+ * `html.dark` ancestor requirement — so the plain utility itself silently
+ * inherited the dark-mode color, breaking `bg-white` (and every other
+ * overridden class) in LIGHT mode too, site-wide. Confirmed by inspecting the
+ * actual compiled CSS (not just the source), which is the only way this
+ * class of bug shows up — checking for the class *name* in rendered HTML, as
+ * every earlier test in this file's history did, can't catch a bug that lives
+ * entirely in what the build tool does to the CSS behind that class name.
+ * The `[class~="…"]` attribute-selector form produces different selector text
+ * that this same flattening pass does not mis-merge, verified the same way
+ * (reading the compiled output) after switching to it.
+ *
  * `@layer base` is what makes this safe to combine with the ~40 templates
  * that DO already have hand-placed `dark:bg-gray-900`-style classes: Tailwind
  * always emits `@layer base` before `@layer utilities` in the final
@@ -39,35 +56,35 @@
 @layer base {
     /* Surfaces — from lightest to darkest in light mode, kept in the same
        relative order (each a bit darker than the last) in dark mode too. */
-    html.dark .bg-white       { background-color: theme('colors.gray.900'); }
-    html.dark .bg-gray-50     { background-color: theme('colors.gray.800'); }
-    html.dark .bg-gray-100    { background-color: theme('colors.gray.950'); }
-    html.dark .bg-gray-200    { background-color: theme('colors.gray.700'); }
-    html.dark .hover\:bg-gray-50:hover  { background-color: theme('colors.gray.800'); }
-    html.dark .hover\:bg-gray-100:hover { background-color: theme('colors.gray.700'); }
+    html.dark [class~="bg-white"]       { background-color: theme('colors.gray.900'); }
+    html.dark [class~="bg-gray-50"]     { background-color: theme('colors.gray.800'); }
+    html.dark [class~="bg-gray-100"]    { background-color: theme('colors.gray.950'); }
+    html.dark [class~="bg-gray-200"]    { background-color: theme('colors.gray.700'); }
+    html.dark [class~="hover:bg-gray-50"]:hover  { background-color: theme('colors.gray.800'); }
+    html.dark [class~="hover:bg-gray-100"]:hover { background-color: theme('colors.gray.700'); }
 
     /* Text — light mode's darkest grays become the lightest text, and so on
        down the scale, so headings/body copy/muted captions keep the same
        relative contrast hierarchy they have in light mode. */
-    html.dark .text-gray-900 { color: theme('colors.gray.100'); }
-    html.dark .text-gray-800 { color: theme('colors.gray.200'); }
-    html.dark .text-gray-700 { color: theme('colors.gray.300'); }
-    html.dark .text-gray-600 { color: theme('colors.gray.400'); }
-    html.dark .text-gray-500 { color: theme('colors.gray.400'); }
-    html.dark .text-gray-400 { color: theme('colors.gray.500'); }
+    html.dark [class~="text-gray-900"] { color: theme('colors.gray.100'); }
+    html.dark [class~="text-gray-800"] { color: theme('colors.gray.200'); }
+    html.dark [class~="text-gray-700"] { color: theme('colors.gray.300'); }
+    html.dark [class~="text-gray-600"] { color: theme('colors.gray.400'); }
+    html.dark [class~="text-gray-500"] { color: theme('colors.gray.400'); }
+    html.dark [class~="text-gray-400"] { color: theme('colors.gray.500'); }
 
     /* Borders / dividers */
-    html.dark .border-gray-100  { border-color: theme('colors.gray.800'); }
-    html.dark .border-gray-200  { border-color: theme('colors.gray.700'); }
-    html.dark .border-gray-300  { border-color: theme('colors.gray.600'); }
-    html.dark .divide-gray-100 > :not([hidden]) ~ :not([hidden]) { border-color: theme('colors.gray.800'); }
+    html.dark [class~="border-gray-100"]  { border-color: theme('colors.gray.800'); }
+    html.dark [class~="border-gray-200"]  { border-color: theme('colors.gray.700'); }
+    html.dark [class~="border-gray-300"]  { border-color: theme('colors.gray.600'); }
+    html.dark [class~="divide-gray-100"] > :not([hidden]) ~ :not([hidden]) { border-color: theme('colors.gray.800'); }
 
     /* Brand-tint highlight backgrounds (active nav items, hover states on
        cards/dropdown rows) — kept as a translucent tint of the same orange
        rather than a flat dark gray, so it still visibly reads as "the
        highlighted one," not just "not-hovered." */
-    html.dark .bg-orange-50         { background-color: rgb(234 88 12 / 15%); }
-    html.dark .hover\:bg-orange-50:hover { background-color: rgb(234 88 12 / 15%); }
+    html.dark [class~="bg-orange-50"]         { background-color: rgb(234 88 12 / 15%); }
+    html.dark [class~="hover:bg-orange-50"]:hover { background-color: rgb(234 88 12 / 15%); }
 
     /* Plain form fields almost never carry an explicit bg-white class — text
        inputs/selects/textareas just inherit the browser's own white default,

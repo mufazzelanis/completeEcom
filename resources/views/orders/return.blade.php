@@ -57,7 +57,11 @@
                     <label class="flex flex-col items-center p-3 border-2 rounded-xl cursor-pointer transition"
                            :class="type === '{{ $val }}' ? 'border-indigo-500 bg-indigo-50' : 'border-gray-200 hover:border-gray-300'">
                         <input type="radio" name="refund_type" value="{{ $val }}" x-model="type" class="sr-only">
-                        <span class="text-sm font-medium text-gray-800 mt-1">{{ $label }}</span>
+                        {{-- dark:text-gray-800 — this label sits on bg-indigo-50 when selected,
+                             a light card that (correctly) never darkens for dark mode; letting
+                             the site-wide retrofit lighten this text too would make it nearly
+                             invisible against that still-light selected state. --}}
+                        <span class="text-sm font-medium text-gray-800 dark:text-gray-800 mt-1">{{ $label }}</span>
                     </label>
                     @endforeach
                 </div>

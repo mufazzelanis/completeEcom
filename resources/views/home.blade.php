@@ -345,7 +345,7 @@ $reviewThemes = [
 <div class="mx-3 md:mx-0 mt-3 md:mt-4 py-8 bg-gradient-to-r from-indigo-50 via-white to-orange-50 overflow-hidden rounded-2xl md:rounded-none shadow-sm md:shadow-none">
     <div class="max-w-[1200px] mx-auto px-4 mb-6 text-center">
         <h2 class="text-lg md:text-2xl font-extrabold bg-gradient-to-r from-pink-500 via-orange-500 to-indigo-500 bg-clip-text text-transparent inline-block">What Our Customers Say</h2>
-        <p class="text-gray-500 text-xs md:text-sm mt-1">Real reviews from real, happy buyers</p>
+        <p class="text-gray-500 dark:text-gray-500 text-xs md:text-sm mt-1">Real reviews from real, happy buyers</p>
     </div>
     <div class="relative marquee-pause" style="-webkit-mask-image:linear-gradient(to right, transparent, black 5%, black 95%, transparent); mask-image:linear-gradient(to right, transparent, black 5%, black 95%, transparent);">
         <div class="flex gap-4 w-max animate-marquee">
@@ -360,15 +360,20 @@ $reviewThemes = [
                                 <svg class="w-4 h-4 {{ $i <= $review->rating ? $theme['star'] : 'text-white/60' }}" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.958a1 1 0 00.95.69h4.162c.969 0 1.371 1.24.588 1.81l-3.367 2.447a1 1 0 00-.363 1.118l1.287 3.957c.3.922-.755 1.688-1.539 1.118l-3.367-2.446a1 1 0 00-1.176 0l-3.367 2.446c-.783.57-1.838-.196-1.539-1.118l1.286-3.957a1 1 0 00-.363-1.118L2.373 9.385c-.783-.57-.38-1.81.588-1.81h4.162a1 1 0 00.95-.69l1.286-3.958z"/></svg>
                             @endfor
                         </div>
-                        <p class="text-gray-700 text-sm leading-relaxed line-clamp-4 mb-4 min-h-[4.5rem] font-medium">&ldquo;{{ $review->comment }}&rdquo;</p>
+                        {{-- dark:text-* re-asserting the original light-mode color on every one of
+                             these — this card's own background is a fixed light pastel gradient
+                             (never inverted for dark mode, see $reviewThemes above), so letting
+                             the site-wide dark-mode retrofit lighten this text too would make it
+                             nearly invisible against a background that never got darker. --}}
+                        <p class="text-gray-700 dark:text-gray-700 text-sm leading-relaxed line-clamp-4 mb-4 min-h-[4.5rem] font-medium">&ldquo;{{ $review->comment }}&rdquo;</p>
                         <div class="flex items-center gap-3 pt-3 border-t border-white/60">
                             <div class="w-9 h-9 bg-gradient-to-br {{ $theme['avatar'] }} rounded-full flex items-center justify-center flex-shrink-0 shadow-sm">
                                 <span class="text-white font-bold text-xs">{{ strtoupper(substr($review->user->name, 0, 1)) }}</span>
                             </div>
                             <div class="min-w-0">
-                                <p class="font-semibold text-gray-800 text-sm truncate">{{ $review->user->name }}</p>
+                                <p class="font-semibold text-gray-800 dark:text-gray-800 text-sm truncate">{{ $review->user->name }}</p>
                                 @if($review->product)
-                                    <p class="text-gray-500 text-[11px] truncate">on <a href="{{ route('products.show', $review->product->slug) }}" class="hover:text-orange-600 hover:underline transition">{{ $review->product->name }}</a></p>
+                                    <p class="text-gray-500 dark:text-gray-500 text-[11px] truncate">on <a href="{{ route('products.show', $review->product->slug) }}" class="hover:text-orange-600 hover:underline transition">{{ $review->product->name }}</a></p>
                                 @endif
                             </div>
                         </div>
