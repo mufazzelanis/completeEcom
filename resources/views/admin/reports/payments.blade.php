@@ -25,7 +25,7 @@
 </div>
 
 {{-- Summary Cards --}}
-<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+<div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
     @php
     $cards = [
         ['Total Collected', '৳'.number_format($summary->total_collected ?? 0,2), 'text-gray-800', 'bg-gray-50'],

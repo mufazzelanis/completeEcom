@@ -44,7 +44,7 @@
     </div>
 
     {{-- Items --}}
-    <div class="bg-white rounded-2xl shadow-sm overflow-hidden mb-6">
+    <div class="bg-white rounded-2xl shadow-sm overflow-x-auto mb-6">
         <div class="px-6 py-4 border-b border-gray-100">
             <h3 class="font-semibold text-gray-800">Transfer Items</h3>
         </div>

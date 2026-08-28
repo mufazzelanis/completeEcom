@@ -43,7 +43,7 @@
     @csrf
     <input type="hidden" name="warehouse_id" value="{{ $selectedWarehouse->id }}">
 
-    <div class="bg-white rounded-2xl shadow-sm overflow-hidden mb-4">
+    <div class="bg-white rounded-2xl shadow-sm overflow-x-auto mb-4">
         <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
             <div>
                 <h3 class="font-semibold text-gray-800">{{ $selectedWarehouse->name }}</h3>

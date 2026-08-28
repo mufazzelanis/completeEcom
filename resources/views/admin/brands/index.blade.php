@@ -11,7 +11,7 @@
 @if(session('error'))<div class="mb-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm">{{ session('error') }}</div>@endif
 
 <div class="bg-white rounded-2xl shadow-sm p-4 mb-4">
-    <form method="GET" class="flex gap-3">
+    <form method="GET" class="flex flex-wrap gap-3">
         <input type="text" name="search" value="{{ request('search') }}" placeholder="Search brands…"
             class="border border-gray-200 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 w-64">
         <button type="submit" class="bg-indigo-600 text-white px-4 py-2 rounded-xl text-sm hover:bg-indigo-700 transition">Search</button>

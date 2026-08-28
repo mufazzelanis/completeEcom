@@ -25,7 +25,7 @@
 </div>
 
 {{-- Coupon Summary --}}
-<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+<div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
     @php
     $cards = [
         ['Coupon Orders', number_format($couponSummary->orders_with_coupon), 'text-indigo-700', 'bg-indigo-50', 'Out of '.number_format($totalOrders).' total ('.$couponRate.'%)'],

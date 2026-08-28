@@ -47,7 +47,7 @@
     </form>
 </div>
 
-<div class="bg-white rounded-2xl shadow-sm overflow-hidden" x-data="{ selected: [] }">
+<div class="bg-white rounded-2xl shadow-sm overflow-x-auto" x-data="{ selected: [] }">
     {{-- Bulk actions bar --}}
     <div class="px-6 py-3 border-b border-gray-100 flex items-center justify-between bg-gray-50"
          x-show="selected.length > 0" x-cloak>

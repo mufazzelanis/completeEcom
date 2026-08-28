@@ -11,7 +11,7 @@
 </div>
 
 {{-- Stats --}}
-<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+<div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
     <div class="bg-white rounded-2xl shadow-sm p-4">
         <p class="text-xs text-gray-400 uppercase tracking-wider font-medium">Logins Today</p>
         <p class="text-2xl font-bold text-gray-800 mt-1">{{ $stats['logins_today'] }}</p>

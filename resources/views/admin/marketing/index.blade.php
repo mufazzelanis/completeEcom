@@ -7,7 +7,7 @@
     <p class="text-sm text-gray-500 mt-0.5">Manage all promotional tools from one place</p>
 </div>
 
-<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+<div class="grid grid-cols-2 lg:grid-cols-3 gap-4">
 
     {{-- Coupons --}}
     <a href="{{ route('admin.coupons.index') }}" class="bg-white rounded-2xl shadow-sm p-6 hover:shadow-md transition group">

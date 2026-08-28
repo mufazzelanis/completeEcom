@@ -16,7 +16,7 @@
     ];
     $pendingPct = $stats['total_orders'] > 0 ? round($stats['pending_orders'] / $stats['total_orders'] * 100) : 0;
 @endphp
-<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 mb-8">
+<div class="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
     @foreach([
         ['label' => 'Total Orders', 'value' => $stats['total_orders'], 'icon' => 'M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z', 'color' => 'blue', 'sub' => $stats['today_orders'] . ' new today', 'href' => route('admin.orders.index')],
         ['label' => 'Pending Orders', 'value' => $stats['pending_orders'], 'icon' => 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z', 'color' => 'yellow', 'sub' => $pendingPct . '% of total', 'href' => route('admin.orders.index', ['status' => 'pending'])],

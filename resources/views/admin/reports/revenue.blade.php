@@ -30,7 +30,7 @@
 </div>
 
 {{-- Summary --}}
-<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+<div class="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
     @php
     // orders.total is already computed as subtotal - discount + shipping + tax,
     // so gross_revenue is already net of discount — don't subtract it again.

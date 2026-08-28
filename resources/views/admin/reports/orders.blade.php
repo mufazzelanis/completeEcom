@@ -30,7 +30,7 @@
 </div>
 
 {{-- Summary Cards --}}
-<div class="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
+<div class="grid grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
     @php
     $statuses = [
         ['Total', $summary->total ?? 0, 'text-gray-800', 'bg-gray-50'],

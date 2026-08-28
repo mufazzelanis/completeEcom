@@ -19,7 +19,7 @@
 </div>
 
 {{-- Summary --}}
-<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+<div class="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
     @php
     $cards = [
         ['Total Active', number_format($totalProducts), 'text-gray-700','bg-gray-50'],
@@ -141,7 +141,7 @@
 </div>
 
 {{-- Out of Stock --}}
-<div class="bg-white rounded-2xl shadow-sm overflow-hidden border-l-4 border-red-400">
+<div class="bg-white rounded-2xl shadow-sm overflow-x-auto border-l-4 border-red-400">
     <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
         <h3 class="font-semibold text-gray-800 flex items-center gap-2">
             <svg class="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg>

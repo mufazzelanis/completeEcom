@@ -9,7 +9,7 @@
 @if(session('success'))<div class="mb-4 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-xl text-sm">{{ session('success') }}</div>@endif
 
 <div class="bg-white rounded-2xl shadow-sm p-4 mb-4">
-    <form method="GET" class="flex gap-3">
+    <form method="GET" class="flex flex-wrap gap-3">
         <input type="text" name="search" value="{{ request('search') }}" placeholder="Search email…"
             class="border border-gray-200 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 flex-1 max-w-xs">
         <select name="status" class="border border-gray-200 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
