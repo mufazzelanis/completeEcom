@@ -148,13 +148,6 @@
             </div>
             @endif
 
-            <div class="flex items-center justify-between mb-4">
-                <p class="text-gray-600 text-sm">
-                    Showing <span class="font-semibold text-gray-900">{{ $products->firstItem() ?? 0 }}</span>–<span class="font-semibold text-gray-900">{{ $products->lastItem() ?? 0 }}</span>
-                    of <span class="font-semibold text-gray-900">{{ $products->total() }}</span> results
-                </p>
-            </div>
-
             @if($products->isEmpty())
                 <div class="bg-white rounded-2xl shadow-sm p-8 md:p-16 text-center">
                     <svg class="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
