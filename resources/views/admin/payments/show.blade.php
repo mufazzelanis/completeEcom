@@ -22,7 +22,7 @@
                     <h3 class="font-semibold text-gray-800">Payment Details</h3>
                     <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold {{ $payment->statusBadge() }}">{{ $payment->statusLabel() }}</span>
                 </div>
-                <div class="grid grid-cols-2 gap-4 text-sm">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                     <div>
                         <p class="text-gray-500 text-xs mb-1">Payment Method</p>
                         <p class="font-medium text-gray-900">{{ $payment->payment_method_name }}</p>

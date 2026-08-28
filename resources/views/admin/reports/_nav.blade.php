@@ -26,7 +26,26 @@ $navGroups = [
 ];
 @endphp
 
-<aside class="w-52 flex-shrink-0 space-y-1">
+{{-- Mobile: every report flattened into one horizontally-scrolling pill row — compact (no
+     giant stack of section cards eating the whole screen before you even reach the page),
+     and every report is still one tap away regardless of which group it's normally filed
+     under. Hidden from lg: up, where the full grouped sidebar below takes over. --}}
+<nav class="lg:hidden -mx-4 px-4 flex gap-2 overflow-x-auto scrollbar-hide pb-1">
+    @foreach($navGroups as $items)
+        @foreach($items as [$route, $label, $icon])
+        <a href="{{ route('admin.'.$route) }}"
+           class="shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-medium whitespace-nowrap transition
+                  {{ request()->routeIs('admin.'.$route) ? 'bg-indigo-600 text-white' : 'bg-white border border-gray-200 text-gray-600' }}">
+            <svg class="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="{{ $icon }}"/>
+            </svg>
+            {{ $label }}
+        </a>
+        @endforeach
+    @endforeach
+</nav>
+
+<aside class="hidden lg:block w-52 flex-shrink-0 space-y-1">
     @foreach($navGroups as $section => $items)
     <div class="bg-white rounded-xl shadow-sm border overflow-hidden mb-2">
         <div class="px-3 py-2 bg-gray-50 border-b">

@@ -19,7 +19,7 @@
             @error('business_name')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
         </div>
 
-        <div class="grid grid-cols-2 gap-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Phone</label>
                 <input type="text" name="phone" value="{{ old('phone', $vendor->phone) }}"
@@ -40,7 +40,7 @@
             @error('website')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
         </div>
 
-        <div class="grid grid-cols-2 gap-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Commission Rate (%)</label>
                 <input type="number" step="0.01" min="0" max="100" name="commission_rate" value="{{ old('commission_rate', $vendor->commission_rate) }}"

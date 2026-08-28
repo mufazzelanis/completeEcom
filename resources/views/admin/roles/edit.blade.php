@@ -80,7 +80,7 @@
                             <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider">{{ $group }}</p>
                             <div class="flex-1 h-px bg-gray-100"></div>
                         </div>
-                        <div class="grid grid-cols-2 gap-2">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
                             @foreach($groupPerms as $perm)
                                 <label class="flex items-center space-x-3 bg-gray-50 hover:bg-indigo-50 rounded-xl px-4 py-3 cursor-pointer transition group">
                                     <input type="checkbox" name="permissions[]" value="{{ $perm->id }}"

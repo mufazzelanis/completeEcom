@@ -25,7 +25,7 @@
 </div>
 
 {{-- Summary Cards --}}
-<div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
     @php
     $cards = [
         ['Return Rate', $returnRate.'%', 'text-red-700', 'bg-red-50', 'Of '.(number_format($summary->total_orders ?? 0)).' total orders'],
@@ -43,7 +43,7 @@
     @endforeach
 </div>
 
-<div class="grid grid-cols-3 gap-6 mb-6">
+<div class="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-6">
     {{-- Return Trend --}}
     <div class="col-span-2 bg-white rounded-2xl shadow-sm p-6">
         <h3 class="font-semibold text-gray-800 mb-4">Return Trend — Last 12 Months</h3>
@@ -73,7 +73,7 @@
     </div>
 </div>
 
-<div class="grid grid-cols-2 gap-6 mb-6">
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-6">
     {{-- Returns by Payment Method --}}
     <div class="bg-white rounded-2xl shadow-sm p-6">
         <h3 class="font-semibold text-gray-800 mb-4">Returns by Payment Method</h3>

@@ -18,7 +18,7 @@
     </a>
 </div>
 
-<div class="grid grid-cols-4 gap-4 mb-6">
+<div class="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-6">
     @foreach([
         ['Generated', number_format($batch->generated_count), 'text-gray-700'],
         ['Used', number_format($batch->used_count), 'text-indigo-600'],

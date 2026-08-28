@@ -9,7 +9,7 @@
     <h1 class="text-xl font-bold text-gray-800">New Email Campaign</h1>
 </div>
 
-<form action="{{ route('admin.email-campaigns.store') }}" method="POST" class="grid grid-cols-3 gap-6">
+<form action="{{ route('admin.email-campaigns.store') }}" method="POST" class="grid grid-cols-1 sm:grid-cols-3 gap-6">
     @csrf
 
     {{-- Main Content --}}

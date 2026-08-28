@@ -149,7 +149,7 @@
                             </div>
                             <button type="button" @click="removeItem(i)" class="text-red-400 hover:text-red-600 p-2 shrink-0" aria-label="Remove"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
                         </div>
-                        <div class="grid grid-cols-2 gap-2" x-show="item.product_id">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2" x-show="item.product_id">
                             <div>
                                 <label class="block text-xs text-gray-500 mb-1">Quantity</label>
                                 <input type="number" min="1" :max="item.stock" x-model.number="item.quantity" :name="'quantity[' + i + ']'"

@@ -11,7 +11,7 @@
 </div>
 
 {{-- Stats --}}
-<div class="grid grid-cols-5 gap-4 mb-6">
+<div class="grid grid-cols-1 sm:grid-cols-5 gap-4 mb-6">
     @foreach([
         ['Total Codes', number_format($stats['total_codes']), 'text-gray-700'],
         ['Active Referrers', number_format($stats['active_codes']), 'text-indigo-600'],
@@ -26,7 +26,7 @@
     @endforeach
 </div>
 
-<div class="grid grid-cols-2 gap-6">
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
     {{-- Recent Points Activity --}}
     <div class="col-span-2 bg-white rounded-2xl shadow-sm overflow-x-auto">
         <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">

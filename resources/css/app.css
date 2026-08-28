@@ -2,6 +2,12 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Global (not layouts/app.blade.php's own inline copy, which layouts/admin.blade.php never
+   loads) — needed by the admin panel's mobile pill-nav strips (reports/_nav, settings/
+   layout) so their horizontal scroll doesn't show a raw OS scrollbar under the pills. */
+.scrollbar-hide::-webkit-scrollbar { display: none; }
+.scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+
 /*
  * ── Site-wide dark mode retrofit ─────────────────────────────────────────────
  * Dark mode (Tailwind's `darkMode: 'class'`, toggled via the theme switcher in

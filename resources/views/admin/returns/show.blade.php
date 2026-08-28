@@ -26,7 +26,7 @@
                     </div>
                     <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold {{ $return->statusBadge() }}">{{ $return->statusLabel() }}</span>
                 </div>
-                <div class="grid grid-cols-2 gap-4 text-sm">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                     <div>
                         <p class="text-gray-500 text-xs mb-1">Refund Type</p>
                         <p class="font-medium text-gray-900">{{ $return->refundTypeLabel() }}</p>

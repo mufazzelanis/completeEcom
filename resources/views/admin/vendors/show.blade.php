@@ -231,7 +231,7 @@
                 <form action="{{ route('admin.vendors.payout', $vendor) }}" method="POST" class="space-y-3">
                     @csrf
                     <p class="text-sm text-gray-600">Settling <strong>৳{{ number_format($earnings['available']) }}</strong> across every transaction currently marked "Available".</p>
-                    <div class="grid grid-cols-2 gap-3">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div>
                             <label class="block text-xs font-medium text-gray-500 mb-1">Payout Method</label>
                             <input type="text" name="method" value="{{ $vendor->payout_method }}" placeholder="e.g. bKash, Bank Transfer"
@@ -255,7 +255,7 @@
             </div>
             @endif
 
-            <div class="grid grid-cols-3 gap-4 mb-5">
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-5">
                 <div>
                     <p class="text-xs text-gray-400 uppercase tracking-wider">On Hold</p>
                     <p class="text-lg font-bold text-yellow-600">৳{{ number_format($earnings['hold']) }}</p>
@@ -335,7 +335,7 @@
             <h2 class="font-semibold text-gray-800 mb-3">Identity Verification</h2>
             @if($vendor->document_type === 'nid')
                 <p class="text-sm text-gray-600 mb-3">National ID @if($vendor->nid_number)&mdash; <span class="font-mono">{{ $vendor->nid_number }}</span>@endif</p>
-                <div class="grid grid-cols-2 gap-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     @if($vendor->nid_front_image)
                     <a href="{{ route('admin.vendors.document', [$vendor, 'nid_front_image']) }}" target="_blank" class="block">
                         <img src="{{ route('admin.vendors.document', [$vendor, 'nid_front_image']) }}" class="rounded-xl border border-gray-100 w-full h-32 object-cover hover:opacity-80 transition">

@@ -35,7 +35,7 @@
 
     <form action="{{ route('admin.blog.posts.update', $blogPost) }}" method="POST" enctype="multipart/form-data" class="space-y-6">
         @csrf @method('PUT')
-        <div class="grid grid-cols-3 gap-6">
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
             {{-- Main Content --}}
             <div class="col-span-2 space-y-5">
                 <div class="bg-white rounded-2xl shadow-sm p-6 space-y-5">

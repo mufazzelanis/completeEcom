@@ -27,7 +27,7 @@
 <div class="bg-green-50 border border-green-200 text-green-700 rounded-xl px-4 py-3 mb-6 text-sm">{{ session('success') }}</div>
 @endif
 
-<div class="grid grid-cols-3 gap-6">
+<div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
     {{-- Details --}}
     <div class="col-span-1 space-y-4">
         <div class="bg-white rounded-2xl shadow-sm p-6 space-y-3 text-sm">
@@ -50,7 +50,7 @@
             @if($emailCampaign->status === 'sending')
             <p class="text-xs text-blue-600 bg-blue-50 rounded-lg px-3 py-2 mb-3">Still sending in the background — refresh this page to see updated progress. The rest goes out automatically within a few minutes.</p>
             @endif
-            <div class="grid grid-cols-2 gap-3 text-center">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-center">
                 <div class="bg-green-50 rounded-xl p-3">
                     <p class="text-xl font-bold text-green-600">{{ number_format($emailCampaign->sent_count) }}</p>
                     <p class="text-xs text-gray-500 mt-0.5">Delivered</p>

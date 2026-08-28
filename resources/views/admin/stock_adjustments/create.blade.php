@@ -41,7 +41,7 @@
 
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Adjustment Type *</label>
-                    <div class="grid grid-cols-2 gap-2">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
                         @foreach([
                             'return_in'  => ['Customer Return', 'green', 'Stock returned by customer'],
                             'manual_in'  => ['Manual Stock In', 'green', 'Add stock manually'],

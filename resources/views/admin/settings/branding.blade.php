@@ -83,7 +83,7 @@ $logos = [
 <div class="bg-white rounded-xl shadow-sm border p-6 space-y-4">
     <h2 class="text-base font-semibold text-gray-900 pb-3 border-b">Brand Colors</h2>
     <p class="text-xs text-gray-400 -mt-2">Primary re-themes the storefront's main buttons, links, and highlights. Secondary and Accent re-theme their respective secondary/highlight elements (badges, sale tags, etc.). Text re-themes the main body/heading text color. All four apply site-wide on the customer-facing storefront.</p>
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-5">
+    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-5">
         <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Primary Color</label>
             <div class="flex items-center gap-2">

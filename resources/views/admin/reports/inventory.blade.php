@@ -19,7 +19,7 @@
 </div>
 
 {{-- Summary --}}
-<div class="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
     @php
     $cards = [
         ['Total Active', number_format($totalProducts), 'text-gray-700','bg-gray-50'],
@@ -37,7 +37,7 @@
     @endforeach
 </div>
 
-<div class="grid grid-cols-3 gap-6 mb-6">
+<div class="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-6">
     {{-- Stock Distribution Chart --}}
     <div class="bg-white rounded-2xl shadow-sm p-6">
         <h3 class="font-semibold text-gray-800 mb-4">Stock Distribution</h3>
@@ -89,7 +89,7 @@
     </div>
 </div>
 
-<div class="grid grid-cols-2 gap-6 mb-6">
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-6">
     {{-- Low Stock --}}
     <div class="bg-white rounded-2xl shadow-sm p-6 border-l-4 border-orange-400">
         <h3 class="font-semibold text-gray-800 mb-4 flex items-center gap-2">
@@ -182,7 +182,7 @@
         <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
         Inactive Products with Stock ({{ $inactiveWithStock->count() }})
     </h3>
-    <div class="grid grid-cols-2 gap-3">
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
         @foreach($inactiveWithStock as $p)
         <div class="flex items-center justify-between bg-gray-50 rounded-xl px-4 py-2.5">
             <div class="min-w-0">

@@ -19,7 +19,7 @@
         <div class="bg-white rounded-2xl shadow-sm p-6 space-y-4">
             <h2 class="font-semibold text-gray-800 text-lg">New Batch / Lot</h2>
 
-            <div class="grid grid-cols-2 gap-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div class="col-span-2">
                     <label class="block text-sm font-medium text-gray-700 mb-1">Product *</label>
                     <select name="product_id" required

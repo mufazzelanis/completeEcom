@@ -36,7 +36,7 @@
 </div>
 
 {{-- Key metrics --}}
-<div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
     @php
     $totalBuyers = $returningBuyers + $firstTimeBuyers;
     $retentionRate = $totalBuyers > 0 ? round(($returningBuyers / $totalBuyers) * 100, 1) : 0;
@@ -56,7 +56,7 @@
     @endforeach
 </div>
 
-<div class="grid grid-cols-3 gap-6 mb-6">
+<div class="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-6">
     {{-- New Customers Trend --}}
     <div class="col-span-2 bg-white rounded-2xl shadow-sm p-6">
         <h3 class="font-semibold text-gray-800 mb-4">New Customer Registrations</h3>
@@ -84,7 +84,7 @@
     </div>
 </div>
 
-<div class="grid grid-cols-2 gap-6">
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
     {{-- Top Customers --}}
     <div class="bg-white rounded-2xl shadow-sm p-6">
         <div class="flex items-center justify-between mb-4">

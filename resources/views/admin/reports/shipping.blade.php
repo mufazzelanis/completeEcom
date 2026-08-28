@@ -25,7 +25,7 @@
 </div>
 
 {{-- Summary Cards --}}
-<div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
     @php
     $cards = [
         ['Total Orders', number_format($summary->total_orders ?? 0), 'text-gray-800', 'bg-gray-50'],
@@ -42,7 +42,7 @@
     @endforeach
 </div>
 
-<div class="grid grid-cols-3 gap-6 mb-6">
+<div class="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-6">
     {{-- Shipping Trend Chart --}}
     <div class="col-span-2 bg-white rounded-2xl shadow-sm p-6">
         <h3 class="font-semibold text-gray-800 mb-4">Shipping Revenue & Deliveries — Last 12 Months</h3>

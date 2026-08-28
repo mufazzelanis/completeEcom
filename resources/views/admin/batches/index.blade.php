@@ -14,7 +14,7 @@
 </div>
 
 {{-- Stats --}}
-<div class="grid grid-cols-2 gap-4 mb-6">
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
     <div class="bg-red-50 border border-red-200 rounded-2xl p-4 flex items-center gap-4">
         <div class="w-10 h-10 bg-red-100 rounded-xl flex items-center justify-center">
             <svg class="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>

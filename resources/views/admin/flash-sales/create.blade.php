@@ -25,7 +25,7 @@
             <textarea name="description" rows="2" class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">{{ old('description') }}</textarea>
         </div>
 
-        <div class="grid grid-cols-2 gap-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Banner Text</label>
                 <input type="text" name="banner_text" value="{{ old('banner_text') }}" placeholder="e.g. ⚡ 4-Hour Flash Sale!"
@@ -40,7 +40,7 @@
             </div>
         </div>
 
-        <div class="grid grid-cols-2 gap-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Starts At <span class="text-red-500">*</span></label>
                 <input type="datetime-local" name="starts_at" value="{{ old('starts_at') }}" required

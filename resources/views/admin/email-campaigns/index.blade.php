@@ -13,7 +13,7 @@
     </a>
 </div>
 
-<div class="grid grid-cols-5 gap-4 mb-6">
+<div class="grid grid-cols-1 sm:grid-cols-5 gap-4 mb-6">
     @foreach([
         ['Total', $stats['total'], 'text-gray-700'],
         ['Sent', $stats['sent'], 'text-green-600'],

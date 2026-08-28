@@ -2,7 +2,7 @@
      array of stored paths (see LandingPageController@applyGalleries). Existing thumbnails
      get a "remove" checkbox; new files are appended on submit. --}}
 @if(!empty($existing))
-<div class="grid grid-cols-4 gap-2 mb-2">
+<div class="grid grid-cols-1 sm:grid-cols-4 gap-2 mb-2">
     @foreach($existing as $path)
     <label class="relative block cursor-pointer group">
         <img src="{{ Storage::url($path) }}" class="w-full h-20 object-cover rounded-lg border border-gray-100">

@@ -8,7 +8,7 @@
         <h3 class="text-sm font-semibold text-gray-700 mb-4">Add New FAQ</h3>
         <form action="{{ route('admin.faqs.store') }}" method="POST" class="space-y-4">
             @csrf
-            <div class="grid grid-cols-2 gap-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div class="col-span-2">
                     <label class="block text-sm font-medium text-gray-700 mb-1">Question <span class="text-red-500">*</span></label>
                     <input type="text" name="question" value="{{ old('question') }}" required placeholder="What is your question?"
@@ -30,7 +30,7 @@
                         @endforeach
                     </datalist>
                 </div>
-                <div class="grid grid-cols-2 gap-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Sort Order</label>
                         <input type="number" name="sort_order" value="{{ old('sort_order', 0) }}"

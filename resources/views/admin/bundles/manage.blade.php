@@ -14,7 +14,7 @@
 <div class="bg-green-50 border border-green-200 text-green-700 rounded-xl px-4 py-3 mb-6 text-sm">{{ session('success') }}</div>
 @endif
 
-<div class="grid grid-cols-3 gap-6">
+<div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
     {{-- Add Item --}}
     <div class="col-span-1">
         <div class="bg-white rounded-2xl shadow-sm p-6">

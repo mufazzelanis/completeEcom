@@ -30,7 +30,7 @@
 </div>
 
 {{-- Summary --}}
-<div class="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
     @php
     // orders.total is already computed as subtotal - discount + shipping + tax,
     // so gross_revenue is already net of discount — don't subtract it again.
@@ -56,7 +56,7 @@
     @endforeach
 </div>
 
-<div class="grid grid-cols-3 gap-6 mb-6">
+<div class="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-6">
     {{-- Monthly Revenue Chart --}}
     <div class="col-span-2 bg-white rounded-2xl shadow-sm p-6">
         <h3 class="font-semibold text-gray-800 mb-4">Monthly Revenue — Last 12 Months</h3>
@@ -78,7 +78,7 @@
     </div>
 </div>
 
-<div class="grid grid-cols-2 gap-6 mb-6">
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-6">
     {{-- Revenue by Brand --}}
     <div class="bg-white rounded-2xl shadow-sm p-6">
         <h3 class="font-semibold text-gray-800 mb-4">Revenue by Brand</h3>

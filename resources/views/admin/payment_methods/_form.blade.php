@@ -1,7 +1,7 @@
 {{-- $method = existing PaymentMethod or null --}}
 <div class="space-y-5" x-data="{ type: '{{ old('type', $method?->type ?? 'cod') }}', chargeType: '{{ old('charge_type', $method?->charge_type ?? 'none') }}' }">
 
-    <div class="grid grid-cols-2 gap-4">
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Display Name *</label>
             <input type="text" name="name" value="{{ old('name', $method?->name) }}"
@@ -28,7 +28,7 @@
 
     {{-- Account info: shown for mobile_banking and bank_transfer --}}
     <div x-show="type === 'mobile_banking' || type === 'bank_transfer'" x-cloak>
-        <div class="grid grid-cols-2 gap-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Account Name</label>
                 <input type="text" name="account_name" value="{{ old('account_name', $method?->account_name) }}"
@@ -44,7 +44,7 @@
 
     {{-- Bank info: shown for bank_transfer only --}}
     <div x-show="type === 'bank_transfer'" x-cloak>
-        <div class="grid grid-cols-3 gap-4">
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Bank Name</label>
                 <input type="text" name="bank_name" value="{{ old('bank_name', $method?->bank_name) }}"
@@ -72,7 +72,7 @@
     {{-- Charges --}}
     <div class="border border-gray-100 rounded-xl p-4 space-y-3">
         <p class="text-sm font-semibold text-gray-700">Gateway Charge (added to order total)</p>
-        <div class="grid grid-cols-3 gap-4">
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
                 <label class="block text-xs font-medium text-gray-500 mb-1">Charge Type</label>
                 <select name="charge_type" x-model="chargeType"
@@ -89,7 +89,7 @@
             </div>
             <input type="hidden" name="charge_value" value="0" x-show="chargeType === 'none'">
         </div>
-        <div class="grid grid-cols-2 gap-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
                 <label class="block text-xs font-medium text-gray-500 mb-1">Min Order Amount (৳)</label>
                 <input type="number" name="min_amount" value="{{ old('min_amount', $method?->min_amount) }}" min="0" step="0.01" placeholder="No minimum"
@@ -103,7 +103,7 @@
         </div>
     </div>
 
-    <div class="grid grid-cols-2 gap-4">
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Logo / Icon</label>
             @if($method?->logo)

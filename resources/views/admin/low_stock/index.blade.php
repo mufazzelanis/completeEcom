@@ -11,7 +11,7 @@
 </div>
 
 {{-- Stats --}}
-<div class="grid grid-cols-3 gap-4 mb-6">
+<div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
     <a href="{{ route('admin.low-stock.index', ['filter'=>'out']) }}"
         class="bg-white rounded-2xl shadow-sm p-5 flex items-center gap-4 hover:shadow-md transition {{ $filter === 'out' ? 'ring-2 ring-red-400' : '' }}">
         <div class="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center flex-shrink-0">

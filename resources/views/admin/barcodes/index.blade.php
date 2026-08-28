@@ -49,7 +49,7 @@
     </div>
 
     {{-- Print Grid --}}
-    <div class="p-6 grid grid-cols-2 lg:grid-cols-3 gap-6">
+    <div class="p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         @forelse($products as $product)
         <div class="border border-gray-200 rounded-2xl p-4 text-center" x-data="{ bc: '{{ $product->barcode }}' }">
             {{-- Barcode image via JsBarcode --}}

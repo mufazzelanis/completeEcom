@@ -20,7 +20,7 @@
         <div class="bg-white rounded-2xl shadow-sm p-6 space-y-4">
             <h2 class="font-semibold text-gray-800 text-lg">Edit Warehouse</h2>
 
-            <div class="grid grid-cols-2 gap-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div class="col-span-2">
                     <label class="block text-sm font-medium text-gray-700 mb-1">Warehouse Name *</label>
                     <input type="text" name="name" value="{{ old('name', $warehouse->name) }}" required

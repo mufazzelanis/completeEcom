@@ -30,7 +30,7 @@
 </div>
 
 {{-- Summary Cards --}}
-<div class="grid grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
+<div class="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
     @php
     $statuses = [
         ['Total', $summary->total ?? 0, 'text-gray-800', 'bg-gray-50'],
@@ -49,7 +49,7 @@
     @endforeach
 </div>
 
-<div class="grid grid-cols-3 gap-6 mb-6">
+<div class="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-6">
     {{-- Order Volume Chart --}}
     <div class="col-span-2 bg-white rounded-2xl shadow-sm p-6">
         <h3 class="font-semibold text-gray-800 mb-4">Order Volume Trend</h3>
@@ -74,7 +74,7 @@
     </div>
 </div>
 
-<div class="grid grid-cols-2 gap-6 mb-6">
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-6">
     {{-- Payment Method --}}
     <div class="bg-white rounded-2xl shadow-sm p-6">
         <h3 class="font-semibold text-gray-800 mb-4">Orders by Payment Method</h3>
@@ -116,7 +116,7 @@
 </div>
 
 {{-- Avg Order Value --}}
-<div class="grid grid-cols-2 gap-6 mb-6">
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-6">
     <div class="bg-white rounded-2xl shadow-sm p-6">
         <h3 class="font-semibold text-gray-800 mb-2">Average Order Value</h3>
         <p class="text-3xl font-bold text-indigo-600 mb-1">৳{{ number_format($summary->avg_order_value ?? 0, 2) }}</p>

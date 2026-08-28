@@ -59,7 +59,7 @@
 
         <div class="border-t border-gray-100 pt-4">
             <p class="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3">Search Visibility</p>
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
                 @foreach([
                     ['noindex', 'No Index'],
                     ['nofollow', 'No Follow'],

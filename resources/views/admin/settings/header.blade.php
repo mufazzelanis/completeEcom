@@ -72,7 +72,7 @@
                class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-orange-500"
                placeholder="🎉 Sale! Use code SAVE10 for 10% off all orders.">
     </div>
-    <div class="grid grid-cols-2 gap-4">
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Bar Background Color</label>
             <input type="color" name="announcement_bg" value="{{ setting('announcement_bg', '#6366f1') }}"

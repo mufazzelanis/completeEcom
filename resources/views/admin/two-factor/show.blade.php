@@ -22,7 +22,7 @@
     <div class="bg-amber-50 border border-amber-200 rounded-2xl p-5 mb-5">
         <p class="text-sm font-semibold text-amber-800 mb-2">Save these recovery codes now — they won't be shown again</p>
         <p class="text-xs text-amber-700 mb-3">Each code can be used once, in place of your authenticator app, if you lose access to it.</p>
-        <div class="grid grid-cols-2 gap-2 font-mono text-sm bg-white rounded-xl p-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 font-mono text-sm bg-white rounded-xl p-4">
             @foreach(session('recovery_codes') as $code)
                 <div>{{ $code }}</div>
             @endforeach

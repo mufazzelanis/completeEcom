@@ -14,7 +14,7 @@
 <div class="bg-green-50 border border-green-200 text-green-700 rounded-xl px-4 py-3 mb-6 text-sm">{{ session('success') }}</div>
 @endif
 
-<div class="grid grid-cols-3 gap-6">
+<div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
     {{-- Settings --}}
     <div class="col-span-1">
         <form action="{{ route('admin.flash-sales.update', $flashSale) }}" method="POST" class="bg-white rounded-2xl shadow-sm p-6 space-y-4">
@@ -74,7 +74,7 @@
         {{-- Add Product --}}
         <div class="bg-white rounded-2xl shadow-sm p-6">
             <h2 class="font-semibold text-gray-800 mb-4">Add Product to Sale</h2>
-            <form action="{{ route('admin.flash-sales.products.add', $flashSale) }}" method="POST" class="grid grid-cols-4 gap-3">
+            <form action="{{ route('admin.flash-sales.products.add', $flashSale) }}" method="POST" class="grid grid-cols-1 sm:grid-cols-4 gap-3">
                 @csrf
                 <div class="col-span-2">
                     <select name="product_id" required class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">

@@ -7,7 +7,7 @@
     <a href="{{ route('admin.landing-pages.index') }}" class="text-sm text-indigo-600 hover:text-indigo-800 font-medium">Manage Landing Pages →</a>
 </div>
 
-<div class="grid grid-cols-4 gap-4 mb-6">
+<div class="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-6">
     <div class="bg-white rounded-2xl shadow-sm p-5">
         <p class="text-xs text-gray-400 uppercase tracking-wider mb-1">Total Views</p>
         <p class="text-2xl font-semibold text-gray-800">{{ number_format($totals['views']) }}</p>

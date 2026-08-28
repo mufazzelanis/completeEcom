@@ -11,7 +11,7 @@
 </div>
 @endif
 
-<div class="grid grid-cols-3 gap-4 mb-6">
+<div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
     <div class="bg-white rounded-2xl shadow-sm p-4">
         <p class="text-xs text-gray-500 mb-1">Pending Verification</p>
         <p class="text-2xl font-bold text-orange-600">{{ $stats['pending_verification'] }}</p>

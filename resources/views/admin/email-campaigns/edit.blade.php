@@ -9,7 +9,7 @@
     <h1 class="text-xl font-bold text-gray-800">Edit: {{ $emailCampaign->name }}</h1>
 </div>
 
-<form action="{{ route('admin.email-campaigns.update', $emailCampaign) }}" method="POST" class="grid grid-cols-3 gap-6">
+<form action="{{ route('admin.email-campaigns.update', $emailCampaign) }}" method="POST" class="grid grid-cols-1 sm:grid-cols-3 gap-6">
     @csrf @method('PUT')
 
     <div class="col-span-2 space-y-5">

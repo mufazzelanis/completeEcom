@@ -25,7 +25,7 @@
 </div>
 
 {{-- Summary Cards --}}
-<div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
     @php
     $cards = [
         ['Total Collected', '৳'.number_format($summary->total_collected ?? 0,2), 'text-gray-800', 'bg-gray-50'],
@@ -42,7 +42,7 @@
     @endforeach
 </div>
 
-<div class="grid grid-cols-3 gap-6 mb-6">
+<div class="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-6">
     {{-- Monthly Method Trend --}}
     <div class="col-span-2 bg-white rounded-2xl shadow-sm p-6">
         <h3 class="font-semibold text-gray-800 mb-4">Revenue by Payment Method — Last 12 Months</h3>
@@ -107,7 +107,7 @@
     </div>
 </div>
 
-<div class="grid grid-cols-2 gap-6 mb-6">
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-6">
     {{-- Pending Payments --}}
     <div class="bg-white rounded-2xl shadow-sm overflow-hidden">
         <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">

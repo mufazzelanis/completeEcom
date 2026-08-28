@@ -23,7 +23,7 @@
     };
 @endphp
 
-<div class="grid grid-cols-3 gap-6">
+<div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
     <div class="col-span-2 space-y-5">
         {{-- Basic Info --}}
         <div class="bg-white rounded-2xl shadow-sm p-6 space-y-5">
@@ -121,7 +121,7 @@
         {{-- Hero --}}
         <div class="bg-white rounded-2xl shadow-sm p-6 space-y-5">
             <h3 class="font-medium text-gray-800">Hero</h3>
-            <div class="grid grid-cols-2 gap-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Heading</label>
                     <input type="text" name="hero_heading" value="{{ old('hero_heading', $lp->hero_heading ?? '') }}" placeholder="A headline that grabs attention"
@@ -140,7 +140,7 @@
                 @endif
                 <input type="file" name="hero_image" accept="image/*" class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm">
             </div>
-            <div class="grid grid-cols-2 gap-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Rating <span class="text-gray-400 font-normal">(out of 5, optional)</span></label>
                     <input type="number" step="0.1" min="0" max="5" name="rating_value" value="{{ old('rating_value', $lp->rating_value ?? '') }}" placeholder="4.9"
@@ -236,7 +236,7 @@
                 <h3 class="font-medium text-gray-800">How It Works Video</h3>
                 <p class="text-xs text-gray-400 mt-0.5">Optional explainer video — YouTube, Facebook, or a direct .mp4 link. Leave blank to skip this section entirely.</p>
             </div>
-            <div class="grid grid-cols-2 gap-3">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <input type="text" name="how_it_works_heading" value="{{ old('how_it_works_heading', $lp->how_it_works_heading ?? '') }}" placeholder="Heading (defaults to 'How It Works')"
                     class="border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
                 <input type="url" name="how_it_works_video" value="{{ old('how_it_works_video', $lp->how_it_works_video ?? '') }}" placeholder="https://youtube.com/watch?v=…"
@@ -442,7 +442,7 @@
             <button type="button" @click="add()" class="text-sm text-indigo-600 hover:text-indigo-800 font-medium flex items-center gap-1.5">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg> Add Line
             </button>
-            <div class="grid grid-cols-2 gap-3 pt-2 border-t border-gray-100">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-gray-100">
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Offer Badge Text <span class="text-gray-400 font-normal">(optional)</span></label>
                     <input type="text" name="offer_badge_text" value="{{ old('offer_badge_text', $lp->offer_badge_text ?? '') }}" placeholder="🔥 Special Offer"
@@ -490,7 +490,7 @@
             <div class="space-y-2">
                 <template x-for="(field, i) in fields" :key="i">
                     <div class="flex items-start gap-2 border border-gray-100 rounded-xl p-3">
-                        <div class="flex-1 grid grid-cols-2 gap-2">
+                        <div class="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-2">
                             <input type="text" name="field_label[]" x-model="field.label" placeholder="Field label, e.g. Size"
                                 class="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
                             <select name="field_type[]" x-model="field.type"
@@ -585,7 +585,7 @@
                 <h3 class="font-medium text-gray-800">Certificates / Credentials</h3>
                 <p class="text-xs text-gray-400 mt-0.5">ISO certificates, awards, licenses — a photo strip that builds trust.</p>
             </div>
-            <div class="grid grid-cols-2 gap-3">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <input type="text" name="certificates_heading" value="{{ old('certificates_heading', $lp->certificates_heading ?? '') }}" placeholder="Heading (defaults to 'Certified')"
                     class="border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
                 <input type="text" name="certificates_subheading" value="{{ old('certificates_subheading', $lp->certificates_subheading ?? '') }}" placeholder="Subheading (optional)"
@@ -661,7 +661,7 @@
                 <p class="text-xs text-gray-400 mt-1">Meta Events Manager → Data Sources → your pixel. Fires PageView, ViewContent, InitiateCheckout, and Purchase automatically.</p>
             </div>
 
-            <div class="grid grid-cols-2 gap-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">GA4 Measurement ID</label>
                     <input type="text" name="ga_measurement_id" value="{{ old('ga_measurement_id', $lp->ga_measurement_id ?? '') }}" placeholder="{{ setting('google_analytics_id') ?: 'G-XXXXXXXXXX' }}"

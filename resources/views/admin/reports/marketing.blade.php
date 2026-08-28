@@ -25,7 +25,7 @@
 </div>
 
 {{-- Coupon Summary --}}
-<div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
     @php
     $cards = [
         ['Coupon Orders', number_format($couponSummary->orders_with_coupon), 'text-indigo-700', 'bg-indigo-50', 'Out of '.number_format($totalOrders).' total ('.$couponRate.'%)'],
@@ -43,7 +43,7 @@
     @endforeach
 </div>
 
-<div class="grid grid-cols-3 gap-6 mb-6">
+<div class="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-6">
     {{-- Discount Trend Chart --}}
     <div class="col-span-2 bg-white rounded-2xl shadow-sm p-6">
         <h3 class="font-semibold text-gray-800 mb-4">Discount Trend — Last 12 Months</h3>
@@ -68,7 +68,7 @@
 </div>
 
 {{-- AOV Comparison --}}
-<div class="grid grid-cols-3 gap-6 mb-6">
+<div class="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-6">
     <div class="bg-white rounded-2xl shadow-sm p-6 flex flex-col items-center justify-center text-center">
         <p class="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">Avg Order — With Coupon</p>
         <p class="text-3xl font-bold text-indigo-600">৳{{ number_format($couponSummary->avg_order_with_coupon,2) }}</p>

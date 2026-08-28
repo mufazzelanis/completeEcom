@@ -35,7 +35,7 @@
 </div>
 
 {{-- Summary cards --}}
-<div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
     @php
     $cards = [
         ['Total Revenue', '৳'.number_format($summary->total_revenue ?? 0, 2), 'text-green-600', 'bg-green-50'],
@@ -52,7 +52,7 @@
     @endforeach
 </div>
 
-<div class="grid grid-cols-3 gap-6 mb-6">
+<div class="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-6">
     {{-- Sales Trend Chart --}}
     <div class="col-span-2 bg-white rounded-2xl shadow-sm p-6">
         <h3 class="font-semibold text-gray-800 mb-4">Sales Trend</h3>

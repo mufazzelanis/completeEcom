@@ -25,7 +25,7 @@
             {{-- Basic Info --}}
             <div class="bg-white rounded-2xl shadow-sm p-6">
                 <h2 class="text-base font-semibold text-gray-800 mb-4">Basic Information</h2>
-                <div class="grid grid-cols-2 gap-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Name *</label>
                         <input type="text" name="name" value="{{ old('name', $user->name) }}"
@@ -93,7 +93,7 @@
                 @foreach($permissions as $group => $groupPerms)
                     <div class="mb-5">
                         <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">{{ $group }}</p>
-                        <div class="grid grid-cols-2 gap-2">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
                             @foreach($groupPerms as $perm)
                                 @php
                                     $override = $userPermissions[$perm->id] ?? null;

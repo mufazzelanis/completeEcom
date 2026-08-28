@@ -10,7 +10,7 @@
 </div>
 
 {{-- Platform-wide totals --}}
-<div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4 mb-6">
     <div class="bg-white rounded-2xl shadow-sm p-5">
         <p class="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">Total Sales</p>
         <p class="text-xl font-bold text-gray-800">৳{{ number_format($totals['total_sales']) }}</p>

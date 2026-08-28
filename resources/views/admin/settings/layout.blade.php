@@ -48,9 +48,29 @@ $navGroups = [
 $currentGroup = request()->route('group', 'general');
 @endphp
 
-<div class="flex gap-5">
-    {{-- Settings Sidebar Nav --}}
-    <div class="w-52 flex-shrink-0 space-y-1">
+{{-- flex-col on mobile — same reasoning as admin/reports/layout.blade.php: a fixed w-52
+     sidebar next to a phone-width viewport left almost nothing for the actual settings
+     form. Side-by-side again from lg: up. --}}
+<div class="flex flex-col lg:flex-row gap-5">
+    {{-- Mobile: every settings section flattened into one horizontally-scrolling pill row,
+         hidden from lg: up where the full grouped sidebar takes over. --}}
+    <nav class="lg:hidden -mx-4 px-4 flex gap-2 overflow-x-auto scrollbar-hide pb-1">
+        @foreach($navGroups as $items)
+            @foreach($items as $item)
+            <a href="{{ route('admin.settings.show', $item['group']) }}"
+               class="shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-medium whitespace-nowrap transition
+                      {{ $currentGroup === $item['group'] ? 'bg-orange-600 text-white' : 'bg-white border border-gray-200 text-gray-600' }}">
+                <svg class="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="{{ $item['icon'] }}"/>
+                </svg>
+                {{ $item['label'] }}
+            </a>
+            @endforeach
+        @endforeach
+    </nav>
+
+    {{-- Settings Sidebar Nav (desktop) --}}
+    <div class="hidden lg:block w-52 flex-shrink-0 space-y-1">
         @foreach($navGroups as $sectionLabel => $items)
         <div class="bg-white rounded-xl shadow-sm border overflow-hidden mb-2">
             <div class="px-3 py-2 bg-gray-50 border-b">

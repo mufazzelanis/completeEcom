@@ -10,7 +10,7 @@
 
     <form action="{{ route('admin.pages.store') }}" method="POST" enctype="multipart/form-data" class="space-y-6">
         @csrf
-        <div class="grid grid-cols-3 gap-6">
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
             <div class="col-span-2 space-y-5">
                 <div class="bg-white rounded-2xl shadow-sm p-6 space-y-5">
                     <div>
@@ -31,7 +31,7 @@
 
                 <div class="bg-white rounded-2xl shadow-sm p-6 space-y-5">
                     <h3 class="font-medium text-gray-800">SEO & Open Graph</h3>
-                    <div class="grid grid-cols-2 gap-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Meta Title</label>
                             <input type="text" name="meta_title" value="{{ old('meta_title') }}"
