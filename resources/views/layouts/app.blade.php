@@ -792,10 +792,13 @@ function trackAddToCart(item) {
     var currency = {!! Js::from(setting('currency_code', 'BDT')) !!};
     var value = (item.price || 0) * (item.quantity || 1);
     if (typeof fbq === 'function') {
+        // eventID (when present) matches the server-side Conversions API call
+        // CartController@add already fired for this same add — lets Meta dedupe the
+        // pixel+CAPI pair into one event instead of double-counting.
         fbq('track', 'AddToCart', {
             content_ids: [String(item.id)], content_type: 'product',
             content_name: item.name, value: value, currency: currency,
-        });
+        }, item.fb_event_id ? { eventID: item.fb_event_id } : undefined);
     }
     if (typeof gtag === 'function') {
         gtag('event', 'add_to_cart', {
@@ -856,6 +859,7 @@ async function toggleCartItem(productId, btn) {
                     name: btn.dataset.productName || '',
                     price: parseFloat(btn.dataset.productPrice || '0'),
                     quantity: 1,
+                    fb_event_id: data.fb_event_id,
                 });
             }
 

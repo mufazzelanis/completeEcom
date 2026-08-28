@@ -610,10 +610,13 @@ function updateQty(delta) {
     var currency = {!! Js::from(setting('currency_code', 'BDT')) !!};
 
     if (typeof fbq === 'function') {
+        // eventID matches the server-side Conversions API call ProductController@show
+        // already fired for this same page view, so Meta merges the pair into one event
+        // instead of double-counting.
         fbq('track', 'ViewContent', {
             content_ids: [id], content_type: 'product', content_name: name,
             content_category: category, value: value, currency: currency,
-        });
+        }, { eventID: {!! Js::from($fbViewContentEventId) !!} });
     }
     if (typeof gtag === 'function') {
         gtag('event', 'view_item', {

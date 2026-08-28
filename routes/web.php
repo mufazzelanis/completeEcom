@@ -3,6 +3,7 @@
 use App\Http\Controllers\AccountController;
 use App\Http\Controllers\AddressController;
 use App\Http\Controllers\Admin\ActivityLogController as AdminActivityLogController;
+use App\Http\Controllers\Admin\FacebookConversionLogController as AdminFacebookConversionLogController;
 use App\Http\Controllers\Admin\AttributeController as AdminAttributeController;
 use App\Http\Controllers\Admin\AuditLogController as AdminAuditLogController;
 use App\Http\Controllers\Admin\BannerController as AdminBannerController;
@@ -471,6 +472,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     // Audit Logs
     Route::get('audit-logs', [AdminAuditLogController::class, 'index'])->name('audit-logs.index');
     Route::get('activity-logs', [AdminActivityLogController::class, 'index'])->name('activity-logs.index');
+    Route::get('facebook-conversion-logs', [AdminFacebookConversionLogController::class, 'index'])->name('facebook-conversion-logs.index');
 
     // CMS — Blog
     Route::resource('blog/categories', AdminBlogCategoryController::class)->except(['show'])->names([

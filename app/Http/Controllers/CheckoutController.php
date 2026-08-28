@@ -16,6 +16,7 @@ use App\Models\ReferralCode;
 use App\Models\Setting;
 use App\Models\User;
 use App\Services\ActivityLogger;
+use App\Services\Facebook\ConversionsApi;
 use App\Services\Notifications\NotificationDispatcher;
 use App\Services\ReferralService;
 use App\Services\ShippingCalculator;
@@ -190,11 +191,28 @@ class CheckoutController extends Controller
 
         $checkoutFields = $this->resolveCheckoutFields();
 
+        // Shared with the client-side fbq('track', 'InitiateCheckout', ..., {eventID}) call in
+        // checkout/index.blade.php so Meta dedupes this pixel+CAPI pair into one event.
+        $fbInitiateCheckoutEventId = (string) Str::uuid();
+        $user = auth()->user();
+        ConversionsApi::track(
+            eventName: 'InitiateCheckout',
+            eventId: $fbInitiateCheckoutEventId,
+            customData: [
+                'content_ids'  => $cartItems->pluck('product_id')->map(fn ($id) => (string) $id)->values()->all(),
+                'content_type' => 'product',
+                'num_items'    => (int) $cartItems->sum('quantity'),
+                'value'        => (float) $subtotal,
+                'currency'     => setting('currency_code', 'BDT'),
+            ],
+            rawUserFields: $user ? ['name' => $user->name, 'email' => $user->email, 'phone' => $user->phone] : [],
+        );
+
         return view('checkout.index', compact(
             'cartItems', 'subtotal', 'discount', 'shipping', 'total',
             'coupon', 'promoCode', 'addresses', 'paymentMethods', 'methodCharges', 'base',
             'usesZones', 'shippingByZone', 'defaultZone', 'methodChargesByZone',
-            'pointsBalance', 'pointsRedeemed', 'pointsDiscount', 'checkoutFields'
+            'pointsBalance', 'pointsRedeemed', 'pointsDiscount', 'checkoutFields', 'fbInitiateCheckoutEventId'
         ));
     }
 
@@ -532,7 +550,34 @@ class CheckoutController extends Controller
             session([$trackedKey => true]);
         }
 
-        return view('checkout.success', compact('order', 'accountCreated', 'shouldTrackPurchase'));
+        // Shared with the client-side fbq('track', 'Purchase', ..., {eventID}) call in
+        // checkout/success.blade.php so Meta dedupes this pixel+CAPI pair into one event —
+        // deterministic (not a fresh uuid) so it's identical if this method somehow runs
+        // again for the same order despite the $shouldTrackPurchase guard above.
+        $fbPurchaseEventId = 'purchase_' . $order->id;
+        if ($shouldTrackPurchase) {
+            ConversionsApi::track(
+                eventName: 'Purchase',
+                eventId: $fbPurchaseEventId,
+                customData: [
+                    'content_ids'  => $order->items->map(fn ($item) => $item->product?->sku ?: (string) $item->product_id)->values()->all(),
+                    'content_type' => 'product',
+                    'value'        => (float) $order->total,
+                    'currency'     => setting('currency_code', 'BDT'),
+                ],
+                rawUserFields: [
+                    'name'    => $order->shipping_name,
+                    'email'   => $order->user?->email,
+                    'phone'   => $order->shipping_phone,
+                    'city'    => $order->shipping_city,
+                    'state'   => $order->shipping_state,
+                    'zip'     => $order->shipping_zip,
+                    'country' => $order->shipping_country,
+                ],
+            );
+        }
+
+        return view('checkout.success', compact('order', 'accountCreated', 'shouldTrackPurchase', 'fbPurchaseEventId'));
     }
 
     public function guestTrack(Request $request)

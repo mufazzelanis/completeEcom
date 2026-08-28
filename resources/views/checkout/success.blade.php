@@ -154,12 +154,15 @@
         // before the highest-value event fires — see the @php block above.
         fbq('init', {!! Js::from($pixelId) !!}, {!! Js::from($orderTrackingData['fb']) !!});
         @endif
+        // eventID matches the server-side Conversions API call CheckoutController@success
+        // already fired for this order (guarded there the same way, by $shouldTrackPurchase)
+        // so Meta merges the pair into one event instead of double-counting this sale.
         fbq('track', 'Purchase', {
             value: value,
             currency: currency,
             content_type: 'product',
             content_ids: items.map(function (i) { return i.id; })
-        });
+        }, { eventID: {!! Js::from($fbPurchaseEventId) !!} });
     }
     @endif
 })();

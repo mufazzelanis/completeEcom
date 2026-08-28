@@ -512,11 +512,13 @@ function fillAddress(address) {
     var currency = {!! Js::from(setting('currency_code', 'BDT')) !!};
 
     if (typeof fbq === 'function') {
+        // eventID matches the server-side Conversions API call CheckoutController@index
+        // already fired for this same page load, so Meta merges the pair into one event.
         fbq('track', 'InitiateCheckout', {
             content_ids: items.map(function (i) { return i.id; }), content_type: 'product',
             num_items: items.reduce(function (n, i) { return n + i.quantity; }, 0),
             value: value, currency: currency,
-        });
+        }, { eventID: {!! Js::from($fbInitiateCheckoutEventId) !!} });
     }
     if (typeof gtag === 'function') {
         gtag('event', 'begin_checkout', {

@@ -10,8 +10,10 @@ use App\Models\ProductVariantCombination;
 use App\Models\PromoCode;
 use App\Models\Setting;
 use App\Services\ActivityLogger;
+use App\Services\Facebook\ConversionsApi;
 use App\Services\ShippingCalculator;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 
 class CartController extends Controller
 {
@@ -157,6 +159,26 @@ class CartController extends Controller
 
         ActivityLogger::log('cart.add', "Added \"{$product->name}\" x{$request->quantity} to cart", $product, ['quantity' => $request->quantity]);
 
+        $addedPrice = (float) ($combination?->price ?? $product->final_price);
+
+        // Shared with whichever client-side trackAddToCart() call fires for this add (the
+        // quick-add button's own JS below, or the flashed one after a full-page redirect) so
+        // Meta dedupes the pixel+CAPI pair into one event instead of double-counting.
+        $fbAddToCartEventId = (string) Str::uuid();
+        $user = auth()->user();
+        ConversionsApi::track(
+            eventName: 'AddToCart',
+            eventId: $fbAddToCartEventId,
+            customData: [
+                'content_ids'  => [(string) $product->id],
+                'content_type' => 'product',
+                'content_name' => $product->name,
+                'value'        => $addedPrice * $request->quantity,
+                'currency'     => setting('currency_code', 'BDT'),
+            ],
+            rawUserFields: $user ? ['name' => $user->name, 'email' => $user->email, 'phone' => $user->phone] : [],
+        );
+
         if ($request->wantsJson()) {
             // The quick-add button fires AddToCart itself (trackAddToCart() in
             // layouts/app.blade.php, right after this fetch() resolves) — no
@@ -164,6 +186,7 @@ class CartController extends Controller
             return response()->json([
                 'status' => 'added',
                 'cart_count' => (int) $this->getCartQuery()->sum('quantity'),
+                'fb_event_id' => $fbAddToCartEventId,
             ]);
         }
 
@@ -174,8 +197,9 @@ class CartController extends Controller
         session()->flash('tracked_add_to_cart', [
             'id' => $product->id,
             'name' => $product->name,
-            'price' => (float) ($combination?->price ?? $product->final_price),
+            'price' => $addedPrice,
             'quantity' => (int) $request->quantity,
+            'fb_event_id' => $fbAddToCartEventId,
         ]);
 
         return back()->with('success', 'Product added to cart!');

@@ -5,7 +5,9 @@ namespace App\Http\Controllers;
 use App\Models\Product;
 use App\Models\Review;
 use App\Services\ActivityLogger;
+use App\Services\Facebook\ConversionsApi;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 
 class ProductController extends Controller
 {
@@ -46,7 +48,27 @@ class ProductController extends Controller
             ? $product->wishlists()->where('user_id', auth()->id())->exists()
             : false;
 
-        return view('products.show', compact('product', 'related', 'wishlisted'));
+        // Shared with the client-side fbq('track', 'ViewContent', ..., {eventID}) call in
+        // products/show.blade.php so Meta dedupes this pixel+CAPI pair into one event.
+        $fbViewContentEventId = (string) Str::uuid();
+        $user = auth()->user();
+        ConversionsApi::track(
+            eventName: 'ViewContent',
+            eventId: $fbViewContentEventId,
+            customData: [
+                // Matches the client-side fbq call's own `id` value exactly (see
+                // products/show.blade.php) — raw product ID, not SKU.
+                'content_ids'      => [(string) $product->id],
+                'content_type'     => 'product',
+                'content_name'     => $product->name,
+                'content_category' => $product->category->name ?? null,
+                'value'            => (float) $product->final_price,
+                'currency'         => setting('currency_code', 'BDT'),
+            ],
+            rawUserFields: $user ? ['name' => $user->name, 'email' => $user->email, 'phone' => $user->phone] : [],
+        );
+
+        return view('products.show', compact('product', 'related', 'wishlisted', 'fbViewContentEventId'));
     }
 
     public function storeReview(Request $request, Product $product)

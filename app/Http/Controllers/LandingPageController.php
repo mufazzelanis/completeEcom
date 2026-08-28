@@ -6,6 +6,7 @@ use App\Models\LandingPage;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Services\ActivityLogger;
+use App\Services\Facebook\ConversionsApi;
 use App\Services\Notifications\NotificationDispatcher;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -145,11 +146,31 @@ class LandingPageController extends Controller
         // lifetime as order_success itself, so a refresh naturally stops re-reporting it.
         $tracking = pixel_advanced_matching_data($order->shipping_name, null, $order->shipping_phone);
 
+        // Shared with the client-side fbq('track', 'Purchase', ..., {eventID}) call fired on
+        // the redirected-to thank-you page (see show.blade.php) so Meta dedupes the pair into
+        // one event. Fired here (not guarded by a session flag like the main checkout's
+        // Purchase) because — unlike that GET success page, which can be revisited/refreshed —
+        // this is the POST handler itself, which only ever runs once per order.
+        $fbPurchaseEventId = 'purchase_' . $order->id;
+        ConversionsApi::track(
+            eventName: 'Purchase',
+            eventId: $fbPurchaseEventId,
+            customData: [
+                'content_ids'  => [$landingPage->product?->sku ?: ($landingPage->product_id ? (string) $landingPage->product_id : $landingPage->slug)],
+                'content_type' => 'product',
+                'value'        => (float) $order->total,
+                'currency'     => setting('currency_code', 'BDT'),
+            ],
+            rawUserFields: ['name' => $order->shipping_name, 'phone' => $order->shipping_phone],
+            pixelIdOverride: $landingPage->fb_pixel_id ?: null,
+        );
+
         return redirect()->route('landing.show', $landingPage)->with([
-            'order_success'        => $order->order_number,
-            'order_success_value'  => (float) $order->total,
-            'order_success_fb'     => $tracking['fb'],
-            'order_success_google' => $tracking['google'],
+            'order_success'         => $order->order_number,
+            'order_success_value'   => (float) $order->total,
+            'order_success_fb'      => $tracking['fb'],
+            'order_success_google'  => $tracking['google'],
+            'order_success_fb_eid'  => $fbPurchaseEventId,
         ]);
     }
 }

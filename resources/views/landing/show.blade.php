@@ -81,10 +81,12 @@
                 fbq('init', {{ Js::from($landingPage->fb_pixel_id ?: setting('facebook_pixel_id', '')) }}, fbData);
             }
             @endif
+            // eventID matches the server-side Conversions API call LandingPageController@order
+            // already fired for this order, so Meta merges the pair into one event.
             fbq('track', 'Purchase', {
                 value: value, currency: currency,
                 content_type: 'product', content_ids: [{{ Js::from($trackProductId) }}],
-            });
+            }, { eventID: @json(session('order_success_fb_eid')) });
         }
     })();
     </script>
