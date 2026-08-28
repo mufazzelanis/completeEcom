@@ -2,10 +2,10 @@
 @section('title', 'Users')
 
 @section('content')
-<div class="flex items-center justify-between mb-6">
-    <form action="{{ route('admin.users.index') }}" method="GET" class="flex items-center space-x-3">
+<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
+    <form action="{{ route('admin.users.index') }}" method="GET" class="flex flex-wrap items-center gap-3">
         <input type="text" name="search" value="{{ request('search') }}" placeholder="Search name or email..."
-            class="border border-gray-200 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 w-56">
+            class="border border-gray-200 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 w-full sm:w-56">
         <select name="role" class="border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
             <option value="">All Roles</option>
             @foreach($roles as $role)
@@ -18,7 +18,7 @@
         @endif
     </form>
     <a href="{{ route('admin.users.create') }}"
-        class="flex items-center space-x-2 bg-indigo-600 text-white px-4 py-2 rounded-xl text-sm font-medium hover:bg-indigo-700 transition">
+        class="flex items-center justify-center sm:justify-start space-x-2 bg-indigo-600 text-white px-4 py-2 rounded-xl text-sm font-medium hover:bg-indigo-700 transition flex-shrink-0">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
         <span>Create User</span>
     </a>
