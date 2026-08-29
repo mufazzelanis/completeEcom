@@ -245,10 +245,14 @@
             <h2 class="text-lg font-extrabold text-gray-900">Categories</h2>
             <a href="{{ route('categories.index') }}" class="text-orange-700 hover:text-orange-800 font-bold text-sm transition">VIEW ALL →</a>
         </div>
-        <div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-3">
+        <div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-3" x-data="{ expanded: false }">
             @foreach($categories as $category)
+                {{-- Past the 6th tile, stay hidden on mobile until "More" is tapped;
+                     sm:!flex forces the tile back on at the sm breakpoint and up,
+                     where the grid already has room to show everything at once. --}}
                 <a href="{{ route('shop.category', $category->slug) }}"
-                   class="group flex flex-col items-center p-3 rounded-xl hover:bg-orange-50 transition-all duration-200">
+                   @if($loop->index >= 6) x-show="expanded" x-cloak @endif
+                   class="group flex flex-col items-center p-3 rounded-xl hover:bg-orange-50 transition-all duration-200 {{ $loop->index >= 6 ? 'sm:!flex' : '' }}">
                     <div class="w-14 h-14 md:w-16 md:h-16 bg-gradient-to-br from-orange-100 to-orange-50 rounded-2xl flex items-center justify-center mb-2 group-hover:from-orange-200 group-hover:to-orange-100 transition-all group-hover:scale-110 duration-300 shadow-sm overflow-hidden">
                         @if($category->image)
                             <img src="{{ Storage::url($category->image) }}" alt="{{ $category->name }}" loading="lazy" decoding="async" class="w-full h-full object-cover">
@@ -263,6 +267,14 @@
                     <p class="text-[10px] md:text-xs font-semibold text-gray-700 text-center leading-tight group-hover:text-orange-600 transition line-clamp-2">{{ $category->name }}</p>
                 </a>
             @endforeach
+            @if($categories->count() > 6)
+            <div class="col-span-3 sm:hidden text-center mt-1" x-show="!expanded">
+                <button type="button" @click="expanded = true" class="inline-flex items-center gap-1 text-orange-700 hover:text-orange-800 font-bold text-sm transition">
+                    More
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                </button>
+            </div>
+            @endif
         </div>
     </div>
 </div>
