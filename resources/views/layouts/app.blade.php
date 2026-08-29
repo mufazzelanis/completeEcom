@@ -686,7 +686,10 @@ $navCategories = \App\Models\Category::with(['children' => fn($q) => $q->active(
         ], fn ($c) => !empty($c['url']));
     @endphp
     @if(!empty($floatingContacts))
-        <div class="fixed left-3 md:left-4 top-1/2 -translate-y-1/2 z-40 flex flex-col gap-3">
+        {{-- bottom-20 (not bottom-4) on mobile — partials.storefront.bottom-nav is a fixed
+             full-width bar pinned to the very bottom on small screens (md:hidden), so
+             anything closer than that overlaps it. Desktop has no such bar. --}}
+        <div class="fixed left-3 md:left-4 bottom-20 md:bottom-6 z-40 flex flex-col gap-3">
             @foreach($floatingContacts as $contact)
                 <a href="{{ $contact['url'] }}" target="_blank" rel="noopener" aria-label="{{ $contact['label'] }}" title="{{ $contact['label'] }}"
                    class="relative w-11 h-11 md:w-12 md:h-12 rounded-full text-white shadow-lg flex items-center justify-center hover:scale-110 transition-transform duration-200"
