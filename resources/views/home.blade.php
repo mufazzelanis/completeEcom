@@ -64,12 +64,12 @@
                             @if($i === 0) fetchpriority="high" @else loading="lazy" @endif>
                         <div class="absolute inset-0 bg-gradient-to-r from-black/50 to-transparent"></div>
                         <div class="absolute inset-0 flex items-center px-5 md:px-14">
-                            <div>
+                            <div class="animate-fade-in-up">
                                 @if($banner->subtitle)<p class="text-white/80 text-sm font-medium mb-2">{{ $banner->subtitle }}</p>@endif
                                 <h2 class="text-white text-xl md:text-4xl font-extrabold mb-2 leading-tight">{{ $banner->title }}</h2>
                                 @if($banner->description)<p class="text-white/70 text-sm mb-4 hidden md:block max-w-md">{{ $banner->description }}</p>@endif
                                 @if($banner->button_text)
-                                    <span class="inline-block bg-white text-gray-900 px-6 py-2 rounded-full text-sm font-bold hover:bg-gray-100 transition">{{ $banner->button_text }}</span>
+                                    <span class="inline-block bg-white text-gray-900 px-6 py-2 rounded-full text-sm font-bold hover:bg-gray-100 hover:scale-105 transition-all">{{ $banner->button_text }}</span>
                                 @endif
                             </div>
                         </div>
@@ -79,13 +79,13 @@
             @endforeach
         @else
             {{-- Default Hero --}}
-            <div class="absolute inset-0 bg-gradient-to-r from-orange-500 via-red-500 to-pink-500">
+            <div class="absolute inset-0 bg-gradient-to-r from-orange-500 via-red-500 to-pink-500 bg-[length:200%_200%] animate-[gradientPan_8s_ease_infinite]">
                 <div class="absolute inset-0 flex items-center px-5 md:px-14">
-                    <div>
+                    <div class="animate-fade-in-up">
                         <p class="text-white/80 text-sm font-medium mb-2">Welcome to {{ setting('site_name', 'ShopVista') }}</p>
                         <h2 class="text-white text-xl md:text-5xl font-extrabold mb-3 leading-tight">Discover Amazing Deals</h2>
                         <p class="text-white/70 text-sm mb-5 hidden md:block">Shop thousands of products at unbeatable prices</p>
-                        <a href="{{ route('shop.index') }}" class="inline-block bg-white text-gray-900 px-8 py-2.5 rounded-full text-sm font-bold hover:bg-gray-100 transition shadow-lg">Shop Now</a>
+                        <a href="{{ route('shop.index') }}" class="btn-glow inline-block bg-white text-gray-900 px-8 py-2.5 rounded-full text-sm font-bold hover:bg-gray-100 hover:scale-105 transition-all shadow-lg">Shop Now</a>
                     </div>
                 </div>
             </div>
@@ -156,7 +156,7 @@
      look is untouched (mx-0/rounded-none/shadow-none resets it back to full-bleed there). --}}
 <div class="mx-3 md:mx-0 mt-3 md:mt-4 bg-white dark:bg-gray-900 rounded-2xl md:rounded-none shadow-sm md:shadow-none">
     <div class="max-w-[1200px] mx-auto px-4 py-3">
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 reveal-group">
             @foreach($highlights as $f)
                 @if($f['link'])
                     <a href="{{ $f['link'] }}" @if($f['blank']) target="_blank" rel="noopener" @endif
@@ -245,7 +245,7 @@
             <h2 class="text-lg font-extrabold text-gray-900">Categories</h2>
             <a href="{{ route('categories.index') }}" class="text-orange-700 hover:text-orange-800 font-bold text-sm transition">VIEW ALL →</a>
         </div>
-        <div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-3" x-data="{ expanded: false }">
+        <div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-3 reveal-group" x-data="{ expanded: false }">
             @foreach($categories as $category)
                 {{-- Past the 6th tile, stay hidden on mobile until "More" is tapped;
                      sm:!flex forces the tile back on at the sm breakpoint and up,
@@ -253,7 +253,7 @@
                 <a href="{{ route('shop.category', $category->slug) }}"
                    @if($loop->index >= 6) x-show="expanded" x-cloak @endif
                    class="group flex flex-col items-center p-3 rounded-xl hover:bg-orange-50 transition-all duration-200 {{ $loop->index >= 6 ? 'sm:!flex' : '' }}">
-                    <div class="w-14 h-14 md:w-16 md:h-16 bg-gradient-to-br from-orange-100 to-orange-50 rounded-2xl flex items-center justify-center mb-2 group-hover:from-orange-200 group-hover:to-orange-100 transition-all group-hover:scale-110 duration-300 shadow-sm overflow-hidden">
+                    <div class="w-14 h-14 md:w-16 md:h-16 bg-gradient-to-br from-orange-100 to-orange-50 rounded-2xl flex items-center justify-center mb-2 group-hover:from-orange-200 group-hover:to-orange-100 transition-all group-hover:scale-110 group-hover:-translate-y-1 duration-300 shadow-sm overflow-hidden">
                         @if($category->image)
                             <img src="{{ Storage::url($category->image) }}" alt="{{ $category->name }}" loading="lazy" decoding="async" class="w-full h-full object-cover">
                         @else
@@ -261,7 +261,7 @@
                                  intentional, uniform icon set — initials look like a raw
                                  unstyled fallback the moment more than a couple of
                                  categories are missing a photo. --}}
-                            <svg class="w-7 h-7 md:w-8 md:h-8 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
+                            <svg class="w-7 h-7 md:w-8 md:h-8 text-orange-400 group-hover:animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
                         @endif
                     </div>
                     <p class="text-[10px] md:text-xs font-semibold text-gray-700 text-center leading-tight group-hover:text-orange-600 transition line-clamp-2">{{ $category->name }}</p>
@@ -325,7 +325,7 @@
                 // picked for desktop — the rest still shows immediately at sm+.
                 $mobileCap = min(8, $sec->product_limit);
             @endphp
-            <div class="grid {{ $sec->getGridColsClass() }} gap-3">
+            <div class="grid {{ $sec->getGridColsClass() }} gap-3 reveal-group">
                 @foreach($entry['products'] as $i => $product)
                     @if($i < $mobileCap)
                         @include('partials.product-card', ['product' => $product])
@@ -375,7 +375,7 @@ $reviewThemes = [
 ];
 @endphp
 <div class="mx-3 md:mx-0 mt-3 md:mt-4 py-8 bg-gradient-to-r from-indigo-50 via-white to-orange-50 overflow-hidden rounded-2xl md:rounded-none shadow-sm md:shadow-none">
-    <div class="max-w-[1200px] mx-auto px-4 mb-6 text-center">
+    <div class="max-w-[1200px] mx-auto px-4 mb-6 text-center reveal">
         <h2 class="text-lg md:text-2xl font-extrabold bg-gradient-to-r from-pink-500 via-orange-500 to-indigo-500 bg-clip-text text-transparent inline-block">What Our Customers Say</h2>
         <p class="text-gray-500 dark:text-gray-500 text-xs md:text-sm mt-1">Real reviews from real, happy buyers</p>
     </div>
@@ -425,7 +425,7 @@ $reviewThemes = [
             <h2 class="text-lg font-extrabold text-gray-900">Top Brands</h2>
             <a href="{{ route('brands.index') }}" class="text-orange-700 hover:text-orange-800 font-bold text-sm transition">VIEW ALL →</a>
         </div>
-        <div class="carousel-container flex gap-3 overflow-x-auto scrollbar-hide pb-2 scroll-smooth">
+        <div class="carousel-container flex gap-3 overflow-x-auto scrollbar-hide pb-2 scroll-smooth reveal-group">
             @foreach($brands as $brand)
                 <a href="{{ route('shop.index') }}?brand={{ $brand->slug }}"
                    class="flex-shrink-0 w-32 h-20 bg-gray-50 border border-gray-100 rounded-xl flex items-center justify-center hover:border-orange-300 hover:shadow-md transition-all duration-200 group">
@@ -450,7 +450,7 @@ $reviewThemes = [
             <h2 class="text-lg font-extrabold text-gray-900 px-6">{{ setting('just_for_you_title', 'Just For You') }}</h2>
             <div class="h-px bg-gray-200 flex-1"></div>
         </div>
-        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 reveal-group">
             @foreach($justForYou as $product)
                 @include('partials.product-card', ['product' => $product])
             @endforeach
@@ -466,7 +466,7 @@ $reviewThemes = [
 <div class="mt-4">
     <div class="max-w-[1200px] mx-auto px-4">
         <div class="bg-gradient-to-r from-gray-800 to-gray-900 rounded-xl p-6 md:p-8">
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-6 text-center reveal-group">
                 @foreach([
                     ['num' => '100%', 'label' => 'Genuine Products'],
                     ['num' => '7 Days', 'label' => 'Easy Returns'],

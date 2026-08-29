@@ -316,6 +316,52 @@ $pageTwitterImage = trim($__env->yieldContent('twitter_image', $pageOgImage));
         @keyframes marquee{from{transform:translateX(0)}to{transform:translateX(-50%)}}
         .animate-marquee{animation:marquee 45s linear infinite}
         .marquee-pause:hover .animate-marquee{animation-play-state:paused}
+
+        /* ── Scroll-reveal system ────────────────────────────────────────────
+           `.reveal` fades/slides a single element in once it enters the
+           viewport; `.reveal-group` does the same to each of its direct
+           children with a staggered delay (nth-child, capped at 10 — a grid
+           with more items than that just has its tail arrive together with
+           the 10th, which reads fine since they're already close together).
+           JS (resources/js/scroll-reveal.js) does only one job: add
+           `.is-visible` the first time each `.reveal`/`.reveal-group` enters
+           view. Everything else — timing, distance, stagger — lives here so
+           designers can retune it without touching JS. */
+        .reveal{opacity:0;transform:translateY(22px);transition:opacity .6s cubic-bezier(.22,1,.36,1),transform .6s cubic-bezier(.22,1,.36,1)}
+        .reveal.is-visible{opacity:1;transform:translateY(0)}
+        .reveal-group > *{opacity:0;transform:translateY(18px);transition:opacity .5s cubic-bezier(.22,1,.36,1),transform .5s cubic-bezier(.22,1,.36,1)}
+        .reveal-group.is-visible > *{opacity:1;transform:translateY(0)}
+        @for ($i = 1; $i <= 10; $i++)
+        .reveal-group.is-visible > *:nth-child({{ $i }}){transition-delay:{{ $i * 0.06 }}s}
+        @endfor
+        @media (prefers-reduced-motion: reduce){
+            .reveal,.reveal-group > *{opacity:1!important;transform:none!important;transition:none!important}
+        }
+
+        /* Hero content's one-shot entrance on first paint — no observer needed,
+           it's above the fold so "scrolled into view" is immediate anyway. */
+        @keyframes fadeInUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+        .animate-fade-in-up{animation:fadeInUp .7s cubic-bezier(.22,1,.36,1) both}
+
+        /* Slow-panning gradient for the default (no-banner-configured) hero — used via
+           Tailwind's arbitrary `animate-[gradientPan_8s_ease_infinite]` on home.blade.php,
+           which only emits the `animation:` declaration and expects this keyframe to
+           already exist (Tailwind doesn't generate @keyframes from arbitrary values). */
+        @keyframes gradientPan{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
+        @media (prefers-reduced-motion: reduce){ .animate-\[gradientPan_8s_ease_infinite\]{animation:none} }
+
+        /* Soft breathing glow for the one hero CTA that should feel "alive"
+           without every button on the page competing for attention. */
+        @keyframes ctaGlow{0%,100%{box-shadow:0 0 0 0 rgba(255,255,255,.55)}50%{box-shadow:0 0 0 8px rgba(255,255,255,0)}}
+        .btn-glow{animation:ctaGlow 2.2s ease-out infinite}
+        @media (prefers-reduced-motion: reduce){ .btn-glow{animation:none} }
+
+        /* Shared "acknowledged" micro-interaction for the wishlist heart and quick-add-
+           to-cart button — a quick overshoot pop on activation rather than a flat color
+           swap, so the click feels registered. */
+        @keyframes popBounce{0%{transform:scale(1)}30%{transform:scale(1.35)}55%{transform:scale(.9)}100%{transform:scale(1)}}
+        .pop-bounce{animation:popBounce .45s ease-out}
+        @media (prefers-reduced-motion: reduce){ .pop-bounce{animation:none} }
     </style>
     {{-- Raw, not escaped — this is admin-entered CSS source, not user content. {{ }} would
          HTML-entity-escape every quote (font-family: 'Georgia' → &#039;Georgia&#039;), which
@@ -769,6 +815,12 @@ async function toggleWishlist(productId, btn) {
             btn.classList.add('text-red-500');
             btn.classList.remove('text-gray-400');
             btn.querySelector('svg').setAttribute('fill', 'currentColor');
+            // Restart the pop animation even on rapid re-clicks — removing the
+            // class and forcing a reflow before re-adding it is what makes a
+            // CSS animation replay instead of being a no-op the second time.
+            btn.classList.remove('pop-bounce');
+            void btn.offsetWidth;
+            btn.classList.add('pop-bounce');
         } else {
             btn.classList.remove('text-red-500');
             btn.classList.add('text-gray-400');
@@ -831,6 +883,12 @@ function setQuickAddButtonState(btn, inCart) {
     btn.classList.toggle('text-gray-500', !inCart);
     btn.classList.toggle('hover:bg-orange-50', !inCart);
     btn.classList.toggle('hover:text-orange-700', !inCart);
+
+    if (inCart) {
+        btn.classList.remove('pop-bounce');
+        void btn.offsetWidth;
+        btn.classList.add('pop-bounce');
+    }
 }
 
 async function toggleCartItem(productId, btn) {
