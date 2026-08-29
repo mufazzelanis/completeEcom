@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Cart;
 use App\Models\Otp;
 use App\Models\User;
+use App\Models\Wishlist;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -50,6 +51,11 @@ class TwoFactorChallengeController extends Controller
 
         $request->validate(['code' => 'required|string']);
 
+        // Same reasoning as AuthenticatedSessionController::store() — captured before
+        // regenerate() so the merge below looks up the ID that actually held the
+        // guest's cart/wishlist, not the fresh one regenerate() just swapped in.
+        $guestSessionId = $request->session()->getId();
+
         $user = User::findOrFail($userId);
         $inputCode = trim($request->input('code'));
         $verified = Otp::verify($user->email, self::PURPOSE, $inputCode);
@@ -75,7 +81,8 @@ class TwoFactorChallengeController extends Controller
         Auth::login($user, $remember);
         $request->session()->regenerate();
 
-        $this->mergeGuestCart($request);
+        $this->mergeGuestCart($guestSessionId);
+        $this->mergeGuestWishlist($guestSessionId);
 
         if ($user->canAccessAdmin()) {
             return redirect()->intended(route('admin.dashboard'));
@@ -107,15 +114,28 @@ class TwoFactorChallengeController extends Controller
         return $visible . str_repeat('*', max(mb_strlen($local) - mb_strlen($visible), 3)) . ($domain ? '@' . $domain : '');
     }
 
-    private function mergeGuestCart(Request $request): void
+    private function mergeGuestCart(string $guestSessionId): void
     {
-        $sessionId = $request->session()->getId();
         $userId = Auth::id();
 
-        foreach (Cart::where('session_id', $sessionId)->get() as $guestItem) {
+        foreach (Cart::where('session_id', $guestSessionId)->get() as $guestItem) {
             $existing = Cart::where('user_id', $userId)->where('product_id', $guestItem->product_id)->first();
             if ($existing) {
                 $existing->increment('quantity', $guestItem->quantity);
+                $guestItem->delete();
+            } else {
+                $guestItem->update(['user_id' => $userId, 'session_id' => null]);
+            }
+        }
+    }
+
+    private function mergeGuestWishlist(string $guestSessionId): void
+    {
+        $userId = Auth::id();
+
+        foreach (Wishlist::where('session_id', $guestSessionId)->get() as $guestItem) {
+            $exists = Wishlist::where('user_id', $userId)->where('product_id', $guestItem->product_id)->exists();
+            if ($exists) {
                 $guestItem->delete();
             } else {
                 $guestItem->update(['user_id' => $userId, 'session_id' => null]);

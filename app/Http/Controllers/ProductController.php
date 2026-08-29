@@ -46,7 +46,7 @@ class ProductController extends Controller
 
         $wishlisted = auth()->check()
             ? $product->wishlists()->where('user_id', auth()->id())->exists()
-            : false;
+            : $product->wishlists()->where('session_id', session()->getId())->exists();
 
         // Shared with the client-side fbq('track', 'ViewContent', ..., {eventID}) call in
         // products/show.blade.php so Meta dedupes this pixel+CAPI pair into one event.

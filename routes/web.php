@@ -143,6 +143,11 @@ Route::delete('/cart/coupon/remove', [CartController::class, 'removeCoupon'])->n
 Route::post('/cart/points', [CartController::class, 'applyPoints'])->name('cart.points')->middleware('auth');
 Route::delete('/cart/points/remove', [CartController::class, 'removePoints'])->name('cart.points.remove')->middleware('auth');
 
+// Wishlist — guest-favoritable via session_id (same pattern as cart above),
+// not gated behind auth::middleware; only checkout still requires an account.
+Route::post('/wishlist/toggle/{product}', [WishlistController::class, 'toggle'])->name('wishlist.toggle');
+Route::get('/wishlist', [WishlistController::class, 'index'])->name('wishlist.index');
+
 // Checkout Routes
 Route::get('/checkout', [CheckoutController::class, 'index'])->name('checkout.index');
 Route::post('/checkout', [CheckoutController::class, 'store'])->name('checkout.store');
@@ -167,10 +172,6 @@ Route::middleware('auth')->group(function () {
     Route::post('/orders/{order}/return', [ReturnRequestController::class, 'store'])->name('orders.return.store');
     Route::get('/account/returns', [AccountReturnController::class, 'index'])->name('account.returns.index');
     Route::get('/account/returns/{return}', [AccountReturnController::class, 'show'])->name('account.returns.show');
-
-    // Wishlist
-    Route::post('/wishlist/toggle/{product}', [WishlistController::class, 'toggle'])->name('wishlist.toggle');
-    Route::get('/wishlist', [WishlistController::class, 'index'])->name('wishlist.index');
 
     // Rich-text editor image uploads (admin product/blog/page descriptions, seller product descriptions)
     Route::post('/rich-editor/upload-image', [RichEditorController::class, 'uploadImage'])->name('rich-editor.upload-image');

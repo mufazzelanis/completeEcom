@@ -5,7 +5,9 @@
     $discountPct = $hasDiscount ? round((($product->price - $effectivePrice) / $product->price) * 100) : 0;
     $rating = $product->reviews->avg('rating') ?? 0;
     $reviewCount = $product->reviews->count();
-    $isWishlisted = auth()->check() ? \App\Models\Wishlist::where('user_id', auth()->id())->where('product_id', $product->id)->exists() : false;
+    $isWishlisted = auth()->check()
+        ? \App\Models\Wishlist::where('user_id', auth()->id())->where('product_id', $product->id)->exists()
+        : \App\Models\Wishlist::where('session_id', session()->getId())->where('product_id', $product->id)->exists();
     $isInCart = auth()->check()
         ? \App\Models\Cart::where('user_id', auth()->id())->where('product_id', $product->id)->exists()
         : \App\Models\Cart::where('session_id', session()->getId())->where('product_id', $product->id)->exists();

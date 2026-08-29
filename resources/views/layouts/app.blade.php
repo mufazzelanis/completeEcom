@@ -362,6 +362,14 @@ $pageTwitterImage = trim($__env->yieldContent('twitter_image', $pageOgImage));
         @keyframes popBounce{0%{transform:scale(1)}30%{transform:scale(1.35)}55%{transform:scale(.9)}100%{transform:scale(1)}}
         .pop-bounce{animation:popBounce .45s ease-out}
         @media (prefers-reduced-motion: reduce){ .pop-bounce{animation:none} }
+
+        /* showToast() entrance/exit — slides in from the right and fades, reverses
+           on the way out (class added by the same setTimeout that schedules removal). */
+        @keyframes toastIn{from{opacity:0;transform:translateX(24px)}to{opacity:1;transform:translateX(0)}}
+        @keyframes toastOut{from{opacity:1;transform:translateX(0)}to{opacity:0;transform:translateX(24px)}}
+        .toast-pop{animation:toastIn .35s cubic-bezier(.22,1,.36,1) both}
+        .toast-pop-out{animation:toastOut .25s ease-in both}
+        @media (prefers-reduced-motion: reduce){ .toast-pop,.toast-pop-out{animation:none} }
     </style>
     {{-- Raw, not escaped — this is admin-entered CSS source, not user content. {{ }} would
          HTML-entity-escape every quote (font-family: 'Georgia' → &#039;Georgia&#039;), which
@@ -630,6 +638,12 @@ $navCategories = \App\Models\Category::with(['children' => fn($q) => $q->active(
     </div>
 @endif
 
+{{-- JS-driven toasts (showToast() below) — added-to-cart/wishlist confirmations that
+     fire from an AJAX response, not a page load, so they can't be server-rendered
+     session flashes like the two blocks above. Same fixed position/styling, stacked
+     in a column so several in quick succession don't overlap. --}}
+<div id="toast-stack" class="fixed top-20 right-4 left-4 md:left-auto md:max-w-sm z-50 flex flex-col gap-2 pointer-events-none"></div>
+
 <main>
     @yield('content')
 </main>
@@ -798,7 +812,42 @@ $navCategories = \App\Models\Category::with(['children' => fn($q) => $q->active(
     </button>
 </div>
 
-{{-- Wishlist AJAX --}}
+{{-- Shared toast for any AJAX action that needs a visible, hard-to-miss confirmation
+     regardless of scroll position (the sticky header's own cart-count badge already
+     pulses, but it's a small target and easy to miss on a long page) — used by both
+     the wishlist and quick-add-to-cart handlers below. Message is set via textContent,
+     never interpolated into innerHTML, so it's safe even for a product name with
+     special characters. --}}
+<script>
+function showToast(message, type = 'success') {
+    const stack = document.getElementById('toast-stack');
+    if (!stack) return;
+
+    const isError = type === 'error';
+    const toast = document.createElement('div');
+    toast.className = (isError ? 'bg-red-500' : 'bg-green-500')
+        + ' text-white px-5 py-3 rounded-lg shadow-xl flex items-center space-x-3 pointer-events-auto toast-pop';
+    toast.innerHTML = isError
+        ? '<svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>'
+        : '<svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>';
+
+    const span = document.createElement('span');
+    span.className = 'text-sm font-medium';
+    span.textContent = message;
+    toast.appendChild(span);
+
+    stack.appendChild(toast);
+    setTimeout(() => {
+        toast.classList.add('toast-pop-out');
+        toast.addEventListener('animationend', () => toast.remove(), { once: true });
+    }, 2500);
+}
+</script>
+
+{{-- Wishlist AJAX — no login required; guests favorite via the same session_id
+     scoping the cart already uses (see WishlistController), only checkout still
+     asks for an account. So a failure here is a real error, not "please log
+     in" — surfaced as a toast instead of bouncing the visitor off the page. --}}
 <script>
 async function toggleWishlist(productId, btn) {
     try {
@@ -810,6 +859,9 @@ async function toggleWishlist(productId, btn) {
                 'Content-Type': 'application/json'
             }
         });
+        if (!res.ok) {
+            throw new Error('Request failed: ' + res.status);
+        }
         const data = await res.json();
         if (data.status === 'added') {
             btn.classList.add('text-red-500');
@@ -821,13 +873,15 @@ async function toggleWishlist(productId, btn) {
             btn.classList.remove('pop-bounce');
             void btn.offsetWidth;
             btn.classList.add('pop-bounce');
+            showToast('Added to wishlist!');
         } else {
             btn.classList.remove('text-red-500');
             btn.classList.add('text-gray-400');
             btn.querySelector('svg').setAttribute('fill', 'none');
+            showToast('Removed from wishlist.');
         }
     } catch (e) {
-        window.location.href = '/login';
+        showToast('Something went wrong — please try again.', 'error');
     }
 }
 </script>
@@ -919,6 +973,8 @@ async function toggleCartItem(productId, btn) {
                     quantity: 1,
                     fb_event_id: data.fb_event_id,
                 });
+                const name = btn.dataset.productName;
+                showToast(name ? `Added "${name}" to cart!` : 'Added to cart!');
             }
 
             const badge = document.getElementById('header-cart-count');
