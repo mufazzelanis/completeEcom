@@ -40,6 +40,15 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withSchedule(function (Schedule $schedule): void {
         $schedule->command('blog:publish-scheduled')->everyMinute();
         $schedule->command('email-campaigns:process')->everyMinute();
+        // Drains the default queue (bulk product imports, Facebook Conversions API
+        // events, etc.) without needing a long-running `queue:work` process, which
+        // most shared hosts don't allow — this piggybacks on the same one-cron-entry
+        // `schedule:run` setup as everything else above. --max-time keeps it well
+        // under the next minute's tick; withoutOverlapping skips a run if the
+        // previous minute's worker is still draining a big job.
+        $schedule->command('queue:work --stop-when-empty --max-time=50')
+            ->everyMinute()
+            ->withoutOverlapping();
         // OrderObserver keeps sales_reports in sync in real time; this nightly run
         // just self-heals the last couple of days in case of bulk edits or direct
         // DB writes that bypass Eloquent events.

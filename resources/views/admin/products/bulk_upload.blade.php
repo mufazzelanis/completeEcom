@@ -27,9 +27,9 @@
             <li>Download the CSV template below — columns can be in any order, matched by header name</li>
             <li>Fill in product data — one row per product</li>
             <li><strong>category_name</strong> must exactly match an existing top-level category</li>
-            <li>To include images: put all image files in one ZIP (any folder structure is fine), and put each product's exact image filename in the <strong>image_filename</strong> column</li>
+            <li>To include images, put each product's image in the <strong>image_filename</strong> column — either a direct image URL (e.g. from another site's export), in which case no ZIP is needed at all, or the exact filename of an image inside a ZIP you upload alongside the CSV (any folder structure is fine)</li>
             <li>Leave any optional column blank to skip it</li>
-            <li>Upload the CSV (and the images ZIP, if you have one)</li>
+            <li>Upload the CSV alone if every image is a URL, or the CSV plus the images ZIP otherwise</li>
         </ol>
 
         <div class="mt-4 flex flex-wrap gap-3">
@@ -66,7 +66,7 @@
                         ['weight', 'No', 'In kg, for shipping calculations'],
                         ['barcode', 'No', 'EAN/UPC/etc.'],
                         ['low_stock_threshold', 'No', 'Default 5 if blank'],
-                        ['image_filename', 'No', 'Exact filename of the image inside the uploaded ZIP'],
+                        ['image_filename', 'No', 'A direct image URL (no ZIP needed), or the exact filename of an image inside the uploaded ZIP'],
                         ['short_description', 'No', 'Brief summary'],
                         ['description', 'No', 'Full description'],
                         ['meta_title', 'No', 'SEO page title'],
@@ -140,7 +140,7 @@
                 <p class="text-sm text-gray-500 mb-3">Optional: ZIP file of product images</p>
                 <input type="file" name="images_zip" accept=".zip"
                     class="block mx-auto text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-medium file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 cursor-pointer">
-                <p class="text-xs text-gray-400 mt-2">Matched to products via the image_filename column. Max file size: 500MB.</p>
+                <p class="text-xs text-gray-400 mt-2">Only needed if image_filename holds ZIP filenames rather than URLs. Max file size: 500MB.</p>
             </div>
 
             <div class="flex justify-end">

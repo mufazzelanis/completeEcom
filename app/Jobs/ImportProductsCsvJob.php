@@ -11,6 +11,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use ZipArchive;
@@ -224,18 +225,31 @@ class ImportProductsCsvJob implements ShouldQueue
             $imagePath = null;
             $imageFilename = $get($data, 'image_filename');
             if ($imageFilename !== '') {
-                $sourcePath = $imageMap[strtolower(basename($imageFilename))] ?? null;
-                if ($sourcePath) {
-                    $imagePath = $this->storeImage($sourcePath);
+                // A full URL needs no ZIP at all — this lets a CSV that already
+                // carries hosted image links (e.g. a WooCommerce-style export) be
+                // uploaded on its own, with images fetched directly per row.
+                if (preg_match('/^https?:\/\//i', $imageFilename)) {
+                    $imagePath = $this->storeImageFromUrl($imageFilename);
                     if ($imagePath) {
                         $imagesMatchedCount++;
                     } else {
-                        $errors[] = "Row {$row}: '{$imageFilename}' is not a valid image — product created without an image.";
+                        $errors[] = "Row {$row}: could not download image from '{$imageFilename}' — product created without an image.";
                         $imagesMissingCount++;
                     }
                 } else {
-                    $errors[] = "Row {$row}: image '{$imageFilename}' not found in the uploaded ZIP — product created without an image.";
-                    $imagesMissingCount++;
+                    $sourcePath = $imageMap[strtolower(basename($imageFilename))] ?? null;
+                    if ($sourcePath) {
+                        $imagePath = $this->storeImage($sourcePath);
+                        if ($imagePath) {
+                            $imagesMatchedCount++;
+                        } else {
+                            $errors[] = "Row {$row}: '{$imageFilename}' is not a valid image — product created without an image.";
+                            $imagesMissingCount++;
+                        }
+                    } else {
+                        $errors[] = "Row {$row}: image '{$imageFilename}' not found in the uploaded ZIP — product created without an image.";
+                        $imagesMissingCount++;
+                    }
                 }
             }
 
@@ -308,6 +322,55 @@ class ImportProductsCsvJob implements ShouldQueue
 
         $storedName = 'products/'.Str::random(32).'.'.$extension;
         Storage::disk('public')->put($storedName, file_get_contents($sourceAbsolutePath));
+
+        return $storedName;
+    }
+
+    /**
+     * Same validate-then-store contract as storeImage(), but the source is a
+     * remote URL instead of a ZIP entry — a plain User-Agent is needed since
+     * several hosts (e.g. WordPress media behind some CDNs/WAFs) 403/500 a
+     * bare PHP HTTP client. Failures here are non-fatal to the row: a bad or
+     * unreachable image just leaves the product without one.
+     */
+    private function storeImageFromUrl(string $url): ?string
+    {
+        try {
+            $response = Http::withHeaders([
+                'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36',
+            ])->timeout(20)->retry(2, 500)->get($url);
+        } catch (\Throwable) {
+            return null;
+        }
+
+        if (!$response->successful()) {
+            return null;
+        }
+
+        $body = $response->body();
+        $tmpFile = tempnam(sys_get_temp_dir(), 'bulk_import_img');
+        file_put_contents($tmpFile, $body);
+        $info = @getimagesize($tmpFile);
+        @unlink($tmpFile);
+
+        if ($info === false) {
+            return null;
+        }
+
+        $extension = match ($info['mime'] ?? null) {
+            'image/jpeg' => 'jpg',
+            'image/png'  => 'png',
+            'image/gif'  => 'gif',
+            'image/webp' => 'webp',
+            'image/bmp'  => 'bmp',
+            default      => null,
+        };
+        if ($extension === null) {
+            return null;
+        }
+
+        $storedName = 'products/'.Str::random(32).'.'.$extension;
+        Storage::disk('public')->put($storedName, $body);
 
         return $storedName;
     }
