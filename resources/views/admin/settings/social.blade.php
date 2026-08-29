@@ -35,16 +35,17 @@
     </div>
 </div>
 
-{{-- The floating widget on the storefront (layouts/app.blade.php) reads whatsapp_link
-     and messenger_link straight from the fields above, plus linkedin_url from the grid
-     above and telegram_link here — one link field per channel, no separate per-icon
-     toggle to keep in sync: an icon shows itself whenever its link is filled in. --}}
+{{-- The floating widget (layouts/app.blade.php) reads whatsapp_link/messenger_link/
+     linkedin_url straight from the Social Media Links card above — one link field per
+     channel, entered once, no duplicate WhatsApp-number field to keep in sync. Each
+     channel's floating_{channel}_enabled toggle below is independent of that link, so
+     turning an icon off in the widget doesn't clear (or require re-typing) its link. --}}
 <div class="bg-white rounded-xl shadow-sm border p-6 space-y-4 mt-6">
     <h2 class="text-base font-semibold text-gray-900 pb-2 border-b">Floating Contact Widget</h2>
     <p class="text-sm text-gray-500">
         A small stack of chat buttons pinned to the left edge of every storefront page.
-        Each icon (WhatsApp, Telegram, Messenger, LinkedIn) only appears once its link
-        below is filled in — leave any of them blank to leave that icon off.
+        Turn the widget on, then pick exactly which icons to show — independently of
+        each other, so you can run just one, two, three, or all four.
     </p>
     <label class="flex items-center gap-2 cursor-pointer">
         <input type="hidden" name="floating_widget_enabled" value="0">
@@ -52,6 +53,7 @@
                @checked(setting('floating_widget_enabled', '0') == '1')>
         <span class="text-sm text-gray-700">Show the floating contact widget</span>
     </label>
+
     <div>
         <label class="block text-sm font-medium text-gray-700 mb-1">
             <span class="inline-block w-2.5 h-2.5 rounded-full mr-1" style="background-color: #26A5E4"></span>
@@ -62,9 +64,26 @@
                placeholder="https://t.me/yourusername">
     </div>
     <p class="text-xs text-gray-400">
-        WhatsApp, Messenger and LinkedIn reuse the links entered above — fill those in too
-        to show those icons.
+        WhatsApp, Messenger and LinkedIn reuse the links entered in Social Media Links
+        above — fill those in too if you want to turn those icons on below.
     </p>
+
+    <div class="border-t pt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+        @foreach([
+            ['key' => 'floating_whatsapp_enabled', 'label' => 'WhatsApp', 'color' => '#25D366'],
+            ['key' => 'floating_telegram_enabled', 'label' => 'Telegram', 'color' => '#26A5E4'],
+            ['key' => 'floating_messenger_enabled', 'label' => 'Messenger', 'color' => '#00B2FF'],
+            ['key' => 'floating_linkedin_enabled', 'label' => 'LinkedIn', 'color' => '#0A66C2'],
+        ] as $toggle)
+        <label class="flex items-center gap-2 cursor-pointer">
+            <input type="hidden" name="{{ $toggle['key'] }}" value="0">
+            <input type="checkbox" name="{{ $toggle['key'] }}" value="1" class="rounded text-orange-600"
+                   @checked(setting($toggle['key'], '1') == '1')>
+            <span class="inline-block w-2.5 h-2.5 rounded-full" style="background-color: {{ $toggle['color'] }}"></span>
+            <span class="text-sm text-gray-700">Show {{ $toggle['label'] }} icon</span>
+        </label>
+        @endforeach
+    </div>
 </div>
 
 <div class="flex justify-end">
