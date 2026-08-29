@@ -318,10 +318,23 @@
                 <a href="{{ $sec->getViewAllUrl() }}"
                    class="{{ $sec->theme === 'sale' ? 'text-white/80 hover:text-white' : 'text-orange-700 hover:text-orange-800' }} font-bold text-sm transition">{{ $sec->getViewAllLabelText() }} →</a>
             </div>
+            @php
+                // Mobile is always a fixed 2-column grid (see getGridColsClass), so
+                // capping the always-visible tier at 8 keeps mobile's first view to
+                // 4 rows regardless of how many columns/products_limit the admin
+                // picked for desktop — the rest still shows immediately at sm+.
+                $mobileCap = min(8, $sec->product_limit);
+            @endphp
             <div class="grid {{ $sec->getGridColsClass() }} gap-3">
                 @foreach($entry['products'] as $i => $product)
-                    @if($i < $sec->product_limit)
+                    @if($i < $mobileCap)
                         @include('partials.product-card', ['product' => $product])
+                    @elseif($i < $sec->product_limit)
+                        {{-- Within the admin's chosen limit, so always shown on desktop;
+                             on mobile it waits behind "More" alongside the true overflow. --}}
+                        <div x-show="expanded" x-cloak class="sm:!block">
+                            @include('partials.product-card', ['product' => $product])
+                        </div>
                     @else
                         <div x-show="expanded" x-cloak>
                             @include('partials.product-card', ['product' => $product])
@@ -332,9 +345,16 @@
             {{-- Only rendered when there's actually more to reveal — clicking stays right
                  here on the homepage and shows the rest of this section's fetched batch,
                  no navigation away (unlike the small "VIEW ALL" link above, which still
-                 goes to the full /shop listing). --}}
+                 goes to the full /shop listing). When the only hidden tier is the
+                 mobile row cap (nothing held back on desktop), the button itself is
+                 mobile-only — there'd be nothing left for it to reveal at sm+. --}}
             @if($totalCount > $sec->product_limit)
             <div class="text-center mt-6" x-show="!expanded">
+                <button type="button" @click="expanded = true"
+                   class="inline-block {{ $sec->theme === 'sale' ? 'bg-white text-orange-600 hover:bg-gray-100' : 'bg-orange-500 text-white hover:bg-orange-600' }} px-10 py-2.5 rounded-lg font-bold text-sm transition shadow-md">{{ $sec->getViewAllLabelText() }}</button>
+            </div>
+            @elseif($sec->product_limit > $mobileCap)
+            <div class="text-center mt-6 sm:hidden" x-show="!expanded">
                 <button type="button" @click="expanded = true"
                    class="inline-block {{ $sec->theme === 'sale' ? 'bg-white text-orange-600 hover:bg-gray-100' : 'bg-orange-500 text-white hover:bg-orange-600' }} px-10 py-2.5 rounded-lg font-bold text-sm transition shadow-md">{{ $sec->getViewAllLabelText() }}</button>
             </div>
