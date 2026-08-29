@@ -370,6 +370,13 @@ $pageTwitterImage = trim($__env->yieldContent('twitter_image', $pageOgImage));
         .toast-pop{animation:toastIn .35s cubic-bezier(.22,1,.36,1) both}
         .toast-pop-out{animation:toastOut .25s ease-in both}
         @media (prefers-reduced-motion: reduce){ .toast-pop,.toast-pop-out{animation:none} }
+
+        /* Tailwind's built-in animate-ping/animate-bounce/animate-pulse don't come with a
+           reduced-motion guard out of the box — added once here so every use of them
+           site-wide (the floating contact widget included) respects the preference. */
+        @media (prefers-reduced-motion: reduce){
+            .animate-ping,.animate-bounce,.animate-pulse{animation:none!important}
+        }
     </style>
     {{-- Raw, not escaped — this is admin-entered CSS source, not user content. {{ }} would
          HTML-entity-escape every quote (font-family: 'Georgia' → &#039;Georgia&#039;), which
@@ -643,6 +650,54 @@ $navCategories = \App\Models\Category::with(['children' => fn($q) => $q->active(
      session flashes like the two blocks above. Same fixed position/styling, stacked
      in a column so several in quick succession don't overlap. --}}
 <div id="toast-stack" class="fixed top-20 right-4 left-4 md:left-auto md:max-w-sm z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+{{-- ═══════════ FLOATING CONTACT WIDGET (admin: Settings → Social Media) ═══════════
+     One button per channel, each rendered only when its link setting is filled in —
+     no separate per-icon toggle to fall out of sync with the link itself. The pinging
+     ring is Tailwind's stock animate-ping (no custom keyframes needed); reduced-motion
+     users get it switched off site-wide via the rule in the <style> block above. --}}
+@if(setting('floating_widget_enabled', '0') == '1')
+    @php
+        $floatingContacts = array_filter([
+            [
+                'url' => setting('whatsapp_link', ''),
+                'label' => 'Chat on WhatsApp',
+                'bg' => '#25D366',
+                'icon' => '<path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.198-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12.004 2C6.486 2 2.01 6.477 2.01 11.994c0 1.885.522 3.647 1.428 5.153L2 22l4.965-1.404a9.958 9.958 0 004.988 1.334h.004c5.518 0 9.994-4.477 9.994-9.994C21.951 6.477 17.522 2 12.004 2zm0 18.032a8.03 8.03 0 01-4.393-1.315l-.316-.194-3.09.874.85-3.01-.207-.31a8.017 8.017 0 01-1.293-4.383c0-4.43 3.607-8.036 8.045-8.036 2.148 0 4.166.838 5.684 2.359a7.981 7.981 0 012.36 5.677c0 4.43-3.608 8.038-8.04 8.038z"/>',
+            ],
+            [
+                'url' => setting('telegram_link', ''),
+                'label' => 'Message on Telegram',
+                'bg' => '#26A5E4',
+                'icon' => '<path d="M21.94 5.36l-3.16 14.9c-.24 1.05-.86 1.31-1.74.82l-4.81-3.55-2.32 2.24c-.26.26-.47.47-.96.47l.34-4.87 8.86-8.01c.39-.34-.08-.53-.6-.19L6.4 12.86l-4.8-1.5c-1.04-.33-1.06-1.04.22-1.53L20.6 4.02c.87-.32 1.63.2 1.34 1.34z"/>',
+            ],
+            [
+                'url' => setting('messenger_link', ''),
+                'label' => 'Message on Messenger',
+                'bg' => '#00B2FF',
+                'icon' => '<path d="M12 2C6.477 2 2 6.145 2 11.259c0 2.913 1.454 5.512 3.726 7.21V22l3.405-1.87c.909.251 1.871.387 2.869.387 5.523 0 10-4.145 10-9.258C22 6.145 17.523 2 12 2zm1.008 12.461l-2.548-2.72-4.97 2.72 5.467-5.803 2.61 2.72 4.907-2.72-5.466 5.803z"/>',
+            ],
+            [
+                'url' => setting('linkedin_url', ''),
+                'label' => 'Connect on LinkedIn',
+                'bg' => '#0A66C2',
+                'icon' => '<path d="M6.94 5a2 2 0 11-4-.002 2 2 0 014 .002zM7 8.48H3V21h4V8.48zm6.32 0H9.34V21h3.94v-6.57c0-3.66 4.77-3.96 4.77 0V21H22v-7.93c0-6.17-7.06-5.94-8.68-2.91V8.48z"/>',
+            ],
+        ], fn ($c) => !empty($c['url']));
+    @endphp
+    @if(!empty($floatingContacts))
+        <div class="fixed left-3 md:left-4 top-1/2 -translate-y-1/2 z-40 flex flex-col gap-3">
+            @foreach($floatingContacts as $contact)
+                <a href="{{ $contact['url'] }}" target="_blank" rel="noopener" aria-label="{{ $contact['label'] }}" title="{{ $contact['label'] }}"
+                   class="relative w-11 h-11 md:w-12 md:h-12 rounded-full text-white shadow-lg flex items-center justify-center hover:scale-110 transition-transform duration-200"
+                   style="background-color: {{ $contact['bg'] }}">
+                    <span class="absolute inset-0 rounded-full animate-ping opacity-75" style="background-color: {{ $contact['bg'] }}" aria-hidden="true"></span>
+                    <svg class="relative w-5 h-5 md:w-6 md:h-6" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">{!! $contact['icon'] !!}</svg>
+                </a>
+            @endforeach
+        </div>
+    @endif
+@endif
 
 <main>
     @yield('content')

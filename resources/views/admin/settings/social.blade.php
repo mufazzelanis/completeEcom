@@ -35,6 +35,38 @@
     </div>
 </div>
 
+{{-- The floating widget on the storefront (layouts/app.blade.php) reads whatsapp_link
+     and messenger_link straight from the fields above, plus linkedin_url from the grid
+     above and telegram_link here — one link field per channel, no separate per-icon
+     toggle to keep in sync: an icon shows itself whenever its link is filled in. --}}
+<div class="bg-white rounded-xl shadow-sm border p-6 space-y-4 mt-6">
+    <h2 class="text-base font-semibold text-gray-900 pb-2 border-b">Floating Contact Widget</h2>
+    <p class="text-sm text-gray-500">
+        A small stack of chat buttons pinned to the left edge of every storefront page.
+        Each icon (WhatsApp, Telegram, Messenger, LinkedIn) only appears once its link
+        below is filled in — leave any of them blank to leave that icon off.
+    </p>
+    <label class="flex items-center gap-2 cursor-pointer">
+        <input type="hidden" name="floating_widget_enabled" value="0">
+        <input type="checkbox" name="floating_widget_enabled" value="1" class="rounded text-orange-600"
+               @checked(setting('floating_widget_enabled', '0') == '1')>
+        <span class="text-sm text-gray-700">Show the floating contact widget</span>
+    </label>
+    <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">
+            <span class="inline-block w-2.5 h-2.5 rounded-full mr-1" style="background-color: #26A5E4"></span>
+            Telegram (Chat Link)
+        </label>
+        <input type="url" name="telegram_link" value="{{ setting('telegram_link', '') }}"
+               class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-orange-500"
+               placeholder="https://t.me/yourusername">
+    </div>
+    <p class="text-xs text-gray-400">
+        WhatsApp, Messenger and LinkedIn reuse the links entered above — fill those in too
+        to show those icons.
+    </p>
+</div>
+
 <div class="flex justify-end">
     <button type="submit" class="px-6 py-2 bg-orange-600 text-white rounded-lg text-sm font-semibold hover:bg-orange-700 transition">Save Social Links</button>
 </div>
