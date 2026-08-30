@@ -33,6 +33,19 @@
     AddOutputFilterByType DEFLATE image/svg+xml font/ttf font/otf application/font-woff application/vnd.ms-fontobject
 </IfModule>
 
+# Hotlink protection — stops other sites from directly embedding our uploaded images
+# (<img src="oursite.com/storage/...">) in their own pages, which is both a bandwidth
+# drain and an easy way for someone else to reuse our content without ever visiting the
+# site. Only fires when a Referer is actually present and points elsewhere — direct
+# access (typed URL, bookmarks) and link-preview crawlers (Facebook/WhatsApp/Google,
+# which send no Referer at all) are unaffected, so social share previews still work.
+<IfModule mod_rewrite.c>
+    RewriteCond %{HTTP_REFERER} !^$
+    RewriteCond %{HTTP_REFERER} !^https?://(www\.)?mitavin\.a-haque\.com [NC]
+    RewriteCond %{HTTP_REFERER} !^https?://(www\.)?completeecom\.test [NC]
+    RewriteRule \.(jpe?g|png|gif|webp|svg)$ - [F,NC,L]
+</IfModule>
+
 # Long-lived caching for static assets. Vite-built CSS/JS are content-hashed (a code change
 # gets a new filename), so caching them for a year is safe; images/fonts get a shorter,
 # still-generous window since those get replaced in place by the admin panel.

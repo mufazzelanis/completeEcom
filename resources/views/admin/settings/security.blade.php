@@ -85,6 +85,27 @@
     </div>
 </div>
 
+<div class="bg-white rounded-xl shadow-sm border p-6 space-y-4">
+    <h2 class="text-base font-semibold text-gray-900 pb-2 border-b">Content Protection</h2>
+    <label class="flex items-center gap-2 cursor-pointer">
+        <input type="hidden" name="image_protection_enabled" value="0">
+        <input type="checkbox" name="image_protection_enabled" value="1" class="rounded text-orange-600"
+               @checked(setting('image_protection_enabled','1') == '1')>
+        <span class="text-sm text-gray-700">Discourage saving/copying images on the storefront</span>
+    </label>
+    <p class="text-xs text-gray-400">
+        Blocks right-click and drag on storefront images (product photos, banners, category icons)
+        so "Save Image As" and drag-to-desktop don't work directly. Also blocks other websites
+        from directly embedding your uploaded images in their own pages (hotlinking).
+    </p>
+    <p class="text-xs text-gray-400">
+        Worth knowing: this deters casual copying but can't make an image truly uncopyable —
+        anyone can still take a screenshot, use their browser's dev tools, or view the page
+        source, since the browser has to download the image to display it either way. No
+        website can fully prevent that; this just removes the one-click ways to do it.
+    </p>
+</div>
+
 <div class="flex justify-end">
     <button type="submit" class="px-6 py-2 bg-orange-600 text-white rounded-lg text-sm font-semibold hover:bg-orange-700 transition">Save Security</button>
 </div>

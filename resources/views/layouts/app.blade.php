@@ -377,6 +377,13 @@ $pageTwitterImage = trim($__env->yieldContent('twitter_image', $pageOgImage));
         @media (prefers-reduced-motion: reduce){
             .animate-ping,.animate-bounce,.animate-pulse{animation:none!important}
         }
+        @if(setting('image_protection_enabled', '1') == '1')
+        /* Content protection (Admin > Settings > Security) — pairs with the contextmenu/
+           dragstart JS below. Only removes the *drag-to-save* affordance; pointer-events
+           stays default so images are still clickable (product links, the zoom lens, etc).
+           Doesn't touch text selection anywhere else on the page. */
+        img{-webkit-user-drag:none;-moz-user-select:none;user-select:none}
+        @endif
     </style>
     {{-- Raw, not escaped — this is admin-entered CSS source, not user content. {{ }} would
          HTML-entity-escape every quote (font-family: 'Georgia' → &#039;Georgia&#039;), which
@@ -906,6 +913,22 @@ function showToast(message, type = 'success') {
     }, 2500);
 }
 </script>
+
+@if(setting('image_protection_enabled', '1') == '1')
+{{-- Content protection (Admin > Settings > Security) — blocks the one-click ways to save
+     an image (right-click > Save Image As, drag-to-desktop). Scoped to <img> only, so
+     right-click still works normally on text/links elsewhere on the page. This deters
+     casual copying; it can't stop a screenshot, dev tools, or view-source, since the
+     browser has to fetch the image to show it regardless. --}}
+<script>
+document.addEventListener('contextmenu', (e) => {
+    if (e.target.tagName === 'IMG') e.preventDefault();
+});
+document.addEventListener('dragstart', (e) => {
+    if (e.target.tagName === 'IMG') e.preventDefault();
+});
+</script>
+@endif
 
 {{-- Wishlist AJAX — no login required; guests favorite via the same session_id
      scoping the cart already uses (see WishlistController), only checkout still
