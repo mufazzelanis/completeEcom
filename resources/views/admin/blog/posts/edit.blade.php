@@ -167,6 +167,7 @@
                         <img src="{{ Storage::url($blogPost->image) }}" class="w-full h-32 object-cover rounded-xl mb-3">
                     @endif
                     <input type="file" name="image" accept="image/*" class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm">
+                    <p class="text-xs text-gray-400 mt-1">Recommended: 1600×1000px (16:10 ratio) — used as the blog list thumbnail and post header.</p>
                     <p class="text-xs text-gray-400 mt-2">Also used as the article's social share (Open Graph) image.</p>
                 </div>
             </div>

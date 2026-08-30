@@ -36,6 +36,7 @@
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Image</label>
                 <input type="file" name="image" accept="image/*" class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm">
+                <p class="text-xs text-gray-400 mt-1">Recommended: square, e.g. 400×400px.</p>
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">

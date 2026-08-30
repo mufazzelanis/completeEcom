@@ -56,6 +56,7 @@
                     @endif
                     <input type="file" name="image" accept="image/*"
                         class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    <p class="text-xs text-gray-400 mt-1">Recommended: square, e.g. 300×300px — shown as a small icon on the homepage.</p>
                 </div>
 
                 <div class="flex items-center space-x-3">

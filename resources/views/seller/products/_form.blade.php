@@ -119,6 +119,7 @@
         <img src="{{ Storage::url($product->image) }}" class="w-20 h-20 rounded-xl object-cover mb-2 border border-gray-100">
         @endif
         <input type="file" name="image" accept="image/*" class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm">
+        <p class="text-xs text-gray-400 mt-1">Recommended: square, e.g. 1000×1000px; any shape is shown in full either way, never cropped.</p>
         @error('image')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
     </div>
 

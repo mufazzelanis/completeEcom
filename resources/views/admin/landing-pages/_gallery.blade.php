@@ -15,3 +15,4 @@
 <p class="text-xs text-gray-400 mb-2">Tick a thumbnail to remove it when you save.</p>
 @endif
 <input type="file" name="{{ $field }}[]" accept="image/*" multiple class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm">
+<p class="text-xs text-gray-400 mt-1">Recommended: portrait, e.g. 800×1000px — shown in a horizontal scrolling strip.</p>

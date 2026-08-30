@@ -111,7 +111,7 @@
             @endif
             <input type="file" name="logo" accept="image/*"
                 class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
-            <p class="text-xs text-gray-400 mt-1">Max 512KB. PNG with transparent background works best.</p>
+            <p class="text-xs text-gray-400 mt-1">Max 512KB. PNG with transparent background works best, roughly 200×80px.</p>
         </div>
         <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Sort Order</label>

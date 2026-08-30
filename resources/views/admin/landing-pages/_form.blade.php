@@ -139,6 +139,7 @@
                     <img src="{{ Storage::url($lp->hero_image) }}" class="h-20 rounded-lg object-cover mb-2 border border-gray-100">
                 @endif
                 <input type="file" name="hero_image" accept="image/*" class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm">
+                <p class="text-xs text-gray-400 mt-1">Recommended: transparent PNG, roughly 800×800px — shown floating over the page, up to 288px tall.</p>
             </div>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
@@ -187,7 +188,7 @@
             }">
             <div>
                 <h3 class="font-medium text-gray-800">Trust Badges</h3>
-                <p class="text-xs text-gray-400 mt-0.5">Small icon + label strip shown under the hero and again near the price (e.g. "Cash on Delivery", "100% Original", "Fast Delivery"). First 6 shown near the top, first 2 repeated near the price. Each badge can have its own uploaded icon image — pick a different file per row and every one is kept separate; leave any of them blank and that badge just uses its emoji instead.</p>
+                <p class="text-xs text-gray-400 mt-0.5">Small icon + label strip shown under the hero and again near the price (e.g. "Cash on Delivery", "100% Original", "Fast Delivery"). First 6 shown near the top, first 2 repeated near the price. Each badge can have its own uploaded icon image — pick a different file per row and every one is kept separate; leave any of them blank and that badge just uses its emoji instead. Recommended: square, e.g. 128×128px, per icon.</p>
             </div>
             <div class="space-y-2">
                 <template x-for="(row, i) in rows" :key="row._key">
@@ -275,7 +276,7 @@
                 <h3 class="font-medium text-gray-800">Benefits Grid</h3>
                 <input type="text" name="benefits_heading" value="{{ old('benefits_heading', $lp->benefits_heading ?? '') }}" placeholder="Section heading (defaults to 'Benefits')"
                     class="w-full mt-2 border border-gray-200 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                <p class="text-xs text-gray-400 mt-1">Each benefit can have its own uploaded icon image — pick a different file per row and every one is kept separate; leave any of them blank and that benefit just uses its emoji instead.</p>
+                <p class="text-xs text-gray-400 mt-1">Each benefit can have its own uploaded icon image — pick a different file per row and every one is kept separate; leave any of them blank and that benefit just uses its emoji instead. Recommended: square, e.g. 128×128px, per icon.</p>
             </div>
             <div class="space-y-2">
                 <template x-for="(row, i) in rows" :key="row._key">
@@ -340,7 +341,7 @@
                 <h3 class="font-medium text-gray-800">Who Is This For</h3>
                 <input type="text" name="who_for_heading" value="{{ old('who_for_heading', $lp->who_for_heading ?? '') }}" placeholder="Section heading (defaults to 'Who Is This For')"
                     class="w-full mt-2 border border-gray-200 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                <p class="text-xs text-gray-400 mt-1">Each row can have its own uploaded icon image — pick a different file per row and every one is kept separate; leave any of them blank and that row just uses its emoji instead.</p>
+                <p class="text-xs text-gray-400 mt-1">Each row can have its own uploaded icon image — pick a different file per row and every one is kept separate; leave any of them blank and that row just uses its emoji instead. Recommended: square, e.g. 128×128px, per icon.</p>
                 <p class="text-xs text-gray-400 mt-1">Select a word and hit <strong>B</strong> (or type <code class="font-mono">**word**</code> yourself) to make it bold on the live page.</p>
             </div>
             <div class="space-y-2">
@@ -638,6 +639,7 @@
                     <img src="{{ Storage::url($lp->og_image) }}" class="h-16 rounded-lg object-cover mb-2 border border-gray-100">
                 @endif
                 <input type="file" name="og_image" accept="image/*" class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm">
+                <p class="text-xs text-gray-400 mt-1">Recommended: 1200×630px — the standard size for link previews on Facebook, X, WhatsApp, etc.</p>
             </div>
         </div>
 
@@ -739,6 +741,7 @@
                     <img src="{{ Storage::url($lp->header_logo) }}" class="h-10 object-contain mb-2 border border-gray-100 rounded-lg p-1">
                 @endif
                 <input type="file" name="header_logo" accept="image/*" class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm">
+                <p class="text-xs text-gray-400 mt-1">Recommended: transparent PNG, 200×60px.</p>
             </div>
             <div class="pt-4 border-t border-gray-100">
                 <label class="block text-sm font-medium text-gray-700 mb-2">Favicon <span class="text-gray-400 font-normal block text-xs mt-0.5">Optional — the small icon next to the browser tab title. Falls back to your site favicon.</span></label>
@@ -746,6 +749,7 @@
                     <img src="{{ Storage::url($lp->favicon) }}" class="h-8 w-8 object-contain mb-2 border border-gray-100 rounded-lg p-1">
                 @endif
                 <input type="file" name="favicon" accept="image/*" class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm">
+                <p class="text-xs text-gray-400 mt-1">Recommended: 32×32px.</p>
             </div>
         </div>
 

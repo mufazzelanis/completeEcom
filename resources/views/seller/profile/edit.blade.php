@@ -70,6 +70,7 @@
             <img src="{{ Storage::url($vendor->logo) }}" class="w-16 h-16 rounded-xl object-cover mb-2 border border-gray-100">
             @endif
             <input type="file" name="logo" accept="image/*" class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm">
+            <p class="text-xs text-gray-400 mt-1">Recommended: square, e.g. 200×200px.</p>
             @error('logo')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
         </div>
 

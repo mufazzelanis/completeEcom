@@ -9,7 +9,7 @@
 {{-- Colors --}}
 <div class="bg-white rounded-2xl shadow-sm p-6" x-show="productType === 'variable'" x-cloak>
     <div class="flex items-center justify-between mb-4">
-        <h3 class="font-semibold text-gray-800">Colors <span class="text-xs text-gray-400 font-normal ml-1">(optional)</span></h3>
+        <h3 class="font-semibold text-gray-800">Colors <span class="text-xs text-gray-400 font-normal ml-1">(optional — swatch image recommended square, e.g. 200×200px)</span></h3>
         <button type="button" @click="addColor()" class="text-sm text-indigo-600 hover:text-indigo-800 font-medium flex items-center gap-1">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg> Add
         </button>

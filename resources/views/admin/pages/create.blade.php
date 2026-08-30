@@ -63,6 +63,7 @@
                         <div class="col-span-2">
                             <label class="block text-sm font-medium text-gray-700 mb-1">OG Image</label>
                             <input type="file" name="og_image" accept="image/*" class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm">
+                            <p class="text-xs text-gray-400 mt-1">Recommended: 1200×630px — the standard size for link previews on Facebook, X, WhatsApp, etc.</p>
                         </div>
                     </div>
                 </div>
@@ -102,6 +103,7 @@
                 <div class="bg-white rounded-2xl shadow-sm p-6">
                     <label class="block text-sm font-medium text-gray-700 mb-2">Featured Image</label>
                     <input type="file" name="image" accept="image/*" class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm">
+                    <p class="text-xs text-gray-400 mt-1">Recommended: 1600×640px — a wide banner shown across the top of the page.</p>
                 </div>
             </div>
         </div>

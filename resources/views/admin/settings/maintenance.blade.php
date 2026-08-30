@@ -47,6 +47,7 @@
         @endif
         <input type="file" name="maintenance_banner" accept="image/*"
                class="block w-full text-xs text-gray-600 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-medium file:bg-orange-50 file:text-orange-700 hover:file:bg-orange-100">
+        <p class="text-xs text-gray-400 mt-1">Recommended: 1200×400px (3:1 ratio).</p>
     </div>
     <div>
         <label class="block text-sm font-medium text-gray-700 mb-1">Allowed IPs (bypass maintenance)</label>

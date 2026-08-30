@@ -44,6 +44,7 @@
                     <img src="{{ Storage::url($blogCategory->image) }}" class="w-24 h-24 object-cover rounded-xl mb-2">
                 @endif
                 <input type="file" name="image" accept="image/*" class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm">
+                <p class="text-xs text-gray-400 mt-1">Recommended: square, e.g. 400×400px.</p>
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
