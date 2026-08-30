@@ -418,9 +418,9 @@
                     <div class="space-y-3 mb-4 max-h-48 lg:max-h-64 overflow-y-auto">
                         @foreach($cartItems as $item)
                             <div class="flex items-center space-x-3">
-                                <div class="w-12 h-12 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
+                                <div class="w-12 h-12 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0 p-1">
                                     @if($item->product->image)
-                                        <img src="{{ Storage::url($item->product->image) }}" class="w-full h-full object-cover">
+                                        <img src="{{ Storage::url($item->product->image) }}" class="w-full h-full object-contain">
                                     @endif
                                 </div>
                                 <div class="flex-1 min-w-0">

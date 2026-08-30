@@ -14,7 +14,7 @@
     @if($review->product)
     <div class="flex items-center gap-3 mb-5 pb-5 border-b border-gray-100">
         @if($review->product->image)
-        <img src="{{ \Illuminate\Support\Facades\Storage::url($review->product->image) }}" class="w-14 h-14 object-cover rounded-xl">
+        <img src="{{ \Illuminate\Support\Facades\Storage::url($review->product->image) }}" class="w-14 h-14 object-contain bg-gray-100 rounded-xl p-1">
         @endif
         <div>
             <p class="font-semibold text-gray-800">{{ $review->product->name }}</p>

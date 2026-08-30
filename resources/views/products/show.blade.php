@@ -158,11 +158,18 @@
             }">
             <!-- Images -->
             <div>
-                <div class="aspect-square rounded-xl overflow-hidden bg-gray-100 mb-4 relative group cursor-zoom-in"
+                {{-- object-contain (not object-cover) — a source photo can be any shape or
+                     carry its own baked-in margin (most product photos do), and covering a
+                     hard square either crops the product itself or, when the photo already
+                     has whitespace, wrongly zooms into that whitespace. Contain always shows
+                     the whole product at the largest size that fits, whatever the upload's
+                     original dimensions — the padding + soft gradient keep it from looking
+                     like a bare image floating in an empty box. --}}
+                <div class="aspect-square rounded-xl overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100 mb-4 relative group cursor-zoom-in p-6 md:p-10"
                      @mousemove="zoomX = (($event.offsetX / $event.currentTarget.offsetWidth) * 100).toFixed(2); zoomY = (($event.offsetY / $event.currentTarget.offsetHeight) * 100).toFixed(2)"
                      @mouseleave="zoomX = 50; zoomY = 50">
                     <template x-if="active">
-                        <img :src="active" :style="`transform-origin: ${zoomX}% ${zoomY}%`" alt="{{ $product->image_alt ?: $product->name }}" title="{{ $product->image_title ?: $product->name }}" class="w-full h-full object-cover transition-transform duration-300 ease-out group-hover:scale-[2]">
+                        <img :src="active" :style="`transform-origin: ${zoomX}% ${zoomY}%`" alt="{{ $product->image_alt ?: $product->name }}" title="{{ $product->image_title ?: $product->name }}" class="w-full h-full object-contain transition-transform duration-300 ease-out group-hover:scale-[1.8]">
                     </template>
                     <template x-if="!active">
                         <div class="w-full h-full flex items-center justify-center">
@@ -173,17 +180,19 @@
                     </template>
                 </div>
                 @if($product->images->isNotEmpty())
-                    <div class="flex space-x-3 overflow-x-auto">
+                    <div class="flex gap-3 overflow-x-auto pb-1">
                         @if($product->image)
                             <button @click="active = '{{ Storage::url($product->image) }}'"
-                                class="w-20 h-20 flex-shrink-0 rounded-lg overflow-hidden border-2 border-indigo-500">
-                                <img src="{{ Storage::url($product->image) }}" class="w-full h-full object-cover">
+                                class="w-20 h-20 flex-shrink-0 rounded-lg overflow-hidden border-2 bg-gray-50 p-1.5 transition-colors"
+                                :class="active === '{{ Storage::url($product->image) }}' ? 'border-indigo-500' : 'border-gray-200 hover:border-indigo-300'">
+                                <img src="{{ Storage::url($product->image) }}" class="w-full h-full object-contain">
                             </button>
                         @endif
                         @foreach($product->images as $img)
                             <button @click="active = '{{ Storage::url($img->image) }}'"
-                                class="w-20 h-20 flex-shrink-0 rounded-lg overflow-hidden border-2 border-gray-200 hover:border-indigo-400">
-                                <img src="{{ Storage::url($img->image) }}" class="w-full h-full object-cover">
+                                class="w-20 h-20 flex-shrink-0 rounded-lg overflow-hidden border-2 bg-gray-50 p-1.5 transition-colors"
+                                :class="active === '{{ Storage::url($img->image) }}' ? 'border-indigo-500' : 'border-gray-200 hover:border-indigo-300'">
+                                <img src="{{ Storage::url($img->image) }}" class="w-full h-full object-contain">
                             </button>
                         @endforeach
                     </div>

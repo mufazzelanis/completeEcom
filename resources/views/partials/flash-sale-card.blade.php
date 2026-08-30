@@ -6,10 +6,13 @@
     $rating = $fsp->product->reviews->avg('rating') ?? 0;
 @endphp
 <a href="{{ route('products.show', $fsp->product->slug) }}" class="flex-shrink-0 w-32 sm:w-36 md:w-40 group">
-    <div class="relative overflow-hidden bg-gray-50 rounded-lg aspect-square mb-2">
+    {{-- object-contain + padding, same reasoning as partials.product-card — shows the
+         whole product regardless of the uploaded photo's own aspect ratio instead of
+         cropping it to fill the square. --}}
+    <div class="relative overflow-hidden bg-gray-50 rounded-lg aspect-square mb-2 p-2.5">
         @if($fsp->product->image)
             <img src="{{ Storage::url($fsp->product->image) }}" alt="{{ $fsp->product->name }}" loading="lazy" decoding="async"
-                class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-400">
+                class="w-full h-full object-contain group-hover:scale-110 transition-transform duration-400">
         @else
             <div class="w-full h-full flex items-center justify-center">
                 <svg class="w-12 h-12 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -54,9 +54,9 @@
         <div class="flex items-center gap-2 overflow-x-auto border-t border-gray-100 pt-3">
             @foreach($order->items->take(5) as $item)
             <div class="flex items-center gap-2 flex-shrink-0">
-                <div class="w-10 h-10 bg-gray-100 rounded-lg overflow-hidden">
+                <div class="w-10 h-10 bg-gray-100 rounded-lg overflow-hidden p-1">
                     @if($item->product?->image)
-                    <img src="{{ \Illuminate\Support\Facades\Storage::url($item->product->image) }}" class="w-full h-full object-cover">
+                    <img src="{{ \Illuminate\Support\Facades\Storage::url($item->product->image) }}" class="w-full h-full object-contain">
                     @endif
                 </div>
                 <div>

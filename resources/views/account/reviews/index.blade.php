@@ -17,7 +17,7 @@
     <div class="bg-white rounded-2xl shadow-sm p-5 flex items-start gap-4">
         @if($review->product?->image)
         <a href="{{ route('products.show', $review->product) }}">
-            <img src="{{ \Illuminate\Support\Facades\Storage::url($review->product->image) }}" class="w-16 h-16 object-cover rounded-xl flex-shrink-0">
+            <img src="{{ \Illuminate\Support\Facades\Storage::url($review->product->image) }}" class="w-16 h-16 object-contain bg-gray-100 rounded-xl flex-shrink-0 p-1.5">
         </a>
         @else
         <div class="w-16 h-16 bg-gray-100 rounded-xl flex-shrink-0"></div>

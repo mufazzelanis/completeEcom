@@ -21,9 +21,9 @@
             <div class="space-y-4">
                 @foreach($return->items as $item)
                     <div class="flex items-center gap-4">
-                        <div class="w-14 h-14 bg-gray-100 rounded-xl overflow-hidden flex-shrink-0">
+                        <div class="w-14 h-14 bg-gray-100 rounded-xl overflow-hidden flex-shrink-0 p-1.5">
                             @if($item->product?->image)
-                                <img src="{{ \Illuminate\Support\Facades\Storage::url($item->product->image) }}" class="w-full h-full object-cover">
+                                <img src="{{ \Illuminate\Support\Facades\Storage::url($item->product->image) }}" class="w-full h-full object-contain">
                             @endif
                         </div>
                         <div class="flex-1 min-w-0">

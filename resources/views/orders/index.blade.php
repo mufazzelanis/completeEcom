@@ -52,7 +52,7 @@
                         @foreach($order->items->take(4) as $item)
                             <div class="flex items-center space-x-2 flex-shrink-0">
                                 @if($item->product && $item->product->image)
-                                    <img src="{{ Storage::url($item->product->image) }}" class="w-10 h-10 rounded-lg object-cover">
+                                    <img src="{{ Storage::url($item->product->image) }}" class="w-10 h-10 rounded-lg object-contain bg-gray-100 p-0.5">
                                 @else
                                     <div class="w-10 h-10 bg-gray-100 rounded-lg"></div>
                                 @endif

@@ -40,9 +40,9 @@
         <div class="px-5 py-3.5 border-b border-gray-50 hover:bg-gray-50 transition flex items-center gap-4">
             <div class="flex items-center gap-2 overflow-x-auto flex-1 min-w-0">
                 @foreach($order->items->take(2) as $item)
-                <div class="w-10 h-10 bg-gray-100 rounded-lg flex-shrink-0 overflow-hidden">
+                <div class="w-10 h-10 bg-gray-100 rounded-lg flex-shrink-0 overflow-hidden p-1">
                     @if($item->product?->image)
-                    <img src="{{ \Illuminate\Support\Facades\Storage::url($item->product->image) }}" class="w-full h-full object-cover">
+                    <img src="{{ \Illuminate\Support\Facades\Storage::url($item->product->image) }}" class="w-full h-full object-contain">
                     @endif
                 </div>
                 @endforeach
