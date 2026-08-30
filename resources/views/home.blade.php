@@ -48,7 +48,12 @@
         @endif
     }
 }">
-    <div class="relative rounded-xl overflow-hidden bg-gray-200 aspect-[2/1] md:aspect-[3/1]">
+    {{-- One fixed ratio at every breakpoint (not a different one for mobile vs desktop) —
+         matches the 1920×600 (16:5) size the admin is told to upload at (admin.banners.
+         create/edit), so an upload at that ratio is never cropped, on any screen. The old
+         2:1-on-mobile / 3:1-on-desktop split is exactly what was cropping the tops/bottoms
+         off hero banners: a single fixed-ratio upload can't satisfy two different ratios. --}}
+    <div class="relative rounded-xl overflow-hidden bg-gray-200 aspect-[16/5]">
         @if($banners->count() > 0)
             @foreach($banners as $i => $banner)
             <div x-show="current === {{ $i }}" x-transition:enter="transition ease-out duration-500" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"

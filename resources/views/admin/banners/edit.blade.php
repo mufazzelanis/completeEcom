@@ -9,7 +9,8 @@
     </a>
 
     <div class="bg-white rounded-2xl shadow-sm p-6">
-        <form action="{{ route('admin.banners.update', $banner) }}" method="POST" enctype="multipart/form-data" class="space-y-5">
+        <form action="{{ route('admin.banners.update', $banner) }}" method="POST" enctype="multipart/form-data" class="space-y-5"
+              x-data="{ position: '{{ old('position', $banner->position) }}' }">
             @csrf @method('PUT')
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -54,7 +55,7 @@
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Position</label>
-                    <select name="position" class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    <select name="position" x-model="position" class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
                         @foreach(['hero','top','middle','bottom','sidebar','popup'] as $pos)
                             <option value="{{ $pos }}" {{ old('position', $banner->position) === $pos ? 'selected' : '' }}>{{ ucfirst($pos) }}</option>
                         @endforeach
@@ -81,6 +82,16 @@
                         <img src="{{ Storage::url($banner->image) }}" class="w-full h-24 object-cover rounded-xl mb-3">
                     @endif
                     <input type="file" name="image" accept="image/*" class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm">
+                    <p class="text-xs text-gray-500 mt-1" x-show="position === 'hero'" x-cloak>
+                        Recommended: <strong>1920×600px</strong> (16:5 ratio) — this fills the full-width slider at the top of the homepage on every screen size, phone included.
+                    </p>
+                    <p class="text-xs text-gray-500 mt-1" x-show="position === 'top'" x-cloak>
+                        Recommended: <strong>1200×600px</strong> (2:1 ratio) — this is one of the small promo tiles below Categories on the homepage.
+                    </p>
+                    <p class="text-xs text-gray-500 mt-1" x-show="!['hero','top'].includes(position)" x-cloak>
+                        A wide, landscape-orientation image works best here.
+                    </p>
+                    <p class="text-xs text-gray-400 mt-1">Upload at that exact ratio (or a larger multiple of it, e.g. double for a sharper look on big screens) — a different ratio will get cropped to fit.</p>
                 </div>
                 <div class="col-span-2">
                     <label class="flex items-center gap-2 cursor-pointer">
