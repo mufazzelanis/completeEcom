@@ -19,6 +19,16 @@
 /public/storage
 /storage/*.key
 /storage/pail
+# dompdf's font cache (installed-fonts.json + the hash-named .ttf/.ufm/.ufm.json/.afm.json
+# copies) is written fresh, per-environment, the first time a PDF using that font renders —
+# it even bakes in an absolute filesystem path, so a copy committed from one machine is
+# actively wrong on any other (this shipped a stale path from before a project rename, that
+# happened to go unnoticed only because the one place using it re-registers the font before
+# every render). Keep the real source font files; ignore everything dompdf generates.
+/storage/fonts/*
+!/storage/fonts/HindSiliguri-Regular.ttf
+!/storage/fonts/HindSiliguri-Bold.ttf
+!/storage/fonts/HindSiliguri-OFL.txt
 /vendor
 _ide_helper.php
 Homestead.json
