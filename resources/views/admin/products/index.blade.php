@@ -226,7 +226,8 @@
         </div>
     </form>
 
-<div class="bg-white rounded-2xl shadow-sm overflow-x-auto">
+<div class="bg-white rounded-2xl shadow-sm overflow-hidden">
+    <div class="overflow-x-auto">
     <table class="w-full">
         <thead class="bg-gray-50 border-b border-gray-100">
             <tr class="text-xs text-gray-500 uppercase tracking-wider">
@@ -365,7 +366,8 @@
             @endforelse
         </tbody>
     </table>
-    <div class="px-6 py-4 border-t border-gray-100 flex items-center justify-between">
+    </div>
+    <div class="px-4 sm:px-6 py-4 border-t border-gray-100 flex flex-col sm:flex-row items-center justify-center sm:justify-between gap-3">
         <span class="text-sm text-gray-500">{{ $products->total() }} product(s) total</span>
         {{ $products->links() }}
     </div>
