@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class HomeSection extends Model
 {
     protected $fillable = [
-        'title', 'subtitle', 'source_type', 'category_id', 'product_limit', 'columns',
+        'title', 'subtitle', 'source_type', 'category_id', 'category_ids', 'product_limit', 'columns',
         'theme', 'view_all_query', 'view_all_label', 'is_active', 'sort_order',
     ];
 
@@ -33,11 +33,34 @@ class HomeSection extends Model
 
     protected $casts = [
         'is_active' => 'boolean',
+        'category_ids' => 'array',
     ];
 
     public function category()
     {
         return $this->belongsTo(Category::class);
+    }
+
+    /**
+     * The categories this section is scoped to. category_ids (multi-select) is the
+     * source of truth going forward; category_id (the old single-select column) is
+     * only read as a fallback for any row that somehow has neither — shouldn't
+     * happen post-migration, but keeps old data working if it ever does.
+     */
+    public function getCategoryIdsList(): array
+    {
+        if (!empty($this->category_ids)) {
+            return $this->category_ids;
+        }
+
+        return $this->category_id ? [$this->category_id] : [];
+    }
+
+    public function selectedCategories()
+    {
+        $ids = $this->getCategoryIdsList();
+
+        return $ids ? Category::whereIn('id', $ids)->orderBy('name')->get() : collect();
     }
 
     /**
@@ -53,14 +76,18 @@ class HomeSection extends Model
     {
         $query = Product::with('category', 'brand', 'reviews', 'activeFlashSaleProduct')->active();
 
-        if ($this->category_id) {
+        $categoryIds = $this->getCategoryIdsList();
+        if ($categoryIds) {
             $query->where(fn ($q) => $q
-                ->where('category_id', $this->category_id)
-                ->orWhere('subcategory_id', $this->category_id));
+                ->whereIn('category_id', $categoryIds)
+                ->orWhereIn('subcategory_id', $categoryIds));
 
-            // Section is scoped to one category, so the admin's manual per-category
-            // product order (set via Admin > Products > Manual sort) applies here
-            // too — takes priority over the source_type's own ordering below.
+            // Section is scoped to specific categories, so the admin's manual
+            // per-category product order (set via Admin > Products > Manual sort)
+            // applies here too — takes priority over the source_type's own
+            // ordering below. (Only meaningful for a single category — with
+            // several combined, "sort_order" isn't a shared sequence across them,
+            // but it's still a stable, deterministic order rather than none.)
             $query->orderBy('sort_order');
         }
 
@@ -114,8 +141,11 @@ class HomeSection extends Model
             default       => ['sort' => 'latest'], // 'new_arrivals' and 'category'
         };
 
-        if ($this->category_id && $this->category) {
-            $params['category'] = $this->category->slug;
+        $slugs = $this->selectedCategories()->pluck('slug');
+        if ($slugs->isNotEmpty()) {
+            // ShopController accepts a comma-separated list of slugs for ?category=,
+            // so this works whether the section is scoped to one category or several.
+            $params['category'] = $slugs->implode(',');
         }
 
         return route('shop.index', $params);

@@ -24,10 +24,13 @@ class ShopController extends Controller
         }
 
         if ($request->filled('category')) {
-            $slug = $request->category;
+            // Comma-separated so a homepage section scoped to several categories at
+            // once (see HomeSection::getViewAllUrl()) can still deep-link its
+            // "VIEW ALL" here — a single slug works the same as before.
+            $slugs = explode(',', $request->category);
             $query->where(fn($q) => $q
-                ->whereHas('category', fn($q2) => $q2->where('slug', $slug))
-                ->orWhereHas('subcategory', fn($q2) => $q2->where('slug', $slug))
+                ->whereHas('category', fn($q2) => $q2->whereIn('slug', $slugs))
+                ->orWhereHas('subcategory', fn($q2) => $q2->whereIn('slug', $slugs))
             );
         }
 

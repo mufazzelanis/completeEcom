@@ -53,8 +53,9 @@
                 </td>
                 <td class="px-6 py-3 text-sm text-gray-600">
                     {{ ucwords(str_replace('_', ' ', $section->source_type)) }}
-                    @if($section->category)
-                        <span class="text-xs text-gray-400">→ {{ $section->category->name }}</span>
+                    @php $sectionCats = $section->selectedCategories(); @endphp
+                    @if($sectionCats->isNotEmpty())
+                        <span class="text-xs text-gray-400">→ {{ $sectionCats->pluck('name')->implode(', ') }}</span>
                     @endif
                 </td>
                 <td class="px-6 py-3 text-center text-sm text-gray-600">{{ $section->product_limit }}</td>

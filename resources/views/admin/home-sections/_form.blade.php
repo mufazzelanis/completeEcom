@@ -25,13 +25,16 @@
     @endphp
     <div x-data="{
         sourceType: '{{ old('source_type', $s->source_type ?? 'featured') }}',
-        categoryId: '{{ old('category_id', $s->category_id ?? '') }}',
+        categoryIds: {{ Js::from(old('category_ids', $s ? $s->getCategoryIdsList() : [])) }},
+        allCategoryIds: {{ Js::from($categories->pluck('id')) }},
+        categorySearch: '',
         categorySlugs: {{ Js::from($categoryMap) }},
         baseQuery: {{ Js::from($viewAllLabels) }},
         get viewAllPreview() {
             let q = this.baseQuery[this.sourceType] || 'sort=latest';
-            if (this.categoryId && this.categorySlugs[this.categoryId]) {
-                q += '&category=' + this.categorySlugs[this.categoryId];
+            let slugs = this.categoryIds.map(id => this.categorySlugs[id]).filter(Boolean);
+            if (slugs.length) {
+                q += '&category=' + slugs.join(',');
             }
             return '/shop?' + q;
         }
@@ -54,17 +57,38 @@
 
         <div class="mt-5">
             <label class="block text-sm font-medium text-gray-700 mb-1">
-                Limit to Category
+                Limit to Categories
                 <span class="text-xs text-gray-400 font-normal" x-show="sourceType === 'category'">(required for "Specific Category")</span>
-                <span class="text-xs text-gray-400 font-normal" x-show="sourceType !== 'category'">— optional filter, e.g. "Featured Products" scoped to just Electronics</span>
+                <span class="text-xs text-gray-400 font-normal" x-show="sourceType !== 'category'">— optional filter, e.g. "Featured Products" scoped to a few categories</span>
             </label>
-            <select name="category_id" x-model="categoryId" class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500">
-                <option value="">— Any category —</option>
-                @foreach($categories as $cat)
-                <option value="{{ $cat->id }}" {{ (string) old('category_id', $s->category_id ?? '') === (string) $cat->id ? 'selected' : '' }}>{{ $cat->name }}</option>
-                @endforeach
-            </select>
-            @error('category_id')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
+            <p class="text-xs text-gray-400 mb-2">Pick one or several — products from any of the checked categories will show together in this section.</p>
+
+            <template x-for="id in categoryIds" :key="id">
+                <input type="hidden" name="category_ids[]" :value="id">
+            </template>
+
+            <div class="border border-gray-200 rounded-xl overflow-hidden">
+                <div class="flex items-center gap-2 px-3 py-2 border-b border-gray-100 bg-gray-50">
+                    <input type="text" x-model="categorySearch" placeholder="Search categories…"
+                        class="flex-1 text-sm border-0 bg-transparent focus:outline-none focus:ring-0 p-0 min-w-0">
+                    <span class="text-xs text-gray-400 whitespace-nowrap" x-text="categoryIds.length + ' selected'"></span>
+                    <button type="button" @click="categoryIds = allCategoryIds.slice()" class="text-xs text-orange-600 hover:underline whitespace-nowrap">Select all</button>
+                    <button type="button" @click="categoryIds = []" class="text-xs text-gray-400 hover:text-gray-600 whitespace-nowrap">Clear</button>
+                </div>
+                <div class="max-h-56 overflow-y-auto p-2 grid grid-cols-1 sm:grid-cols-2 gap-1">
+                    @foreach($categories as $cat)
+                    <label class="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-gray-50 cursor-pointer text-sm"
+                        x-show="categorySearch === '' || '{{ addslashes(strtolower($cat->name)) }}'.includes(categorySearch.toLowerCase())">
+                        <input type="checkbox" value="{{ $cat->id }}"
+                            :checked="categoryIds.includes({{ $cat->id }})"
+                            @change="$event.target.checked ? categoryIds.push({{ $cat->id }}) : categoryIds = categoryIds.filter(i => i !== {{ $cat->id }})"
+                            class="rounded text-orange-600 flex-shrink-0">
+                        <span class="truncate">{{ $cat->name }}</span>
+                    </label>
+                    @endforeach
+                </div>
+            </div>
+            @error('category_ids')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-5">
