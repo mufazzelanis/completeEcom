@@ -165,11 +165,23 @@
 
         @if(request('sort_by') === 'manual' && !request('category'))
         <div class="mt-3 pt-3 border-t border-gray-100 text-xs text-yellow-700 bg-yellow-50 rounded-lg px-3 py-2">
-            Pick a single category above to reorder its products with the ↑/↓ arrows — manual order is set per category.
+            Pick a single category above to drag-reorder its products — manual order is set per category.
         </div>
         @endif
     </form>
 </div>
+
+@if($isManualReorder)
+<div class="mb-4 bg-indigo-50 border border-indigo-100 text-indigo-800 text-sm rounded-2xl px-4 py-3 flex items-center gap-2.5">
+    <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l4-4 4 4m0 6l-4 4-4-4"/></svg>
+    <span>
+        Drag rows by <strong>⠿</strong> to reorder — this is the display order on
+        <strong>{{ $reorderCategoryName ?? 'this category' }}</strong>'s live shop page. Every product in the
+        category is shown here on one page so ordering stays consistent; changes save automatically as you drop.
+    </span>
+    <span id="reorder-status" class="ml-auto text-xs text-indigo-500 flex-shrink-0"></span>
+</div>
+@endif
 
 @if($pendingApprovalCount > 0 && request('approval_status') !== 'pending')
 <div class="mb-6 bg-yellow-50 border border-yellow-200 text-yellow-800 px-4 py-3 rounded-xl text-sm flex items-center justify-between">
@@ -248,7 +260,8 @@
         </thead>
         <tbody class="divide-y divide-gray-50">
             @forelse($products as $product)
-                <tr class="hover:bg-gray-50 transition">
+                <tr class="hover:bg-gray-50 transition{{ $isManualReorder ? ' cursor-move' : '' }}"
+                    @if($isManualReorder) data-product-id="{{ $product->id }}" draggable="true" @endif>
                     <td class="px-6 py-4">
                         <input type="checkbox" value="{{ $product->id }}"
                                :checked="selected.includes({{ $product->id }})"
@@ -257,9 +270,12 @@
                     </td>
                     <td class="px-6 py-4">
                         <div class="flex items-center space-x-3">
+                            @if($isManualReorder)
+                                <span class="text-gray-300 text-lg leading-none select-none flex-shrink-0" title="Drag to reorder">⠿</span>
+                            @endif
                             <div class="w-12 h-12 bg-gray-100 rounded-xl overflow-hidden flex-shrink-0">
                                 @if($product->image)
-                                    <img src="{{ Storage::url($product->image) }}" class="w-full h-full object-cover">
+                                    <img src="{{ Storage::url($product->image) }}" @if($isManualReorder) draggable="false" @endif class="w-full h-full object-cover">
                                 @else
                                     <div class="w-full h-full flex items-center justify-center text-gray-300">
                                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
@@ -351,7 +367,7 @@
                                     </button>
                                 </form>
                             @endif
-                            <a href="{{ route('admin.products.edit', $product->id) }}" class="text-indigo-600 hover:text-indigo-800 text-sm font-medium">Edit</a>
+                            <a href="{{ route('admin.products.edit', $product->id) }}" @if($isManualReorder) draggable="false" @endif class="text-indigo-600 hover:text-indigo-800 text-sm font-medium">Edit</a>
                             <form action="{{ route('admin.products.destroy', $product->id) }}" method="POST" onsubmit="return confirm('Delete this product?')">
                                 @csrf @method('DELETE')
                                 <button type="submit" class="text-red-500 hover:text-red-700 text-sm font-medium">Delete</button>
@@ -374,3 +390,61 @@
 </div>
 </div>
 @endsection
+
+@if($isManualReorder)
+@push('scripts')
+<script>
+// Manual-reorder drag & drop for the admin Products list. Whole <tr> is the drag
+// handle (draggable="true"), reordered live by moving DOM nodes on dragover — no
+// virtual-list/Alpine state to keep in sync, so every row's own forms (Approve/
+// Reject/Delete/Move) keep working untouched since they're never re-rendered,
+// just relocated. The new order is saved to admin.products.reorder on drop.
+document.addEventListener('DOMContentLoaded', () => {
+    const tbody = document.querySelector('table tbody');
+    if (!tbody) return;
+
+    let dragging = null;
+
+    tbody.querySelectorAll('tr[data-product-id]').forEach(row => {
+        row.addEventListener('dragstart', () => {
+            dragging = row;
+            row.classList.add('opacity-40');
+        });
+        row.addEventListener('dragend', () => {
+            row.classList.remove('opacity-40');
+            dragging = null;
+            saveOrder();
+        });
+        row.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            if (!dragging || dragging === row) return;
+            const rect = row.getBoundingClientRect();
+            const after = (e.clientY - rect.top) > rect.height / 2;
+            row.parentNode.insertBefore(dragging, after ? row.nextSibling : row);
+        });
+    });
+
+    function saveOrder() {
+        const ids = Array.from(tbody.querySelectorAll('tr[data-product-id]'))
+            .map(tr => tr.dataset.productId);
+        const status = document.getElementById('reorder-status');
+
+        if (status) status.textContent = 'Saving…';
+
+        fetch('{{ route('admin.products.reorder') }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                'Accept': 'application/json',
+            },
+            body: JSON.stringify({ ids }),
+        })
+        .then(r => { if (!r.ok) throw new Error(); return r.json(); })
+        .then(() => { if (status) { status.textContent = 'Order saved ✓'; setTimeout(() => status.textContent = '', 2000); } })
+        .catch(() => { if (status) status.textContent = 'Failed to save — please retry.'; });
+    }
+});
+</script>
+@endpush
+@endif

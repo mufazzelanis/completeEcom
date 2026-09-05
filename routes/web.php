@@ -300,6 +300,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::post('products/bulk-action', [AdminProductController::class, 'bulkAction'])->name('products.bulk-action');
     Route::patch('products/{product}/move-up', [AdminProductController::class, 'moveUp'])->name('products.move-up');
     Route::patch('products/{product}/move-down', [AdminProductController::class, 'moveDown'])->name('products.move-down');
+    Route::post('products/reorder', [AdminProductController::class, 'reorder'])->name('products.reorder');
     Route::patch('products/{product}/approve', [AdminProductController::class, 'approve'])->name('products.approve');
     Route::patch('products/{product}/reject', [AdminProductController::class, 'reject'])->name('products.reject');
 

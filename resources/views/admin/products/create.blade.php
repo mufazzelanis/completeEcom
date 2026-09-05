@@ -506,6 +506,12 @@
                                 </template>
                             </select>
                         </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Sort Order</label>
+                            <input type="number" name="sort_order" value="{{ old('sort_order', 0) }}" min="0"
+                                class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            <p class="text-xs text-gray-400 mt-1">Lower shows first within this category's product listing page. Leave as 0 unless you need this product to jump ahead — easier to manage from Products list → sort "Manual Order" → drag to reorder.</p>
+                        </div>
                         <div class="flex items-center space-x-3">
                             <label class="relative inline-flex items-center cursor-pointer">
                                 <input type="checkbox" name="is_active" value="1" checked class="sr-only peer">

@@ -17,6 +17,7 @@ use App\Models\Tag;
 use App\Models\Vendor;
 use App\Services\Notifications\NotificationDispatcher;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 
@@ -96,13 +97,25 @@ class ProductController extends Controller
             default      => $query->latest(),
         };
 
-        $products   = $query->paginate(15)->withQueryString();
+        // Drag-to-reorder only makes sense against one category's full list at once
+        // — sort_order is what ShopController::category() sorts by on the live
+        // category page, so this is literally "which product shows first" there.
+        // Reordering across a paginated slice would silently corrupt sort_order for
+        // whatever's on other pages, so this mode shows the whole category on one
+        // "page" instead of the usual 15.
+        $isManualReorder = $sortBy === 'manual' && $request->filled('category');
+        $reorderCategoryName = $isManualReorder ? Category::find($request->category)?->name : null;
+
+        $products   = $query->paginate($isManualReorder ? 1000 : 15)->withQueryString();
         $categories = $this->categoryTree();
         $brands     = Brand::where('is_active', true)->orderBy('name')->get(['id', 'name']);
         $vendors    = Vendor::approved()->orderBy('business_name')->get(['id', 'business_name']);
         $pendingApprovalCount = Product::where('approval_status', 'pending')->count();
 
-        return view('admin.products.index', compact('products', 'categories', 'brands', 'vendors', 'pendingApprovalCount'));
+        return view('admin.products.index', compact(
+            'products', 'categories', 'brands', 'vendors', 'pendingApprovalCount',
+            'isManualReorder', 'reorderCategoryName'
+        ));
     }
 
     /**
@@ -184,6 +197,7 @@ class ProductController extends Controller
             'sale_price'    => 'nullable|numeric|min:0',
             'stock'         => 'nullable|integer|min:0',
             'sku'           => 'nullable|string|max:100|unique:products,sku',
+            'sort_order'    => 'nullable|integer|min:0',
             'image'         => 'nullable|image|max:4096',
             'images.*'      => 'nullable|image|max:4096',
             // A digital product with no file has nothing to deliver — require it
@@ -219,6 +233,7 @@ class ProductController extends Controller
         $data['slug']                 = $this->uniqueSlug(Str::slug($request->name));
         $data['sale_price']           = $request->filled('sale_price') ? $request->sale_price : null;
         $data['stock']                = (int) ($request->stock ?? 0);
+        $data['sort_order']           = $request->filled('sort_order') ? (int) $request->sort_order : 0;
         $data['is_active']            = $request->boolean('is_active', true);
         $data['is_featured']          = $request->boolean('is_featured');
         $data['download_expiry_days'] = $request->filled('download_expiry_days') ? (int) $request->download_expiry_days : null;
@@ -277,6 +292,7 @@ class ProductController extends Controller
             'sale_price'  => 'nullable|numeric|min:0',
             'stock'       => 'nullable|integer|min:0',
             'sku'         => ['nullable', 'string', 'max:100', Rule::unique('products', 'sku')->ignore($product->id)],
+            'sort_order'  => 'nullable|integer|min:0',
             'image'       => 'nullable|image|max:4096',
             'images.*'    => 'nullable|image|max:4096',
             // Only required if there isn't already a file saved — editing other
@@ -313,6 +329,7 @@ class ProductController extends Controller
         $data['slug']                 = $product->name !== $request->name ? $this->uniqueSlug(Str::slug($request->name), $product->id) : $product->slug;
         $data['sale_price']           = $request->filled('sale_price') ? $request->sale_price : null;
         $data['stock']                = (int) ($request->stock ?? 0);
+        $data['sort_order']           = $request->filled('sort_order') ? (int) $request->sort_order : $product->sort_order;
         $data['is_active']            = $request->boolean('is_active');
         $data['is_featured']          = $request->boolean('is_featured');
         $data['download_expiry_days'] = $request->filled('download_expiry_days') ? (int) $request->download_expiry_days : null;
@@ -392,6 +409,33 @@ class ProductController extends Controller
     {
         $this->swapWithNeighbor($product, 'up');
         return back();
+    }
+
+    /**
+     * Saves a fresh drag-and-drop order from the admin Products list's manual
+     * reorder mode (see index()'s $isManualReorder) — the array's position becomes
+     * each product's new sort_order, exactly like dropping cards in a stack.
+     * Persisted with one query (a single CASE-per-id UPDATE) rather than one query
+     * per product, since a full category can be dozens of rows and this fires on
+     * every drop, not just on save.
+     */
+    public function reorder(Request $request)
+    {
+        $validated = $request->validate([
+            'ids'   => 'required|array|min:1',
+            'ids.*' => 'integer|exists:products,id',
+        ]);
+
+        // Safe to interpolate: every id has already passed the 'integer' rule above
+        // and is re-cast here, so this can only ever contain plain integers.
+        $ids = array_map('intval', $validated['ids']);
+        $cases = collect($ids)->map(fn ($id, $i) => "WHEN $id THEN $i")->implode(' ');
+
+        DB::table('products')
+            ->whereIn('id', $ids)
+            ->update(['sort_order' => DB::raw("CASE id $cases ELSE sort_order END")]);
+
+        return response()->json(['success' => true]);
     }
 
     public function moveDown(Product $product)
