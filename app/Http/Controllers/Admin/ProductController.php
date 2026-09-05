@@ -24,9 +24,15 @@ class ProductController extends Controller
 {
     use SyncsProductVariants;
 
-    public function index(Request $request)
+    /**
+     * The filter half of index() — pulled out so index() (paginated list) and
+     * ids() ("select all N matching" for bulk actions) always agree on exactly
+     * which products a given set of query-string filters matches. Sorting isn't
+     * included here since ids() doesn't care about order, only membership.
+     */
+    private function filteredProducts(Request $request)
     {
-        $query = Product::with(['category', 'brand', 'seller']);
+        $query = Product::query();
 
         if ($request->filled('search')) {
             $q = $request->search;
@@ -70,6 +76,13 @@ class ProductController extends Controller
             };
         }
 
+        return $query;
+    }
+
+    public function index(Request $request)
+    {
+        $query = $this->filteredProducts($request)->with(['category', 'brand', 'seller']);
+
         $sortBy = $request->get('sort_by', 'latest');
         match($sortBy) {
             'oldest'     => $query->oldest(),
@@ -90,6 +103,18 @@ class ProductController extends Controller
         $pendingApprovalCount = Product::where('approval_status', 'pending')->count();
 
         return view('admin.products.index', compact('products', 'categories', 'brands', 'vendors', 'pendingApprovalCount'));
+    }
+
+    /**
+     * Every product id matching the current filters, regardless of page — backs
+     * the "Select all N matching products" bulk-select link, so it can select
+     * products beyond the 15 shown on the current page.
+     */
+    public function ids(Request $request)
+    {
+        return response()->json([
+            'ids' => $this->filteredProducts($request)->pluck('id'),
+        ]);
     }
 
     public function approve(Request $request, Product $product)

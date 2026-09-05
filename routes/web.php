@@ -290,6 +290,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::put('subcategories/{id}', [AdminSubcategoryController::class, 'update'])->name('subcategories.update');
     Route::delete('subcategories/{id}', [AdminSubcategoryController::class, 'destroy'])->name('subcategories.destroy');
     // Bulk upload must be before resource to prevent slug binding conflict
+    Route::get('products/ids', [AdminProductController::class, 'ids'])->name('products.ids');
     Route::get('products/bulk-upload', [AdminBulkProductController::class, 'index'])->name('products.bulk-upload');
     Route::get('products/bulk-upload/template', [AdminBulkProductController::class, 'template'])->name('products.bulk-upload.template');
     Route::post('products/bulk-upload', [AdminBulkProductController::class, 'import'])->name('products.bulk-upload.import');

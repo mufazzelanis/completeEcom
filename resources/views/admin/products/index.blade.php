@@ -183,7 +183,22 @@
      forbids nesting one form inside another. Checkboxes below live in the shared x-data
      scope on the outer <div> and just push/pull this form's reactive hidden ids[] inputs;
      clicking a bulk button submits this form on its own, independent of any row form. --}}
-<div x-data="{ selected: [] }">
+<div x-data="{
+        selected: [],
+        pageIds: [{{ $products->pluck('id')->implode(',') }}],
+        totalMatching: {{ $products->total() }},
+        selectingAll: false,
+        async selectAllMatching() {
+            this.selectingAll = true;
+            try {
+                const res = await fetch('{{ route('admin.products.ids', request()->query()) }}');
+                const data = await res.json();
+                this.selected = data.ids;
+            } finally {
+                this.selectingAll = false;
+            }
+        },
+    }">
     <form action="{{ route('admin.products.bulk-action') }}" method="POST"
           @submit="if ($event.submitter && $event.submitter.value === 'delete' && !confirm(`Delete ${selected.length} product(s)? This can't be undone.`)) $event.preventDefault()">
         @csrf
@@ -193,6 +208,15 @@
         <div x-show="selected.length > 0" x-cloak
              class="mb-4 bg-indigo-50 border border-indigo-100 rounded-2xl px-4 py-3 flex flex-wrap items-center gap-3">
             <span class="text-sm font-medium text-indigo-800" x-text="selected.length + ' selected'"></span>
+            {{-- Only worth offering once every id on the page is checked AND there's
+                 more beyond this page to grab — otherwise "select all matching" would
+                 either duplicate the page-select or have nothing extra to add. --}}
+            <button type="button" x-show="totalMatching > pageIds.length && pageIds.every(id => selected.includes(id)) && selected.length < totalMatching"
+                    x-cloak @click="selectAllMatching()" :disabled="selectingAll"
+                    class="text-sm text-indigo-700 hover:text-indigo-900 font-medium underline disabled:opacity-50">
+                <span x-show="!selectingAll" x-text="'Select all ' + totalMatching + ' matching products'"></span>
+                <span x-show="selectingAll" x-cloak>Selecting…</span>
+            </button>
             <button type="submit" name="bulk_action" value="activate" class="text-sm text-green-700 hover:text-green-900 font-medium px-2 py-1 rounded-lg hover:bg-white transition">Activate</button>
             <button type="submit" name="bulk_action" value="deactivate" class="text-sm text-gray-600 hover:text-gray-800 font-medium px-2 py-1 rounded-lg hover:bg-white transition">Deactivate</button>
             <button type="submit" name="bulk_action" value="feature" class="text-sm text-yellow-700 hover:text-yellow-900 font-medium px-2 py-1 rounded-lg hover:bg-white transition">Mark Featured</button>
@@ -208,8 +232,8 @@
             <tr class="text-xs text-gray-500 uppercase tracking-wider">
                 <th class="px-6 py-3 text-left">
                     <input type="checkbox"
-                           :checked="selected.length > 0 && selected.length === {{ $products->count() }}"
-                           @change="selected = $event.target.checked ? [{{ $products->pluck('id')->implode(',') }}] : []"
+                           :checked="pageIds.length > 0 && pageIds.every(id => selected.includes(id))"
+                           @change="selected = $event.target.checked ? pageIds.slice() : selected.filter(id => !pageIds.includes(id))"
                            class="rounded text-indigo-600" title="Select all on this page">
                 </th>
                 <th class="px-6 py-3 text-left">Product</th>
