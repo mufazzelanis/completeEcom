@@ -325,6 +325,44 @@ class ProductController extends Controller
         return redirect()->route('admin.products.index')->with('success', 'Product deleted.');
     }
 
+    /**
+     * One request for every "select several rows, do X" action on the product list —
+     * status/featured toggles are a single UPDATE across the whole id set (no per-row
+     * Eloquent event to preserve here, same as the single-product update() calls
+     * elsewhere in this controller), delete reuses the same product_id ON DELETE SET
+     * NULL the single-product destroy() already relies on, so old orders keep their
+     * line items even once the product itself is gone.
+     */
+    public function bulkAction(Request $request)
+    {
+        $validated = $request->validate([
+            'ids' => 'required|array|min:1',
+            'ids.*' => 'integer|exists:products,id',
+            'bulk_action' => 'required|in:activate,deactivate,feature,unfeature,delete',
+        ]);
+
+        $query = Product::whereIn('id', $validated['ids']);
+        $count = count($validated['ids']);
+
+        match ($validated['bulk_action']) {
+            'activate' => $query->update(['is_active' => true]),
+            'deactivate' => $query->update(['is_active' => false]),
+            'feature' => $query->update(['is_featured' => true]),
+            'unfeature' => $query->update(['is_featured' => false]),
+            'delete' => $query->delete(),
+        };
+
+        $messages = [
+            'activate' => "$count product(s) activated.",
+            'deactivate' => "$count product(s) deactivated.",
+            'feature' => "$count product(s) marked as Featured.",
+            'unfeature' => "$count product(s) unmarked as Featured.",
+            'delete' => "$count product(s) deleted.",
+        ];
+
+        return redirect()->route('admin.products.index')->with('success', $messages[$validated['bulk_action']]);
+    }
+
     public function moveUp(Product $product)
     {
         $this->swapWithNeighbor($product, 'up');

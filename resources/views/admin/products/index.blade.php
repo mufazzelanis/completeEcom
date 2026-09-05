@@ -178,10 +178,40 @@
 </div>
 @endif
 
+{{-- Bulk select/actions — a plain sibling <form> (not a wrapper around the table), since
+     the table already has its own per-row <form>s (Approve/Reject/Delete/Move) and HTML
+     forbids nesting one form inside another. Checkboxes below live in the shared x-data
+     scope on the outer <div> and just push/pull this form's reactive hidden ids[] inputs;
+     clicking a bulk button submits this form on its own, independent of any row form. --}}
+<div x-data="{ selected: [] }">
+    <form action="{{ route('admin.products.bulk-action') }}" method="POST"
+          @submit="if ($event.submitter && $event.submitter.value === 'delete' && !confirm(`Delete ${selected.length} product(s)? This can't be undone.`)) $event.preventDefault()">
+        @csrf
+        <template x-for="id in selected" :key="id">
+            <input type="hidden" name="ids[]" :value="id">
+        </template>
+        <div x-show="selected.length > 0" x-cloak
+             class="mb-4 bg-indigo-50 border border-indigo-100 rounded-2xl px-4 py-3 flex flex-wrap items-center gap-3">
+            <span class="text-sm font-medium text-indigo-800" x-text="selected.length + ' selected'"></span>
+            <button type="submit" name="bulk_action" value="activate" class="text-sm text-green-700 hover:text-green-900 font-medium px-2 py-1 rounded-lg hover:bg-white transition">Activate</button>
+            <button type="submit" name="bulk_action" value="deactivate" class="text-sm text-gray-600 hover:text-gray-800 font-medium px-2 py-1 rounded-lg hover:bg-white transition">Deactivate</button>
+            <button type="submit" name="bulk_action" value="feature" class="text-sm text-yellow-700 hover:text-yellow-900 font-medium px-2 py-1 rounded-lg hover:bg-white transition">Mark Featured</button>
+            <button type="submit" name="bulk_action" value="unfeature" class="text-sm text-gray-600 hover:text-gray-800 font-medium px-2 py-1 rounded-lg hover:bg-white transition">Unmark Featured</button>
+            <button type="submit" name="bulk_action" value="delete" class="text-sm text-red-600 hover:text-red-800 font-medium px-2 py-1 rounded-lg hover:bg-white transition ml-auto">Delete Selected</button>
+            <button type="button" @click="selected = []" class="text-sm text-gray-400 hover:text-gray-600 px-2 py-1" title="Clear selection">Clear</button>
+        </div>
+    </form>
+
 <div class="bg-white rounded-2xl shadow-sm overflow-x-auto">
     <table class="w-full">
         <thead class="bg-gray-50 border-b border-gray-100">
             <tr class="text-xs text-gray-500 uppercase tracking-wider">
+                <th class="px-6 py-3 text-left">
+                    <input type="checkbox"
+                           :checked="selected.length > 0 && selected.length === {{ $products->count() }}"
+                           @change="selected = $event.target.checked ? [{{ $products->pluck('id')->implode(',') }}] : []"
+                           class="rounded text-indigo-600" title="Select all on this page">
+                </th>
                 <th class="px-6 py-3 text-left">Product</th>
                 <th class="px-6 py-3 text-left">Category</th>
                 <th class="px-6 py-3 text-right">Price</th>
@@ -194,6 +224,12 @@
         <tbody class="divide-y divide-gray-50">
             @forelse($products as $product)
                 <tr class="hover:bg-gray-50 transition">
+                    <td class="px-6 py-4">
+                        <input type="checkbox" value="{{ $product->id }}"
+                               :checked="selected.includes({{ $product->id }})"
+                               @change="$event.target.checked ? selected.push({{ $product->id }}) : selected = selected.filter(i => i !== {{ $product->id }})"
+                               class="rounded text-indigo-600">
+                    </td>
                     <td class="px-6 py-4">
                         <div class="flex items-center space-x-3">
                             <div class="w-12 h-12 bg-gray-100 rounded-xl overflow-hidden flex-shrink-0">
@@ -300,7 +336,7 @@
                 </tr>
             @empty
                 <tr>
-                    <td colspan="7" class="px-6 py-12 text-center text-gray-400">No products found. <a href="{{ route('admin.products.create') }}" class="text-indigo-600">Add one</a>.</td>
+                    <td colspan="8" class="px-6 py-12 text-center text-gray-400">No products found. <a href="{{ route('admin.products.create') }}" class="text-indigo-600">Add one</a>.</td>
                 </tr>
             @endforelse
         </tbody>
@@ -309,5 +345,6 @@
         <span class="text-sm text-gray-500">{{ $products->total() }} product(s) total</span>
         {{ $products->links() }}
     </div>
+</div>
 </div>
 @endsection

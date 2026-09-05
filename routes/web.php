@@ -296,6 +296,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::get('products/bulk-upload/{bulkImport}/status', [AdminBulkProductController::class, 'status'])->name('products.bulk-upload.status');
     Route::get('products/bulk-upload/{bulkImport}/status-data', [AdminBulkProductController::class, 'statusData'])->name('products.bulk-upload.status-data');
     Route::resource('products', AdminProductController::class);
+    Route::post('products/bulk-action', [AdminProductController::class, 'bulkAction'])->name('products.bulk-action');
     Route::patch('products/{product}/move-up', [AdminProductController::class, 'moveUp'])->name('products.move-up');
     Route::patch('products/{product}/move-down', [AdminProductController::class, 'moveDown'])->name('products.move-down');
     Route::patch('products/{product}/approve', [AdminProductController::class, 'approve'])->name('products.approve');
