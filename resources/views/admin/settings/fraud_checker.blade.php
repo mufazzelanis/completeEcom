@@ -36,22 +36,26 @@
     </div>
 </div>
 
+@foreach([
+    ['label' => 'Pathao Courier'],
+    ['label' => 'RedX'],
+] as $courier)
 <div class="bg-white rounded-xl shadow-sm border p-6 space-y-2 mb-4">
     <div class="flex items-center justify-between pb-2 border-b">
-        <h2 class="text-base font-semibold text-gray-900">Pathao Courier</h2>
+        <h2 class="text-base font-semibold text-gray-900">{{ $courier['label'] }}</h2>
         <span class="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-500 font-medium">Not Supported</span>
     </div>
     <p class="text-xs text-gray-400">
-        Confirmed directly from Pathao's own official Merchant API documentation — their public
-        API only creates and tracks your own shipments (by consignment ID); it has no endpoint
-        that looks up a phone number's delivery history across Pathao's platform the way
-        Steadfast's does. No credentials to add here — this isn't a documentation gap, Pathao's
-        API genuinely doesn't offer this.
+        Confirmed directly from {{ $courier['label'] }}'s own official API documentation — their
+        public API only creates and tracks your own shipments (by tracking/consignment ID); it
+        has no endpoint that looks up a phone number's delivery history across their platform
+        the way Steadfast's does. No credentials to add here — this isn't a documentation gap,
+        {{ $courier['label'] }}'s API genuinely doesn't offer this.
     </p>
 </div>
+@endforeach
 
 @foreach([
-    ['key' => 'redx', 'label' => 'RedX'],
     ['key' => 'paperfly', 'label' => 'Paperfly'],
     ['key' => 'ecourier', 'label' => 'eCourier'],
 ] as $courier)
