@@ -40,20 +40,20 @@
 # access (typed URL, bookmarks) and link-preview crawlers (Facebook/WhatsApp/Google,
 # which send no Referer at all) are unaffected, so social share previews still work.
 #
-# The allowed-referrer check compares against the domain the request actually came in
-# on, captured from %{HTTP_HOST} via a RewriteCond backreference (%1 from the PREVIOUS
-# matched condition — the one cross-engine-portable way to reuse it; %{HTTP_HOST}
-# dropped directly into a later condition's pattern is not reliably substituted there
-# on LiteSpeed, which is what silently made this block everything below). Comparing
-# against the request's own host instead of a hardcoded domain name means this rule
-# keeps working through any future domain/subdomain change (www., a staging subdomain,
-# etc.) with no edit needed here ever again — this is what broke every image site-wide
-# the moment the site moved from mitavin.a-haque.com to mitavin.com, since every real
-# visitor's Referer pointed at a domain that wasn't on the old hardcoded list.
+# Both a %{HTTP_HOST}-in-later-pattern version AND a %1 cross-condition-backreference
+# version of a self-referencing host check were tried here and both silently failed on
+# the live LiteSpeed host (confirmed live: every non-empty Referer got blocked
+# regardless of its actual domain, meaning the placeholder was never being substituted
+# at all — this rewrite engine doesn't support either mechanism reliably). Reverted to
+# plain hardcoded domain matching, which IS confirmed working on this host. The
+# trade-off: this list needs a one-line addition if the site's domain ever changes
+# again (it just did, mitavin.a-haque.com -> mitavin.com, which is why mitavin.com is
+# now on the list below — that's what this whole fix was for).
 <IfModule mod_rewrite.c>
-    RewriteCond %{HTTP_HOST} ^(.+)$
     RewriteCond %{HTTP_REFERER} !^$
-    RewriteCond %{HTTP_REFERER} !^https?://(www\.)?%1 [NC]
+    RewriteCond %{HTTP_REFERER} !^https?://(www\.)?mitavin\.com [NC]
+    RewriteCond %{HTTP_REFERER} !^https?://(www\.)?mitavin\.a-haque\.com [NC]
+    RewriteCond %{HTTP_REFERER} !^https?://(www\.)?completeecom\.test [NC]
     RewriteRule \.(jpe?g|png|gif|webp|svg)$ - [F,NC,L]
 </IfModule>
 
