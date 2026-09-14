@@ -86,6 +86,7 @@ $adminNavIndex = [
     ['label' => 'Payments', 'url' => route('admin.payments.index'), 'group' => 'Sales'],
     ['label' => 'Payment Methods', 'url' => route('admin.payment-methods.index'), 'group' => 'Sales'],
     ['label' => 'Coupons', 'url' => route('admin.coupons.index'), 'group' => 'Sales'],
+    ['label' => 'Fraud Checker', 'url' => route('admin.fraud-checker.index'), 'group' => 'Fraud Checker'],
     ['label' => 'Reports Overview', 'url' => route('admin.reports.index'), 'group' => 'Reports'],
     ['label' => 'Sales Report', 'url' => route('admin.reports.sales'), 'group' => 'Reports'],
     ['label' => 'Revenue Report', 'url' => route('admin.reports.revenue'), 'group' => 'Reports'],
@@ -394,6 +395,18 @@ $adminNavIndex = [
                 class="flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium transition {{ request()->routeIs('admin.coupons.*') ? 'bg-orange-600 text-white' : 'text-gray-300 hover:bg-gray-800' }}">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
                 <span>Coupons</span>
+            </a>
+
+            {{-- Fraud Checker — its own top-level nav group (not nested under Sales), since
+                 checking a customer's courier delivery history before confirming a COD order
+                 is its own frequent workflow, not just a settings/reporting sub-item. --}}
+            <div class="pt-4 pb-1">
+                <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider px-3">Fraud Checker</p>
+            </div>
+            <a href="{{ route('admin.fraud-checker.index') }}"
+                class="flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium transition {{ request()->routeIs('admin.fraud-checker.*') ? 'bg-orange-600 text-white' : 'text-gray-300 hover:bg-gray-800' }}">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+                <span>Courier Fraud Check</span>
             </a>
 
             {{-- Reports --}}

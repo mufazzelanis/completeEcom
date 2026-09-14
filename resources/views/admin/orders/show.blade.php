@@ -152,6 +152,73 @@ $rc = $riskColors[$riskLevel];
             @endif
         </div>
 
+        {{-- Courier Fraud Check — the customer's real-world delivery history across
+             Bangladeshi couriers, separate from the behavioral score above. Starts from
+             whatever was last checked for this phone (server-rendered, no API call just to
+             view the page); the button below calls the API fresh via fetch(). --}}
+        <div class="bg-white rounded-2xl shadow-sm p-6"
+             x-data="courierFraudCheck(@js($courierCheck ? [
+                 'success' => $courierCheck->success,
+                 'error' => $courierCheck->error,
+                 'total_orders' => $courierCheck->total_orders,
+                 'total_delivered' => $courierCheck->total_delivered,
+                 'total_cancelled' => $courierCheck->total_cancelled,
+                 'success_rate' => $courierCheck->success_rate,
+                 'risk_level' => $courierCheck->risk_level,
+                 'style' => $courierCheck->getRiskStyle(),
+                 'breakdown' => $courierCheck->breakdown,
+                 'checked_at' => $courierCheck->created_at->diffForHumans(),
+             ] : null))">
+            <div class="flex items-start justify-between mb-3">
+                <h2 class="font-semibold text-gray-800 flex items-center gap-2">
+                    <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"/></svg>
+                    Courier Delivery History
+                </h2>
+                <button type="button" @click="check()" :disabled="loading"
+                        class="text-xs text-indigo-600 hover:text-indigo-800 flex items-center gap-1 px-2 py-1 border border-indigo-200 rounded-lg hover:bg-indigo-50 transition disabled:opacity-50">
+                    <svg class="w-3 h-3" :class="loading && 'animate-spin'" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                    <span x-text="result ? 'Re-check' : 'Check'"></span>
+                </button>
+            </div>
+
+            <template x-if="!result">
+                <p class="text-sm text-gray-400">{{ $order->shipping_phone ? 'Not checked yet.' : 'No shipping phone on this order to check.' }}</p>
+            </template>
+
+            <template x-if="result && !result.success">
+                <p class="text-sm text-red-600" x-text="'Check failed: ' + result.error"></p>
+            </template>
+
+            <template x-if="result && result.success && result.total_orders === 0">
+                <p class="text-sm text-gray-500">No delivery history found on any covered courier — likely a first-time customer.</p>
+            </template>
+
+            <template x-if="result && result.success && result.total_orders > 0">
+                <div>
+                    <div class="flex items-center gap-3 mb-3">
+                        <span class="w-2.5 h-2.5 rounded-full flex-shrink-0" :class="result.style.dot"></span>
+                        <span class="text-xs px-2.5 py-1 rounded-full font-semibold" :class="[result.style.bg, result.style.text]" x-text="result.style.label"></span>
+                        <span class="text-sm text-gray-600" x-text="result.success_rate + '% success (' + result.total_delivered + '/' + result.total_orders + ')'"></span>
+                    </div>
+                    <div class="w-full bg-gray-100 rounded-full h-2 mb-3">
+                        <div class="h-2 rounded-full" :class="result.style.dot" :style="'width:' + result.success_rate + '%'"></div>
+                    </div>
+                    <template x-if="result.breakdown && Object.keys(result.breakdown).length">
+                        <div class="space-y-1">
+                            <template x-for="(counts, courier) in result.breakdown" :key="courier">
+                                <div class="flex items-center justify-between text-xs text-gray-600">
+                                    <span class="capitalize" x-text="courier.replace('_',' ')"></span>
+                                    <span><span class="text-green-600" x-text="counts.delivered"></span> / <span class="text-red-600" x-text="counts.cancelled"></span></span>
+                                </div>
+                            </template>
+                        </div>
+                    </template>
+                </div>
+            </template>
+
+            <p class="text-xs text-gray-400 mt-3" x-show="result && result.checked_at" x-text="result && ('Checked ' + result.checked_at)"></p>
+        </div>
+
         {{-- Update Status — submits via fetch so this doesn't reload the whole order page
              just to change one field; falls back to a normal form post (full reload) if JS
              is unavailable, since the <form> itself is still a real, working form. --}}
@@ -250,6 +317,29 @@ $rc = $riskColors[$riskLevel];
                         this.message = 'Network error — please try again.';
                         setTimeout(() => { this.message = null; }, 4000);
                     });
+            },
+        };
+    }
+
+    // Courier fraud-check card above — starts from whatever was server-rendered (last known
+    // check for this phone, if any) and calls the check endpoint fresh on click.
+    function courierFraudCheck(initial) {
+        return {
+            result: initial,
+            loading: false,
+            check() {
+                this.loading = true;
+                fetch(@js(route('admin.orders.fraud-checker', $order)), {
+                    method: 'POST',
+                    headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content },
+                })
+                    .then(async (response) => {
+                        this.result = await response.json().catch(() => ({ success: false, error: 'Unexpected response from server.' }));
+                    })
+                    .catch(() => {
+                        this.result = { success: false, error: 'Network error — please try again.' };
+                    })
+                    .finally(() => { this.loading = false; });
             },
         };
     }

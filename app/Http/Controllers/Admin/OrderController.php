@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Services\ActivityLogger;
 use App\Services\AuditLogger;
+use App\Services\CourierFraudCheckService;
 use App\Services\FraudDetectionService;
 use App\Services\Notifications\NotificationDispatcher;
 use App\Services\OrderStockService;
@@ -61,7 +62,14 @@ class OrderController extends Controller
 
         ActivityLogger::log('order.view', "Admin viewed order #{$order->order_number}", $order);
 
-        return view('admin.orders.show', compact('order'));
+        // DB-only lookup (no API call) — just shows whatever was last checked for this
+        // shipping phone, if anything. The "Check" / "Re-check" button on the page is what
+        // actually calls the courier API.
+        $courierCheck = $order->shipping_phone
+            ? app(CourierFraudCheckService::class)->lastCheck($order->shipping_phone)
+            : null;
+
+        return view('admin.orders.show', compact('order', 'courierCheck'));
     }
 
     public function update(Request $request, Order $order)

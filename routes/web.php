@@ -21,6 +21,7 @@ use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\EmailCampaignController as AdminEmailCampaignController;
 use App\Http\Controllers\Admin\FaqController as AdminFaqController;
 use App\Http\Controllers\Admin\FlashSaleController as AdminFlashSaleController;
+use App\Http\Controllers\Admin\FraudCheckController as AdminFraudCheckController;
 use App\Http\Controllers\Admin\HomeSectionController as AdminHomeSectionController;
 use App\Http\Controllers\Admin\LandingPageController as AdminLandingPageController;
 use App\Http\Controllers\Admin\LanguageController as AdminLanguageController;
@@ -472,6 +473,14 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     // Order invoice PDF + fraud re-check
     Route::get('orders/{order}/invoice', [AdminOrderController::class, 'invoice'])->name('orders.invoice');
     Route::patch('orders/{order}/fraud-recheck', [AdminOrderController::class, 'recheckFraud'])->name('orders.fraud-recheck');
+
+    // Courier Fraud Checker — checks a phone number's delivery history across Bangladeshi
+    // courier services (Pathao, Steadfast, RedX, Paperfly, etc. via bdcourier.com's
+    // aggregator API). Separate from the fraud-recheck above, which scores an order's own
+    // behavior rather than the customer's real-world delivery track record.
+    Route::get('fraud-checker', [AdminFraudCheckController::class, 'index'])->name('fraud-checker.index');
+    Route::post('fraud-checker/check', [AdminFraudCheckController::class, 'check'])->name('fraud-checker.check');
+    Route::post('orders/{order}/fraud-checker', [AdminFraudCheckController::class, 'checkOrder'])->name('orders.fraud-checker');
 
     // Audit Logs
     Route::get('audit-logs', [AdminAuditLogController::class, 'index'])->name('audit-logs.index');
