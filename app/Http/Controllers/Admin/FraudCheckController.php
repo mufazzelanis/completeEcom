@@ -55,19 +55,7 @@ class FraudCheckController extends Controller
         );
 
         if ($request->wantsJson()) {
-            return response()->json([
-                'success' => $check->success,
-                'error' => $check->error,
-                'phone' => $check->phone,
-                'total_orders' => $check->total_orders,
-                'total_delivered' => $check->total_delivered,
-                'total_cancelled' => $check->total_cancelled,
-                'success_rate' => $check->success_rate,
-                'risk_level' => $check->risk_level,
-                'style' => $check->getRiskStyle(),
-                'breakdown' => $check->breakdown,
-                'checked_at' => $check->created_at->diffForHumans(),
-            ]);
+            return response()->json($check->toCheckPayload());
         }
 
         return redirect()->route('admin.fraud-checker.index', ['phone' => $validated['phone']]);
@@ -90,18 +78,7 @@ class FraudCheckController extends Controller
         );
 
         if ($request->wantsJson()) {
-            return response()->json([
-                'success' => $check->success,
-                'error' => $check->error,
-                'total_orders' => $check->total_orders,
-                'total_delivered' => $check->total_delivered,
-                'total_cancelled' => $check->total_cancelled,
-                'success_rate' => $check->success_rate,
-                'risk_level' => $check->risk_level,
-                'style' => $check->getRiskStyle(),
-                'breakdown' => $check->breakdown,
-                'checked_at' => $check->created_at->diffForHumans(),
-            ]);
+            return response()->json($check->toCheckPayload());
         }
 
         return back()->with($check->success ? 'success' : 'error',

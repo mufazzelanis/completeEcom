@@ -44,4 +44,26 @@ class CourierFraudCheck extends Model
 
         return self::RISK_STYLES[$this->risk_level] ?? self::RISK_STYLES['unknown'];
     }
+
+    /**
+     * Shared shape for the JSON check endpoints and the order page's server-rendered initial
+     * state — one place so both stay in sync instead of three near-identical array literals.
+     */
+    public function toCheckPayload(): array
+    {
+        return [
+            'success' => $this->success,
+            'error' => $this->error,
+            'phone' => $this->phone,
+            'total_orders' => $this->total_orders,
+            'total_delivered' => $this->total_delivered,
+            'total_cancelled' => $this->total_cancelled,
+            'success_rate' => $this->success_rate,
+            'risk_level' => $this->risk_level,
+            'style' => $this->getRiskStyle(),
+            'breakdown' => $this->breakdown,
+            'provider_errors' => $this->raw_response['errors'] ?? null,
+            'checked_at' => $this->created_at->diffForHumans(),
+        ];
+    }
 }

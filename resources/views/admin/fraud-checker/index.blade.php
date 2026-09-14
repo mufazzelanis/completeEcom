@@ -124,6 +124,19 @@
                 </div>
                 @endif
             @endif
+
+            @php $providerErrors = $result->raw_response['errors'] ?? []; @endphp
+            @if(! empty($providerErrors))
+            <div class="mt-4 pt-3 border-t border-gray-100">
+                <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Provider Status</p>
+                <div class="space-y-1">
+                    @foreach($providerErrors as $providerKey => $providerError)
+                    <p class="text-xs text-gray-400"><span class="capitalize font-medium text-gray-500">{{ $providerKey }}</span>: {{ $providerError }}</p>
+                    @endforeach
+                </div>
+            </div>
+            @endif
+
             <p class="text-xs text-gray-400 mt-3">Checked {{ $result->created_at->diffForHumans() }} @if($result->checkedBy)by {{ $result->checkedBy->name }}@endif</p>
         </div>
     @elseif($phone && ! $result)

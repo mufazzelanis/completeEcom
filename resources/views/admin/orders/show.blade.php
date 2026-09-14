@@ -157,18 +157,7 @@ $rc = $riskColors[$riskLevel];
              whatever was last checked for this phone (server-rendered, no API call just to
              view the page); the button below calls the API fresh via fetch(). --}}
         <div class="bg-white rounded-2xl shadow-sm p-6"
-             x-data="courierFraudCheck(@js($courierCheck ? [
-                 'success' => $courierCheck->success,
-                 'error' => $courierCheck->error,
-                 'total_orders' => $courierCheck->total_orders,
-                 'total_delivered' => $courierCheck->total_delivered,
-                 'total_cancelled' => $courierCheck->total_cancelled,
-                 'success_rate' => $courierCheck->success_rate,
-                 'risk_level' => $courierCheck->risk_level,
-                 'style' => $courierCheck->getRiskStyle(),
-                 'breakdown' => $courierCheck->breakdown,
-                 'checked_at' => $courierCheck->created_at->diffForHumans(),
-             ] : null))">
+             x-data="courierFraudCheck(@js($courierCheck?->toCheckPayload()))">
             <div class="flex items-start justify-between mb-3">
                 <h2 class="font-semibold text-gray-800 flex items-center gap-2">
                     <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"/></svg>
@@ -212,6 +201,14 @@ $rc = $riskColors[$riskLevel];
                                 </div>
                             </template>
                         </div>
+                    </template>
+                </div>
+            </template>
+
+            <template x-if="result && result.provider_errors && Object.keys(result.provider_errors).length">
+                <div class="mt-3 pt-3 border-t border-gray-100 space-y-1">
+                    <template x-for="(err, providerKey) in (result ? result.provider_errors : {})" :key="providerKey">
+                        <p class="text-xs text-gray-400"><span class="capitalize font-medium text-gray-500" x-text="providerKey"></span>: <span x-text="err"></span></p>
                     </template>
                 </div>
             </template>
