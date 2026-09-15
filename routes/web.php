@@ -98,6 +98,9 @@ Route::get('/search/suggest', [SearchController::class, 'suggest'])->name('searc
 // SEO: sitemap + robots.txt (public/robots.txt removed so this route is actually reached)
 Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemap');
 Route::get('/robots.txt', [SitemapController::class, 'robots'])->name('robots');
+// AdSense wants this at the domain root listing which ad networks may sell its inventory —
+// 404s until a Publisher ID is saved, same as robots.txt needing public/robots.txt removed.
+Route::get('/ads.txt', [SitemapController::class, 'adsTxt'])->name('ads-txt');
 
 // Blog (public)
 Route::get('/blog', [BlogController::class, 'index'])->name('blog.index');

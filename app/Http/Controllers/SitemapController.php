@@ -95,4 +95,20 @@ class SitemapController extends Controller
 
         return response(implode("\n", $lines), 200)->header('Content-Type', 'text/plain');
     }
+
+    public function adsTxt()
+    {
+        // AdSense's own "pub-<digits>" ID with the "ca-" prefix stripped — that prefix is
+        // just AdSense's client-side script convention, ads.txt wants the bare publisher ID.
+        $publisherId = trim((string) setting('adsense_publisher_id', ''));
+        $publisherId = str_starts_with($publisherId, 'ca-') ? substr($publisherId, 3) : $publisherId;
+
+        if ($publisherId === '') {
+            abort(404);
+        }
+
+        $lines = ["google.com, {$publisherId}, DIRECT, f08c47fec0942fa0"];
+
+        return response(implode("\n", $lines), 200)->header('Content-Type', 'text/plain');
+    }
 }
