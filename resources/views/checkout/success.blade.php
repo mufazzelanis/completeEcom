@@ -2,6 +2,8 @@
 @section('title', 'Order Placed!')
 
 @section('content')
+<div id="confetti-container" class="pointer-events-none fixed inset-0 overflow-hidden z-[9998]" aria-hidden="true"></div>
+
 <div class="max-w-2xl mx-auto px-4 py-16 text-center">
     <div id="thankyou-card" class="bg-white rounded-2xl shadow-sm p-12 dl-reveal">
         <div class="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
@@ -83,6 +85,29 @@
     @media (prefers-reduced-motion: reduce) {
         #thankyou-card.dl-reveal { opacity: 1; transform: none; }
     }
+
+    /* Confetti burst — a two-layer trick: the outer piece falls straight down while
+       spinning (confetti-fall), and the inner piece independently sways side to side
+       (confetti-sway) so the whole thing flutters instead of dropping like a rock. */
+    .confetti-piece {
+        position: absolute;
+        top: -5vh;
+        will-change: transform, opacity;
+        animation: confetti-fall linear forwards;
+    }
+    .confetti-piece-inner {
+        display: block;
+        animation: confetti-sway ease-in-out infinite alternate;
+    }
+    @keyframes confetti-fall {
+        0%   { transform: translateY(0) rotate(0deg); opacity: 1; }
+        85%  { opacity: 1; }
+        100% { transform: translateY(115vh) rotate(var(--confetti-spin, 540deg)); opacity: 0; }
+    }
+    @keyframes confetti-sway {
+        0%   { transform: translateX(-12px); }
+        100% { transform: translateX(12px); }
+    }
 </style>
 <script>
     // Reuses the exact same overlay every Add to Cart / Buy Now / Place Order click already
@@ -90,11 +115,49 @@
     // one continuous, branded "your order is on its way" moment instead of three unrelated
     // loading states. The package icon morphs into a confirmation check, then clears to
     // reveal the real card underneath (which was fully rendered the entire time).
+    // A confetti burst timed to the exact moment the card is revealed, so the page feels
+    // like it's celebrating with the customer rather than just finishing a load. Built with
+    // plain DOM+CSS (no library) so it costs nothing extra to ship; skipped entirely for
+    // anyone who has asked their OS/browser for reduced motion.
+    function launchConfetti() {
+        if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+        const container = document.getElementById('confetti-container');
+        if (!container) return;
+
+        const colors = ['#f97316', '#ec4899', '#6366f1', '#22c55e', '#eab308', '#06b6d4'];
+        const total = window.innerWidth < 640 ? 60 : 110;
+
+        for (let i = 0; i < total; i++) {
+            const piece = document.createElement('div');
+            piece.className = 'confetti-piece';
+            const fallDuration = 2.6 + Math.random() * 2;
+            const spin = (Math.random() < 0.5 ? -1 : 1) * (360 + Math.random() * 360);
+            piece.style.left = (Math.random() * 100) + '%';
+            piece.style.animationDuration = fallDuration + 's';
+            piece.style.animationDelay = (Math.random() * 0.6) + 's';
+            piece.style.setProperty('--confetti-spin', spin + 'deg');
+
+            const inner = document.createElement('span');
+            inner.className = 'confetti-piece-inner';
+            const size = 6 + Math.random() * 7;
+            const isCircle = Math.random() < 0.4;
+            inner.style.width = size + 'px';
+            inner.style.height = (isCircle ? size : size * 2.2) + 'px';
+            inner.style.background = colors[Math.floor(Math.random() * colors.length)];
+            inner.style.borderRadius = isCircle ? '50%' : '2px';
+            inner.style.animationDuration = (0.5 + Math.random() * 0.5) + 's';
+
+            piece.appendChild(inner);
+            piece.addEventListener('animationend', function () { piece.remove(); });
+            container.appendChild(piece);
+        }
+    }
+
     document.addEventListener('DOMContentLoaded', function () {
         showDeliveryLoader('Confirming your order…');
         const overlay = document.getElementById('delivery-loader-overlay');
         const card = document.getElementById('thankyou-card');
-        if (!overlay) { if (card) card.classList.add('dl-revealed'); return; }
+        if (!overlay) { if (card) card.classList.add('dl-revealed'); launchConfetti(); return; }
 
         const packageIcon = overlay.querySelector('[data-loader-icon="package"]');
         const successIcon = overlay.querySelector('[data-loader-icon="success"]');
@@ -111,6 +174,7 @@
         setTimeout(function () {
             hideDeliveryLoader();
             if (card) card.classList.add('dl-revealed');
+            launchConfetti();
             // Reset for the next time this same overlay is used elsewhere on the site.
             if (packageIcon) packageIcon.hidden = false;
             if (successIcon) successIcon.hidden = true;
