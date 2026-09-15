@@ -141,7 +141,7 @@ Route::get('/sync', function (\Illuminate\Http\Request $request) {
     }
     \Illuminate\Support\Facades\Artisan::call('optimize:clear');
 
-    return response("OK\n" . \Illuminate\Support\Facades\Artisan::output(), 200)
+    return response("Site cache cleared successfully.", 200)
         ->header('Content-Type', 'text/plain');
 })->name('sync.cache');
 
