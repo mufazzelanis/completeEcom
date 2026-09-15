@@ -51,7 +51,13 @@
         {{-- Article --}}
         <article class="lg:col-span-3">
             @if($blogPost->image)
-            <img src="{{ Storage::url($blogPost->image) }}" alt="{{ $blogPost->title }}" class="w-full h-56 sm:h-80 md:h-96 object-cover object-top rounded-2xl mb-6 sm:mb-8">
+            {{-- No fixed height / object-cover here on purpose — a forced crop box cuts off
+                 whatever the author happened to put near the edges of their image (exactly
+                 what was happening before: wide banners with icons/text spread across the
+                 whole frame lost their top or bottom the moment the box's aspect ratio
+                 didn't match the source). w-full + h-auto always shows the complete image,
+                 scaled to the column width, on every screen size. --}}
+            <img src="{{ Storage::url($blogPost->image) }}" alt="{{ $blogPost->title }}" class="w-full h-auto rounded-2xl mb-6 sm:mb-8">
             @endif
 
             <div class="flex flex-wrap items-center gap-x-3 gap-y-1.5 mb-4 text-sm text-gray-500">
