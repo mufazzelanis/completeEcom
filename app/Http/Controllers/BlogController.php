@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\BlogCategory;
 use App\Models\BlogPost;
-use App\Models\BlogTag;
 use Illuminate\Http\Request;
 
 class BlogController extends Controller
@@ -25,10 +24,9 @@ class BlogController extends Controller
         $categories = BlogCategory::where('is_active', true)
             ->withCount(['posts' => fn($q) => $q->published()])
             ->orderBy('name')->get();
-        $tags       = BlogTag::withCount('posts')->having('posts_count', '>', 0)->orderByDesc('posts_count')->take(20)->get();
         $featured   = BlogPost::with('category')->published()->featured()->latest('published_at')->take(3)->get();
 
-        return view('blog.index', compact('posts', 'categories', 'tags', 'featured'));
+        return view('blog.index', compact('posts', 'categories', 'featured'));
     }
 
     public function show(BlogPost $blogPost)
@@ -63,8 +61,7 @@ class BlogController extends Controller
         $categories = BlogCategory::where('is_active', true)
             ->withCount(['posts' => fn($q) => $q->published()])
             ->orderBy('name')->get();
-        $tags = BlogTag::withCount('posts')->having('posts_count', '>', 0)->orderByDesc('posts_count')->take(20)->get();
 
-        return view('blog.category', compact('posts', 'blogCategory', 'categories', 'tags'));
+        return view('blog.category', compact('posts', 'blogCategory', 'categories'));
     }
 }

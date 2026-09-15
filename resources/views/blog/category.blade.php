@@ -76,19 +76,6 @@
             </div>
             @endif
 
-            @if(isset($tags) && $tags->count())
-            <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-sm p-5">
-                <h3 class="font-semibold text-gray-800 mb-4">Tags</h3>
-                <div class="flex flex-wrap gap-2">
-                    @foreach($tags as $tag)
-                    <a href="{{ route('blog.index', ['tag' => $tag->slug]) }}"
-                        class="px-3 py-1 bg-gray-50 dark:bg-gray-800 hover:bg-indigo-50 dark:hover:bg-indigo-500/15 hover:text-indigo-700 dark:hover:text-indigo-400 text-gray-600 text-xs rounded-full transition">
-                        #{{ $tag->name }}
-                    </a>
-                    @endforeach
-                </div>
-            </div>
-            @endif
         </aside>
     </div>
 </div>

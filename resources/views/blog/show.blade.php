@@ -83,17 +83,6 @@
             <p class="text-base sm:text-lg text-gray-600 mb-8 leading-relaxed border-l-4 border-indigo-500 pl-4">{{ $blogPost->excerpt }}</p>
             @endif
 
-            @if($blogPost->tags->count())
-            <div class="flex flex-wrap gap-2 mb-8">
-                @foreach($blogPost->tags as $tag)
-                <a href="{{ route('blog.index', ['tag' => $tag->slug]) }}"
-                    class="px-3 py-1 bg-gray-50 dark:bg-gray-800 hover:bg-indigo-50 dark:hover:bg-indigo-500/15 hover:text-indigo-700 dark:hover:text-indigo-400 text-gray-600 text-xs rounded-full transition">
-                    #{{ $tag->name }}
-                </a>
-                @endforeach
-            </div>
-            @endif
-
             @include('partials.adsense-unit', ['slot' => setting('adsense_slot_article')])
 
             {{-- dark:prose-invert — Tailwind Typography's own scoped color system (its own
