@@ -390,6 +390,8 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     // Stock Management (bulk quick update)
     Route::get('stock-management', [AdminStockManagementController::class, 'index'])->name('stock-management.index');
     Route::post('stock-management', [AdminStockManagementController::class, 'update'])->name('stock-management.update');
+    Route::get('stock-management/ids', [AdminStockManagementController::class, 'ids'])->name('stock-management.ids');
+    Route::post('stock-management/bulk-apply', [AdminStockManagementController::class, 'bulkApply'])->name('stock-management.bulk-apply');
     Route::patch('products/{product}/quick-stock', [AdminStockManagementController::class, 'quickUpdate'])->name('products.quick-stock');
 
     // Stock Reasons (manageable list used by Stock Adjustments/Management)
