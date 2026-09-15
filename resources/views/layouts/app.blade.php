@@ -523,6 +523,18 @@ $navCategories = \App\Models\Category::with(['children' => fn($q) => $q->active(
                     @endif
                 </div>
             @endforeach
+            {{-- A blinking "live" dot (the same ping-ring-over-solid-dot trick used for
+                 "recording"/"on air" indicators elsewhere) so this one item visually stands
+                 out from the plain category links next to it and actually draws a click,
+                 rather than reading as just another menu entry. --}}
+            <a href="{{ setting('nav_blog_url') ?: route('blog.index') }}"
+               class="relative inline-flex items-center gap-2 text-sm text-white whitespace-nowrap hover:bg-orange-800 px-3 py-2.5 font-semibold transition flex-shrink-0">
+                <span class="relative flex h-2 w-2">
+                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                    <span class="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+                </span>
+                {{ t('header.blog', 'Blogs', [], 'header') }}
+            </a>
             <a href="{{ route('shop.index') }}" class="inline-flex items-center text-sm text-white whitespace-nowrap hover:text-white px-3 py-2.5 ml-auto font-medium transition">{{ t('header.all_products', 'All Products', [], 'header') }} →</a>
         </div>
     </div>
@@ -616,6 +628,14 @@ $navCategories = \App\Models\Category::with(['children' => fn($q) => $q->active(
             <nav class="space-y-1">
                 <a href="{{ route('home') }}" class="block px-3 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-orange-50 dark:hover:bg-gray-800 hover:text-orange-600 rounded-lg transition">{{ t('header.home', 'Home', [], 'header') }}</a>
                 <a href="{{ route('shop.index') }}" class="block px-3 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-orange-50 dark:hover:bg-gray-800 hover:text-orange-600 rounded-lg transition">{{ t('header.shop_all', 'Shop All', [], 'header') }}</a>
+                <a href="{{ setting('nav_blog_url') ?: route('blog.index') }}" @click="mobileOpen = false"
+                   class="flex items-center gap-2 px-3 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-orange-50 dark:hover:bg-gray-800 hover:text-orange-600 rounded-lg transition font-medium">
+                    <span class="relative flex h-2 w-2">
+                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                        <span class="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+                    </span>
+                    {{ t('header.blog', 'Blogs', [], 'header') }}
+                </a>
                 @php
                     $mobileCategories = \App\Models\Category::whereNull('parent_id')->active()->withCount('products')->orderBy('sort_order')->limit(8)->get();
                 @endphp
