@@ -80,7 +80,7 @@
                         @if(in_array($campaign->status, ['draft', 'scheduled']))
                         <a href="{{ route('admin.email-campaigns.edit', $campaign) }}" class="text-gray-500 hover:text-gray-700 text-xs font-medium">Edit</a>
                         @endif
-                        <form action="{{ route('admin.email-campaigns.destroy', $campaign) }}" method="POST" onsubmit="return confirm('Delete this campaign?')">
+                        <form action="{{ route('admin.email-campaigns.destroy', $campaign) }}" method="POST" onsubmit="return uiConfirm(event, 'Delete this campaign?')">
                             @csrf @method('DELETE')
                             <button class="text-red-500 hover:text-red-700 text-xs font-medium">Delete</button>
                         </form>

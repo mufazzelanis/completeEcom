@@ -58,7 +58,7 @@
                         <td class="px-6 py-3 text-center text-sm text-gray-600">{{ $tag->products_count }}</td>
                         <td class="px-6 py-3 text-right flex items-center justify-end gap-3">
                             <button @click="editing=!editing" x-show="!editing" class="text-indigo-600 text-sm hover:text-indigo-800">Edit</button>
-                            <form action="{{ route('admin.tags.destroy', $tag) }}" method="POST" onsubmit="return confirm('Delete tag?')">
+                            <form action="{{ route('admin.tags.destroy', $tag) }}" method="POST" onsubmit="return uiConfirm(event, 'Delete tag?')">
                                 @csrf @method('DELETE')
                                 <button class="text-red-500 text-sm hover:text-red-700">Delete</button>
                             </form>

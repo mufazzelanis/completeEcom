@@ -72,12 +72,12 @@
                             @csrf
                             <button class="text-green-600 hover:text-green-800 text-sm font-medium">Approve</button>
                         </form>
-                        <form action="{{ route('admin.vendors.reject', $vendor) }}" method="POST" onsubmit="return confirm('Reject this application?')">
+                        <form action="{{ route('admin.vendors.reject', $vendor) }}" method="POST" onsubmit="return uiConfirm(event, 'Reject this application?')">
                             @csrf
                             <button class="text-red-500 hover:text-red-700 text-sm font-medium">Reject</button>
                         </form>
                         @elseif($vendor->status === 'approved')
-                        <form action="{{ route('admin.vendors.suspend', $vendor) }}" method="POST" onsubmit="return confirm('Suspend this vendor?')">
+                        <form action="{{ route('admin.vendors.suspend', $vendor) }}" method="POST" onsubmit="return uiConfirm(event, 'Suspend this vendor?')">
                             @csrf
                             <button class="text-orange-700 hover:text-orange-800 text-sm font-medium">Suspend</button>
                         </form>

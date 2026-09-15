@@ -54,7 +54,7 @@
                                     {{ $review->is_approved ? 'Unapprove' : 'Approve' }}
                                 </button>
                             </form>
-                            <form action="{{ route('admin.reviews.destroy', $review->id) }}" method="POST" onsubmit="return confirm('Delete review?')">
+                            <form action="{{ route('admin.reviews.destroy', $review->id) }}" method="POST" onsubmit="return uiConfirm(event, 'Delete review?')">
                                 @csrf @method('DELETE')
                                 <button type="submit" class="text-red-500 hover:text-red-700 text-sm font-medium">Delete</button>
                             </form>

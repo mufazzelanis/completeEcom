@@ -42,7 +42,7 @@
                 <button class="w-full bg-green-600 text-white px-4 py-2 rounded-xl text-sm font-medium hover:bg-green-700 transition">Approve</button>
             </form>
             <button type="button" @click="correcting = !correcting" class="w-full bg-orange-50 text-orange-600 px-4 py-2 rounded-xl text-sm font-medium hover:bg-orange-100 transition">Request Correction</button>
-            <form action="{{ route('admin.vendors.reject', $vendor) }}" method="POST" onsubmit="return confirm('Reject this application?')">
+            <form action="{{ route('admin.vendors.reject', $vendor) }}" method="POST" onsubmit="return uiConfirm(event, 'Reject this application?')">
                 @csrf
                 <button class="w-full bg-red-50 text-red-600 px-4 py-2 rounded-xl text-sm font-medium hover:bg-red-100 transition">Reject</button>
             </form>
@@ -55,7 +55,7 @@
                 </form>
             </div>
             @elseif($vendor->status === 'approved')
-            <form action="{{ route('admin.vendors.suspend', $vendor) }}" method="POST" onsubmit="return confirm('Suspend this vendor?')">
+            <form action="{{ route('admin.vendors.suspend', $vendor) }}" method="POST" onsubmit="return uiConfirm(event, 'Suspend this vendor?')">
                 @csrf
                 <button class="w-full bg-orange-50 text-orange-600 px-4 py-2 rounded-xl text-sm font-medium hover:bg-orange-100 transition">Suspend</button>
             </form>

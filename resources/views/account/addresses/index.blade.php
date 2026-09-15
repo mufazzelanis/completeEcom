@@ -39,7 +39,7 @@
                 @csrf @method('PATCH')
                 <button class="text-xs text-gray-500 hover:text-gray-700 font-medium">Set Default</button>
             </form>
-            <form action="{{ route('account.addresses.destroy', $address) }}" method="POST" onsubmit="return confirm('Remove this address?')">
+            <form action="{{ route('account.addresses.destroy', $address) }}" method="POST" onsubmit="return uiConfirm(event, 'Remove this address?')">
                 @csrf @method('DELETE')
                 <button class="text-xs text-red-500 hover:text-red-700 font-medium">Remove</button>
             </form>

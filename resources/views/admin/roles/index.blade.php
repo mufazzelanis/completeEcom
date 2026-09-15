@@ -32,7 +32,7 @@
                     @endif
                     @if(!$role->is_system)
                         <form action="{{ route('admin.roles.destroy', $role->id) }}" method="POST"
-                            onsubmit="return confirm('Delete role \'{{ $role->display_name }}\'? Users will be moved to Customer.')">
+                            onsubmit="return uiConfirm(event, 'Delete role \'{{ $role->display_name }}\'? Users will be moved to Customer.')">
                             @csrf @method('DELETE')
                             <button type="submit" class="text-red-500 hover:text-red-700">Delete</button>
                         </form>

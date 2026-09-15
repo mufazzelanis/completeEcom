@@ -71,7 +71,7 @@
                 <td class="px-6 py-3 text-right">
                     <div class="flex items-center justify-end space-x-3">
                         <a href="{{ route('admin.brands.edit', $brand) }}" class="text-indigo-600 hover:text-indigo-800 text-sm font-medium">Edit</a>
-                        <form action="{{ route('admin.brands.destroy', $brand) }}" method="POST" onsubmit="return confirm('Delete this brand?')">
+                        <form action="{{ route('admin.brands.destroy', $brand) }}" method="POST" onsubmit="return uiConfirm(event, 'Delete this brand?')">
                             @csrf @method('DELETE')
                             <button type="submit" class="text-red-500 hover:text-red-700 text-sm">Delete</button>
                         </form>

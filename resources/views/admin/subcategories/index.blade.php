@@ -79,7 +79,7 @@
                         <a href="{{ route('admin.subcategories.edit', $sub->id) }}"
                             class="text-indigo-600 hover:text-indigo-800 text-sm font-medium">Edit</a>
                         <form action="{{ route('admin.subcategories.destroy', $sub->id) }}" method="POST"
-                            onsubmit="return confirm('Delete this subcategory?')">
+                            onsubmit="return uiConfirm(event, 'Delete this subcategory?')">
                             @csrf @method('DELETE')
                             <button type="submit" class="text-red-500 hover:text-red-700 text-sm font-medium">Delete</button>
                         </form>

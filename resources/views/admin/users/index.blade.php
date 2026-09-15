@@ -67,7 +67,7 @@
                         <div class="flex items-center justify-center space-x-2">
                             <a href="{{ route('admin.users.show', $user->id) }}" class="text-indigo-600 hover:text-indigo-800 text-sm">View</a>
                             <a href="{{ route('admin.users.edit', $user->id) }}" class="text-gray-600 hover:text-gray-800 text-sm">Edit</a>
-                            <form action="{{ route('admin.users.destroy', $user->id) }}" method="POST" onsubmit="return confirm('Delete this user?')">
+                            <form action="{{ route('admin.users.destroy', $user->id) }}" method="POST" onsubmit="return uiConfirm(event, 'Delete this user?')">
                                 @csrf @method('DELETE')
                                 <button type="submit" class="text-red-500 hover:text-red-700 text-sm">Delete</button>
                             </form>

@@ -129,7 +129,7 @@
             <div class="bg-white rounded-2xl shadow-sm p-6">
                 <h3 class="font-semibold text-gray-800 mb-4">Reject Return</h3>
                 <form action="{{ route('admin.returns.reject', $return) }}" method="POST"
-                      onsubmit="return confirm('Reject this return request?')">
+                      onsubmit="return uiConfirm(event, 'Reject this return request?')">
                     @csrf
                     <textarea name="admin_note" placeholder="Reason for rejection (required)" rows="2" required
                         class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm mb-3 focus:outline-none focus:ring-2 focus:ring-red-400"></textarea>

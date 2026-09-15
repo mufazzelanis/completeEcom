@@ -46,7 +46,7 @@
                 <button type="submit" form="ticket-reply-form" class="bg-indigo-600 text-white px-5 py-2 rounded-xl text-sm font-semibold hover:bg-indigo-700 transition">Send Reply</button>
                 <form action="{{ route('account.support.close', $ticket) }}" method="POST">
                     @csrf @method('PATCH')
-                    <button type="submit" class="text-gray-500 hover:text-gray-700 text-sm font-medium" onclick="return confirm('Close this ticket?')">Close Ticket</button>
+                    <button type="submit" class="text-gray-500 hover:text-gray-700 text-sm font-medium" onclick="return uiConfirm(event, 'Close this ticket?')">Close Ticket</button>
                 </form>
             </div>
         </div>

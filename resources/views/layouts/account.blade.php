@@ -50,6 +50,7 @@ $cartCount = \App\Models\Cart::where('user_id', auth()->id())->sum('quantity');
     <style>[x-cloak]{display:none!important}</style>
 </head>
 <body class="bg-gray-50 dark:bg-gray-950 font-sans antialiased transition-colors pb-[calc(4rem_+_env(safe-area-inset-bottom))] md:pb-0" x-data="{ menuOpen: false }">
+@include('partials.confirm-modal')
 
 {{-- Top Nav — same logo size as the main storefront header (partials.storefront.header-logo)
      so switching into Account doesn't visibly shrink the branding down to a different scale. --}}

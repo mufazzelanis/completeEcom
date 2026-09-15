@@ -68,7 +68,7 @@
                 <td class="px-5 py-3 text-right">
                     <div class="flex items-center justify-end gap-3">
                         <a href="{{ route('seller.products.edit', $product) }}" class="text-indigo-600 hover:text-indigo-800 font-medium">Edit</a>
-                        <form action="{{ route('seller.products.destroy', $product) }}" method="POST" onsubmit="return confirm('Delete this product?')">
+                        <form action="{{ route('seller.products.destroy', $product) }}" method="POST" onsubmit="return uiConfirm(event, 'Delete this product?')">
                             @csrf @method('DELETE')
                             <button type="submit" class="text-red-500 hover:text-red-700 font-medium">Delete</button>
                         </form>

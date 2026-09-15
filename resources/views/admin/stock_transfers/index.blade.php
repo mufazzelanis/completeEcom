@@ -72,7 +72,7 @@
                     <div class="flex items-center justify-end gap-3">
                         <a href="{{ route('admin.stock-transfers.show', $transfer) }}" class="text-indigo-600 hover:text-indigo-800 text-sm font-medium">View</a>
                         @if(!in_array($transfer->status, ['completed','cancelled']))
-                        <form action="{{ route('admin.stock-transfers.cancel', $transfer) }}" method="POST" onsubmit="return confirm('Cancel this transfer?')">
+                        <form action="{{ route('admin.stock-transfers.cancel', $transfer) }}" method="POST" onsubmit="return uiConfirm(event, 'Cancel this transfer?')">
                             @csrf @method('PATCH')
                             <button class="text-red-500 hover:text-red-700 text-sm">Cancel</button>
                         </form>

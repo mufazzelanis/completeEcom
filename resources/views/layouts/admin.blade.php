@@ -48,6 +48,7 @@
     @stack('styles')
 </head>
 <body class="bg-gray-100 dark:bg-gray-950 font-sans antialiased transition-colors">
+@include('partials.confirm-modal')
 
 @php
 // Every navigable admin page, for the global quick-search box below — keeps the whole

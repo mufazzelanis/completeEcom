@@ -49,7 +49,7 @@
                 <td class="px-6 py-4 text-center">
                     <div class="flex items-center justify-center gap-3">
                         <a href="{{ route('admin.flash-sales.edit', $sale) }}" class="text-indigo-600 hover:text-indigo-800 text-xs font-medium">Edit</a>
-                        <form action="{{ route('admin.flash-sales.destroy', $sale) }}" method="POST" onsubmit="return confirm('Delete this flash sale?')">
+                        <form action="{{ route('admin.flash-sales.destroy', $sale) }}" method="POST" onsubmit="return uiConfirm(event, 'Delete this flash sale?')">
                             @csrf @method('DELETE')
                             <button class="text-red-500 hover:text-red-700 text-xs font-medium">Delete</button>
                         </form>

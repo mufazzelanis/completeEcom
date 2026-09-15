@@ -67,7 +67,7 @@
                 </div>
                 <div class="flex items-center gap-3">
                     <button type="submit" form="translation-{{ $loop->index }}" class="text-xs bg-orange-600 text-white px-3 py-1.5 rounded-lg font-medium">Save</button>
-                    <form action="{{ route('admin.translations.destroy') }}" method="POST" onsubmit="return confirm('Delete this translation key for all languages?')">
+                    <form action="{{ route('admin.translations.destroy') }}" method="POST" onsubmit="return uiConfirm(event, 'Delete this translation key for all languages?')">
                         @csrf @method('DELETE')
                         <input type="hidden" name="key" value="{{ $key }}">
                         <button type="submit" class="text-xs text-red-500 hover:text-red-700">Delete</button>

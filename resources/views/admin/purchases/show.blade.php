@@ -122,7 +122,7 @@
 
             @if(!in_array($purchase->status, ['received','partial','cancelled']))
             <form action="{{ route('admin.purchases.destroy', $purchase) }}" method="POST"
-                onsubmit="return confirm('Delete this purchase order?')">
+                onsubmit="return uiConfirm(event, 'Delete this purchase order?')">
                 @csrf @method('DELETE')
                 <button class="w-full px-4 py-2.5 border border-red-200 text-red-600 rounded-xl text-sm font-medium hover:bg-red-50 transition">
                     Delete Purchase

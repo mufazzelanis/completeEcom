@@ -86,7 +86,7 @@
                         </td>
                         <td class="px-6 py-3 text-center text-xs text-gray-500 dark:text-gray-400 uppercase">{{ $lang->direction }}</td>
                         <td class="px-6 py-3 text-center">
-                            <form action="{{ route('admin.languages.toggle', $lang) }}" method="POST" onsubmit="return {{ $lang->is_default && $lang->is_active ? 'confirm(\'This is the default language and cannot be disabled directly. Set another language as default first.\')' : 'true' }}">
+                            <form action="{{ route('admin.languages.toggle', $lang) }}" method="POST" onsubmit="return {{ $lang->is_default && $lang->is_active ? 'uiConfirm(event, \'This is the default language and cannot be disabled directly. Set another language as default first.\')' : 'true' }}">
                                 @csrf @method('PATCH')
                                 <button type="submit" class="text-xs px-2.5 py-1 rounded-full font-medium {{ $lang->is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500' }}">
                                     {{ $lang->is_active ? 'Active' : 'Inactive' }}
@@ -106,7 +106,7 @@
                         <td class="px-6 py-3 text-right flex items-center justify-end gap-3">
                             <button @click="editing=!editing" x-show="!editing" class="text-orange-600 text-sm hover:text-orange-800">Edit</button>
                             @unless($lang->is_default)
-                            <form action="{{ route('admin.languages.destroy', $lang) }}" method="POST" onsubmit="return confirm('Delete this language? Its translations will remain but the switcher will no longer offer it.')">
+                            <form action="{{ route('admin.languages.destroy', $lang) }}" method="POST" onsubmit="return uiConfirm(event, 'Delete this language? Its translations will remain but the switcher will no longer offer it.')">
                                 @csrf @method('DELETE')
                                 <button class="text-red-500 text-sm hover:text-red-700">Delete</button>
                             </form>

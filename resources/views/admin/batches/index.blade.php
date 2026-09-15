@@ -91,7 +91,7 @@
                 <td class="px-6 py-3 text-right">
                     <div class="flex items-center justify-end gap-3">
                         <a href="{{ route('admin.batches.edit', $batch) }}" class="text-indigo-600 hover:text-indigo-800 text-sm">Edit</a>
-                        <form action="{{ route('admin.batches.destroy', $batch) }}" method="POST" onsubmit="return confirm('Delete this batch?')">
+                        <form action="{{ route('admin.batches.destroy', $batch) }}" method="POST" onsubmit="return uiConfirm(event, 'Delete this batch?')">
                             @csrf @method('DELETE')
                             <button class="text-red-500 hover:text-red-700 text-sm">Delete</button>
                         </form>

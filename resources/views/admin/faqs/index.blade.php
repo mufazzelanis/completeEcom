@@ -72,7 +72,7 @@
                                 </button>
                             </form>
                             <button @click="editing = true" class="text-indigo-600 hover:text-indigo-800 text-sm font-medium">Edit</button>
-                            <form action="{{ route('admin.faqs.destroy', $faq) }}" method="POST" onsubmit="return confirm('Delete this FAQ?')">
+                            <form action="{{ route('admin.faqs.destroy', $faq) }}" method="POST" onsubmit="return uiConfirm(event, 'Delete this FAQ?')">
                                 @csrf @method('DELETE')
                                 <button class="text-red-500 hover:text-red-700 text-sm font-medium">Delete</button>
                             </form>

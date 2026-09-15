@@ -45,7 +45,7 @@
                 </td>
                 <td class="px-6 py-4 text-sm text-gray-500">{{ $subscriber->subscribed_at?->format('M d, Y') ?? '—' }}</td>
                 <td class="px-6 py-4 text-right">
-                    <form action="{{ route('admin.newsletter.destroy', $subscriber) }}" method="POST" onsubmit="return confirm('Remove this subscriber?')">
+                    <form action="{{ route('admin.newsletter.destroy', $subscriber) }}" method="POST" onsubmit="return uiConfirm(event, 'Remove this subscriber?')">
                         @csrf @method('DELETE')
                         <button class="text-red-500 hover:text-red-700 text-sm font-medium">Remove</button>
                     </form>

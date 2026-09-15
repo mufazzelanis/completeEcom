@@ -211,8 +211,7 @@
             }
         },
     }">
-    <form action="{{ route('admin.products.bulk-action') }}" method="POST"
-          @submit="if ($event.submitter && $event.submitter.value === 'delete' && !confirm(`Delete ${selected.length} product(s)? This can't be undone.`)) $event.preventDefault()">
+    <form action="{{ route('admin.products.bulk-action') }}" method="POST">
         @csrf
         <template x-for="id in selected" :key="id">
             <input type="hidden" name="ids[]" :value="id">
@@ -233,7 +232,15 @@
             <button type="submit" name="bulk_action" value="deactivate" class="text-sm text-gray-600 hover:text-gray-800 font-medium px-2 py-1 rounded-lg hover:bg-white transition">Deactivate</button>
             <button type="submit" name="bulk_action" value="feature" class="text-sm text-yellow-700 hover:text-yellow-900 font-medium px-2 py-1 rounded-lg hover:bg-white transition">Mark Featured</button>
             <button type="submit" name="bulk_action" value="unfeature" class="text-sm text-gray-600 hover:text-gray-800 font-medium px-2 py-1 rounded-lg hover:bg-white transition">Unmark Featured</button>
-            <button type="submit" name="bulk_action" value="delete" class="text-sm text-red-600 hover:text-red-800 font-medium px-2 py-1 rounded-lg hover:bg-white transition ml-auto">Delete Selected</button>
+            <button type="button"
+                    @click="showConfirmModal(`Delete ${selected.length} product(s)? This can't be undone.`).then(ok => {
+                        if (!ok) return;
+                        const input = document.createElement('input');
+                        input.type = 'hidden'; input.name = 'bulk_action'; input.value = 'delete';
+                        $el.closest('form').appendChild(input);
+                        $el.closest('form').submit();
+                    })"
+                    class="text-sm text-red-600 hover:text-red-800 font-medium px-2 py-1 rounded-lg hover:bg-white transition ml-auto">Delete Selected</button>
             <button type="button" @click="selected = []" class="text-sm text-gray-400 hover:text-gray-600 px-2 py-1" title="Clear selection">Clear</button>
         </div>
     </form>
@@ -368,7 +375,7 @@
                                 </form>
                             @endif
                             <a href="{{ route('admin.products.edit', $product->id) }}" @if($isManualReorder) draggable="false" @endif class="text-indigo-600 hover:text-indigo-800 text-sm font-medium">Edit</a>
-                            <form action="{{ route('admin.products.destroy', $product->id) }}" method="POST" onsubmit="return confirm('Delete this product?')">
+                            <form action="{{ route('admin.products.destroy', $product->id) }}" method="POST" onsubmit="return uiConfirm(event, 'Delete this product?')">
                                 @csrf @method('DELETE')
                                 <button type="submit" class="text-red-500 hover:text-red-700 text-sm font-medium">Delete</button>
                             </form>

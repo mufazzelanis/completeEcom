@@ -53,7 +53,7 @@
          x-show="selected.length > 0" x-cloak>
         <p class="text-sm text-gray-600"><span x-text="selected.length"></span> product(s) selected</p>
         <form action="{{ route('admin.sale-products.clear-all') }}" method="POST"
-              @submit.prevent="if(confirm('Clear sale prices for selected products?')) { $el.submit(); }">
+              @submit.prevent="showConfirmModal('Clear sale prices for selected products?').then(ok => { if (ok) $el.submit(); })">
             @csrf
             <template x-for="id in selected" :key="id">
                 <input type="hidden" name="ids[]" :value="id">
@@ -132,7 +132,7 @@
                             class="text-xs text-indigo-600 hover:text-indigo-800 font-medium">Set Sale</button>
                         @if($product->sale_price)
                         <form action="{{ route('admin.sale-products.update', $product) }}" method="POST" class="inline"
-                              onsubmit="return confirm('Remove sale price?')">
+                              onsubmit="return uiConfirm(event, 'Remove sale price?')">
                             @csrf @method('PATCH')
                             <input type="hidden" name="sale_price" value="">
                             <button type="submit" class="text-xs text-red-500 hover:text-red-700 font-medium">Remove</button>

@@ -112,7 +112,7 @@
                                 <button type="button" @click="editing = !editing" class="text-indigo-600 hover:text-indigo-800 text-xs">
                                     <span x-text="editing ? 'Cancel' : 'Edit'"></span>
                                 </button>
-                                <form action="{{ route('admin.bundles.items.remove', [$product, $item]) }}" method="POST" onsubmit="return confirm('Remove?')">
+                                <form action="{{ route('admin.bundles.items.remove', [$product, $item]) }}" method="POST" onsubmit="return uiConfirm(event, 'Remove?')">
                                     @csrf @method('DELETE')
                                     <button class="text-red-500 hover:text-red-700 text-xs">Remove</button>
                                 </form>

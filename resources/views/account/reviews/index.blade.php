@@ -41,7 +41,7 @@
         </div>
         <div class="flex items-center gap-2 flex-shrink-0">
             <a href="{{ route('account.reviews.edit', $review) }}" class="text-xs text-indigo-600 hover:text-indigo-800 font-medium">Edit</a>
-            <form action="{{ route('account.reviews.destroy', $review) }}" method="POST" onsubmit="return confirm('Delete this review?')">
+            <form action="{{ route('account.reviews.destroy', $review) }}" method="POST" onsubmit="return uiConfirm(event, 'Delete this review?')">
                 @csrf @method('DELETE')
                 <button class="text-xs text-red-500 hover:text-red-700 font-medium">Delete</button>
             </form>

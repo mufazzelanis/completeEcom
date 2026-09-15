@@ -76,7 +76,7 @@
             @if(in_array($order->status, ['pending','processing']))
             <form action="{{ route('orders.cancel', $order) }}" method="POST">
                 @csrf
-                <button class="text-xs text-red-500 hover:text-red-700 font-medium px-3 py-2" onclick="return confirm('Cancel this order?')">Cancel</button>
+                <button class="text-xs text-red-500 hover:text-red-700 font-medium px-3 py-2" onclick="return uiConfirm(event, 'Cancel this order?')">Cancel</button>
             </form>
             @endif
         </div>

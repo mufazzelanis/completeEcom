@@ -121,7 +121,7 @@
                         ✓ Verify & Mark Paid
                     </button>
                 </form>
-                <form action="{{ route('admin.payments.reject', $payment) }}" method="POST" onsubmit="return confirm('Reject this payment?')">
+                <form action="{{ route('admin.payments.reject', $payment) }}" method="POST" onsubmit="return uiConfirm(event, 'Reject this payment?')">
                     @csrf
                     <textarea name="admin_note" placeholder="Reason for rejection (required)" rows="2" required
                         class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm mb-3 focus:outline-none focus:ring-2 focus:ring-red-400"></textarea>
@@ -136,7 +136,7 @@
             @if($payment->status === 'completed')
             <div class="bg-white rounded-2xl shadow-sm p-6">
                 <h3 class="font-semibold text-gray-800 mb-4">Refund</h3>
-                <form action="{{ route('admin.payments.refund', $payment) }}" method="POST" onsubmit="return confirm('Issue refund for this payment?')">
+                <form action="{{ route('admin.payments.refund', $payment) }}" method="POST" onsubmit="return uiConfirm(event, 'Issue refund for this payment?')">
                     @csrf
                     <textarea name="admin_note" placeholder="Reason for refund (required)" rows="2" required
                         class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm mb-3 focus:outline-none focus:ring-2 focus:ring-gray-400"></textarea>

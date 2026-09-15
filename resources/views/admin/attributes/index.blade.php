@@ -80,7 +80,7 @@
                         <td class="px-6 py-3 text-right">
                             <div class="flex items-center justify-end gap-3">
                                 <button type="button" @click="editing=!editing" x-show="!editing" class="text-indigo-600 hover:text-indigo-800 text-sm">Edit</button>
-                                <form action="{{ route('admin.attributes.destroy', $attr) }}" method="POST" onsubmit="return confirm('Delete this attribute?')">
+                                <form action="{{ route('admin.attributes.destroy', $attr) }}" method="POST" onsubmit="return uiConfirm(event, 'Delete this attribute?')">
                                     @csrf @method('DELETE')
                                     <button type="submit" class="text-red-500 hover:text-red-700 text-sm">Delete</button>
                                 </form>

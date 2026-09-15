@@ -35,6 +35,7 @@ $sellerNavItems = [
     @stack('styles')
 </head>
 <body class="bg-gray-50 font-sans antialiased" x-data="{ menuOpen: false }">
+@include('partials.confirm-modal')
 
 {{-- Top Nav --}}
 <nav class="bg-white shadow-sm sticky top-0 z-50 border-b border-gray-100">

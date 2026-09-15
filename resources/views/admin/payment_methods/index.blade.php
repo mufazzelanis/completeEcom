@@ -75,7 +75,7 @@
                 <td class="px-6 py-4 text-right">
                     <div class="flex justify-end space-x-2">
                         <a href="{{ route('admin.payment-methods.edit', $method) }}" class="text-indigo-600 hover:text-indigo-800 text-sm font-medium">Edit</a>
-                        <form action="{{ route('admin.payment-methods.destroy', $method) }}" method="POST" onsubmit="return confirm('Delete this payment method?')">
+                        <form action="{{ route('admin.payment-methods.destroy', $method) }}" method="POST" onsubmit="return uiConfirm(event, 'Delete this payment method?')">
                             @csrf @method('DELETE')
                             <button class="text-red-500 hover:text-red-700 text-sm font-medium">Delete</button>
                         </form>

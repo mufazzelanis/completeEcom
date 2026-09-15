@@ -42,7 +42,7 @@
                                 <form action="{{ route('orders.cancel', $order->id) }}" method="POST">
                                     @csrf
                                     <button type="submit" class="text-red-500 hover:text-red-700 text-sm font-medium"
-                                        onclick="return confirm('Cancel this order?')">Cancel</button>
+                                        onclick="return uiConfirm(event, 'Cancel this order?')">Cancel</button>
                                 </form>
                             @endif
                         </div>

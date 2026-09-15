@@ -43,7 +43,7 @@
                 <td class="px-6 py-4 text-center">
                     <div class="flex items-center justify-center gap-2">
                         <a href="{{ route('admin.pages.edit', $page) }}" class="text-indigo-600 hover:text-indigo-800 text-sm font-medium">Edit</a>
-                        <form action="{{ route('admin.pages.destroy', $page) }}" method="POST" onsubmit="return confirm('Delete this page?')">
+                        <form action="{{ route('admin.pages.destroy', $page) }}" method="POST" onsubmit="return uiConfirm(event, 'Delete this page?')">
                             @csrf @method('DELETE')
                             <button class="text-red-500 hover:text-red-700 text-sm font-medium">Delete</button>
                         </form>

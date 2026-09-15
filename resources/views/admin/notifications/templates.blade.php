@@ -51,7 +51,7 @@
                     <td class="px-4 py-3 text-right">
                         <a href="{{ route('admin.notifications.templates.edit', $template) }}" class="text-indigo-600 hover:underline text-xs mr-3">Edit</a>
                         <form method="POST" action="{{ route('admin.notifications.templates.destroy', $template) }}" class="inline"
-                              onsubmit="return confirm('Delete this template?')">
+                              onsubmit="return uiConfirm(event, 'Delete this template?')">
                             @csrf @method('DELETE')
                             <button class="text-red-500 hover:underline text-xs">Delete</button>
                         </form>
@@ -64,7 +64,7 @@
                         <a href="{{ route('admin.notifications.templates.create') }}" class="text-indigo-600 hover:underline ml-1">Create one</a>
                         or
                         <a href="{{ route('admin.notifications.seed') }}" class="text-green-600 hover:underline ml-1"
-                           onclick="return confirm('Seed all default templates?')">seed defaults</a>
+                           onclick="return uiConfirm(event, 'Seed all default templates?')">seed defaults</a>
                     </td>
                 </tr>
                 @endforelse
@@ -77,7 +77,7 @@
         <p class="text-sm text-amber-700 font-medium mb-2">Quick tip: Seed default templates</p>
         <p class="text-sm text-amber-600 mb-3">Default templates cover all event types across all channels. You can edit them afterwards.</p>
         <a href="{{ route('admin.notifications.seed') }}" class="inline-block px-4 py-2 bg-amber-500 text-white rounded-lg text-sm font-medium hover:bg-amber-600"
-           onclick="return confirm('This will create default templates for all event/channel combinations. Continue?')">
+           onclick="return uiConfirm(event, 'This will create default templates for all event/channel combinations. Continue?')">
             Seed Default Templates
         </a>
     </div>

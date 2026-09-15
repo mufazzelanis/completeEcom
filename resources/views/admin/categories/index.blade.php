@@ -108,7 +108,7 @@
                         <div class="flex items-center justify-center space-x-2">
                             <a href="{{ route('admin.categories.edit', $category) }}" class="text-indigo-600 hover:text-indigo-800 text-sm font-medium">Edit</a>
                             <form action="{{ route('admin.categories.destroy', $category) }}" method="POST"
-                                onsubmit="return confirm('Delete \'{{ $category->name }}\'? Products in this category may be affected.')">
+                                onsubmit="return uiConfirm(event, 'Delete \'{{ $category->name }}\'? Products in this category may be affected.')">
                                 @csrf @method('DELETE')
                                 <button type="submit" class="text-red-500 hover:text-red-700 text-sm font-medium">Delete</button>
                             </form>

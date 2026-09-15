@@ -58,7 +58,7 @@
                     <div class="flex items-center justify-end gap-3">
                         <a href="{{ route('admin.warehouse-stock.index', ['warehouse_id' => $wh->id]) }}" class="text-indigo-600 hover:text-indigo-800 text-sm font-medium">Stock</a>
                         <a href="{{ route('admin.warehouses.edit', $wh) }}" class="text-gray-600 hover:text-gray-800 text-sm">Edit</a>
-                        <form action="{{ route('admin.warehouses.destroy', $wh) }}" method="POST" onsubmit="return confirm('Delete this warehouse?')">
+                        <form action="{{ route('admin.warehouses.destroy', $wh) }}" method="POST" onsubmit="return uiConfirm(event, 'Delete this warehouse?')">
                             @csrf @method('DELETE')
                             <button class="text-red-500 hover:text-red-700 text-sm">Delete</button>
                         </form>

@@ -69,7 +69,7 @@
                 </td>
                 <td class="px-6 py-3 text-right flex items-center justify-end gap-3">
                     <a href="{{ route('admin.home-sections.edit', $section) }}" class="text-orange-600 text-sm hover:text-orange-800">Edit</a>
-                    <form action="{{ route('admin.home-sections.destroy', $section) }}" method="POST" onsubmit="return confirm('Remove this homepage section?')">
+                    <form action="{{ route('admin.home-sections.destroy', $section) }}" method="POST" onsubmit="return uiConfirm(event, 'Remove this homepage section?')">
                         @csrf @method('DELETE')
                         <button class="text-red-500 text-sm hover:text-red-700">Delete</button>
                     </form>

@@ -72,7 +72,7 @@
          or "these got recalled" — the per-row form below is still there for one-off,
          differing-per-product corrections. --}}
     <form action="{{ route('admin.stock-management.bulk-apply') }}" method="POST"
-          @submit="if (!confirm('Apply this to ' + selected.length + ' product(s)?')) $event.preventDefault()">
+          @submit.prevent="showConfirmModal('Apply this to ' + selected.length + ' product(s)?').then(ok => { if (ok) $el.submit(); })">
         @csrf
         <template x-for="id in selected" :key="id">
             <input type="hidden" name="ids[]" :value="id">
