@@ -43,6 +43,21 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Cache Sync Secret
+    |--------------------------------------------------------------------------
+    |
+    | Guards the GET /sync route (see routes/web.php) that clears OPcache and
+    | all Laravel caches from a plain browser visit — for when SSH isn't handy
+    | right after a deploy. Kept out of admin auth entirely (the route exists
+    | precisely for when admin login itself is misbehaving), so this token is
+    | the only thing standing between it and the public internet.
+    |
+    */
+
+    'sync_secret' => env('SYNC_SECRET'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Application URL
     |--------------------------------------------------------------------------
     |

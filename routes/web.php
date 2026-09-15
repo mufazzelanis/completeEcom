@@ -124,6 +124,27 @@ Route::get('/email/unsubscribe/{token}', [EmailUnsubscribeController::class, 'un
 Route::get('/manifest.webmanifest', [ManifestController::class, 'customer'])->name('manifest');
 Route::get('/admin/manifest.webmanifest', [ManifestController::class, 'admin'])->name('admin.manifest');
 
+// Deliberately outside every auth/admin middleware group — this exists precisely for the
+// moment admin login itself is misbehaving right after a deploy (stale OPcache/route/config
+// cache), so it can't depend on being able to log in first. A hard-to-guess token from
+// config('app.sync_secret') (SYNC_SECRET in .env) is the only thing gating it — no session,
+// no rate limiting to bypass, since a plain 404 on a wrong/missing token reveals nothing.
+// Never touches sessions/carts/orders, so visiting it can't log anyone else out or lose data.
+Route::get('/sync', function (\Illuminate\Http\Request $request) {
+    $secret = (string) config('app.sync_secret');
+    if ($secret === '' || !hash_equals($secret, (string) $request->query('token', ''))) {
+        abort(404);
+    }
+
+    if (function_exists('opcache_reset')) {
+        opcache_reset();
+    }
+    \Illuminate\Support\Facades\Artisan::call('optimize:clear');
+
+    return response("OK\n" . \Illuminate\Support\Facades\Artisan::output(), 200)
+        ->header('Content-Type', 'text/plain');
+})->name('sync.cache');
+
 // Frontend Routes
 Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::get('/shop', [ShopController::class, 'index'])->name('shop.index');
