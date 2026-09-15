@@ -148,11 +148,11 @@
             @elseif($product->available_stock > 0)
                 {{-- Same checkout.buy-now endpoint the product page uses — skips the cart
                      and takes the customer straight to checkout for just this one item. --}}
-                <form action="{{ route('checkout.buy-now') }}" method="POST" class="mt-2">
+                <form action="{{ route('checkout.buy-now') }}" method="POST" class="mt-2" data-show-loader>
                     @csrf
                     <input type="hidden" name="product_id" value="{{ $product->id }}">
                     <input type="hidden" name="quantity" value="1">
-                    <button type="submit"
+                    <button type="submit" data-loader-message="Preparing your order&hellip;"
                         class="inline-flex items-center gap-1 bg-[length:200%_auto] bg-gradient-to-r from-pink-500 via-fuchsia-500 to-orange-400 hover:bg-right text-white text-[11px] font-bold pl-2 pr-3 py-1 rounded-full shadow-sm hover:shadow-md transition-all duration-500">
                         <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z"/></svg>
                         {{ setting('buy_now_button_text', 'Buy Now') }}
