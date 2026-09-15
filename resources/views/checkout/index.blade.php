@@ -87,6 +87,7 @@
     @endauth
 
     <form action="{{ route('checkout.store') }}" method="POST"
+        data-show-loader data-loader-message="Placing your order&hellip;"
         x-data="{
             cs: '{!! html_entity_decode(setting('currency_symbol', '৳')) !!}',
             selected: '{{ old('payment_method', $paymentMethods->first()?->slug) }}',

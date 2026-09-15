@@ -413,6 +413,8 @@ $pageTwitterImage = trim($__env->yieldContent('twitter_image', $pageOgImage));
 <body class="bg-gray-100 dark:bg-gray-950 font-sans antialiased transition-colors pb-[calc(4rem_+_env(safe-area-inset-bottom))] md:pb-0">
 @if($gtmId)<noscript><iframe src="https://www.googletagmanager.com/ns.html?id={{ $gtmId }}" height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>@endif
 
+@include('partials.delivery-loader')
+
 @php
 $navCategories = \App\Models\Category::with(['children' => fn($q) => $q->active()->orderBy('sort_order')])
     ->whereNull('parent_id')->active()->orderBy('sort_order')->take(12)->get();

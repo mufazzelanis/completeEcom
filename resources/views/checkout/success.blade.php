@@ -3,7 +3,7 @@
 
 @section('content')
 <div class="max-w-2xl mx-auto px-4 py-16 text-center">
-    <div class="bg-white rounded-2xl shadow-sm p-12">
+    <div id="thankyou-card" class="bg-white rounded-2xl shadow-sm p-12 dl-reveal">
         <div class="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
             <svg class="w-10 h-10 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
@@ -72,6 +72,52 @@
         </div>
     </div>
 </div>
+
+<style>
+    /* Real content is always in the DOM and visible-by-default (no-JS safety) — the overlay
+       from partials/delivery-loader.blade.php sits on top of it the whole time regardless,
+       so there's nothing to actually hide here. This just adds a nice fade+rise the instant
+       that overlay clears, via the .dl-revealed toggle the script below adds. */
+    #thankyou-card.dl-reveal { opacity: 0; transform: translateY(10px); }
+    #thankyou-card.dl-reveal.dl-revealed { opacity: 1; transform: translateY(0); transition: opacity 0.45s ease, transform 0.45s ease; }
+    @media (prefers-reduced-motion: reduce) {
+        #thankyou-card.dl-reveal { opacity: 1; transform: none; }
+    }
+</style>
+<script>
+    // Reuses the exact same overlay every Add to Cart / Buy Now / Place Order click already
+    // showed on the way here — so the whole journey (cart -> checkout -> this page) reads as
+    // one continuous, branded "your order is on its way" moment instead of three unrelated
+    // loading states. The package icon morphs into a confirmation check, then clears to
+    // reveal the real card underneath (which was fully rendered the entire time).
+    document.addEventListener('DOMContentLoaded', function () {
+        showDeliveryLoader('Confirming your order…');
+        const overlay = document.getElementById('delivery-loader-overlay');
+        const card = document.getElementById('thankyou-card');
+        if (!overlay) { if (card) card.classList.add('dl-revealed'); return; }
+
+        const packageIcon = overlay.querySelector('[data-loader-icon="package"]');
+        const successIcon = overlay.querySelector('[data-loader-icon="success"]');
+        const bar = overlay.querySelector('[data-loader-bar]');
+        const message = overlay.querySelector('[data-loader-message]');
+
+        setTimeout(function () {
+            if (packageIcon) packageIcon.hidden = true;
+            if (successIcon) successIcon.hidden = false;
+            if (bar) bar.style.width = '100%';
+            if (message) message.textContent = 'Order confirmed!';
+        }, 650);
+
+        setTimeout(function () {
+            hideDeliveryLoader();
+            if (card) card.classList.add('dl-revealed');
+            // Reset for the next time this same overlay is used elsewhere on the site.
+            if (packageIcon) packageIcon.hidden = false;
+            if (successIcon) successIcon.hidden = true;
+            if (bar) bar.style.width = '';
+        }, 1150);
+    });
+</script>
 
 @if($shouldTrackPurchase ?? false)
 @php
