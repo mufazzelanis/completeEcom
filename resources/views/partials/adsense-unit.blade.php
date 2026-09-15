@@ -10,12 +10,9 @@
     $adsPublisherId = setting('adsense_publisher_id', '');
 @endphp
 @if($adsEnabled && $adsPublisherId && !empty($slot))
-    {{-- The loader script must load exactly once per page no matter how many ad units are on
-         it — @once keys off this exact source location, so every include of this same
-         partial correctly shares one loader regardless of how many times it's used. --}}
-    @once
-        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client={{ $adsPublisherId }}" crossorigin="anonymous"></script>
-    @endonce
+    {{-- The loader script itself is already in layouts/app.blade.php's <head> whenever a
+         Publisher ID is set (AdSense's site-verification step needs it there regardless of
+         this ads_enabled toggle) — so this partial only ever needs to render the ad unit. --}}
     <div class="my-5 text-center">
         <p class="text-[10px] uppercase tracking-wider text-gray-400 dark:text-gray-600 mb-1.5">Advertisement</p>
         <ins class="adsbygoogle" style="display:block"

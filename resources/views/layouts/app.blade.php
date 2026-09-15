@@ -139,6 +139,15 @@ $pageTwitterImage = trim($__env->yieldContent('twitter_image', $pageOgImage));
     @if($faviconUrl)<link rel="icon" href="{{ $faviconUrl }}">@endif
     @if(setting('google_site_verification'))<meta name="google-site-verification" content="{{ setting('google_site_verification') }}">@endif
 
+    {{-- AdSense's own "site needs review" step asks for its loader script in <head> on
+         every page — separate from whether "Enable ads on the Blog" (ads_enabled) is on,
+         since Google needs to crawl and verify the site before that toggle even matters.
+         Kept to just the Publisher ID condition so it's present the moment that's saved,
+         letting Settings → Advertisements → Verify work without any other step. --}}
+    @if(setting('adsense_publisher_id', ''))
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client={{ setting('adsense_publisher_id') }}" crossorigin="anonymous"></script>
+    @endif
+
     {{-- PWA — lets a phone browser offer "Add to Home Screen" and, once installed, launch
          full-screen under the store's own name/icon/color instead of inside browser chrome. --}}
     <link rel="manifest" href="{{ route('manifest') }}">
