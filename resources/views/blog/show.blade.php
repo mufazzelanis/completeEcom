@@ -65,8 +65,9 @@
                 <a href="{{ route('blog.category', $blogPost->category) }}" class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 font-medium">{{ $blogPost->category->name }}</a>
                 <span class="text-gray-300 dark:text-gray-700">·</span>
                 @endif
-                <span>{{ $blogPost->published_at?->format('d M Y') }}</span>
-                <span class="text-gray-300 dark:text-gray-700">·</span>
+                {{-- Publish date deliberately left out of the visible meta line — showing it
+                     just makes any post read as "old news" the moment it's not brand new,
+                     which works against a blog whose whole feel is meant to be current. --}}
                 <span>{{ $readingMinutes }} min read</span>
                 @if($blogPost->author)
                 <span class="text-gray-300 dark:text-gray-700">·</span>
@@ -149,7 +150,6 @@
                         @endif
                         <div class="min-w-0">
                             <p class="text-sm font-medium text-gray-700 group-hover:text-indigo-600 transition line-clamp-2">{{ $r->title }}</p>
-                            <p class="text-xs text-gray-400 mt-1">{{ $r->published_at?->format('d M Y') }}</p>
                         </div>
                     </a>
                     @endforeach

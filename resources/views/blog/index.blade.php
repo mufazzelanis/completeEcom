@@ -92,8 +92,9 @@
                             <a href="{{ route('blog.show', $post) }}" class="hover:text-indigo-600 transition">{{ $post->title }}</a>
                         </h2>
                         @if($post->excerpt)<p class="text-sm text-gray-500 mb-4 line-clamp-2">{{ $post->excerpt }}</p>@endif
-                        <div class="flex items-center justify-between text-xs text-gray-400">
-                            <span>{{ $post->published_at?->format('d M Y') }}</span>
+                        {{-- Publish date deliberately not shown here — every post should read
+                             as current, not dated the moment it's not brand new. --}}
+                        <div class="flex items-center justify-end text-xs text-gray-400">
                             <span class="flex items-center gap-1">
                                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
                                 {{ number_format($post->views) }}
