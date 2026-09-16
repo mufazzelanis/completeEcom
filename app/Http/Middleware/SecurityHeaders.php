@@ -58,7 +58,10 @@ class SecurityHeaders
             // since both fire additional XHR/beacon calls beyond the initial script load
             // (impression/viewability pings) that connect-src would otherwise still block
             // even after script-src and frame-src allow the script and iframe through.
-            "connect-src 'self' https://www.google-analytics.com https://analytics.google.com https://www.googletagmanager.com https://www.facebook.com https://www.google.com https://googleads.g.doubleclick.net https://*.doubleclick.net https://www.googleadservices.com https://pagead2.googlesyndication.com https://*.googlesyndication.com https://*.profitableratecpmnetwork.com https://*.highrevenueformat.com",
+            // *.adtrafficquality.google is AdSense's own "SODAR" traffic-quality/anti-fraud
+            // ping (ep1/ep2.adtrafficquality.google) — found via a live console-error check
+            // right after adding the domains above; adsbygoogle.js fires this on every load.
+            "connect-src 'self' https://www.google-analytics.com https://analytics.google.com https://www.googletagmanager.com https://www.facebook.com https://www.google.com https://googleads.g.doubleclick.net https://*.doubleclick.net https://www.googleadservices.com https://pagead2.googlesyndication.com https://*.googlesyndication.com https://*.profitableratecpmnetwork.com https://*.highrevenueformat.com https://*.adtrafficquality.google",
             // www.youtube.com added for landing page video embeds (how-it-works video,
             // testimonial videos — see embed_video_url() in app/Helpers.php, which always
             // rewrites whatever URL the admin pastes to a youtube.com/embed/... iframe src).
