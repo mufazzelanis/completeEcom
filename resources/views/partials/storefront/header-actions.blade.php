@@ -29,6 +29,19 @@
         <svg x-show="$store.theme.dark" x-cloak class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
     </button>
 
+    {{-- Blog — always visible (no hidden/md: restriction) so it shows in this exact icon
+         row on both mobile and desktop, not just buried inside the mobile drawer menu or
+         the desktop-only category bar. Same ping-ring-over-solid-dot "live" badge used for
+         the other Blogs entries, positioned like a notification-count badge would be. --}}
+    <a href="{{ setting('nav_blog_url') ?: route('blog.index') }}" aria-label="Blog"
+        class="relative p-2 text-gray-600 dark:text-gray-300 hover:text-orange-700 transition">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 20H7a2 2 0 01-2-2V4a2 2 0 012-2h7l5 5v11a2 2 0 01-2 2z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 2v5h5M9 13h6m-6 4h4"/></svg>
+        <span class="absolute top-1 right-1 flex h-2 w-2">
+            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+            <span class="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+        </span>
+    </a>
+
     {{-- Mobile Search — opens the mobile menu (its search field sits right at the top)
          instead of just navigating to the shop page, so tapping this actually lets you
          type a search rather than dropping you on an unfiltered product listing. --}}
