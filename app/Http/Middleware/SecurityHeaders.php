@@ -54,28 +54,25 @@ class SecurityHeaders
             // trusted on script-src/style-src above.
             "font-src 'self' data: https://fonts.gstatic.com https://cdn.jsdelivr.net",
             "img-src 'self' data: blob: https:",
-            // www.google.com, googleads.g.doubleclick.net and *.doubleclick.net added
-            // for the same Google Ads conversion tracking as script-src above — gtag.js
-            // sends its conversion/remarketing beacons (rmkt/collect, ccm/collect) to
-            // these once a Conversion ID is configured. AdSense/Adsterra domains added
-            // since both fire additional XHR/beacon calls beyond the initial script load
-            // (impression/viewability pings) that connect-src would otherwise still block
-            // even after script-src and frame-src allow the script and iframe through.
-            // *.adtrafficquality.google is AdSense's own "SODAR" traffic-quality/anti-fraud
-            // ping (ep1/ep2.adtrafficquality.google) — found via a live console-error check
-            // right after adding the domains above; adsbygoogle.js fires this on every load.
-            "connect-src 'self' https://www.google-analytics.com https://analytics.google.com https://www.googletagmanager.com https://www.facebook.com https://www.google.com https://googleads.g.doubleclick.net https://*.doubleclick.net https://www.googleadservices.com https://pagead2.googlesyndication.com https://*.googlesyndication.com https://*.profitableratecpmnetwork.com https://*.highrevenueformat.com https://*.adtrafficquality.google",
+            // Ad-tech networks (Adsterra confirmed, likely AdSense too) serve the actual
+            // ad creative/tracking pixels from throwaway, constantly-rotating domain names
+            // (e.g. kettledroopingcontinuation.com, protrafficinspector.com — neither is
+            // Adsterra's own domain, and neither existed in any prior check) specifically to
+            // survive ad-blocklists. Naming each one here is a losing game — a new domain
+            // shows up the next time an ad rotates. Opened to any HTTPS origin instead, the
+            // same way img-src below already is, since an ad's creative/beacon can
+            // legitimately come from anywhere. script-src stays a fixed allowlist (the one
+            // directive that actually matters for XSS defense) — this only affects where an
+            // already-trusted script (loaded from a domain named above) is allowed to fetch
+            // from or open an iframe to.
+            "connect-src 'self' https:",
             // www.youtube.com added for landing page video embeds (how-it-works video,
             // testimonial videos — see embed_video_url() in app/Helpers.php, which always
             // rewrites whatever URL the admin pastes to a youtube.com/embed/... iframe src).
-            // googleads.g.doubleclick.net/*.doubleclick.net (AdSense) and the Adsterra
-            // domains added because the 'iframe' format ads (Settings → Advertisements)
-            // render their actual creative inside an iframe, not just a <script> tag —
-            // script-src alone isn't enough to let that iframe's content load.
-            // *.adtrafficquality.google added preemptively alongside its script-src/connect-src
-            // entries — AdSense's SODAR anti-fraud check is known to also use an invisible
-            // iframe in some configurations, on top of the script load and beacon already seen.
-            "frame-src 'self' https://www.google.com https://www.facebook.com https://www.youtube.com https://googleads.g.doubleclick.net https://*.doubleclick.net https://*.googlesyndication.com https://*.profitableratecpmnetwork.com https://*.highrevenueformat.com https://*.adtrafficquality.google",
+            // Opened to any HTTPS origin for the same rotating-ad-domain reason as
+            // connect-src above — the 'iframe' format ads render their actual creative in an
+            // iframe from a different domain every time, not a fixed one.
+            "frame-src 'self' https:",
             "object-src 'none'",
             "base-uri 'self'",
             "frame-ancestors 'self'",
