@@ -10,7 +10,11 @@
     $adsterraEnabled = setting('adsterra_enabled', '0') === '1';
 @endphp
 @if($adsterraEnabled && !empty($code))
-    <div class="my-5 text-center">
+    {{-- overflow-hidden + the adsterra-ad-slot CSS in app.css (max-width:100% on any child
+         iframe/div/ins) — the admin's pasted code can be a fixed-width creative (a 728x90
+         banner, say) that's wider than a phone screen; without this it breaks out of the
+         column and forces the whole page to scroll sideways instead of just scaling down. --}}
+    <div class="adsterra-ad-slot my-5 text-center overflow-hidden">
         <p class="text-[10px] uppercase tracking-wider text-gray-400 dark:text-gray-600 mb-1.5">Advertisement</p>
         {!! $code !!}
     </div>

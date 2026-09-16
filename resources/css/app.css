@@ -305,3 +305,16 @@ html.dark .prose img { box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4); }
 .prose .blog-promo-link:hover .blog-promo-badge { opacity: 1; transform: translateY(0); }
 html.dark .prose .blog-promo-frame { box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4); }
 html.dark .prose .blog-promo-link:hover .blog-promo-frame { box-shadow: 0 16px 32px rgba(0, 0, 0, 0.55); }
+
+/* Adsterra pastes raw third-party HTML verbatim (partials/adsterra-unit.blade.php) — the
+   actual creative it renders is whatever fixed pixel size that specific ad happens to be
+   (a 728x90 banner is wider than most phones), so every element it might inject needs to be
+   capped at the column's width and centered, rather than trusting the ad to be responsive. */
+.adsterra-ad-slot iframe,
+.adsterra-ad-slot ins,
+.adsterra-ad-slot div,
+.adsterra-ad-slot img {
+    max-width: 100%;
+    margin-left: auto;
+    margin-right: auto;
+}
