@@ -44,7 +44,10 @@ class SecurityHeaders
             // real-browser console-error audit, not something curl/view-source shows).
             // Adsterra serves invoke.js from a different numbered subdomain per zone
             // (e.g. pl31360937.profitableratecpmnetwork.com), hence the wildcard.
-            "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://cdn.jsdelivr.net https://www.googletagmanager.com https://www.google.com https://www.gstatic.com https://connect.facebook.net https://googleads.g.doubleclick.net https://pagead2.googlesyndication.com https://*.googlesyndication.com https://*.profitableratecpmnetwork.com https://*.highrevenueformat.com",
+            // *.adtrafficquality.google added alongside connect-src's entry for the same
+            // domain (see below) — AdSense's SODAR anti-fraud check loads an actual script
+            // (ep2.adtrafficquality.google/sodar/sodar2.js) in addition to the beacon ping.
+            "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://cdn.jsdelivr.net https://www.googletagmanager.com https://www.google.com https://www.gstatic.com https://connect.facebook.net https://googleads.g.doubleclick.net https://pagead2.googlesyndication.com https://*.googlesyndication.com https://*.profitableratecpmnetwork.com https://*.highrevenueformat.com https://*.adtrafficquality.google",
             "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com",
             // cdn.jsdelivr.net added for the Summernote editor's bundled icon font
             // (resources/views/partials/rich-editor.blade.php) — same CDN already
@@ -69,7 +72,10 @@ class SecurityHeaders
             // domains added because the 'iframe' format ads (Settings → Advertisements)
             // render their actual creative inside an iframe, not just a <script> tag —
             // script-src alone isn't enough to let that iframe's content load.
-            "frame-src 'self' https://www.google.com https://www.facebook.com https://www.youtube.com https://googleads.g.doubleclick.net https://*.doubleclick.net https://*.googlesyndication.com https://*.profitableratecpmnetwork.com https://*.highrevenueformat.com",
+            // *.adtrafficquality.google added preemptively alongside its script-src/connect-src
+            // entries — AdSense's SODAR anti-fraud check is known to also use an invisible
+            // iframe in some configurations, on top of the script load and beacon already seen.
+            "frame-src 'self' https://www.google.com https://www.facebook.com https://www.youtube.com https://googleads.g.doubleclick.net https://*.doubleclick.net https://*.googlesyndication.com https://*.profitableratecpmnetwork.com https://*.highrevenueformat.com https://*.adtrafficquality.google",
             "object-src 'none'",
             "base-uri 'self'",
             "frame-ancestors 'self'",
