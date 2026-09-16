@@ -262,3 +262,46 @@ html.dark .flatpickr-calendar.app-datepicker .fp-footer { border-color: theme('c
 .flatpickr-calendar.app-datepicker.arrowBottom:after { border-top-color: #fff; }
 html.dark .flatpickr-calendar.app-datepicker.arrowTop:after { border-bottom-color: theme('colors.gray.900'); }
 html.dark .flatpickr-calendar.app-datepicker.arrowBottom:after { border-top-color: theme('colors.gray.900'); }
+
+/* ── Rich-text content images (blog posts, pages, product descriptions) ──────────
+ * Typography's default <img> inside .prose is completely bare (no rounding, no
+ * shadow) and gives zero visual cue that an image wrapped in a link is clickable.
+ * A plain inserted picture gets a soft rounded/shadowed treatment; a promo image
+ * (inserted via the rich editor's dedicated "Clickable Promo Image" button, which
+ * always emits this exact .blog-promo-* markup) additionally lifts + zooms and
+ * reveals a call-to-action badge on hover, so it visibly reads as an ad/promo a
+ * reader can click through on — not just decorative content. */
+.prose img { border-radius: 1rem; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08); }
+html.dark .prose img { box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4); }
+
+.prose .blog-promo-link { display: block; margin: 1.75rem 0; text-decoration: none; }
+.prose .blog-promo-frame {
+    position: relative;
+    display: block;
+    overflow: hidden;
+    border-radius: 1rem;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.10);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.prose .blog-promo-img { display: block; width: 100%; height: auto; margin: 0; border-radius: 0; box-shadow: none; transition: transform 0.5s ease; }
+.prose .blog-promo-badge {
+    position: absolute;
+    right: 0.875rem;
+    bottom: 0.875rem;
+    padding: 0.4rem 0.9rem;
+    border-radius: 999px;
+    background: linear-gradient(135deg, #f97316, #ec4899);
+    color: #fff;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    opacity: 0;
+    transform: translateY(8px);
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+.prose .blog-promo-link:hover .blog-promo-frame { transform: translateY(-6px); box-shadow: 0 16px 32px rgba(0, 0, 0, 0.18); }
+.prose .blog-promo-link:hover .blog-promo-img { transform: scale(1.06); }
+.prose .blog-promo-link:hover .blog-promo-badge { opacity: 1; transform: translateY(0); }
+html.dark .prose .blog-promo-frame { box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4); }
+html.dark .prose .blog-promo-link:hover .blog-promo-frame { box-shadow: 0 16px 32px rgba(0, 0, 0, 0.55); }

@@ -40,10 +40,15 @@ return [
         // Page.content — see each model's set*Attribute() mutator.
         'rich_content' => [
             'HTML.Doctype'             => 'HTML 4.01 Transitional',
+            // class allowed on a/span/img specifically for the rich editor's "Clickable
+            // Promo Image" button (see partials/rich-editor.blade.php), which emits
+            // .blog-promo-link/-frame/-img/-badge markup that the frontend's .prose CSS
+            // depends on to render — without it here, Purifier silently strips every class
+            // attribute on save and the promo image renders as a plain unstyled picture.
             'HTML.Allowed'             => 'h1,h2,h3,h4,h5,h6,p[style],div[style],br,hr,'
-                . 'b,strong,i,em,u,s,strike,sub,sup,span[style],'
-                . 'a[href|title|target],ul,ol,li,blockquote,pre,code,'
-                . 'img[src|alt|width|height|style],'
+                . 'b,strong,i,em,u,s,strike,sub,sup,span[style|class],'
+                . 'a[href|title|target|rel|class],ul,ol,li,blockquote,pre,code,'
+                . 'img[src|alt|width|height|style|class],'
                 . 'table,thead,tbody,tr,td[colspan|rowspan],th[colspan|rowspan]',
             'CSS.AllowedProperties'    => 'color,background-color,text-align,font-size,font-family,'
                 . 'font-weight,font-style,text-decoration,padding-left,margin-left',

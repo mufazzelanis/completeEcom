@@ -44,9 +44,62 @@
     @endpush
 @endonce
 
-<div class="rich-editor" x-data x-init="
+<div class="rich-editor" x-data="{
+        promoOpen: false,
+        promoUrl: '',
+        promoAlt: '',
+        promoButtonText: '',
+        promoFile: null,
+        promoUploading: false,
+        promoError: '',
+        _promoCtx: null,
+        openPromo(ctx) {
+            this._promoCtx = ctx;
+            this.promoUrl = ''; this.promoAlt = ''; this.promoButtonText = ''; this.promoFile = null; this.promoError = '';
+            this.promoOpen = true;
+        },
+        async insertPromo() {
+            if (!this.promoFile || !this.promoUrl) { this.promoError = 'Please choose an image and enter a link URL.'; return; }
+            this.promoUploading = true;
+            this.promoError = '';
+            try {
+                const fd = new FormData();
+                fd.append('image', this.promoFile);
+                const res = await fetch('{{ route('rich-editor.upload-image') }}', {
+                    method: 'POST',
+                    headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
+                    body: fd,
+                });
+                const data = await res.json();
+                if (!data.url) throw new Error('upload failed');
+                // Built via \x26 (not a literal &) — the browser decodes anything that LOOKS
+                // like an HTML entity (e.g. a literal '&amp;' typed here) while parsing this
+                // double-quoted x-data attribute, before Alpine/JS ever sees it, which silently
+                // turns these replacement strings back into raw &/'/</> and breaks the script.
+                const esc = (s) => String(s).replace(/&/g, '\x26amp;').replace(/'/g, '\x26#39;').replace(/</g, '\x26lt;').replace(/>/g, '\x26gt;');
+                const label = this.promoButtonText.trim() || 'Shop Now →';
+                const html = '<a href=\'' + esc(this.promoUrl) + '\' target=\'_blank\' rel=\'noopener\' class=\'blog-promo-link\'>'
+                    + '<span class=\'blog-promo-frame\'>'
+                    + '<img src=\'' + esc(data.url) + '\' alt=\'' + esc(this.promoAlt) + '\' class=\'blog-promo-img\'>'
+                    + '<span class=\'blog-promo-badge\'>' + esc(label) + '</span>'
+                    + '</span></a>';
+                this._promoCtx.invoke('editor.restoreRange');
+                this._promoCtx.invoke('editor.focus');
+                this._promoCtx.invoke('editor.pasteHTML', html);
+                this.promoOpen = false;
+            } catch (e) {
+                this.promoError = 'Image upload failed. Please try again.';
+            } finally {
+                this.promoUploading = false;
+            }
+        },
+    }" x-init="
     const hidden = $refs.{{ $editorId }}Input;
     const editor = $($refs.{{ $editorId }}Editor);
+    {{-- `this` inside x-init isn't reliably bound to the component's reactive data (it can
+         resolve to `window` once the init body has enough statements) — `$data` is Alpine's
+         own magic property for the current component's scope, so use that instead. --}}
+    const alpineData = $data;
     editor.summernote({
         height: 220,
         placeholder: {{ Js::from($placeholder ?? 'Write here…') }},
@@ -56,9 +109,27 @@
             ['color', ['color']],
             ['para', ['ul', 'ol', 'paragraph']],
             ['table', ['table']],
-            ['insert', ['link', 'picture', 'hr']],
+            ['insert', ['link', 'picture', 'promoImage', 'hr']],
             ['view', ['fullscreen', 'codeview']],
         ],
+        buttons: {
+            // A plain inserted picture has no way to link anywhere without switching to
+            // codeview and hand-writing an <a> tag — this button uploads + wraps an image
+            // in a link in one step, specifically so a non-technical admin can drop a
+            // clickable promo banner (to a product, sale, landing page) straight into a post.
+            promoImage: function (context) {
+                const ui = $.summernote.ui;
+                const button = ui.button({
+                    contents: '<i class=\'note-icon-picture\'></i><sup style=\'font-size:9px;margin-left:1px;\'>🔗</sup>',
+                    tooltip: 'Clickable Promo Image (links to a product/page)',
+                    click: function () {
+                        context.invoke('editor.saveRange');
+                        alpineData.openPromo(context);
+                    },
+                });
+                return button.render();
+            },
+        },
         callbacks: {
             onChange: function (contents) { hidden.value = contents; },
             onImageUpload: function (files) {
@@ -82,4 +153,52 @@
 ">
     <div x-ref="{{ $editorId }}Editor"></div>
     <textarea name="{{ $fieldName }}" x-ref="{{ $editorId }}Input" class="hidden">{{ $value }}</textarea>
+
+    {{-- Promo Image modal — x-show sets style="display:none" directly (not the [hidden]
+         attribute), so it's immune to the earlier hidden+flex Tailwind specificity bug. --}}
+    {{-- @submit.prevent (belt-and-suspenders with @keydown.enter.prevent below) stops Enter
+         in any of these text inputs from bubbling up to submit/publish the OUTER admin form
+         these modal fields live inside — they have no name= attributes so they'd never be
+         posted, but a native Enter-triggered submit would still fire it prematurely. --}}
+    <div x-show="promoOpen" x-cloak @keydown.escape.window="promoOpen = false"
+         @keydown.enter.prevent="insertPromo()"
+         class="fixed inset-0 z-[9999] bg-gray-900/40 backdrop-blur-sm">
+        <div class="w-full h-full flex items-center justify-center px-4">
+            <div @click.outside="promoOpen = false" @submit.prevent class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
+                <h3 class="text-base font-bold text-gray-900 mb-1">Insert Clickable Promo Image</h3>
+                <p class="text-xs text-gray-500 mb-4">Drop a banner into the post that links straight to a product, sale, or landing page.</p>
+                <div class="space-y-3">
+                    <div>
+                        <label class="block text-xs font-medium text-gray-600 mb-1">Image</label>
+                        <input type="file" accept="image/*" @change="promoFile = $event.target.files[0]"
+                               class="w-full text-sm border border-gray-200 rounded-lg px-3 py-2">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-gray-600 mb-1">Link URL (where clicking the image goes)</label>
+                        <input type="url" x-model="promoUrl" placeholder="https://mitavin.com/products/…"
+                               class="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-400">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-gray-600 mb-1">Button text (optional)</label>
+                        <input type="text" x-model="promoButtonText" placeholder="Shop Now →"
+                               class="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-400">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-gray-600 mb-1">Alt text (optional)</label>
+                        <input type="text" x-model="promoAlt" placeholder="Describe the image"
+                               class="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-400">
+                    </div>
+                    <p x-show="promoError" x-cloak x-text="promoError" class="text-xs text-red-600"></p>
+                </div>
+                <div class="flex justify-end gap-2 mt-5">
+                    <button type="button" @click="promoOpen = false" class="px-4 py-2 text-sm rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 transition">Cancel</button>
+                    <button type="button" @click="insertPromo()" :disabled="promoUploading"
+                            class="px-4 py-2 text-sm rounded-lg bg-indigo-600 text-white font-semibold hover:bg-indigo-700 transition disabled:opacity-50">
+                        <span x-show="!promoUploading">Insert</span>
+                        <span x-show="promoUploading" x-cloak>Uploading…</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
