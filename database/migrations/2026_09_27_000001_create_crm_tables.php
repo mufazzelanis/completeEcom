@@ -12,7 +12,7 @@ return new class extends Migration
         // account. Most orders on this store are guest checkouts (no user_id), so building the
         // CRM on the users table alone would miss the majority of real customers. A contact can
         // optionally be linked to a registered account (user_id) once one exists.
-        Schema::create('crm_contacts', function (Blueprint $table) {
+        $this->make('crm_contacts', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->nullable()->unique()->constrained()->nullOnDelete();
             $table->string('name');
@@ -52,20 +52,20 @@ return new class extends Migration
             $table->index('city');
         });
 
-        Schema::create('crm_tags', function (Blueprint $table) {
+        $this->make('crm_tags', function (Blueprint $table) {
             $table->id();
             $table->string('name', 60)->unique();
             $table->string('color', 20)->default('gray');
             $table->timestamps();
         });
 
-        Schema::create('crm_contact_tag', function (Blueprint $table) {
+        $this->make('crm_contact_tag', function (Blueprint $table) {
             $table->foreignId('contact_id')->constrained('crm_contacts')->cascadeOnDelete();
             $table->foreignId('tag_id')->constrained('crm_tags')->cascadeOnDelete();
             $table->primary(['contact_id', 'tag_id']);
         });
 
-        Schema::create('crm_leads', function (Blueprint $table) {
+        $this->make('crm_leads', function (Blueprint $table) {
             $table->id();
             $table->foreignId('contact_id')->nullable()->constrained('crm_contacts')->nullOnDelete();
             $table->string('name');
@@ -87,7 +87,7 @@ return new class extends Migration
             $table->index(['stage', 'position']);
         });
 
-        Schema::create('crm_activities', function (Blueprint $table) {
+        $this->make('crm_activities', function (Blueprint $table) {
             $table->id();
             $table->foreignId('contact_id')->nullable()->constrained('crm_contacts')->cascadeOnDelete();
             $table->foreignId('lead_id')->nullable()->constrained('crm_leads')->cascadeOnDelete();
@@ -106,7 +106,7 @@ return new class extends Migration
             $table->index(['lead_id', 'occurred_at']);
         });
 
-        Schema::create('crm_tasks', function (Blueprint $table) {
+        $this->make('crm_tasks', function (Blueprint $table) {
             $table->id();
             $table->foreignId('contact_id')->nullable()->constrained('crm_contacts')->cascadeOnDelete();
             $table->foreignId('lead_id')->nullable()->constrained('crm_leads')->cascadeOnDelete();
@@ -128,7 +128,7 @@ return new class extends Migration
             $table->index(['status', 'due_at']);
         });
 
-        Schema::create('crm_segments', function (Blueprint $table) {
+        $this->make('crm_segments', function (Blueprint $table) {
             $table->id();
             $table->string('name');
             $table->text('description')->nullable();
@@ -143,9 +143,28 @@ return new class extends Migration
 
         // Orders point straight at their CRM contact so every customer query is a plain indexed
         // join instead of re-normalizing free-typed phone numbers on the fly.
-        Schema::table('orders', function (Blueprint $table) {
-            $table->foreignId('crm_contact_id')->nullable()->after('user_id')->constrained('crm_contacts')->nullOnDelete();
-        });
+        // Re-runnable: a previous attempt may have added the column but failed on the constraint.
+        if (! Schema::hasColumn('orders', 'crm_contact_id')) {
+            Schema::table('orders', function (Blueprint $table) {
+                $table->unsignedBigInteger('crm_contact_id')->nullable()->after('user_id')->index();
+            });
+        }
+        try {
+            Schema::table('orders', function (Blueprint $table) {
+                $table->foreign('crm_contact_id')->references('id')->on('crm_contacts')->nullOnDelete();
+            });
+        } catch (\Throwable $e) {
+            // Some hosts have a mixed-engine orders table (e.g. MyISAM), which can't take a foreign key.
+            // The column stays as a plain indexed reference (contacts that have orders can't be deleted from the CRM anyway).
+            logger()->warning('CRM: orders.crm_contact_id foreign key skipped: ' . $e->getMessage());
+        }
+    }
+
+    private function make(string $name, \Closure $callback): void
+    {
+        if (! Schema::hasTable($name)) {
+            Schema::create($name, $callback);
+        }
     }
 
     public function down(): void
