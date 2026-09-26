@@ -157,6 +157,7 @@
                             </div>
                             @error('shipping_phone')<p class="text-red-500 text-xs mt-1.5">{{ $message }}</p>@enderror
                             @include('checkout._phone-verify')
+                            @include('partials.phone-live-check', ['selector' => '#shipping_phone'])
                             <p class="text-xs text-gray-400 dark:text-gray-500 mt-1.5">Your account will be created with this number</p>
                         </div>
                     </div>
@@ -216,6 +217,7 @@
                             </div>
                             @error('shipping_phone')<p class="text-red-500 text-xs mt-1.5">{{ $message }}</p>@enderror
                             @include('checkout._phone-verify')
+                            @include('partials.phone-live-check', ['selector' => '#shipping_phone'])
                         </div>
                         @endif
                         @if($checkoutFields['address']['mode'] !== 'hidden')

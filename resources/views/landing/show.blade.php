@@ -438,6 +438,7 @@
                     <label class="block text-base font-medium text-gray-700 mb-1">মোবাইল নম্বর <span class="text-red-500">*</span></label>
                     <input type="tel" inputmode="tel" name="phone" value="{{ old('phone') }}" required
                         class="w-full border border-gray-300 rounded-xl px-4 py-3 text-base focus:outline-none focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 transition">
+                    @include('partials.phone-live-check', ['selector' => 'input[name=phone]', 'bn' => true])
                 </div>
 
                 @if($landingPage->collect_address)
