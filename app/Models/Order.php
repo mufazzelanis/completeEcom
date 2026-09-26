@@ -9,7 +9,7 @@ use Illuminate\Support\Str;
 class Order extends Model
 {
     protected $fillable = [
-        'user_id', 'guest_email', 'guest_token', 'payment_id', 'order_number', 'status', 'subtotal', 'discount', 'shipping', 'tax', 'total',
+        'user_id', 'crm_contact_id', 'guest_email', 'guest_token', 'payment_id', 'order_number', 'status', 'subtotal', 'discount', 'shipping', 'tax', 'total',
         'coupon_code', 'payment_method', 'payment_status', 'payment_charge',
         'shipping_name', 'shipping_phone', 'shipping_address', 'shipping_city',
         'shipping_state', 'shipping_zip', 'shipping_country', 'shipping_zone', 'notes',
@@ -51,6 +51,11 @@ class Order extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function crmContact()
+    {
+        return $this->belongsTo(\App\Models\Crm\CrmContact::class, 'crm_contact_id');
     }
 
     public function landingPage()

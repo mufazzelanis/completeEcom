@@ -36,6 +36,15 @@ class NewsletterSubscriptionController extends Controller
             ]);
         }
 
+        try {
+            $crm = app(\App\Services\Crm\CrmContacts::class);
+            if ($contact = $crm->forEmail($request->email, 'newsletter')) {
+                $crm->tag($contact, 'Newsletter', 'indigo');
+            }
+        } catch (\Throwable $e) {
+            report($e);
+        }
+
         AdminAlerts::notify(
             type: 'subscriber',
             title: 'New newsletter subscriber',

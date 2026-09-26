@@ -67,6 +67,13 @@ $adminNavIndex = [
     ['label' => 'Brands', 'url' => route('admin.brands.index'), 'group' => 'Products'],
     ['label' => 'Attributes', 'url' => route('admin.attributes.index'), 'group' => 'Products'],
     ['label' => 'Tags', 'url' => route('admin.tags.index'), 'group' => 'Products'],
+    ['label' => 'CRM Dashboard', 'url' => route('admin.crm.dashboard'), 'group' => 'CRM'],
+    ['label' => 'Customers (360)', 'url' => route('admin.crm.contacts.index'), 'group' => 'CRM'],
+    ['label' => 'Leads Pipeline', 'url' => route('admin.crm.leads.index'), 'group' => 'CRM'],
+    ['label' => 'Tasks & Follow-ups', 'url' => route('admin.crm.tasks.index'), 'group' => 'CRM'],
+    ['label' => 'Segments', 'url' => route('admin.crm.segments.index'), 'group' => 'CRM'],
+    ['label' => 'CRM Analytics', 'url' => route('admin.crm.analytics'), 'group' => 'CRM'],
+    ['label' => 'CRM Settings', 'url' => route('admin.crm.settings'), 'group' => 'CRM'],
     ['label' => 'Stock Management', 'url' => route('admin.stock-management.index'), 'group' => 'Inventory'],
     ['label' => 'Stock History', 'url' => route('admin.stock-adjustments.index'), 'group' => 'Inventory'],
     ['label' => 'Stock Reasons', 'url' => route('admin.stock-reasons.index'), 'group' => 'Inventory'],
@@ -408,6 +415,61 @@ $adminNavIndex = [
                 <span>Coupons</span>
             </a>
             </x-admin.nav-group>
+
+            {{-- CRM --}}
+            @if(auth()->user()->hasPermission('crm.view'))
+            <x-admin.nav-group name="crm" title="CRM">
+            @if(auth()->user()->hasPermission('crm.view'))
+            <a href="{{ route('admin.crm.dashboard') }}"
+                class="flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium transition {{ request()->routeIs('admin.crm.dashboard') ? 'bg-orange-600 text-white' : 'text-gray-300 hover:bg-gray-800' }}">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+                <span>CRM Dashboard</span>
+            </a>
+            @endif
+            @if(auth()->user()->hasPermission('crm.view'))
+            <a href="{{ route('admin.crm.contacts.index') }}"
+                class="flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium transition {{ request()->routeIs('admin.crm.contacts.*') ? 'bg-orange-600 text-white' : 'text-gray-300 hover:bg-gray-800' }}">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+                <span>Customers (360)</span>
+            </a>
+            @endif
+            @if(auth()->user()->hasPermission('crm.view'))
+            <a href="{{ route('admin.crm.leads.index') }}"
+                class="flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium transition {{ request()->routeIs('admin.crm.leads.*') ? 'bg-orange-600 text-white' : 'text-gray-300 hover:bg-gray-800' }}">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2"/></svg>
+                <span>Leads Pipeline</span>
+            </a>
+            @endif
+            @if(auth()->user()->hasPermission('crm.view'))
+            <a href="{{ route('admin.crm.tasks.index') }}"
+                class="flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium transition {{ request()->routeIs('admin.crm.tasks.*') ? 'bg-orange-600 text-white' : 'text-gray-300 hover:bg-gray-800' }}">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
+                <span>Tasks & Follow-ups</span>
+            </a>
+            @endif
+            @if(auth()->user()->hasPermission('crm.view'))
+            <a href="{{ route('admin.crm.segments.index') }}"
+                class="flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium transition {{ request()->routeIs('admin.crm.segments.*') ? 'bg-orange-600 text-white' : 'text-gray-300 hover:bg-gray-800' }}">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/></svg>
+                <span>Segments</span>
+            </a>
+            @endif
+            @if(auth()->user()->hasPermission('crm.view'))
+            <a href="{{ route('admin.crm.analytics') }}"
+                class="flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium transition {{ request()->routeIs('admin.crm.analytics') ? 'bg-orange-600 text-white' : 'text-gray-300 hover:bg-gray-800' }}">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                <span>CRM Analytics</span>
+            </a>
+            @endif
+            @if(auth()->user()->hasPermission('crm.manage'))
+            <a href="{{ route('admin.crm.settings') }}"
+                class="flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium transition {{ request()->routeIs('admin.crm.settings') ? 'bg-orange-600 text-white' : 'text-gray-300 hover:bg-gray-800' }}">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/></svg>
+                <span>CRM Settings</span>
+            </a>
+            @endif
+            </x-admin.nav-group>
+            @endif
 
             {{-- Fraud Checker — its own top-level nav group (not nested under Sales), since
                  checking a customer's courier delivery history before confirming a COD order

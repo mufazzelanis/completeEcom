@@ -87,7 +87,30 @@ class PageController extends Controller
             return back()->withInput()->withErrors(['recaptcha' => 'Please complete the reCAPTCHA verification.']);
         }
 
-        // Email sending can be wired here (Mail::to(...)->send(...))
+        // Until now this form saved nothing. Every message is now a CRM lead so it can't get lost.
+        try {
+            $contact = app(\App\Services\Crm\CrmContacts::class)->forEmail($request->email, 'contact_form', $request->name);
+            $lead = \App\Models\Crm\CrmLead::create([
+                'contact_id' => $contact?->id,
+                'name' => mb_substr($request->name, 0, 250),
+                'email' => $request->email,
+                'source' => 'contact_form',
+                'stage' => 'new',
+                'interest' => mb_substr($request->subject . "
+
+" . $request->message, 0, 5000),
+            ]);
+            \App\Services\AdminAlerts\AdminAlerts::notify(
+                type: 'crm_lead',
+                title: 'New lead: ' . $lead->name,
+                body: mb_substr($request->subject, 0, 120),
+                url: route('admin.crm.leads.show', $lead),
+                data: ['lead_id' => $lead->id],
+            );
+        } catch (\Throwable $e) {
+            report($e);
+        }
+
         return back()->with('success', 'Your message has been sent! We\'ll get back to you soon.');
     }
 }

@@ -31,6 +31,8 @@ class AdminAlerts
     public const TYPES = [
         'order'      => ['permission' => 'orders.view', 'roles' => null,                    'urgency' => 'high'],
         'subscriber' => ['permission' => null,          'roles' => ['admin', 'manager'],    'urgency' => 'normal'],
+        'crm_task'   => ['permission' => 'crm.view',    'roles' => null,                    'urgency' => 'normal'],
+        'crm_lead'   => ['permission' => 'crm.view',    'roles' => null,                    'urgency' => 'normal'],
         'test'       => ['permission' => null,          'roles' => null,                    'urgency' => 'high'],
     ];
 

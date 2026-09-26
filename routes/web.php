@@ -4,6 +4,11 @@ use App\Http\Controllers\AccountController;
 use App\Http\Controllers\AddressController;
 use App\Http\Controllers\Admin\ActivityLogController as AdminActivityLogController;
 use App\Http\Controllers\Admin\AdminAlertController;
+use App\Http\Controllers\Admin\Crm\CrmContactController;
+use App\Http\Controllers\Admin\Crm\CrmDashboardController;
+use App\Http\Controllers\Admin\Crm\CrmLeadController;
+use App\Http\Controllers\Admin\Crm\CrmSegmentController;
+use App\Http\Controllers\Admin\Crm\CrmTaskController;
 use App\Http\Controllers\Admin\FacebookConversionLogController as AdminFacebookConversionLogController;
 use App\Http\Controllers\Admin\AttributeController as AdminAttributeController;
 use App\Http\Controllers\Admin\AuditLogController as AdminAuditLogController;
@@ -494,6 +499,62 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::post('sku-management', [AdminSkuManagementController::class, 'update'])->name('sku-management.update');
     Route::post('sku-management/generate', [AdminSkuManagementController::class, 'generate'])->name('sku-management.generate');
 
+    // CRM — customers (phone-based, guests included), lifecycle/RFM intelligence, segments, lead pipeline, follow-ups
+    Route::prefix('crm')->name('crm.')->group(function () {
+        Route::middleware('permission:crm.view')->group(function () {
+            Route::get('/', [CrmDashboardController::class, 'index'])->name('dashboard');
+            Route::get('analytics', [CrmDashboardController::class, 'analytics'])->name('analytics');
+            Route::get('contacts', [CrmContactController::class, 'index'])->name('contacts.index');
+            Route::get('contacts/export', [CrmContactController::class, 'export'])->middleware('throttle:10,1')->name('contacts.export');
+            Route::get('contacts/{contact}', [CrmContactController::class, 'show'])->whereNumber('contact')->name('contacts.show');
+            Route::get('leads', [CrmLeadController::class, 'index'])->name('leads.index');
+            Route::get('leads/{lead}', [CrmLeadController::class, 'show'])->whereNumber('lead')->name('leads.show');
+            Route::get('tasks', [CrmTaskController::class, 'index'])->name('tasks.index');
+            Route::get('segments', [CrmSegmentController::class, 'index'])->name('segments.index');
+            Route::get('segments/{segment}', [CrmSegmentController::class, 'show'])->whereNumber('segment')->name('segments.show');
+            Route::get('segments/{segment}/export', [CrmSegmentController::class, 'export'])->middleware('throttle:10,1')->whereNumber('segment')->name('segments.export');
+        });
+
+        Route::middleware('permission:crm.manage')->group(function () {
+            Route::post('contacts', [CrmContactController::class, 'store'])->name('contacts.store');
+            Route::post('contacts/bulk', [CrmContactController::class, 'bulk'])->name('contacts.bulk');
+            Route::put('contacts/{contact}', [CrmContactController::class, 'update'])->name('contacts.update');
+            Route::delete('contacts/{contact}', [CrmContactController::class, 'destroy'])->name('contacts.destroy');
+            Route::post('contacts/{contact}/refresh', [CrmContactController::class, 'refresh'])->name('contacts.refresh');
+            Route::post('contacts/{contact}/tags', [CrmContactController::class, 'tags'])->name('contacts.tags');
+            Route::post('contacts/{contact}/activities', [CrmContactController::class, 'logActivity'])->name('contacts.activities.store');
+            Route::post('activities/{activity}/pin', [CrmContactController::class, 'pinActivity'])->name('activities.pin');
+            Route::delete('activities/{activity}', [CrmContactController::class, 'destroyActivity'])->name('activities.destroy');
+
+            Route::post('leads', [CrmLeadController::class, 'store'])->name('leads.store');
+            Route::put('leads/{lead}', [CrmLeadController::class, 'update'])->name('leads.update');
+            Route::post('leads/{lead}/move', [CrmLeadController::class, 'move'])->name('leads.move');
+            Route::post('leads/{lead}/convert', [CrmLeadController::class, 'convert'])->name('leads.convert');
+            Route::post('leads/{lead}/activities', [CrmLeadController::class, 'logActivity'])->name('leads.activities.store');
+            Route::delete('leads/{lead}', [CrmLeadController::class, 'destroy'])->name('leads.destroy');
+
+            Route::post('tasks', [CrmTaskController::class, 'store'])->name('tasks.store');
+            Route::put('tasks/{task}', [CrmTaskController::class, 'update'])->name('tasks.update');
+            Route::post('tasks/{task}/complete', [CrmTaskController::class, 'complete'])->name('tasks.complete');
+            Route::post('tasks/{task}/reopen', [CrmTaskController::class, 'reopen'])->name('tasks.reopen');
+            Route::delete('tasks/{task}', [CrmTaskController::class, 'destroy'])->name('tasks.destroy');
+
+            Route::get('segments/create', [CrmSegmentController::class, 'create'])->name('segments.create');
+            Route::post('segments/preview', [CrmSegmentController::class, 'preview'])->middleware('throttle:60,1')->name('segments.preview');
+            Route::post('segments/presets', [CrmSegmentController::class, 'installPresets'])->name('segments.presets');
+            Route::post('segments', [CrmSegmentController::class, 'store'])->name('segments.store');
+            Route::get('segments/{segment}/edit', [CrmSegmentController::class, 'edit'])->whereNumber('segment')->name('segments.edit');
+            Route::put('segments/{segment}', [CrmSegmentController::class, 'update'])->name('segments.update');
+            Route::delete('segments/{segment}', [CrmSegmentController::class, 'destroy'])->name('segments.destroy');
+
+            Route::get('settings', [CrmDashboardController::class, 'settings'])->name('settings');
+            Route::post('settings', [CrmDashboardController::class, 'saveSettings'])->name('settings.save');
+            Route::post('settings/sync', [CrmDashboardController::class, 'sync'])->middleware('throttle:3,1')->name('settings.sync');
+            Route::post('tags', [CrmDashboardController::class, 'saveTag'])->name('tags.store');
+            Route::put('tags/{tag}', [CrmDashboardController::class, 'saveTag'])->name('tags.update');
+            Route::delete('tags/{tag}', [CrmDashboardController::class, 'deleteTag'])->name('tags.destroy');
+        });
+    });
     // Reports & Analytics
     Route::prefix('reports')->name('reports.')->middleware('permission:reports.view')->group(function () {
         Route::get('/', [AdminReportController::class, 'index'])->name('index');

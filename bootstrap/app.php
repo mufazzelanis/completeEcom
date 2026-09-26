@@ -53,4 +53,9 @@ return Application::configure(basePath: dirname(__DIR__))
         // just self-heals the last couple of days in case of bulk edits or direct
         // DB writes that bypass Eloquent events.
         $schedule->command('sales-report:rebuild', ['--from' => now()->subDays(2)->toDateString()])->dailyAt('00:15');
+
+        // CRM: nightly full recompute (RFM cut-offs shift as the customer base changes) + win-back tasks;
+        // the hourly pass just fires reminders for tasks that have come due.
+        $schedule->command('crm:refresh')->dailyAt('01:00');
+        $schedule->command('crm:refresh', ['--reminders' => true])->hourly();
     })->create();

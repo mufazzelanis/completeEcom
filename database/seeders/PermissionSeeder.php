@@ -63,6 +63,10 @@ class PermissionSeeder extends Seeder
 
             // Settings (payment gateway keys, SMTP credentials, etc. — system-level, admin only by default)
             ['name' => 'settings.manage',     'display_name' => 'Manage Settings',     'group' => 'Settings'],
+
+            // CRM
+            ['name' => 'crm.view',            'display_name' => 'View CRM',            'group' => 'CRM'],
+            ['name' => 'crm.manage',          'display_name' => 'Manage CRM (edit contacts, leads, segments, tasks)', 'group' => 'CRM'],
         ];
 
         foreach ($permissions as $perm) {
@@ -88,6 +92,7 @@ class PermissionSeeder extends Seeder
                 'vendors.view',
                 'reports.view',
                 'payments.view', 'payments.manage',
+                'crm.view', 'crm.manage',
                 // settings.manage intentionally excluded — payment gateway keys, SMTP
                 // credentials etc. stay admin-only, same tier as users.delete/vendors.approve.
             ],
@@ -97,6 +102,7 @@ class PermissionSeeder extends Seeder
                 'categories.view',
                 'orders.view', 'orders.update',
                 'reviews.view', 'reviews.approve',
+                'crm.view',
             ],
         ];
 

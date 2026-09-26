@@ -5,6 +5,9 @@ namespace App\Providers;
 use App\Listeners\RecordLoginActivityListener;
 use App\Listeners\RecordLogoutActivityListener;
 use App\Models\Order;
+use App\Models\User;
+use App\Observers\CrmOrderObserver;
+use App\Observers\CrmUserObserver;
 use App\Observers\OrderAlertObserver;
 use App\Observers\OrderObserver;
 use Illuminate\Auth\Events\Login;
@@ -42,6 +45,8 @@ class AppServiceProvider extends ServiceProvider
 
         Order::observe(OrderObserver::class);
         Order::observe(OrderAlertObserver::class);
+        Order::observe(CrmOrderObserver::class);
+        User::observe(CrmUserObserver::class);
 
         // Named limiters, one per purpose. The unnamed `throttle:N,M` form keys every route
         // by the signed-in user alone, so ALL of them share ONE counter — the bell polls the
