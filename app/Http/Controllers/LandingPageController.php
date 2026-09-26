@@ -31,7 +31,11 @@ class LandingPageController extends Controller
 
         $rules = [
             'name'     => 'required|string|max:255',
-            'phone'    => 'required|string|max:30',
+            'phone'    => ['required', 'string', 'max:30', function ($attr, $value, $fail) {
+                if (\App\Support\PhoneValidator::mode() !== 'off' && ($problem = \App\Support\PhoneValidator::problem($value))) {
+                    $fail($problem);
+                }
+            }],
             'quantity' => 'nullable|integer|min:1|max:99',
         ];
         if ($landingPage->collect_address) {
@@ -100,7 +104,7 @@ class LandingPageController extends Controller
                 'payment_method'    => 'cod',
                 'payment_status'    => 'pending',
                 'shipping_name'     => $validated['name'],
-                'shipping_phone'    => $validated['phone'],
+                'shipping_phone'    => \App\Support\PhoneValidator::normalize($validated['phone']) ?? $validated['phone'],
                 'shipping_address'  => $validated['address'] ?? null,
                 'landing_page_data' => $customData,
             ]);

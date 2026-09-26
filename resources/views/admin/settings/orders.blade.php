@@ -48,6 +48,33 @@
 </div>
 
 <div class="bg-white rounded-xl shadow-sm border p-6 space-y-4">
+    <h2 class="text-base font-semibold text-gray-900 pb-2 border-b">Phone Number Check (fake-order protection)</h2>
+    @php
+        $phoneCheck = \App\Support\PhoneValidator::mode();
+        $gatewayOk = \App\Http\Controllers\CheckoutPhoneController::gatewayConfigured();
+    @endphp
+    <div class="space-y-2">
+        @foreach([
+            'off' => ['Off', 'Accept any phone number.'],
+            'format' => ['Valid Bangladeshi mobile number (recommended)', 'Must be a real-looking BD mobile (013–019, 11 digits). Blocks 01711111111, 01712345678 and similar keyboard-mash numbers. Applies to checkout and landing pages.'],
+            'otp' => ['Format check + SMS code (proves the number is active)', 'The customer gets a 6-digit SMS code and must enter it before the order is placed (main checkout). Needs an SMS gateway; landing pages get the format check only.'],
+        ] as $val => [$title, $hint])
+            <label class="flex items-start gap-2 cursor-pointer">
+                <input type="radio" name="phone_check" value="{{ $val }}" class="mt-1 text-orange-600" @checked($phoneCheck === $val)>
+                <span><span class="text-sm font-medium text-gray-800">{{ $title }}</span><span class="block text-xs text-gray-500">{{ $hint }}</span></span>
+            </label>
+        @endforeach
+    </div>
+    <div class="text-xs rounded-lg p-3 {{ $gatewayOk ? 'bg-green-50 text-green-700' : 'bg-amber-50 text-amber-700' }}">
+        @if($gatewayOk)
+            SMS gateway is configured ({{ config('notifications.sms.driver') }}). SMS codes will be sent.
+        @else
+            No SMS gateway is configured yet, so the SMS-code option has no effect on the live site (orders are never blocked because of it). Set <code>SMS_DRIVER=http</code> and <code>SMS_HTTP_URL</code> in the server's .env or the Twilio keys.
+        @endif
+    </div>
+</div>
+
+<div class="bg-white rounded-xl shadow-sm border p-6 space-y-4">
     <h2 class="text-base font-semibold text-gray-900 pb-2 border-b">Checkout Form Fields</h2>
     <p class="text-xs text-gray-500 -mt-2">Customize each field's label and placeholder text (e.g. translate to Bangla), and control whether it's required, optional, or hidden on the customer checkout form.</p>
 

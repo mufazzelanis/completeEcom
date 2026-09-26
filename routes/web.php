@@ -185,6 +185,8 @@ Route::get('/wishlist', [WishlistController::class, 'index'])->name('wishlist.in
 // Checkout Routes
 Route::get('/checkout', [CheckoutController::class, 'index'])->name('checkout.index');
 Route::post('/checkout', [CheckoutController::class, 'store'])->name('checkout.store');
+Route::post('/checkout/phone/send', [\App\Http\Controllers\CheckoutPhoneController::class, 'send'])->middleware('throttle:12,10')->name('checkout.phone.send');
+Route::post('/checkout/phone/verify', [\App\Http\Controllers\CheckoutPhoneController::class, 'verify'])->middleware('throttle:20,10')->name('checkout.phone.verify');
 Route::get('/checkout/success/{order}', [CheckoutController::class, 'success'])->name('checkout.success');
 Route::post('/buy-now', [CheckoutController::class, 'buyNow'])->name('checkout.buy-now');
 

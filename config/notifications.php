@@ -17,7 +17,9 @@ return [
     */
 
     'sms' => [
-        'driver'   => env('SMS_DRIVER', 'twilio'), // twilio | log
+        'driver'   => env('SMS_DRIVER', 'twilio'), // twilio | http | log
+        'http_url'    => env('SMS_HTTP_URL'),      // generic local gateway, see SmsChannel::sendViaHttp
+        'http_method' => env('SMS_HTTP_METHOD', 'GET'),
         'sid'      => env('TWILIO_SID'),
         'token'    => env('TWILIO_TOKEN'),
         'from'     => env('TWILIO_FROM'),

@@ -252,6 +252,19 @@ class CheckoutController extends Controller
         $request->validate($validationRules);
         $request->merge(['shipping_phone' => normalize_digits($request->shipping_phone)]);
 
+        // Fake-order guard (Settings → Orders → Phone check): reject non-Bangladeshi/keyboard-mash
+        // numbers, and in "otp" mode require the SMS code to have been confirmed for this number.
+        if (filled($request->shipping_phone) && \App\Support\PhoneValidator::mode() !== 'off') {
+            if ($problem = \App\Support\PhoneValidator::problem($request->shipping_phone)) {
+                return back()->withInput()->withErrors(['shipping_phone' => $problem]);
+            }
+            $request->merge(['shipping_phone' => \App\Support\PhoneValidator::normalize($request->shipping_phone)]);
+            if (\App\Http\Controllers\CheckoutPhoneController::required()
+                && ! \App\Http\Controllers\CheckoutPhoneController::isVerified($request->shipping_phone)) {
+                return back()->withInput()->withErrors(['shipping_phone' => 'Please verify this phone number with the code we send by SMS before placing your order.']);
+            }
+        }
+
         // Defense in depth: never persist a value for a field the admin has hidden,
         // regardless of what a crafted request might submit.
         foreach ([
@@ -332,7 +345,8 @@ class CheckoutController extends Controller
         $accountCreated = false;
         if (! auth()->check()) {
             $phone = preg_replace('/[^0-9]/', '', normalize_digits($request->shipping_phone));
-            $existingUser = User::where('phone', $phone)->first();
+            // Numbers are now stored in 01XXXXXXXXX form, but older accounts may hold 8801… / +8801… — match all so nobody gets a duplicate account.
+            $existingUser = User::whereIn('phone', array_unique([$phone, '88' . $phone, '+88' . $phone, ltrim($phone, '0')]))->first();
 
             if ($existingUser) {
                 Auth::login($existingUser);

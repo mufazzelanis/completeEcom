@@ -156,6 +156,7 @@
                                     class="w-full border rounded-xl pl-11 pr-4 py-3 sm:py-3.5 text-base dark:bg-gray-800 dark:text-gray-100 dark:placeholder:text-gray-500 focus:outline-none focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 transition {{ $errors->has('shipping_phone') ? 'border-red-400 bg-red-50 dark:bg-red-950/20' : 'border-gray-200 dark:border-gray-700' }}">
                             </div>
                             @error('shipping_phone')<p class="text-red-500 text-xs mt-1.5">{{ $message }}</p>@enderror
+                            @include('checkout._phone-verify')
                             <p class="text-xs text-gray-400 dark:text-gray-500 mt-1.5">Your account will be created with this number</p>
                         </div>
                     </div>
@@ -214,6 +215,7 @@
                                     class="w-full border rounded-xl pl-11 pr-4 py-3 sm:py-3.5 text-base dark:bg-gray-800 dark:text-gray-100 dark:placeholder:text-gray-500 focus:outline-none focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 transition {{ $errors->has('shipping_phone') ? 'border-red-400 bg-red-50 dark:bg-red-950/20' : 'border-gray-200 dark:border-gray-700' }}">
                             </div>
                             @error('shipping_phone')<p class="text-red-500 text-xs mt-1.5">{{ $message }}</p>@enderror
+                            @include('checkout._phone-verify')
                         </div>
                         @endif
                         @if($checkoutFields['address']['mode'] !== 'hidden')
