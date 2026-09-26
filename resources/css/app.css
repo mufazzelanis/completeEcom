@@ -318,3 +318,60 @@ html.dark .prose .blog-promo-link:hover .blog-promo-frame { box-shadow: 0 16px 3
     margin-left: auto;
     margin-right: auto;
 }
+
+/* ── Admin sidebar (layouts/admin.blade.php + components/admin/nav-group) ────────────
+ * Collapsible groups, a slim scrollbar, and a marker on the current page. The height
+ * animation is the grid-template-rows 0fr -> 1fr trick, which animates to an unknown
+ * content height with no JS measuring. */
+[data-admin-nav][data-nav-init="pending"] { visibility: hidden; }   /* hidden until the script has restored scroll/open state, so nothing visibly jumps */
+
+.admin-nav-scroll { scrollbar-width: thin; scrollbar-color: rgba(255, 255, 255, 0.18) transparent; }
+.admin-nav-scroll::-webkit-scrollbar { width: 6px; }
+.admin-nav-scroll::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.16); border-radius: 999px; }
+.admin-nav-scroll::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.3); }
+
+.admin-nav-toolbar {
+    position: sticky; top: -1rem; z-index: 5;      /* nav has py-4: -1rem makes it pin flush to the top edge */
+    margin: -1rem -1rem 0.25rem; padding: 0.6rem 1rem 0.4rem;
+    display: flex; align-items: center; justify-content: space-between;
+    background: rgb(17 24 39);                      /* gray-900, same as the sidebar */
+    font-size: 0.6875rem; color: rgb(107 114 128);
+}
+.admin-nav-toolbar button { color: rgb(156 163 175); transition: color 0.15s; }
+.admin-nav-toolbar button:hover { color: #fff; }
+
+.admin-nav-group { padding-top: 0.5rem; }
+.admin-nav-group__head {
+    display: flex; align-items: center; gap: 0.5rem; width: 100%;
+    padding: 0.4rem 0.75rem; border-radius: 0.5rem;
+    font-size: 0.75rem; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase;
+    color: rgb(107 114 128); transition: color 0.15s, background-color 0.15s;
+}
+.admin-nav-group__head:hover { color: rgb(229 231 235); background: rgba(255, 255, 255, 0.05); }
+.admin-nav-group__head:focus-visible { outline: 2px solid rgb(234 88 12); outline-offset: -2px; }
+.admin-nav-group__title { flex: 1; text-align: left; }
+.admin-nav-group[data-has-active="1"] .admin-nav-group__title { color: rgb(209 213 219); }
+
+.admin-nav-group__chev { width: 0.9rem; height: 0.9rem; flex-shrink: 0; transform: rotate(-90deg); transition: transform 0.2s ease; }
+.admin-nav-group[data-open="1"] .admin-nav-group__chev { transform: rotate(0deg); }
+
+/* A collapsed group that still contains the page you're on shows a small orange dot. */
+.admin-nav-group__dot { width: 0.4rem; height: 0.4rem; border-radius: 999px; background: rgb(234 88 12); opacity: 0; transition: opacity 0.15s; }
+.admin-nav-group[data-has-active="1"]:not([data-open="1"]) .admin-nav-group__dot { opacity: 1; }
+
+.admin-nav-group__body { display: grid; grid-template-rows: 0fr; transition: grid-template-rows 0.22s ease; }
+.admin-nav-group[data-open="1"] .admin-nav-group__body { grid-template-rows: 1fr; }
+.admin-nav-group__inner { overflow: hidden; min-height: 0; }
+/* Collapsed links must also leave the tab order / screen-reader tree, not just be clipped. */
+.admin-nav-group:not([data-open="1"]) .admin-nav-group__inner { visibility: hidden; transition: visibility 0s linear 0.22s; }
+.admin-nav-group[data-open="1"] .admin-nav-group__inner { visibility: visible; }
+
+/* No animation while the saved open/closed state is being applied on page load. */
+[data-admin-nav]:not([data-nav-ready="1"]) .admin-nav-group__body,
+[data-admin-nav]:not([data-nav-ready="1"]) .admin-nav-group__chev,
+[data-admin-nav]:not([data-nav-ready="1"]) .admin-nav-group__inner { transition: none; }
+@media (prefers-reduced-motion: reduce) {
+    .admin-nav-group__body, .admin-nav-group__chev, .admin-nav-group__inner { transition: none; }
+}
+
+[data-admin-nav] a[aria-current="page"] { box-shadow: inset 3px 0 0 rgba(255, 255, 255, 0.65); }
