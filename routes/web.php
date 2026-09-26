@@ -3,6 +3,7 @@
 use App\Http\Controllers\AccountController;
 use App\Http\Controllers\AddressController;
 use App\Http\Controllers\Admin\ActivityLogController as AdminActivityLogController;
+use App\Http\Controllers\Admin\AdminAlertController;
 use App\Http\Controllers\Admin\FacebookConversionLogController as AdminFacebookConversionLogController;
 use App\Http\Controllers\Admin\AttributeController as AdminAttributeController;
 use App\Http\Controllers\Admin\AuditLogController as AdminAuditLogController;
@@ -126,6 +127,9 @@ Route::get('/email/unsubscribe/{token}', [EmailUnsubscribeController::class, 'un
 // fetch would get redirected to an HTML login page instead of JSON and silently break).
 Route::get('/manifest.webmanifest', [ManifestController::class, 'customer'])->name('manifest');
 Route::get('/admin/manifest.webmanifest', [ManifestController::class, 'admin'])->name('admin.manifest');
+// Admin alerts service worker (phone push) — public for the same reason as the manifests
+// above; served from /admin/ so its scope is the admin panel only, never the storefront.
+Route::get('/admin/sw.js', [AdminAlertController::class, 'serviceWorker'])->name('admin.sw');
 
 // Deliberately outside every auth/admin middleware group — this exists precisely for the
 // moment admin login itself is misbehaving right after a deploy (stale OPcache/route/config
@@ -282,6 +286,21 @@ Route::middleware('auth')->group(function () {
 // Admin Routes
 Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(function () {
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
+
+    // Admin alerts — header bell, sound, and phone push for new orders / subscribers
+    Route::prefix('alerts')->name('alerts.')->group(function () {
+        Route::get('/', [AdminAlertController::class, 'index'])->name('index');
+        // Separate named limiters (AppServiceProvider) — an unnamed throttle:N,M shares one
+        // per-user counter across every route that uses it, so the bell's frequent polling
+        // would eat the quota of the on/off buttons below.
+        Route::get('feed', [AdminAlertController::class, 'feed'])->middleware('throttle:admin-alerts-feed')->name('feed');
+        Route::post('read-all', [AdminAlertController::class, 'readAll'])->middleware('throttle:admin-alerts-action')->name('read-all');
+        Route::post('test', [AdminAlertController::class, 'test'])->middleware('throttle:admin-alerts-test')->name('test');
+        Route::post('push/subscribe', [AdminAlertController::class, 'subscribe'])->middleware('throttle:admin-alerts-action')->name('push.subscribe');
+        Route::post('push/unsubscribe', [AdminAlertController::class, 'unsubscribe'])->middleware('throttle:admin-alerts-action')->name('push.unsubscribe');
+        Route::get('{alert}/open', [AdminAlertController::class, 'open'])->name('open');
+        Route::post('{alert}/read', [AdminAlertController::class, 'read'])->name('read');
+    });
 
     // Admin search suggest
     Route::get('search/suggest', [SearchController::class, 'adminSuggest'])->name('search.suggest');

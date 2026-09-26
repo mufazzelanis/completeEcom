@@ -49,6 +49,15 @@ class SyncHotlinkDomain extends Command
             return self::SUCCESS;
         }
 
+        // A local dev APP_URL (Herd's *.test, localhost, 127.0.0.1) is never the real public
+        // domain — syncing it would overwrite the committed production domain in a tracked
+        // file every time anyone runs composer locally, and one careless `git commit -a`
+        // later that ships to the live site and breaks every image on it.
+        if ($host === 'localhost' || $host === '127.0.0.1' || str_ends_with($host, '.test') || str_ends_with($host, '.local')) {
+            $this->line("APP_URL host '{$host}' is a local dev host — leaving public/.htaccess untouched.");
+            return self::SUCCESS;
+        }
+
         $contents = file_get_contents($path);
         $pattern = '#' . preg_quote(self::START_MARKER, '#') . '.*?' . preg_quote(self::END_MARKER, '#') . '#s';
 

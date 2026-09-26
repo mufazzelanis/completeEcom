@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\NewsletterSubscriber;
+use App\Services\AdminAlerts\AdminAlerts;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
@@ -34,6 +35,13 @@ class NewsletterSubscriptionController extends Controller
                 'subscribed_at'     => now(),
             ]);
         }
+
+        AdminAlerts::notify(
+            type: 'subscriber',
+            title: 'New newsletter subscriber',
+            body: $request->email,
+            url: route('admin.newsletter.index'),
+        );
 
         return back()->with('success', 'Thank you for subscribing to our newsletter!');
     }
