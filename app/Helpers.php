@@ -170,6 +170,75 @@ if (!function_exists('format_currency')) {
     }
 }
 
+if (!function_exists('amount_in_words')) {
+    /**
+     * Spells out a Taka amount using the lakh/crore grouping Bangladeshi invoices
+     * conventionally use ("Twelve Lakh Thirty Four Thousand"), not the international
+     * thousand/million grouping — used on the customer-facing PDF invoice.
+     */
+    function amount_in_words(float $amount): string
+    {
+        $whole = (int) floor($amount);
+        $paisa = (int) round(($amount - $whole) * 100);
+
+        $words = $whole === 0 ? 'Zero' : trim(preg_replace('/\s+/', ' ', _aiw_grouped($whole)));
+        $result = $words;
+        if ($paisa > 0) {
+            $result .= ' and ' . trim(_aiw_below_thousand($paisa)) . ' Poisha';
+        }
+
+        return $result;
+    }
+}
+
+if (!function_exists('_aiw_below_thousand')) {
+    /** Internal to amount_in_words() — spells out any value from 0-999. */
+    function _aiw_below_thousand(int $n): string
+    {
+        $ones = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten',
+            'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen'];
+        $tens = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
+
+        if ($n < 20) {
+            return $ones[$n];
+        }
+        if ($n < 100) {
+            return trim($tens[intdiv($n, 10)] . ' ' . $ones[$n % 10]);
+        }
+
+        return trim($ones[intdiv($n, 100)] . ' Hundred ' . ($n % 100 ? _aiw_below_thousand($n % 100) : ''));
+    }
+}
+
+if (!function_exists('_aiw_grouped')) {
+    /** Internal to amount_in_words() — crore / lakh / thousand / remainder grouping. */
+    function _aiw_grouped(int $n): string
+    {
+        $parts = [];
+        $crore = intdiv($n, 10000000);
+        $n %= 10000000;
+        $lakh = intdiv($n, 100000);
+        $n %= 100000;
+        $thousand = intdiv($n, 1000);
+        $n %= 1000;
+
+        if ($crore) {
+            $parts[] = _aiw_below_thousand($crore) . ' Crore';
+        }
+        if ($lakh) {
+            $parts[] = _aiw_below_thousand($lakh) . ' Lakh';
+        }
+        if ($thousand) {
+            $parts[] = _aiw_below_thousand($thousand) . ' Thousand';
+        }
+        if ($n) {
+            $parts[] = _aiw_below_thousand($n);
+        }
+
+        return implode(' ', $parts);
+    }
+}
+
 if (!function_exists('hex_shade')) {
     /**
      * Lighten (positive $percent) or darken (negative) a #rrggbb color — used to build a

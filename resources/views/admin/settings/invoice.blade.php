@@ -102,6 +102,18 @@
                    @checked(setting('invoice_show_watermark', '1') == '1')>
             <span class="text-sm text-gray-700">Stamp a "CANCELLED"/"REFUNDED" watermark on those invoices</span>
         </label>
+        <label class="flex items-center gap-2 cursor-pointer">
+            <input type="hidden" name="invoice_show_qr" value="0">
+            <input type="checkbox" name="invoice_show_qr" value="1" class="rounded text-orange-600"
+                   @checked(setting('invoice_show_qr', '1') == '1')>
+            <span class="text-sm text-gray-700">Print a "scan to track order" QR code</span>
+        </label>
+        <label class="flex items-center gap-2 cursor-pointer">
+            <input type="hidden" name="invoice_show_words" value="0">
+            <input type="checkbox" name="invoice_show_words" value="1" class="rounded text-orange-600"
+                   @checked(setting('invoice_show_words', '1') == '1')>
+            <span class="text-sm text-gray-700">Spell out the total in words</span>
+        </label>
     </div>
     <div>
         <label class="block text-sm font-medium text-gray-700 mb-1">Authorized Signature / Stamp</label>

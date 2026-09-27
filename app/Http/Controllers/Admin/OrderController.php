@@ -225,12 +225,52 @@ class OrderController extends Controller
     public function invoice(Order $order)
     {
         $order->load('user', 'items.product');
-        $pdf = Pdf::loadView('admin.orders.invoice', compact('order'))
-            ->setPaper('a4', 'portrait');
+
+        // The public order-tracking link (routes/web.php: guest.order.track) only ever checks
+        // the token, not who placed the order — so backfilling one here (for orders that were
+        // never a guest checkout and so never got one) is enough to let the invoice's QR code
+        // deep-link straight to this order's tracking page for every order, not just guests'.
+        if (! $order->guest_token) {
+            $order->forceFill(['guest_token' => \Illuminate\Support\Str::random(64)])->save();
+        }
+
+        $pdf = Pdf::loadView('admin.orders.invoice', [
+            'order' => $order,
+            'trackingQr' => $this->invoiceTrackingQr($order),
+        ])->setPaper('a4', 'portrait');
 
         $this->registerInvoiceFont($pdf);
 
         return $pdf->download("invoice-{$order->order_number}.pdf");
+    }
+
+    /**
+     * A QR code (embedded as an inline SVG data URI, so it needs no GD/Imagick extension
+     * and no temp file) linking straight to this order's public tracking page. Wrapped in
+     * a try/catch so a QR-library hiccup can never take down invoice downloads — the
+     * invoice template simply omits the code when this comes back null.
+     */
+    private function invoiceTrackingQr(Order $order): ?string
+    {
+        if (setting('invoice_show_qr', '1') !== '1' || ! $order->guest_token) {
+            return null;
+        }
+        try {
+            $url = route('guest.order.track', ['order_number' => $order->order_number, 'token' => $order->guest_token]);
+            $result = (new \Endroid\QrCode\Builder\Builder(
+                writer: new \Endroid\QrCode\Writer\SvgWriter(),
+                data: $url,
+                errorCorrectionLevel: \Endroid\QrCode\ErrorCorrectionLevel::Low,
+                size: 160,
+                margin: 0,
+            ))->build();
+
+            return $result->getDataUri();
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('Invoice QR generation failed: ' . $e->getMessage());
+
+            return null;
+        }
     }
 
     /**

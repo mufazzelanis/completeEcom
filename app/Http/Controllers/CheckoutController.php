@@ -594,15 +594,15 @@ class CheckoutController extends Controller
         return view('checkout.success', compact('order', 'accountCreated', 'shouldTrackPurchase', 'fbPurchaseEventId'));
     }
 
-    public function guestTrack(Request $request)
+    public function guestTrack(string $order_number, string $token)
     {
-        $request->validate([
-            'order_number' => 'required|string',
-            'token' => 'required|string',
-        ]);
-
-        $order = Order::where('order_number', $request->order_number)
-            ->where('guest_token', $request->token)
+        // Bug fix: order_number/token are route segments, not query/body input, so validating
+        // them via $request->validate() (which checks $request->all() = query + body only)
+        // always failed with "required" and silently bounced every visitor here to the
+        // homepage — this link has never actually worked. Route parameters arrive as plain
+        // strings already, so no separate validation step is needed before the lookup below.
+        $order = Order::where('order_number', $order_number)
+            ->where('guest_token', $token)
             ->firstOrFail();
 
         $order->load('items.product', 'payment');

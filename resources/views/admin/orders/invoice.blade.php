@@ -103,6 +103,19 @@
             line-height: 1.7;
         }
 
+        /* Personal greeting line, between the header and the Ship To / Order Details cards —
+           the one line that makes this read as written to this customer, not a generic form. */
+        .greeting {
+            font-size: 12px;
+            color: #374151;
+            margin-bottom: 22px;
+            line-height: 1.6;
+        }
+
+        .greeting strong {
+            color: #111827;
+        }
+
         /* Status badge */
         .badge {
             display: inline-block;
@@ -176,6 +189,7 @@
             background: #f9fafb;
             border-radius: 10px;
             padding: 14px 16px;
+            border-left: 3px solid {{ $accentColor }};
         }
 
         .info-box h4 {
@@ -210,6 +224,17 @@
 
         .items-table {
             margin-bottom: 20px;
+        }
+
+        .items-wrap {
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+            padding: 6px;
+            margin-bottom: 20px;
+        }
+
+        .items-wrap .items-table {
+            margin-bottom: 0;
         }
 
         .items-table thead th {
@@ -277,6 +302,24 @@
         .totals {
             float: right;
             width: 280px;
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+            padding: 4px 14px;
+        }
+
+        /* Amount spelled out in words — a standard courtesy on Bangladeshi invoices,
+           printed right under the totals card. */
+        .words-row {
+            clear: both;
+            padding-top: 14px;
+            font-size: 10.5px;
+            color: #6b7280;
+            font-style: italic;
+        }
+
+        .words-row strong {
+            color: #374151;
+            font-style: normal;
         }
 
         .totals table {
@@ -373,6 +416,30 @@
             color: {{ $accentColor }};
         }
 
+        /* Bottom strip: QR code (left) and signature (right) share one row so the footer
+           reads as a single designed block instead of two unrelated add-ons. */
+        .bottom-strip {
+            width: 100%;
+            margin-top: 26px;
+        }
+
+        .bottom-strip td {
+            vertical-align: bottom;
+        }
+
+        .qr-code {
+            width: 62px;
+            height: 62px;
+        }
+
+        .qr-caption {
+            margin-top: 4px;
+            font-size: 8.5px;
+            color: #9ca3af;
+            max-width: 90px;
+            line-height: 1.4;
+        }
+
         .signature-img {
             max-height: 50px;
             max-width: 160px;
@@ -384,6 +451,7 @@
             padding-top: 4px;
             font-size: 9.5px;
             color: #6b7280;
+            text-align: center;
         }
 
         /* Diagonal status stamp for cancelled/refunded orders — `position: fixed` repeats it
@@ -446,6 +514,12 @@ $taxNumber = setting('invoice_tax_number');
 $bankDetails = setting('invoice_bank_details');
 $showSku = setting('invoice_show_sku', '1') == '1';
 $showWatermark = setting('invoice_show_watermark', '1') == '1' && in_array($order->status, ['cancelled', 'refunded']);
+$showWords = setting('invoice_show_words', '1') == '1';
+$currencyWordName = match (setting('currency_code', 'BDT')) {
+    'BDT' => 'Taka', 'USD' => 'Dollars', 'INR' => 'Rupees', 'EUR' => 'Euros', 'GBP' => 'Pounds',
+    default => setting('currency_code', 'BDT'),
+};
+$trackingQr ??= null; // passed in by OrderController::invoice(); null when disabled or generation failed
 
 $signaturePath = setting('invoice_signature');
 $signatureAbsolutePath = null;
@@ -495,6 +569,8 @@ if ($signaturePath && \Illuminate\Support\Facades\Storage::disk('public')->exist
 
         <div class="divider"></div>
 
+        <p class="greeting">Dear <strong>{{ $order->shipping_name }}</strong>, thank you for shopping with {{ $storeName }} — here are the details of your order.</p>
+
         {{-- Ship To / Order Info --}}
         <table class="info-grid">
             <tr>
@@ -534,6 +610,7 @@ if ($signaturePath && \Illuminate\Support\Facades\Storage::disk('public')->exist
         </table>
 
         {{-- Items --}}
+        <div class="items-wrap">
         <table class="items-table">
             <thead>
                 <tr>
@@ -564,6 +641,7 @@ if ($signaturePath && \Illuminate\Support\Facades\Storage::disk('public')->exist
                 @endforeach
             </tbody>
         </table>
+        </div>
 
         {{-- Totals --}}
         <div class="clearfix">
@@ -605,6 +683,10 @@ if ($signaturePath && \Illuminate\Support\Facades\Storage::disk('public')->exist
 
         <div class="clearfix"></div>
 
+        @if ($showWords)
+            <p class="words-row">In words: <strong>{{ amount_in_words((float) $order->total) }} {{ $currencyWordName }} Only</strong></p>
+        @endif
+
         @if ($order->notes)
             <div class="note-box">
                 <h4>Order Notes</h4>
@@ -626,13 +708,20 @@ if ($signaturePath && \Illuminate\Support\Facades\Storage::disk('public')->exist
             </div>
         @endif
 
-        @if ($signatureAbsolutePath)
-            <table style="width:100%; margin-top:30px;">
+        @if ($trackingQr || $signatureAbsolutePath)
+            <table class="bottom-strip">
                 <tr>
-                    <td></td>
+                    <td style="text-align:left;">
+                        @if ($trackingQr)
+                            <img src="{{ $trackingQr }}" class="qr-code" alt="QR code">
+                            <div class="qr-caption">Scan to track this order online</div>
+                        @endif
+                    </td>
                     <td style="width:200px; text-align:center;">
-                        <img src="{{ $signatureAbsolutePath }}" class="signature-img" alt="Signature">
-                        <div class="signature-line">Authorized Signature</div>
+                        @if ($signatureAbsolutePath)
+                            <img src="{{ $signatureAbsolutePath }}" class="signature-img" alt="Signature">
+                            <div class="signature-line">Authorized Signature</div>
+                        @endif
                     </td>
                 </tr>
             </table>
@@ -643,7 +732,11 @@ if ($signaturePath && \Illuminate\Support\Facades\Storage::disk('public')->exist
             <p>
                 {{ $footerText }}<br>
                 For questions about this invoice, contact us at <strong>{{ $storeEmail }}</strong><br>
-                This is a computer-generated invoice and does not require a signature.
+                @if ($signatureAbsolutePath)
+                    This is a computer-generated invoice.
+                @else
+                    This is a computer-generated invoice and does not require a signature.
+                @endif
             </p>
         </div>
 
