@@ -118,10 +118,10 @@
     @endif
 
     <header class="border-b border-gray-100 sticky z-40 bg-white/95 backdrop-blur" style="top: {{ $landingPage->urgency_bar_enabled && $landingPage->urgency_bar_text && !session('order_success') ? '2.25rem' : '0' }};">
-        <div class="px-4 h-16 flex items-center justify-between">
+        <div class="px-4 h-[4.5rem] flex items-center justify-between">
             <a href="{{ url($landingPage->slug) }}" class="flex items-center gap-2">
                 @if($logoUrl)
-                    <img src="{{ $logoUrl }}" alt="{{ $siteName }}" class="h-9 max-w-[150px] object-contain">
+                    <img src="{{ $logoUrl }}" alt="{{ $siteName }}" class="h-12 max-w-[190px] object-contain">
                 @else
                     <span class="font-extrabold text-lg text-gray-800">{{ $siteName }}</span>
                 @endif

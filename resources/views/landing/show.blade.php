@@ -614,7 +614,7 @@
     @endif
 
     {{-- Order Form --}}
-    <div id="order-form" class="bg-gray-50 border-t border-gray-100 py-8 px-4 scroll-mt-16"
+    <div id="order-form" class="bg-gray-50 border-t border-gray-100 py-8 px-4 scroll-mt-[4.5rem]"
         x-data="{
             qty: 1,
             unit: {{ (float) ($landingPage->effective_price ?? 0) }},
