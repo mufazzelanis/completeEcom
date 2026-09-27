@@ -22,27 +22,31 @@
 
         body {
             font-family: 'Hind Siliguri', DejaVu Sans, sans-serif;
-            font-size: 12.5px;
+            font-size: 12px;
             color: #1f2937;
             background: #fff;
         }
 
+        /* Spacing throughout this file is deliberately tight — with every optional section
+           (BIN, bank details, terms, order notes, QR + signature) switched on at once, this
+           still needs to fit a single-item order on one page rather than spilling a couple
+           of lines onto a near-empty second page. */
         .page {
-            padding: 36px 42px;
+            padding: 20px 34px;
         }
 
         /* Top accent bar */
         .accent-bar {
-            height: 6px;
+            height: 5px;
             background-color: {{ $accentColor }};
             border-radius: 3px;
-            margin-bottom: 28px;
+            margin-bottom: 16px;
         }
 
         /* Header */
         .header-table {
             width: 100%;
-            margin-bottom: 28px;
+            margin-bottom: 16px;
         }
 
         .header-table td {
@@ -70,10 +74,10 @@
         }
 
         .brand-contact {
-            margin-top: 10px;
-            font-size: 10.5px;
+            margin-top: 6px;
+            font-size: 10px;
             color: #6b7280;
-            line-height: 1.7;
+            line-height: 1.5;
         }
 
         .invoice-title {
@@ -82,34 +86,34 @@
 
         .invoice-title h1 {
             font-family: 'Hind Siliguri', DejaVu Sans, sans-serif;
-            font-size: 26px;
+            font-size: 22px;
             font-weight: 800;
             color: #111827;
-            letter-spacing: 3px;
+            letter-spacing: 2.5px;
             line-height: 1;
         }
 
         .invoice-title .inv-number {
-            font-size: 12px;
+            font-size: 11.5px;
             color: {{ $accentColor }};
             font-weight: 700;
-            margin-top: 6px;
+            margin-top: 4px;
         }
 
         .invoice-title .inv-meta {
-            margin-top: 8px;
-            font-size: 10.5px;
+            margin-top: 5px;
+            font-size: 10px;
             color: #6b7280;
-            line-height: 1.7;
+            line-height: 1.5;
         }
 
         /* Personal greeting line, between the header and the Ship To / Order Details cards —
            the one line that makes this read as written to this customer, not a generic form. */
         .greeting {
-            font-size: 12px;
+            font-size: 11.5px;
             color: #374151;
-            margin-bottom: 22px;
-            line-height: 1.6;
+            margin-bottom: 14px;
+            line-height: 1.5;
         }
 
         .greeting strong {
@@ -168,13 +172,13 @@
         /* Divider */
         .divider {
             border-top: 1px solid #e5e7eb;
-            margin-bottom: 28px;
+            margin-bottom: 14px;
         }
 
         /* Info grid */
         .info-grid {
             width: 100%;
-            margin-bottom: 30px;
+            margin-bottom: 16px;
             border-collapse: separate;
             border-spacing: 9px 0;
         }
@@ -188,7 +192,7 @@
         .info-box {
             background: #f9fafb;
             border-radius: 10px;
-            padding: 14px 16px;
+            padding: 10px 14px;
             border-left: 3px solid {{ $accentColor }};
         }
 
@@ -198,13 +202,13 @@
             color: {{ $accentColor }};
             text-transform: uppercase;
             letter-spacing: 1px;
-            margin-bottom: 8px;
+            margin-bottom: 5px;
         }
 
         .info-box p {
-            font-size: 11.5px;
+            font-size: 11px;
             color: #374151;
-            line-height: 1.7;
+            line-height: 1.55;
         }
 
         .info-box .val {
@@ -223,14 +227,14 @@
         }
 
         .items-table {
-            margin-bottom: 20px;
+            margin-bottom: 0;
         }
 
         .items-wrap {
             border: 1px solid #e5e7eb;
             border-radius: 10px;
-            padding: 6px;
-            margin-bottom: 20px;
+            padding: 5px;
+            margin-bottom: 14px;
         }
 
         .items-wrap .items-table {
@@ -240,7 +244,7 @@
         .items-table thead th {
             background: {{ $darkColor }};
             color: #fff;
-            padding: 11px 14px;
+            padding: 8px 12px;
             font-size: 10.5px;
             font-weight: 700;
             text-transform: uppercase;
@@ -264,8 +268,8 @@
         }
 
         .items-table tbody td {
-            padding: 11px 14px;
-            font-size: 11.5px;
+            padding: 7px 12px;
+            font-size: 11px;
             vertical-align: top;
         }
 
@@ -311,8 +315,8 @@
            printed right under the totals card. */
         .words-row {
             clear: both;
-            padding-top: 14px;
-            font-size: 10.5px;
+            padding-top: 5px;
+            font-size: 10px;
             color: #6b7280;
             font-style: italic;
         }
@@ -327,8 +331,8 @@
         }
 
         .totals td {
-            padding: 7px 0;
-            font-size: 11.5px;
+            padding: 4px 0;
+            font-size: 11px;
             font-family: 'Hind Siliguri', DejaVu Sans, sans-serif;
         }
 
@@ -353,9 +357,9 @@
         }
 
         .totals .total-row td {
-            font-size: 15px;
+            font-size: 13px;
             font-weight: normal;
-            padding: 12px 14px;
+            padding: 6px 14px;
             font-family: 'Hind Siliguri', DejaVu Sans, sans-serif;
         }
 
@@ -375,41 +379,41 @@
 
         /* Notes / Terms */
         .note-box {
-            margin-top: 14px;
-            padding: 14px 16px;
+            margin-top: 6px;
+            padding: 6px 14px;
             background: #f9fafb;
             border-radius: 8px;
             border-left: 3px solid {{ $accentColor }};
         }
 
         .note-box h4 {
-            font-size: 10px;
+            font-size: 9.5px;
             font-weight: 700;
             color: {{ $accentColor }};
-            margin-bottom: 5px;
+            margin-bottom: 3px;
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
 
         .note-box p {
-            font-size: 10.5px;
+            font-size: 10px;
             color: #6b7280;
-            line-height: 1.6;
+            line-height: 1.45;
             white-space: pre-line;
         }
 
         /* Footer */
         .footer {
-            margin-top: 40px;
-            padding-top: 18px;
+            margin-top: 10px;
+            padding-top: 8px;
             border-top: 1px solid #e5e7eb;
             text-align: center;
         }
 
         .footer p {
-            font-size: 10px;
+            font-size: 9px;
             color: #9ca3af;
-            line-height: 1.8;
+            line-height: 1.6;
         }
 
         .footer strong {
@@ -420,7 +424,7 @@
            reads as a single designed block instead of two unrelated add-ons. */
         .bottom-strip {
             width: 100%;
-            margin-top: 26px;
+            margin-top: 6px;
         }
 
         .bottom-strip td {
@@ -428,28 +432,28 @@
         }
 
         .qr-code {
-            width: 62px;
-            height: 62px;
+            width: 52px;
+            height: 52px;
         }
 
         .qr-caption {
-            margin-top: 4px;
-            font-size: 8.5px;
+            margin-top: 3px;
+            font-size: 8px;
             color: #9ca3af;
             max-width: 90px;
-            line-height: 1.4;
+            line-height: 1.3;
         }
 
         .signature-img {
-            max-height: 50px;
-            max-width: 160px;
-            margin-bottom: 4px;
+            max-height: 38px;
+            max-width: 140px;
+            margin-bottom: 3px;
         }
 
         .signature-line {
             border-top: 1px solid #9ca3af;
-            padding-top: 4px;
-            font-size: 9.5px;
+            padding-top: 3px;
+            font-size: 9px;
             color: #6b7280;
             text-align: center;
         }
@@ -458,7 +462,7 @@
            on every page dompdf renders, same trick used for running headers/footers. */
         .watermark {
             position: fixed;
-            top: 320px;
+            top: 470px;
             left: 0;
             width: 100%;
             text-align: center;
@@ -554,7 +558,7 @@ if ($signaturePath && \Illuminate\Support\Facades\Storage::disk('public')->exist
                 <td class="invoice-title">
                     <h1>{{ $invoiceTitle }}</h1>
                     <div class="inv-number">{{ $invoiceNumber }}</div>
-                    <div style="margin-top:10px;">
+                    <div style="margin-top:6px;">
                         <span class="badge badge-{{ $order->status }}">{{ ucfirst($order->status) }}</span>
                     </div>
                     <div class="inv-meta">
@@ -687,25 +691,30 @@ if ($signaturePath && \Illuminate\Support\Facades\Storage::disk('public')->exist
             <p class="words-row">In words: <strong>{{ amount_in_words((float) $order->total) }} {{ $currencyWordName }} Only</strong></p>
         @endif
 
-        @if ($order->notes)
-            <div class="note-box">
-                <h4>Order Notes</h4>
-                <p>{{ $order->notes }}</p>
-            </div>
-        @endif
-
-        @if ($invoiceTerms)
-            <div class="note-box">
-                <h4>Terms &amp; Conditions</h4>
-                <p>{{ $invoiceTerms }}</p>
-            </div>
-        @endif
-
-        @if ($bankDetails)
-            <div class="note-box">
-                <h4>Bank / Payment Details</h4>
-                <p>{{ $bankDetails }}</p>
-            </div>
+        @php
+            // Side-by-side instead of stacked whenever more than one of these is present —
+            // with every optional box switched on at once this is the difference between
+            // fitting on one page and spilling a couple of lines onto an almost-empty second
+            // one. white-space:pre-line (see .note-box p) keeps each box's own line breaks.
+            $noteBoxes = array_filter([
+                $order->notes ? ['title' => 'Order Notes', 'body' => $order->notes] : null,
+                $invoiceTerms ? ['title' => 'Terms &amp; Conditions', 'body' => $invoiceTerms] : null,
+                $bankDetails ? ['title' => 'Bank / Payment Details', 'body' => $bankDetails] : null,
+            ]);
+        @endphp
+        @if ($noteBoxes)
+            <table style="width:100%; margin-top:6px; border-collapse:separate; border-spacing:8px 0;">
+                <tr>
+                    @foreach ($noteBoxes as $box)
+                        <td style="width:{{ (int) (100 / count($noteBoxes)) }}%; vertical-align:top; padding:0;">
+                            <div class="note-box" style="margin-top:0;">
+                                <h4>{!! $box['title'] !!}</h4>
+                                <p>{{ $box['body'] }}</p>
+                            </div>
+                        </td>
+                    @endforeach
+                </tr>
+            </table>
         @endif
 
         @if ($trackingQr || $signatureAbsolutePath)
