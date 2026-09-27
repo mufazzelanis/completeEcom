@@ -170,6 +170,27 @@ if (!function_exists('format_currency')) {
     }
 }
 
+if (!function_exists('hex_shade')) {
+    /**
+     * Lighten (positive $percent) or darken (negative) a #rrggbb color — used to build a
+     * two-tone gradient out of a single admin-picked brand color (landing pages, buttons)
+     * instead of a flat fill, without asking the admin to pick a second color.
+     */
+    function hex_shade(string $hex, float $percent): string
+    {
+        $hex = ltrim($hex, '#');
+        if (strlen($hex) === 3) {
+            $hex = $hex[0] . $hex[0] . $hex[1] . $hex[1] . $hex[2] . $hex[2];
+        }
+        if (! preg_match('/^[0-9a-fA-F]{6}$/', $hex)) {
+            return '#' . str_pad('', 6, '0');
+        }
+        [$r, $g, $b] = [hexdec(substr($hex, 0, 2)), hexdec(substr($hex, 2, 2)), hexdec(substr($hex, 4, 2))];
+        $blend = fn ($c) => (int) round($percent >= 0 ? $c + (255 - $c) * $percent : $c * (1 + $percent));
+        return sprintf('#%02x%02x%02x', max(0, min(255, $blend($r))), max(0, min(255, $blend($g))), max(0, min(255, $blend($b))));
+    }
+}
+
 if (!function_exists('embed_video_url')) {
     /**
      * Landing pages let the admin paste any video link (YouTube share/watch/shorts URL,

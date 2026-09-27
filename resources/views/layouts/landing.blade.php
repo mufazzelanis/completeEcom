@@ -7,6 +7,7 @@
     $logoUrl  = $landingPage->header_logo ? \Illuminate\Support\Facades\Storage::url($landingPage->header_logo) : setting_file_url('site_logo');
     $faviconUrl = $landingPage->favicon ? \Illuminate\Support\Facades\Storage::url($landingPage->favicon) : setting_file_url('favicon');
     $primaryColor = $landingPage->brand_color ?: setting('primary_color', '#ea580c');
+    $primaryColorDark = hex_shade($primaryColor, -0.22);
 
     // Pixel tracking — this page's own Facebook/Google IDs (Admin → Landing Pages → edit →
     // Pixel Tracking) override the site-wide Settings → Facebook Pixel / Google Analytics &
@@ -126,8 +127,8 @@
                 @endif
             </a>
             @unless(session('order_success'))
-            <a href="#order-form" class="text-sm font-bold text-white px-4 py-2 rounded-full transition hover:opacity-90"
-               style="background-color: {{ $primaryColor }};">
+            <a href="#order-form" class="text-sm font-bold text-white px-4 py-2 rounded-full shadow-md transition-transform hover:scale-105 active:scale-95"
+               style="background: linear-gradient(135deg, {{ $primaryColor }}, {{ $primaryColorDark }});">
                 {{ $landingPage->order_button_text }}
             </a>
             @endunless
