@@ -729,10 +729,11 @@
                         পরিমাণ
                     </label>
                     <div class="flex items-center gap-3">
-                        <button type="button" @click="qty = Math.max(1, qty - 1)" class="w-11 h-11 rounded-xl border-2 text-lg font-bold flex items-center justify-center active:scale-90 transition-all duration-150" style="border-color: {{ $primary }}33; color: {{ $primaryDark }};">−</button>
+                        <button type="button" @click="qty = Math.max(1, qty - 1)" :disabled="qty <= 1" class="w-11 h-11 rounded-xl border-2 text-lg font-bold flex items-center justify-center active:scale-90 transition-all duration-150 disabled:opacity-30 disabled:active:scale-100" style="border-color: {{ $primary }}33; color: {{ $primaryDark }};">−</button>
                         <span class="w-10 text-center font-extrabold text-lg" x-text="qty"></span>
-                        <button type="button" @click="qty = Math.min(99, qty + 1)" class="w-11 h-11 rounded-xl border-2 text-lg font-bold flex items-center justify-center active:scale-90 transition-all duration-150" style="border-color: {{ $primary }}33; color: {{ $primaryDark }};">+</button>
+                        <button type="button" @click="qty = Math.min(5, qty + 1)" :disabled="qty >= 5" class="w-11 h-11 rounded-xl border-2 text-lg font-bold flex items-center justify-center active:scale-90 transition-all duration-150 disabled:opacity-30 disabled:active:scale-100" style="border-color: {{ $primary }}33; color: {{ $primaryDark }};">+</button>
                     </div>
+                    <p class="text-xs text-gray-400 mt-1.5" x-show="qty >= 5" x-cloak>প্রতি অর্ডারে সর্বোচ্চ ৫টি নেওয়া যাবে। আরও প্রয়োজন হলে আলাদা অর্ডার করুন।</p>
                     <input type="hidden" name="quantity" :value="qty">
                 </div>
 

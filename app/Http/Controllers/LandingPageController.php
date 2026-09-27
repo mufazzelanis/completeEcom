@@ -36,7 +36,10 @@ class LandingPageController extends Controller
                     $fail($problem);
                 }
             }],
-            'quantity' => 'nullable|integer|min:1|max:99',
+            // Capped at 5 per order — landing pages are a single-product impulse-buy funnel,
+            // not a bulk ordering form; a higher quantity here is far more likely to be a
+            // fat-fingered/bot submission than a genuine bulk buyer (who'd contact the shop).
+            'quantity' => 'nullable|integer|min:1|max:5',
         ];
         if ($landingPage->collect_address) {
             $rules['address'] = ($landingPage->require_address ? 'required' : 'nullable') . '|string|max:500';
