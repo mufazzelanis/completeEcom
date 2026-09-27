@@ -46,9 +46,14 @@ $rc = $riskColors[$riskLevel];
             <div class="space-y-4">
                 @foreach($order->items as $item)
                     <div class="flex items-center space-x-4 pb-4 border-b border-gray-100 last:border-0 last:pb-0">
-                        <div class="w-16 h-16 bg-gray-100 rounded-xl overflow-hidden flex-shrink-0">
+                        {{-- object-contain (not cover) — a product photo is rarely a neat square (tall
+                             bottle, wide box, whatever), and cropping it to fill a 64x64 box zooms in
+                             on some random slice of it (e.g. just a label, cap missing) instead of
+                             showing the actual product. Padding + a soft background keeps it from
+                             looking like a stamp-sized thumbnail floating on white. --}}
+                        <div class="w-16 h-16 bg-gray-50 border border-gray-100 rounded-xl overflow-hidden flex-shrink-0 flex items-center justify-center p-1.5">
                             @if($item->product && $item->product->image)
-                                <img src="{{ Storage::url($item->product->image) }}" class="w-full h-full object-cover">
+                                <img src="{{ Storage::url($item->product->image) }}" class="max-w-full max-h-full object-contain">
                             @endif
                         </div>
                         <div class="flex-1">
