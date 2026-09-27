@@ -71,22 +71,144 @@
     {{-- Thank You state — same URL as the landing page itself (redirected back here after a
          successful order), rather than a separate route, so there's only ever one link to
          share/remember for this campaign. --}}
-    <div class="text-center py-20 px-6 lp-fade-up">
-        <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-            <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-        </div>
-        <h1 class="text-2xl font-extrabold text-gray-900 mb-3">{{ $landingPage->thank_you_heading }}</h1>
-        @if($landingPage->thank_you_message)
-            <p class="text-gray-500 mb-4">{{ $landingPage->thank_you_message }}</p>
-        @endif
-        <p class="text-sm text-gray-400 font-mono mb-8">Order #{{ session('order_success') }}</p>
+    <div class="relative text-center py-14 px-6 overflow-hidden">
+        {{-- Confetti is injected here on load — see the script below. --}}
+        <div id="ty-confetti" class="pointer-events-none fixed inset-0 overflow-hidden z-[60]" aria-hidden="true"></div>
+        <div class="lp-mesh w-40 h-40 -top-10 -left-10" style="background: {{ $primary }};"></div>
+        <div class="lp-mesh w-32 h-32 top-16 -right-10" style="background: {{ $primary }}; animation-delay: -4s;"></div>
 
-        <a href="{{ route('shop.index') }}" class="inline-flex w-full items-center justify-center gap-2 border-2 font-bold py-3.5 rounded-xl text-base transition hover:opacity-80 active:scale-[0.99]"
-           style="border-color: {{ $primary }}; color: {{ $primary }};">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
-            {{ $landingPage->thank_you_button_text ?: 'আরও প্রোডাক্ট দেখুন' }}
-        </a>
+        <div class="relative ty-reveal">
+            <div class="relative w-20 h-20 mx-auto mb-6">
+                <span class="absolute inset-0 rounded-full lp-pulse" style="background: #22c55e22;"></span>
+                <svg class="relative w-20 h-20" viewBox="0 0 80 80" fill="none">
+                    <circle cx="40" cy="40" r="36" stroke="#22c55e" stroke-width="4" fill="#f0fdf4" class="ty-circle"/>
+                    <path d="M25 41l10 10 20-22" stroke="#22c55e" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" fill="none" class="ty-check"/>
+                </svg>
+            </div>
+
+            <h1 class="text-2xl font-extrabold text-gray-900 mb-3">{{ $landingPage->thank_you_heading }}</h1>
+            @if($landingPage->thank_you_message)
+                <p class="text-gray-500 mb-5 leading-relaxed">{{ $landingPage->thank_you_message }}</p>
+            @endif
+
+            <div class="inline-flex items-center gap-2 bg-gray-50 border border-gray-100 rounded-full pl-4 pr-1.5 py-1.5 mb-8">
+                <span class="text-xs text-gray-400">Order</span>
+                <span id="ty-order-no" class="text-sm font-mono font-bold text-gray-700">#{{ session('order_success') }}</span>
+                <button type="button" onclick="lpCopyOrderNo(this)" class="w-7 h-7 rounded-full flex items-center justify-center hover:bg-gray-200 active:scale-90 transition" title="কপি করুন" aria-label="Order নম্বর কপি করুন">
+                    <svg class="w-3.5 h-3.5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                </button>
+            </div>
+
+            {{-- A simple visual read of where things stand — matches the confirmation-call
+                 message above, not a live tracker (this store has no live courier status feed). --}}
+            <div class="flex items-start justify-center mb-8 px-1">
+                @php $tySteps = ['অর্ডার সম্পন্ন', 'নিশ্চিতকরণ কল', 'ডেলিভারি']; @endphp
+                @foreach($tySteps as $i => $label)
+                    <div class="flex items-center {{ $i < count($tySteps) - 1 ? 'flex-1' : '' }}">
+                        <div class="flex flex-col items-center gap-1.5 shrink-0 w-16">
+                            <span class="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0 {{ $i === 0 ? '' : 'lp-badge-pulse' }}"
+                                  style="{{ $i === 0 ? 'background:#22c55e;color:#fff' : 'background:' . $primary . '26;color:' . $primaryDark }}">
+                                @if($i === 0)
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
+                                @else
+                                    {{ $i + 1 }}
+                                @endif
+                            </span>
+                            <span class="text-[10px] text-gray-400 font-medium leading-tight">{{ $label }}</span>
+                        </div>
+                        @if($i < count($tySteps) - 1)
+                            <span class="flex-1 h-0.5 rounded-full -mt-4" style="background: {{ $i === 0 ? '#22c55e' : '#e5e7eb' }};"></span>
+                        @endif
+                    </div>
+                @endforeach
+            </div>
+
+            <a href="{{ route('shop.index') }}" class="ty-outline-btn group inline-flex w-full items-center justify-center gap-2 border-2 font-bold py-3.5 rounded-xl text-base active:scale-[0.98]">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
+                {{ $landingPage->thank_you_button_text ?: 'আরও প্রোডাক্ট দেখুন' }}
+            </a>
+        </div>
     </div>
+    <style>
+        @keyframes ty-pop{0%{opacity:0;transform:translateY(16px) scale(.96)}60%{opacity:1;transform:translateY(-4px) scale(1.02)}100%{opacity:1;transform:translateY(0) scale(1)}}
+        .ty-reveal{animation:ty-pop .7s cubic-bezier(.22,1,.36,1) both}
+        .ty-circle{stroke-dasharray:227;stroke-dashoffset:227;animation:ty-circle-draw .6s ease-out forwards}
+        .ty-check{stroke-dasharray:46;stroke-dashoffset:46;animation:ty-check-draw .35s ease-out .55s forwards}
+        @keyframes ty-circle-draw{to{stroke-dashoffset:0}}
+        @keyframes ty-check-draw{to{stroke-dashoffset:0}}
+        .ty-outline-btn{border-color:{{ $primary }};color:{{ $primary }};transition:background-color .3s ease,color .3s ease,transform .15s ease}
+        .ty-outline-btn:hover{background-color:{{ $primary }};color:#fff}
+        .ty-outline-btn svg{transition:transform .3s ease}
+        .ty-outline-btn:hover svg{transform:translateX(3px)}
+        @media (prefers-reduced-motion: reduce){
+            .ty-reveal{animation:none!important;opacity:1!important;transform:none!important}
+            .ty-circle,.ty-check{animation:none!important;stroke-dashoffset:0!important}
+        }
+    </style>
+    <script>
+        // Confetti burst — same self-contained technique used on the main checkout's thank-you
+        // page (checkout/success.blade.php), reimplemented here since this page doesn't share
+        // that layout. Two-layer trick: the outer piece falls while spinning, the inner piece
+        // independently sways side to side, so it flutters instead of dropping like a rock.
+        // Skipped entirely for anyone who has asked their OS/browser for reduced motion.
+        function lpLaunchConfetti() {
+            if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+            var container = document.getElementById('ty-confetti');
+            if (!container) return;
+            var colors = ['#f97316', '#ec4899', '#6366f1', '#22c55e', '#eab308', '#06b6d4'];
+            var total = window.innerWidth < 640 ? 50 : 90;
+            for (var i = 0; i < total; i++) {
+                (function () {
+                    var piece = document.createElement('div');
+                    piece.style.position = 'absolute';
+                    piece.style.top = '-5vh';
+                    piece.style.willChange = 'transform, opacity';
+                    piece.style.left = (Math.random() * 100) + '%';
+                    var fallDuration = 2.6 + Math.random() * 2;
+                    var spin = (Math.random() < 0.5 ? -1 : 1) * (360 + Math.random() * 360);
+                    piece.style.animation = 'ty-confetti-fall ' + fallDuration + 's linear ' + (Math.random() * 0.5) + 's forwards';
+                    piece.style.setProperty('--ty-spin', spin + 'deg');
+
+                    var inner = document.createElement('span');
+                    var size = 6 + Math.random() * 7;
+                    var isCircle = Math.random() < 0.4;
+                    inner.style.display = 'block';
+                    inner.style.width = size + 'px';
+                    inner.style.height = (isCircle ? size : size * 2.2) + 'px';
+                    inner.style.background = colors[Math.floor(Math.random() * colors.length)];
+                    inner.style.borderRadius = isCircle ? '50%' : '2px';
+                    inner.style.animation = 'ty-confetti-sway ' + (0.5 + Math.random() * 0.5) + 's ease-in-out infinite alternate';
+
+                    piece.appendChild(inner);
+                    piece.addEventListener('animationend', function () { piece.remove(); });
+                    container.appendChild(piece);
+                })();
+            }
+        }
+        var lpConfettiStyle = document.createElement('style');
+        lpConfettiStyle.textContent = '@keyframes ty-confetti-fall{0%{transform:translateY(0) rotate(0)}85%{opacity:1}100%{transform:translateY(115vh) rotate(var(--ty-spin,540deg));opacity:0}}@keyframes ty-confetti-sway{0%{transform:translateX(-12px)}100%{transform:translateX(12px)}}';
+        document.head.appendChild(lpConfettiStyle);
+
+        function lpCopyOrderNo(btn) {
+            var text = document.getElementById('ty-order-no').textContent.trim();
+            var done = function () {
+                var original = btn.innerHTML;
+                btn.innerHTML = '<svg class="w-3.5 h-3.5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>';
+                setTimeout(function () { btn.innerHTML = original; }, 1200);
+            };
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text).then(done).catch(function () {});
+            } else {
+                var ta = document.createElement('textarea');
+                ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+                document.body.appendChild(ta); ta.select();
+                try { document.execCommand('copy'); } catch (e) {}
+                document.body.removeChild(ta); done();
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function () { setTimeout(lpLaunchConfetti, 550); });
+    </script>
 
     @php
         $adsConversionId = $landingPage->google_ads_conversion_id ?: setting('google_ads_conversion_id', '');
