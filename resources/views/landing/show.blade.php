@@ -106,18 +106,30 @@
                 @foreach($tySteps as $i => $label)
                     <div class="flex items-center {{ $i < count($tySteps) - 1 ? 'flex-1' : '' }}">
                         <div class="flex flex-col items-center gap-1.5 shrink-0 w-16">
-                            <span class="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0 {{ $i === 0 ? '' : 'lp-badge-pulse' }}"
-                                  style="{{ $i === 0 ? 'background:#22c55e;color:#fff' : 'background:' . $primary . '26;color:' . $primaryDark }}">
+                            <span class="relative w-7 h-7 shrink-0">
                                 @if($i === 0)
-                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
-                                @else
-                                    {{ $i + 1 }}
+                                    <span class="ty-step-ring absolute inset-0 rounded-full" style="background: #22c55e66;"></span>
+                                @elseif($i === 1)
+                                    <span class="ty-step-ring absolute inset-0 rounded-full" style="background: {{ $primary }}4d; animation-delay: .5s;"></span>
                                 @endif
+                                <span class="ty-step-badge absolute inset-0 rounded-full flex items-center justify-center text-xs font-bold shadow-sm"
+                                      style="animation-delay: {{ $i * 0.18 }}s; {{ $i === 0 ? 'background:#22c55e;color:#fff' : 'background:' . $primary . '26;color:' . $primaryDark }}">
+                                    @if($i === 0)
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
+                                    @else
+                                        {{ $i + 1 }}
+                                    @endif
+                                </span>
                             </span>
                             <span class="text-[10px] text-gray-400 font-medium leading-tight">{{ $label }}</span>
                         </div>
                         @if($i < count($tySteps) - 1)
-                            <span class="flex-1 h-0.5 rounded-full -mt-4" style="background: {{ $i === 0 ? '#22c55e' : '#e5e7eb' }};"></span>
+                            <span class="relative flex-1 h-0.5 rounded-full -mt-4 bg-gray-200 overflow-visible">
+                                @if($i === 0)
+                                    <span class="ty-line-fill absolute inset-0 rounded-full" style="background: linear-gradient(90deg, #22c55e, {{ $primary }}66); animation-delay: .55s;"></span>
+                                    <span class="ty-line-dot" style="animation-delay: 1.5s;"></span>
+                                @endif
+                            </span>
                         @endif
                     </div>
                 @endforeach
@@ -140,9 +152,28 @@
         .ty-outline-btn:hover{background-color:{{ $primary }};color:#fff}
         .ty-outline-btn svg{transition:transform .3s ease}
         .ty-outline-btn:hover svg{transform:translateX(3px)}
+
+        /* Order-status steps: each badge pops in with a small overshoot, the completed step
+           gets a one-shot success ring and the "next up" step gets its own softer ring so the
+           eye reads it as "coming next" rather than equally-distant as the last step. The first
+           connector fills left-to-right (green fading into the brand color) with a small dot
+           that keeps drifting along it, reading as "moving toward the next step" motion. */
+        @keyframes ty-step-pop{0%{opacity:0;transform:scale(.4)}60%{opacity:1;transform:scale(1.18)}100%{opacity:1;transform:scale(1)}}
+        .ty-step-badge{animation:ty-step-pop .55s cubic-bezier(.34,1.56,.64,1) both}
+        @keyframes ty-ring-ping{0%{transform:scale(1);opacity:.65}100%{transform:scale(2.3);opacity:0}}
+        .ty-step-ring{animation:ty-ring-ping 1.7s cubic-bezier(.22,.61,.36,1) infinite}
+        @keyframes ty-line-grow{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+        .ty-line-fill{transform-origin:left;animation:ty-line-grow 1s cubic-bezier(.22,.61,.36,1) both}
+        @keyframes ty-dot-travel{0%{left:0;opacity:0}12%{opacity:1}88%{opacity:1}100%{left:100%;opacity:0}}
+        .ty-line-dot{position:absolute;top:50%;width:7px;height:7px;margin-top:-3.5px;margin-left:-3.5px;border-radius:9999px;background:#22c55e;box-shadow:0 0 6px 1px #22c55e99;animation:ty-dot-travel 2.4s ease-in-out infinite}
+
         @media (prefers-reduced-motion: reduce){
             .ty-reveal{animation:none!important;opacity:1!important;transform:none!important}
             .ty-circle,.ty-check{animation:none!important;stroke-dashoffset:0!important}
+            .ty-step-badge{animation:none!important;opacity:1!important;transform:none!important}
+            .ty-step-ring{display:none!important}
+            .ty-line-fill{animation:none!important;transform:none!important}
+            .ty-line-dot{display:none!important}
         }
     </style>
     <script>
