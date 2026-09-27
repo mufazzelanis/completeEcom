@@ -372,6 +372,35 @@
         .footer strong {
             color: {{ $accentColor }};
         }
+
+        .signature-img {
+            max-height: 50px;
+            max-width: 160px;
+            margin-bottom: 4px;
+        }
+
+        .signature-line {
+            border-top: 1px solid #9ca3af;
+            padding-top: 4px;
+            font-size: 9.5px;
+            color: #6b7280;
+        }
+
+        /* Diagonal status stamp for cancelled/refunded orders — `position: fixed` repeats it
+           on every page dompdf renders, same trick used for running headers/footers. */
+        .watermark {
+            position: fixed;
+            top: 320px;
+            left: 0;
+            width: 100%;
+            text-align: center;
+            font-size: 90px;
+            font-weight: 800;
+            color: #dc2626;
+            opacity: 0.12;
+            letter-spacing: 12px;
+            transform: rotate(-25deg);
+        }
     </style>
 </head>
 
@@ -408,6 +437,18 @@ $logoAbsolutePath = null;
 if ($logoPath && \Illuminate\Support\Facades\Storage::disk('public')->exists($logoPath)) {
     $logoAbsolutePath = \Illuminate\Support\Facades\Storage::disk('public')->path($logoPath);
         }
+
+$invoiceTitle = setting('invoice_title') ?: 'INVOICE';
+$taxNumber = setting('invoice_tax_number');
+$bankDetails = setting('invoice_bank_details');
+$showSku = setting('invoice_show_sku', '1') == '1';
+$showWatermark = setting('invoice_show_watermark', '1') == '1' && in_array($order->status, ['cancelled', 'refunded']);
+
+$signaturePath = setting('invoice_signature');
+$signatureAbsolutePath = null;
+if ($signaturePath && \Illuminate\Support\Facades\Storage::disk('public')->exists($signaturePath)) {
+    $signatureAbsolutePath = \Illuminate\Support\Facades\Storage::disk('public')->path($signaturePath);
+}
     @endphp
     <div class="page">
 
@@ -426,10 +467,13 @@ if ($logoPath && \Illuminate\Support\Facades\Storage::disk('public')->exists($lo
                         {{ $storeEmail }}<br>
                         {{ $storePhone }}<br>
                         {{ $storeAddress }}
+                        @if($taxNumber)
+                            <br>{{ $taxNumber }}
+                        @endif
                     </div>
                 </td>
                 <td class="invoice-title">
-                    <h1>INVOICE</h1>
+                    <h1>{{ $invoiceTitle }}</h1>
                     <div class="inv-number">{{ $invoiceNumber }}</div>
                     <div style="margin-top:10px;">
                         <span class="badge badge-{{ $order->status }}">{{ ucfirst($order->status) }}</span>
@@ -504,7 +548,7 @@ if ($logoPath && \Illuminate\Support\Facades\Storage::disk('public')->exists($lo
                             @if ($item->variant_label)
                                 <div class="prod-sku">{{ $item->variant_label }}</div>
                             @endif
-                            @if ($item->product?->sku)
+                            @if ($showSku && $item->product?->sku)
                                 <div class="prod-sku">SKU: {{ $item->product->sku }}</div>
                             @endif
                         </td>
@@ -570,6 +614,25 @@ if ($logoPath && \Illuminate\Support\Facades\Storage::disk('public')->exists($lo
             </div>
         @endif
 
+        @if ($bankDetails)
+            <div class="note-box">
+                <h4>Bank / Payment Details</h4>
+                <p>{{ $bankDetails }}</p>
+            </div>
+        @endif
+
+        @if ($signatureAbsolutePath)
+            <table style="width:100%; margin-top:30px;">
+                <tr>
+                    <td></td>
+                    <td style="width:200px; text-align:center;">
+                        <img src="{{ $signatureAbsolutePath }}" class="signature-img" alt="Signature">
+                        <div class="signature-line">Authorized Signature</div>
+                    </td>
+                </tr>
+            </table>
+        @endif
+
         {{-- Footer --}}
         <div class="footer">
             <p>
@@ -578,6 +641,10 @@ if ($logoPath && \Illuminate\Support\Facades\Storage::disk('public')->exists($lo
                 This is a computer-generated invoice and does not require a signature.
             </p>
         </div>
+
+        @if ($showWatermark)
+            <div class="watermark">{{ strtoupper($order->status) }}</div>
+        @endif
 
     </div>
 </body>

@@ -61,12 +61,63 @@
     </div>
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Invoice Title</label>
+            <input type="text" name="invoice_title" value="{{ setting('invoice_title', 'INVOICE') }}"
+                   class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-orange-500"
+                   placeholder="INVOICE">
+            <p class="text-xs text-gray-400 mt-1">The big heading top-right — e.g. change to "RECEIPT" or "ইনভয়েস".</p>
+        </div>
+        <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Payment Due (days)</label>
             <input type="number" name="invoice_due_days" value="{{ setting('invoice_due_days', '0') }}"
                    min="0"
                    class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-orange-500">
             <p class="text-xs text-gray-400 mt-1">0 = due immediately</p>
         </div>
+        <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">BIN / Tax ID</label>
+            <input type="text" name="invoice_tax_number" value="{{ setting('invoice_tax_number', '') }}"
+                   class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-orange-500"
+                   placeholder="e.g. BIN 000000000-0000">
+            <p class="text-xs text-gray-400 mt-1">Shown under your business address. Left blank = hidden.</p>
+        </div>
+    </div>
+    <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Bank / Payment Details</label>
+        <textarea name="invoice_bank_details" rows="3"
+                  class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-orange-500"
+                  placeholder="Bank: ... | Account Name: ... | Account No: ... | Branch: ...">{{ setting('invoice_bank_details', '') }}</textarea>
+        <p class="text-xs text-gray-400 mt-1">Printed as its own box on the invoice — handy for bank-transfer orders. Left blank = hidden.</p>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
+        <label class="flex items-center gap-2 cursor-pointer">
+            <input type="hidden" name="invoice_show_sku" value="0">
+            <input type="checkbox" name="invoice_show_sku" value="1" class="rounded text-orange-600"
+                   @checked(setting('invoice_show_sku', '1') == '1')>
+            <span class="text-sm text-gray-700">Show product SKU on invoice</span>
+        </label>
+        <label class="flex items-center gap-2 cursor-pointer">
+            <input type="hidden" name="invoice_show_watermark" value="0">
+            <input type="checkbox" name="invoice_show_watermark" value="1" class="rounded text-orange-600"
+                   @checked(setting('invoice_show_watermark', '1') == '1')>
+            <span class="text-sm text-gray-700">Stamp a "CANCELLED"/"REFUNDED" watermark on those invoices</span>
+        </label>
+    </div>
+    <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Authorized Signature / Stamp</label>
+        @php $signatureUrl = setting_file_url('invoice_signature'); @endphp
+        @if($signatureUrl)
+        <div class="flex items-center gap-3 mb-2">
+            <img src="{{ $signatureUrl }}" alt="Signature" class="h-12 max-w-[160px] object-contain rounded border p-1 bg-gray-50">
+            <label class="flex items-center gap-1.5 text-xs text-red-500 cursor-pointer">
+                <input type="checkbox" name="delete_invoice_signature" value="1" class="rounded">
+                Remove
+            </label>
+        </div>
+        @endif
+        <input type="file" name="invoice_signature" accept="image/*"
+               class="block w-full text-xs text-gray-600 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-medium file:bg-orange-50 file:text-orange-700 hover:file:bg-orange-100">
+        <p class="text-xs text-gray-400 mt-1">Printed above your name in the footer, right-aligned. Optional — a plain "computer-generated" note is used when none is set.</p>
     </div>
 </div>
 
