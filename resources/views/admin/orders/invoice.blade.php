@@ -417,7 +417,10 @@
 
 $storeName = setting('company_name') ?: setting('site_name', 'ShopVista');
 $storeEmail = setting('company_email') ?: 'support@shopvista.com';
-$storePhone = setting('company_phone') ?: '+880 1700-000000';
+// No placeholder fallback for the phone — unlike email/address, a fake "+880 1700-000000"
+// on a real invoice reads as a real (wrong) contact number, not obviously a placeholder.
+// Left blank in Settings -> General -> Company Phone, the line is simply omitted.
+$storePhone = setting('company_phone');
 $storeAddress = setting('company_address') ?: 'Dhaka, Bangladesh';
 $footerText = setting('invoice_footer_text', 'Thank you for shopping with us!');
 $invoiceTerms = setting('invoice_terms');
@@ -465,7 +468,9 @@ if ($signaturePath && \Illuminate\Support\Facades\Storage::disk('public')->exist
                     @endif
                     <div class="brand-contact">
                         {{ $storeEmail }}<br>
-                        {{ $storePhone }}<br>
+                        @if($storePhone)
+                            {{ $storePhone }}<br>
+                        @endif
                         {{ $storeAddress }}
                         @if($taxNumber)
                             <br>{{ $taxNumber }}

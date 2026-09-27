@@ -56,6 +56,7 @@
             <input type="text" name="company_phone" value="{{ setting('company_phone', '') }}"
                    class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-orange-500"
                    placeholder="+880 1700-000000">
+            <p class="text-xs text-gray-400 mt-1">Printed in the invoice header when filled in. Left blank, the phone line is simply left out — no placeholder number is ever shown.</p>
         </div>
         <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Support Email</label>
