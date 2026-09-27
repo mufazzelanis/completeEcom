@@ -662,7 +662,10 @@
             <form action="{{ route('landing.order', $landingPage) }}" method="POST" class="space-y-4">
                 @csrf
                 <div>
-                    <label class="block text-base font-medium text-gray-700 mb-1">আপনার নাম <span class="text-red-500">*</span></label>
+                    <label class="flex items-center gap-1.5 text-base font-bold text-gray-900 mb-1.5">
+                        <span class="w-1 h-4 rounded-full shrink-0" style="background: {{ $primary }};"></span>
+                        আপনার নাম <span class="text-red-500">*</span>
+                    </label>
                     <div class="relative">
                         <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-gray-400">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
@@ -672,7 +675,10 @@
                     </div>
                 </div>
                 <div>
-                    <label class="block text-base font-medium text-gray-700 mb-1">মোবাইল নম্বর <span class="text-red-500">*</span></label>
+                    <label class="flex items-center gap-1.5 text-base font-bold text-gray-900 mb-1.5">
+                        <span class="w-1 h-4 rounded-full shrink-0" style="background: {{ $primary }};"></span>
+                        মোবাইল নম্বর <span class="text-red-500">*</span>
+                    </label>
                     <div class="relative">
                         <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-gray-400">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>
@@ -685,7 +691,8 @@
 
                 @if($landingPage->collect_address)
                 <div>
-                    <label class="block text-base font-medium text-gray-700 mb-1">
+                    <label class="flex items-center gap-1.5 text-base font-bold text-gray-900 mb-1.5">
+                        <span class="w-1 h-4 rounded-full shrink-0" style="background: {{ $primary }};"></span>
                         সম্পূর্ণ ঠিকানা @if($landingPage->require_address)<span class="text-red-500">*</span>@endif
                     </label>
                     <textarea name="address" rows="2" {{ $landingPage->require_address ? 'required' : '' }}
@@ -695,7 +702,10 @@
 
                 @if(filled($landingPage->delivery_zones))
                 <div>
-                    <label class="block text-base font-medium text-gray-700 mb-2">ডেলিভারি এলাকা</label>
+                    <label class="flex items-center gap-1.5 text-base font-bold text-gray-900 mb-2">
+                        <span class="w-1 h-4 rounded-full shrink-0" style="background: {{ $primary }};"></span>
+                        ডেলিভারি এলাকা
+                    </label>
                     <div class="space-y-2">
                         @foreach($landingPage->delivery_zones as $i => $zone)
                         <label class="flex items-center justify-between border rounded-xl px-4 py-3 cursor-pointer transition-all duration-200 hover:shadow-sm"
@@ -714,7 +724,10 @@
                 @endif
 
                 <div>
-                    <label class="block text-base font-medium text-gray-700 mb-2">পরিমাণ</label>
+                    <label class="flex items-center gap-1.5 text-base font-bold text-gray-900 mb-2">
+                        <span class="w-1 h-4 rounded-full shrink-0" style="background: {{ $primary }};"></span>
+                        পরিমাণ
+                    </label>
                     <div class="flex items-center gap-3">
                         <button type="button" @click="qty = Math.max(1, qty - 1)" class="w-11 h-11 rounded-xl border-2 text-lg font-bold flex items-center justify-center active:scale-90 transition-all duration-150" style="border-color: {{ $primary }}33; color: {{ $primaryDark }};">−</button>
                         <span class="w-10 text-center font-extrabold text-lg" x-text="qty"></span>
@@ -725,7 +738,8 @@
 
                 @foreach($landingPage->order_form_fields ?? [] as $field)
                 <div>
-                    <label class="block text-base font-medium text-gray-700 mb-1">
+                    <label class="flex items-center gap-1.5 text-base font-bold text-gray-900 mb-1.5">
+                        <span class="w-1 h-4 rounded-full shrink-0" style="background: {{ $primary }};"></span>
                         {{ $field['label'] }} @if($field['required'])<span class="text-red-500">*</span>@endif
                     </label>
                     @if($field['type'] === 'textarea')
