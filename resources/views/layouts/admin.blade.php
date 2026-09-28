@@ -172,12 +172,12 @@ $adminNavIndex = [
     </div>
 
     <!-- Sidebar -->
-    <aside class="fixed inset-y-0 left-0 z-50 w-64 bg-gray-900 text-white flex flex-col flex-shrink-0 overflow-y-auto transform transition-transform duration-200 ease-in-out lg:translate-x-0 lg:static lg:z-auto"
+    <aside id="admin-sidebar" class="fixed inset-y-0 left-0 z-50 w-64 bg-gray-900 text-white flex flex-col flex-shrink-0 transform transition-transform duration-200 ease-in-out lg:translate-x-0 lg:relative lg:z-30"
            :class="$store.adminSidebar.open ? 'translate-x-0' : '-translate-x-full'">
         <!-- Logo -->
-        <div class="flex items-center justify-between px-6 py-5 border-b border-gray-700">
-            <div class="flex items-center space-x-3">
-                @php $logoUrl = setting_file_url('site_logo'); @endphp
+        <div class="sb-header flex items-center justify-between px-6 py-5 border-b border-gray-700 flex-shrink-0">
+            @php $logoUrl = setting_file_url('site_logo'); $iconUrl = setting_file_url('favicon') ?: $logoUrl; @endphp
+            <div class="sb-logo-full flex items-center space-x-3 min-w-0">
                 @if($logoUrl)
                 {{-- Logo only when one's set — the name/"Admin Panel" label was redundant
                      clutter next to an already-identifiable logo. --}}
@@ -192,10 +192,32 @@ $adminNavIndex = [
                 </div>
                 @endif
             </div>
+            {{-- Shown only in the collapsed icon rail (desktop) — a compact stand-in for the
+                 wordmark above, which has no room once the sidebar is down to icon width. --}}
+            <div class="sb-logo-icon hidden">
+                @if($iconUrl)
+                    <img src="{{ $iconUrl }}" alt="{{ setting('site_name','ShopVista') }}" class="w-8 h-8 object-contain rounded">
+                @else
+                    <div class="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <span class="text-white font-bold">{{ strtoupper(substr(setting('site_name','S'),0,1)) }}</span>
+                    </div>
+                @endif
+            </div>
             <button @click="$store.adminSidebar.open = false" class="lg:hidden text-gray-400 hover:text-white">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
             </button>
         </div>
+
+        {{-- Collapse / expand the whole sidebar down to an icon-only rail — desktop only (the
+             mobile sidebar is already an off-canvas drawer, an icon rail wouldn't gain anything
+             there). Sits on the sidebar's own edge rather than floating past it, since the aside
+             no longer clips overflow (see the removed overflow-y-auto above) but the click target
+             still belongs visually to the sidebar, not the page content beside it. --}}
+        <button type="button" data-sidebar-collapse-toggle
+                class="hidden lg:flex absolute -right-3 top-[4.5rem] w-6 h-6 rounded-full bg-gray-800 border border-gray-700 text-gray-300 items-center justify-center hover:bg-gray-700 hover:text-white transition shadow-md z-10"
+                aria-label="Collapse sidebar" title="Collapse sidebar">
+            <svg class="sb-collapse-chev w-3.5 h-3.5 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"/></svg>
+        </button>
 
         <nav class="admin-nav-scroll flex-1 px-4 py-4 space-y-1 overflow-y-auto" data-admin-nav data-nav-init="pending" aria-label="Admin navigation">
             {{-- Sticky so it stays reachable however far the menu is scrolled --}}
@@ -210,14 +232,14 @@ $adminNavIndex = [
 
 
             {{-- Dashboard --}}
-            <a href="{{ route('admin.dashboard') }}"
-                class="flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium transition {{ request()->routeIs('admin.dashboard') ? 'bg-orange-600 text-white' : 'text-gray-300 hover:bg-gray-800' }}">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+            <a href="{{ route('admin.dashboard') }}" title="Dashboard"
+                class="sb-toplevel flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium transition {{ request()->routeIs('admin.dashboard') ? 'bg-orange-600 text-white' : 'text-gray-300 hover:bg-gray-800' }}">
+                <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
                 <span>Dashboard</span>
             </a>
-            <a href="{{ route('admin.home-sections.index') }}"
-                class="flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium transition {{ request()->routeIs('admin.home-sections.*') ? 'bg-orange-600 text-white' : 'text-gray-300 hover:bg-gray-800' }}">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h4m0 0v6m0-6L4 18m10-6h6m-6 0v6m0-6l4 6"/></svg>
+            <a href="{{ route('admin.home-sections.index') }}" title="Homepage Sections"
+                class="sb-toplevel flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium transition {{ request()->routeIs('admin.home-sections.*') ? 'bg-orange-600 text-white' : 'text-gray-300 hover:bg-gray-800' }}">
+                <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h4m0 0v6m0-6L4 18m10-6h6m-6 0v6m0-6l4 6"/></svg>
                 <span>Homepage Sections</span>
             </a>
 
@@ -703,9 +725,9 @@ $adminNavIndex = [
 
         </nav>
 
-        <div class="px-4 py-4 border-t border-gray-700">
-            <a href="{{ route('home') }}" class="flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm text-gray-300 hover:bg-gray-800 transition">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+        <div class="px-4 py-4 border-t border-gray-700 flex-shrink-0">
+            <a href="{{ route('home') }}" title="Back to Store" class="sb-toplevel flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm text-gray-300 hover:bg-gray-800 transition">
+                <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
                 <span>Back to Store</span>
             </a>
         </div>

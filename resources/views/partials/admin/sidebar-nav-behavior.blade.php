@@ -7,10 +7,12 @@
 (function () {
     var nav = document.querySelector('[data-admin-nav]');
     if (!nav) return;
+    var sidebar = document.getElementById('admin-sidebar');
 
     try {
-        var OPEN_KEY = 'adminNavOpen';      // localStorage: groups the admin opened by hand (survive across visits)
-        var SCROLL_KEY = 'adminNavScroll';  // sessionStorage: sidebar scroll position (per tab)
+        var OPEN_KEY = 'adminNavOpen';        // localStorage: groups the admin opened by hand (survive across visits)
+        var SCROLL_KEY = 'adminNavScroll';    // sessionStorage: sidebar scroll position (per tab)
+        var COLLAPSED_KEY = 'adminSidebarCollapsed'; // localStorage: whole-sidebar icon-rail mode (desktop only)
 
         var groups = [].slice.call(nav.querySelectorAll('[data-nav-group]'));
         var store = function (area, key, value) {
@@ -24,11 +26,55 @@
         var pinned = load('localStorage', OPEN_KEY);
         if (!Array.isArray(pinned)) pinned = [];
 
+        // Icon-rail collapse — applied up front, same as the group open/closed state above, so
+        // a returning admin who collapsed the sidebar never sees it flash full-width first.
+        // Pure CSS (@media (min-width:1024px) in app.css) makes this a no-op on mobile.
+        var collapseToggle = sidebar ? sidebar.querySelector('[data-sidebar-collapse-toggle]') : null;
+        var setCollapsed = function (collapsed) {
+            if (!sidebar) return;
+            sidebar.setAttribute('data-collapsed', collapsed ? '1' : '0');
+            if (collapseToggle) {
+                collapseToggle.setAttribute('aria-label', collapsed ? 'Expand sidebar' : 'Collapse sidebar');
+                collapseToggle.title = collapsed ? 'Expand sidebar' : 'Collapse sidebar';
+            }
+        };
+        setCollapsed(load('localStorage', COLLAPSED_KEY) === true);
+        if (collapseToggle) {
+            collapseToggle.addEventListener('click', function () {
+                var next = sidebar.getAttribute('data-collapsed') !== '1';
+                setCollapsed(next);
+                store('localStorage', COLLAPSED_KEY, next);
+            });
+        }
+
         var setOpen = function (group, open) {
             group.setAttribute('data-open', open ? '1' : '0');
             var head = group.querySelector('.admin-nav-group__head');
             if (head) head.setAttribute('aria-expanded', open ? 'true' : 'false');
         };
+
+        // Icon-rail flyouts (app.css: `#admin-sidebar[data-collapsed="1"] .admin-nav-group__body`)
+        // are `position: fixed` so <nav>'s own overflow-y:auto (needed for its much-taller-than-
+        // the-sidebar link list) can't clip their width — but that means CSS alone can't place
+        // one under its group, since the group's on-screen position depends on how far the admin
+        // has scrolled the nav. Recomputed on every hover/focus rather than once, so scrolling
+        // the sidebar between visits (or resizing the window) never leaves a flyout stranded next
+        // to the wrong icon.
+        var positionFlyout = function (group) {
+            if (!sidebar || sidebar.getAttribute('data-collapsed') !== '1') return;
+            var body = group.querySelector('.admin-nav-group__body');
+            if (!body) return;
+            var groupRect = group.getBoundingClientRect();
+            var asideRect = sidebar.getBoundingClientRect();
+            body.style.top = Math.max(4, groupRect.top - asideRect.top - 4) + 'px';
+        };
+        groups.forEach(function (g) {
+            g.addEventListener('mouseenter', function () { positionFlyout(g); });
+        });
+        nav.addEventListener('focusin', function (event) {
+            var group = event.target.closest('[data-nav-group]');
+            if (group) positionFlyout(group);
+        });
 
         // The group holding the current page is always open; otherwise only groups pinned open by hand.
         groups.forEach(function (g) {
@@ -76,6 +122,13 @@
         nav.addEventListener('click', function (event) {
             var head = event.target.closest('.admin-nav-group__head');
             if (head) {
+                // In the icon rail, hovering/focusing the head alone reveals its flyout (pure CSS
+                // — see app.css); a click here is just how that same reveal happens on a
+                // touchscreen with no hover, so it must not also silently pin/unpin this group's
+                // open state for whenever the rail expands back to normal.
+                if (sidebar && sidebar.getAttribute('data-collapsed') === '1') {
+                    return;
+                }
                 var group = head.closest('[data-nav-group]');
                 var open = group.getAttribute('data-open') !== '1';
                 setOpen(group, open);
@@ -99,7 +152,16 @@
     } finally {
         // Whatever happened above, never leave the navigation hidden.
         nav.setAttribute('data-nav-init', 'done');
-        requestAnimationFrame(function () { requestAnimationFrame(function () { nav.setAttribute('data-nav-ready', '1'); }); });
+        requestAnimationFrame(function () {
+            requestAnimationFrame(function () {
+                nav.setAttribute('data-nav-ready', '1');
+                // Belt-and-suspenders alongside the parse-blocking script itself: the width
+                // transition (app.css) only turns on after this point, so even if a browser
+                // somehow painted a frame before this script ran, that first frame couldn't
+                // have animated.
+                if (sidebar) sidebar.setAttribute('data-collapse-ready', '1');
+            });
+        });
     }
 })();
 </script>

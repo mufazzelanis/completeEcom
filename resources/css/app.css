@@ -375,3 +375,88 @@ html.dark .prose .blog-promo-link:hover .blog-promo-frame { box-shadow: 0 16px 3
 }
 
 [data-admin-nav] a[aria-current="page"] { box-shadow: inset 3px 0 0 rgba(255, 255, 255, 0.65); }
+
+/* ── Collapsible icon rail (desktop only) ─────────────────────────────────────────────
+ * `data-collapsed` lives on <aside id="admin-sidebar">, set synchronously by
+ * sidebar-nav-behavior.blade.php (same pre-Alpine script that restores the nav-group
+ * state) so the rail never flashes full-width before shrinking. Mobile ignores it
+ * entirely — the phone sidebar is already an off-canvas drawer, shown full-width or not
+ * at all, so "icon-only" has nothing to add there. Standalone links (Dashboard, Homepage
+ * Sections, Back to Store) are marked .sb-toplevel; grouped links keep their normal
+ * label+icon rendering because they only ever appear inside a group's flyout, which is
+ * never itself in icon-only mode. */
+.sb-logo-icon { display: none; }
+.admin-nav-group__icon { display: none; }
+#admin-sidebar[data-collapsed="1"] .sb-collapse-chev { transform: rotate(180deg); }
+
+#admin-sidebar:not([data-collapse-ready="1"]) { transition: none !important; }
+@media (prefers-reduced-motion: reduce) { #admin-sidebar { transition: none !important; } }
+
+@media (min-width: 1024px) {
+    #admin-sidebar { transition: width 0.2s ease; }
+    #admin-sidebar[data-collapsed="1"] { width: 4.5rem; }
+
+    #admin-sidebar[data-collapsed="1"] .sb-header { justify-content: center; padding-left: 0; padding-right: 0; }
+    #admin-sidebar[data-collapsed="1"] .sb-logo-full,
+    #admin-sidebar[data-collapsed="1"] .admin-nav-toolbar,
+    #admin-sidebar[data-collapsed="1"] .sb-toplevel span,
+    #admin-sidebar[data-collapsed="1"] .admin-nav-group__title,
+    #admin-sidebar[data-collapsed="1"] .admin-nav-group__chev { display: none; }
+    #admin-sidebar[data-collapsed="1"] .sb-logo-icon { display: block; }
+
+    #admin-sidebar[data-collapsed="1"] .sb-toplevel,
+    #admin-sidebar[data-collapsed="1"] .admin-nav-group__head { justify-content: center; padding-left: 0.6rem; padding-right: 0.6rem; }
+    #admin-sidebar[data-collapsed="1"] .admin-nav-group__icon { display: flex; color: rgb(156 163 175); }
+    #admin-sidebar[data-collapsed="1"] .admin-nav-group__icon svg { width: 1.15rem; height: 1.15rem; }
+    #admin-sidebar[data-collapsed="1"] .admin-nav-group[data-has-active="1"] .admin-nav-group__icon { color: rgb(249 115 22); }
+
+    /* The group head becomes a plain icon button; hovering/focusing it pops the group's
+       normal (label-and-all) link list out to the right as a floating panel — the
+       standard "collapsed sidebar with flyout submenus" pattern, needing no per-group
+       icon of its own: the flyout already contains real, familiar icon+label rows. */
+    #admin-sidebar[data-collapsed="1"] .admin-nav-group { position: relative; padding-top: 0.25rem; }
+    #admin-sidebar[data-collapsed="1"] .admin-nav-group__dot { position: absolute; top: 0.3rem; right: 0.55rem; }
+    /* `position: fixed` (not absolute) is the point, not an accident: <nav> — a genuine
+       ancestor of every group — has its own overflow-y:auto for the (much taller than the
+       sidebar) link list, and per the overflow spec that makes it clip horizontal overflow
+       too, silently cutting off (and un-hit-testable-ing) the ~80% of the flyout's width
+       that would otherwise sit outside nav's own narrow, collapsed-rail bounds. `position:
+       fixed` escapes that: its containing block becomes #admin-sidebar itself (the nearest
+       ancestor with an active transform — the same `transform` class used for the mobile
+       slide-in), skipping over <nav> entirely, so nothing clips it. `top` is then set
+       per-group by sidebar-nav-behavior.blade.php's `mouseenter`/`focusin` handlers (there's
+       no way for pure CSS to know a scrolled group's on-screen position). */
+    #admin-sidebar[data-collapsed="1"] .admin-nav-group__body {
+        display: block;                 /* override the grid-rows accordion for this mode */
+        position: fixed; left: 100%;
+        width: 14rem; max-height: 75vh; overflow-y: auto;
+        background: rgb(31 41 55); border: 1px solid rgb(55 65 81);
+        border-radius: 0.75rem; padding: 0.6rem;
+        box-shadow: 0 12px 32px -8px rgba(0, 0, 0, 0.5);
+        opacity: 0; visibility: hidden !important;
+        transition: opacity 0.15s ease, visibility 0s linear 0.15s;
+        z-index: 60;
+    }
+    #admin-sidebar[data-collapsed="1"] .admin-nav-group__inner { overflow: visible; }
+    #admin-sidebar[data-collapsed="1"] .admin-nav-group:hover .admin-nav-group__body,
+    #admin-sidebar[data-collapsed="1"] .admin-nav-group:focus-within .admin-nav-group__body {
+        opacity: 1; visibility: visible !important;
+        transition: opacity 0.15s ease;
+    }
+    /* .admin-nav-group__inner's own visibility (above) is otherwise driven purely by
+       data-open — true only for the group holding the current page, or one the admin has
+       pinned open — which has nothing to do with hovering a *collapsed* group's icon.
+       Without this, hovering a closed group showed an empty flyout box: the body itself
+       went visible, but its inner (actual link) content stayed hidden underneath it. */
+    #admin-sidebar[data-collapsed="1"] .admin-nav-group:hover .admin-nav-group__inner,
+    #admin-sidebar[data-collapsed="1"] .admin-nav-group:focus-within .admin-nav-group__inner {
+        visibility: visible !important;
+    }
+    /* A small floating label above the flyout, standing in for the hidden group title. */
+    #admin-sidebar[data-collapsed="1"] .admin-nav-group__body::before {
+        content: attr(data-flyout-title);
+        display: block; padding: 0.2rem 0.6rem 0.5rem;
+        font-size: 0.6875rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase;
+        color: rgb(156 163 175);
+    }
+}
