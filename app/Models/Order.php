@@ -119,24 +119,24 @@ class Order extends Model
     public function getStatusBadgeAttribute(): string
     {
         return match($this->status) {
-            'pending'    => 'bg-yellow-100 text-yellow-800',
-            'processing' => 'bg-blue-100 text-blue-800',
-            'shipped'    => 'bg-purple-100 text-purple-800',
-            'delivered'  => 'bg-green-100 text-green-800',
-            'cancelled'  => 'bg-red-100 text-red-800',
-            'refunded'   => 'bg-gray-100 text-gray-800',
-            default      => 'bg-gray-100 text-gray-800',
+            'pending'    => 'bg-yellow-100 text-yellow-800 dark:bg-yellow-500/15 dark:text-yellow-400',
+            'processing' => 'bg-blue-100 text-blue-800 dark:bg-blue-500/15 dark:text-blue-400',
+            'shipped'    => 'bg-purple-100 text-purple-800 dark:bg-purple-500/15 dark:text-purple-400',
+            'delivered'  => 'bg-green-100 text-green-800 dark:bg-green-500/15 dark:text-green-400',
+            'cancelled'  => 'bg-red-100 text-red-800 dark:bg-red-500/15 dark:text-red-400',
+            'refunded'   => 'bg-gray-100 text-gray-800 dark:bg-gray-500/15 dark:text-gray-400',
+            default      => 'bg-gray-100 text-gray-800 dark:bg-gray-500/15 dark:text-gray-400',
         };
     }
 
     public function getPaymentStatusBadgeAttribute(): string
     {
         return match($this->payment_status) {
-            'paid'    => 'bg-green-100 text-green-800',
-            'pending' => 'bg-yellow-100 text-yellow-800',
-            'failed'  => 'bg-red-100 text-red-800',
-            'refunded'=> 'bg-gray-100 text-gray-800',
-            default   => 'bg-gray-100 text-gray-800',
+            'paid'    => 'bg-green-100 text-green-800 dark:bg-green-500/15 dark:text-green-400',
+            'pending' => 'bg-yellow-100 text-yellow-800 dark:bg-yellow-500/15 dark:text-yellow-400',
+            'failed'  => 'bg-red-100 text-red-800 dark:bg-red-500/15 dark:text-red-400',
+            'refunded'=> 'bg-gray-100 text-gray-800 dark:bg-gray-500/15 dark:text-gray-400',
+            default   => 'bg-gray-100 text-gray-800 dark:bg-gray-500/15 dark:text-gray-400',
         };
     }
 }
