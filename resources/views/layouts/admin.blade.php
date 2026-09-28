@@ -47,7 +47,7 @@
     <style>[x-cloak]{display:none!important}</style>
     @stack('styles')
 </head>
-<body class="bg-gray-100 dark:bg-gray-950 font-sans antialiased transition-colors">
+<body class="bg-gray-100 dark:bg-gray-950 bg-[radial-gradient(circle_at_top_right,rgba(234,88,12,0.05),transparent_45%)] dark:bg-[radial-gradient(circle_at_top_right,rgba(234,88,12,0.07),transparent_45%)] font-sans antialiased transition-colors">
 @include('partials.confirm-modal')
 
 @php
@@ -172,7 +172,7 @@ $adminNavIndex = [
     </div>
 
     <!-- Sidebar -->
-    <aside id="admin-sidebar" class="fixed inset-y-0 left-0 z-50 w-64 bg-gray-900 text-white flex flex-col flex-shrink-0 transform transition-transform duration-200 ease-in-out lg:translate-x-0 lg:relative lg:z-30"
+    <aside id="admin-sidebar" class="fixed inset-y-0 left-0 z-50 w-64 bg-gradient-to-b from-gray-900 to-gray-950 text-white flex flex-col flex-shrink-0 transform transition-transform duration-200 ease-in-out lg:translate-x-0 lg:relative lg:z-30"
            :class="$store.adminSidebar.open ? 'translate-x-0' : '-translate-x-full'">
         <!-- Logo -->
         <div class="sb-header flex items-center justify-between px-6 py-5 border-b border-gray-700 flex-shrink-0">
@@ -737,13 +737,17 @@ $adminNavIndex = [
     <!-- Main Content -->
     <div class="flex-1 flex flex-col overflow-hidden min-w-0">
         <!-- Top Bar -->
-        <header class="bg-white dark:bg-gray-900 shadow-sm px-4 sm:px-6 py-3 flex items-center gap-3 flex-shrink-0 transition-colors">
+        <header class="relative bg-white dark:bg-gray-900 shadow-sm px-4 sm:px-6 py-3 flex items-center gap-3 flex-shrink-0 transition-colors">
+            {{-- Slim brand-gradient hairline — the one spot of color on an otherwise neutral
+                 bar, echoing the sidebar's active-item color without tinting the whole header. --}}
+            <div class="absolute inset-x-0 bottom-0 h-[2px] bg-gradient-to-r from-orange-500 via-red-500 to-orange-500 opacity-70"></div>
+
             <!-- Mobile hamburger -->
             <button @click="$store.adminSidebar.open = true" class="lg:hidden text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white -ml-1 p-1">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
             </button>
 
-            <h1 class="text-lg font-semibold text-gray-800 dark:text-gray-100 flex-shrink-0 hidden sm:block">@yield('title', 'Dashboard')</h1>
+            <h1 class="text-lg font-bold text-gray-800 dark:text-gray-100 tracking-tight flex-shrink-0 hidden sm:block">@yield('title', 'Dashboard')</h1>
 
             <!-- Global Admin Quick Search -->
             <div class="relative flex-1 max-w-sm hidden sm:block" x-data="{
@@ -806,7 +810,7 @@ $adminNavIndex = [
                         @keydown.up.prevent="moveActive(-1)"
                         @keydown.enter.prevent="onEnter()"
                         placeholder="Search products, orders, customers..."
-                        class="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 bg-gray-50 dark:bg-gray-800 text-gray-800 dark:text-gray-100"
+                        class="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-full focus:outline-none focus:ring-4 focus:ring-orange-500/15 focus:border-orange-400 dark:focus:border-orange-500 bg-gray-50 dark:bg-gray-800 text-gray-800 dark:text-gray-100 transition-all"
                         autocomplete="off">
                 </div>
                 <div x-show="open" x-cloak
@@ -940,17 +944,21 @@ $adminNavIndex = [
 
                 {{-- Theme Toggle --}}
                 <button @click="$store.theme.toggle()" type="button"
-                    class="p-2 rounded-lg text-gray-500 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition"
+                    class="p-2 rounded-full text-gray-500 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 hover:rotate-12 transition-all duration-300"
                     :aria-label="$store.theme.dark ? 'Switch to light mode' : 'Switch to dark mode'">
                     <svg x-show="!$store.theme.dark" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
                     <svg x-show="$store.theme.dark" x-cloak class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
                 </button>
 
-                <div class="flex items-center space-x-2">
-                    <div class="w-8 h-8 bg-orange-100 dark:bg-orange-900/40 rounded-full flex items-center justify-center">
-                        <span class="text-orange-600 dark:text-orange-300 font-semibold text-sm">{{ strtoupper(substr(auth()->user()->name, 0, 1)) }}</span>
+                <div class="flex items-center space-x-2.5 pl-2.5 border-l border-gray-100 dark:border-gray-800">
+                    <div class="relative w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 bg-gradient-to-br from-orange-500 to-red-600 shadow-sm shadow-orange-600/20 ring-2 ring-white dark:ring-gray-900">
+                        <span class="text-white font-bold text-sm">{{ strtoupper(substr(auth()->user()->name, 0, 1)) }}</span>
+                        <span class="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-green-500 ring-2 ring-white dark:ring-gray-900" title="Online"></span>
                     </div>
-                    <span class="text-sm font-medium text-gray-700 dark:text-gray-200 hidden sm:inline">{{ auth()->user()->name }}</span>
+                    <div class="hidden sm:block leading-tight">
+                        <span class="block text-sm font-semibold text-gray-700 dark:text-gray-200">{{ auth()->user()->name }}</span>
+                        <span class="block text-[11px] text-gray-400 dark:text-gray-500 capitalize">{{ auth()->user()->role }}</span>
+                    </div>
                 </div>
             </div>
         </header>
