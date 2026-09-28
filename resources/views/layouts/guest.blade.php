@@ -58,6 +58,26 @@
     $panelBackgroundCss = $panelImageUrl
         ? "linear-gradient(160deg, {$primaryRamp['800']}e6, {$accentRamp['800']}e6), url('" . e($panelImageUrl) . "') center/cover"
         : "linear-gradient(160deg, {$primaryColor}, {$accentRamp['700']})";
+
+    // One consistent icon + heading + subheading atop every auth card, so "which page am I
+    // on" reads at a glance instead of dropping straight into bare form fields (login was
+    // previously the only one with no heading at all). two-factor.challenge keeps its own
+    // in-page version instead (its subtitle needs the masked email, which only that view has).
+    $authIcon = match (true) {
+        request()->routeIs('register') => 'user-plus',
+        request()->routeIs('password.request', 'password.reset') => 'key',
+        request()->routeIs('verification.notice', 'password.confirm') => 'shield',
+        default => 'lock',
+    };
+    [$authHeading, $authSubheading] = match (true) {
+        request()->routeIs('register') => ['Create your account', "Join {$siteName} — it only takes a minute."],
+        request()->routeIs('password.request') => ['Forgot your password?', "No problem — we'll email you a link to reset it."],
+        request()->routeIs('password.reset') => ['Set a new password', 'Choose a strong password you haven\'t used before.'],
+        request()->routeIs('password.confirm') => ['Confirm your password', 'This is a secure area — please confirm your password to continue.'],
+        request()->routeIs('verification.notice') => ['Verify your email', "Click the link we emailed you to confirm your address — didn't get it? Resend it below."],
+        request()->routeIs('two-factor.challenge') => [null, null],
+        default => ['Welcome back', "Sign in to continue to your {$siteName} account."],
+    };
 @endphp
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="scroll-smooth">
@@ -188,26 +208,41 @@
             {{-- Decorative blurred shapes --}}
             <div class="pointer-events-none absolute -top-24 -right-24 w-96 h-96 rounded-full bg-white/10 blur-3xl"></div>
             <div class="pointer-events-none absolute -bottom-32 -left-16 w-80 h-80 rounded-full bg-black/10 blur-3xl"></div>
+            {{-- Bottom vignette — keeps the heading/feature text legible over whatever photo
+                 the admin uploads, and reads as a deliberate, cinematic "poster" composition
+                 rather than plain text floating on top of an image. --}}
+            <div class="pointer-events-none absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-black/50 via-black/10 to-transparent"></div>
 
-            {{-- Logo if one's uploaded, otherwise the site name as text — never both, so this
-                 doesn't read as the brand identity repeated twice next to each other. --}}
-            <a href="{{ route('home') }}" class="relative inline-block">
-                @if($logoUrl)
-                    <img src="{{ $logoUrl }}" alt="{{ $siteName }}" class="h-10 max-w-[160px] object-contain drop-shadow">
-                @else
-                    <span class="text-lg font-bold tracking-tight">{{ $siteName }}</span>
+            <div class="relative flex items-center justify-between">
+                {{-- Logo if one's uploaded, otherwise the site name as text — never both, so this
+                     doesn't read as the brand identity repeated twice next to each other. --}}
+                <a href="{{ route('home') }}" class="inline-block">
+                    @if($logoUrl)
+                        <img src="{{ $logoUrl }}" alt="{{ $siteName }}" class="h-10 max-w-[160px] object-contain drop-shadow">
+                    @else
+                        <span class="text-lg font-bold tracking-tight">{{ $siteName }}</span>
+                    @endif
+                </a>
+                @if(request()->secure())
+                <span class="hidden xl:inline-flex items-center gap-1.5 text-[11px] font-medium text-white/70 border border-white/20 rounded-full px-3 py-1 backdrop-blur-sm">
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+                    Encrypted connection
+                </span>
                 @endif
-            </a>
+            </div>
 
             <div class="relative max-w-md">
-                <h2 class="text-3xl font-bold leading-tight">{{ $panelHeading }}</h2>
-                <p class="mt-3 text-white/80 leading-relaxed">{{ $panelSubheading }}</p>
+                <p class="text-[11px] font-semibold uppercase tracking-[0.2em] text-white/60 mb-3">
+                    {{ strtoupper($siteName) }} &middot; Account Access
+                </p>
+                <h2 class="text-4xl font-extrabold leading-[1.1] tracking-tight [text-wrap:balance]">{{ $panelHeading }}</h2>
+                <p class="mt-3.5 text-white/80 leading-relaxed">{{ $panelSubheading }}</p>
 
                 @if($panelFeatures->isNotEmpty())
-                <ul class="mt-8 space-y-3">
+                <ul class="mt-8 space-y-2.5">
                     @foreach($panelFeatures as $feature)
-                    <li class="flex items-start gap-3">
-                        <span class="mt-0.5 flex-shrink-0 w-5 h-5 rounded-full bg-white/15 flex items-center justify-center">
+                    <li class="flex items-center gap-3 rounded-xl border border-white/10 bg-white/[0.06] px-3.5 py-2.5 backdrop-blur-sm transition hover:bg-white/[0.1] hover:border-white/20">
+                        <span class="flex-shrink-0 w-5 h-5 rounded-full bg-white/15 flex items-center justify-center">
                             <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
                         </span>
                         <span class="text-sm text-white/90">{{ $feature }}</span>
@@ -282,7 +317,33 @@
                     </div>
                     @endif
 
-                    <div class="bg-white dark:bg-gray-900 shadow-xl shadow-gray-200/60 dark:shadow-none ring-1 ring-gray-900/5 dark:ring-white/10 rounded-2xl px-6 py-7 sm:px-8 sm:py-8">
+                    <div class="relative bg-white dark:bg-gray-900 shadow-xl shadow-gray-200/60 dark:shadow-black/40 ring-1 ring-gray-900/5 dark:ring-white/10 rounded-2xl px-6 py-7 sm:px-8 sm:py-8 overflow-hidden">
+                        {{-- Slim top accent — the one place the brand color shows up on the
+                             (otherwise neutral) card itself, tying it back to the side panel. --}}
+                        <div class="absolute inset-x-0 top-0 h-1 bg-orange-600"></div>
+
+                        @if($authHeading)
+                        <div class="text-center mb-6">
+                            <div class="mx-auto mb-4 w-14 h-14 rounded-2xl bg-orange-50 dark:bg-orange-500/10 flex items-center justify-center">
+                                @switch($authIcon)
+                                    @case('user-plus')
+                                        <svg class="w-7 h-7 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h8m9-10v6m3-3h-6"/></svg>
+                                        @break
+                                    @case('key')
+                                        <svg class="w-7 h-7 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M15 7a2 2 0 012 2m4 0a6 6 0 11-12 0 6 6 0 0112 0zM4 21l4.878-4.878"/></svg>
+                                        @break
+                                    @case('shield')
+                                        <svg class="w-7 h-7 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+                                        @break
+                                    @default
+                                        <svg class="w-7 h-7 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                                @endswitch
+                            </div>
+                            <h1 class="text-xl font-bold text-gray-900 dark:text-gray-100">{{ $authHeading }}</h1>
+                            <p class="mt-1.5 text-sm text-gray-500 dark:text-gray-400">{{ $authSubheading }}</p>
+                        </div>
+                        @endif
+
                         {{ $slot }}
                     </div>
 
