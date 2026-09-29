@@ -9,6 +9,7 @@ use App\Support\OtpMailer;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\View\View;
 
 class TwoFactorController extends Controller
@@ -43,8 +44,18 @@ class TwoFactorController extends Controller
             ]);
         }
 
-        $code = Otp::generate($user->email, self::PURPOSE);
-        $this->sendCode($user->email, $code);
+        // Same reasoning as TwoFactorChallengeController::create() — a plain page load/
+        // reload reuses the still-valid code; only an explicit "Send a new code" click
+        // (?resend=1) issues a fresh one, throttled so rapid repeat clicks can't spam mail.
+        $throttleKey = 'otp-resend-admin-setup:' . $user->email;
+        $needsFreshCode = ! Otp::activeFor($user->email, self::PURPOSE);
+        $wantsResend = $request->boolean('resend') && ! RateLimiter::tooManyAttempts($throttleKey, 1);
+
+        if ($needsFreshCode || $wantsResend) {
+            $code = Otp::generate($user->email, self::PURPOSE);
+            $this->sendCode($user->email, $code);
+            RateLimiter::hit($throttleKey, 30);
+        }
 
         return view('admin.two-factor.setup', [
             'enabled' => false,

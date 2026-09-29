@@ -18,7 +18,7 @@
             <button type="submit" class="w-full mt-4 bg-orange-600 text-white py-2.5 rounded-xl text-sm font-semibold hover:bg-orange-700 transition">Verify & Enable</button>
         </form>
         <p class="text-center text-xs text-gray-400">
-            Didn't get the email? <a href="{{ route('admin.two-factor.show') }}" class="text-orange-600 hover:text-orange-700 font-medium">Send a new code</a>
+            Didn't get the email? <a href="{{ route('admin.two-factor.show', ['resend' => 1]) }}" class="text-orange-600 hover:text-orange-700 font-medium">Send a new code</a>
         </p>
     </div>
 </div>

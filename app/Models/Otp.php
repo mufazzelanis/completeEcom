@@ -47,6 +47,21 @@ class Otp extends Model
     }
 
     /**
+     * Whether identifier+purpose already has a live, usable code — so a caller (e.g.
+     * a page load/reload) can skip issuing and emailing a brand new one when the
+     * current code is still perfectly good.
+     */
+    public static function activeFor(string $identifier, string $purpose): bool
+    {
+        return static::where('identifier', $identifier)
+            ->where('purpose', $purpose)
+            ->whereNull('verified_at')
+            ->where('expires_at', '>', now())
+            ->where('attempts', '<', self::MAX_ATTEMPTS)
+            ->exists();
+    }
+
+    /**
      * Verify a submitted code. Returns false (without revealing why) for: no
      * matching record, expired, already used, too many failed attempts, or a
      * wrong code — each wrong attempt is counted so this can't be brute-forced.

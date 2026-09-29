@@ -11,6 +11,7 @@ use App\Support\OtpMailer;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\View\View;
 
 class TwoFactorChallengeController extends Controller
@@ -29,10 +30,19 @@ class TwoFactorChallengeController extends Controller
             return redirect()->route('login');
         }
 
-        // A fresh code every time this page loads (including "resend") — cheap since
-        // Otp::generate() invalidates whatever code it's replacing for the same pair.
-        $code = Otp::generate($user->email, self::PURPOSE);
-        $this->sendCode($user->email, $code);
+        // A plain page load (first arrival, a refresh, browser back/forward, etc.) reuses
+        // the still-valid code instead of silently emailing another one every single hit —
+        // only an explicit "Resend code" click (?resend=1) issues a fresh one, and even
+        // that is throttled so rapid repeat clicks can't fire off a burst of emails.
+        $throttleKey = 'otp-resend-login:' . $user->email;
+        $needsFreshCode = ! Otp::activeFor($user->email, self::PURPOSE);
+        $wantsResend = $request->boolean('resend') && ! RateLimiter::tooManyAttempts($throttleKey, 1);
+
+        if ($needsFreshCode || $wantsResend) {
+            $code = Otp::generate($user->email, self::PURPOSE);
+            $this->sendCode($user->email, $code);
+            RateLimiter::hit($throttleKey, 30);
+        }
 
         return view('auth.two-factor-challenge', [
             'maskedEmail' => $this->maskEmail($user->email),
