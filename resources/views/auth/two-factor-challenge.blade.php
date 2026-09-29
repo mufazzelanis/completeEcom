@@ -28,13 +28,6 @@
         </div>
     @endif
 
-    @if($devCode ?? null)
-    <div class="mb-5 rounded-xl border border-amber-200 dark:border-amber-900 bg-amber-50 dark:bg-amber-950/40 px-4 py-3 text-sm text-amber-800 dark:text-amber-400">
-        <strong>Dev only</strong> (never shown in production) — your code is
-        <span class="font-mono font-bold tracking-widest">{{ $devCode }}</span>
-    </div>
-    @endif
-
     <form method="POST" action="{{ route('two-factor.verify') }}"
           x-data="{
               mode: {{ Js::from($oldIsOtp || $oldCode === '' ? 'otp' : 'recovery') }},

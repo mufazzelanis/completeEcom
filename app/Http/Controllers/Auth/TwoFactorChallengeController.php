@@ -35,7 +35,6 @@ class TwoFactorChallengeController extends Controller
         $this->sendCode($user->email, $code);
 
         return view('auth.two-factor-challenge', [
-            'devCode' => app()->environment('production') ? null : $code,
             'maskedEmail' => $this->maskEmail($user->email),
         ]);
     }

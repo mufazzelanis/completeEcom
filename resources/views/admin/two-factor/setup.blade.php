@@ -8,13 +8,6 @@
 
     @if(session('error'))<div class="mb-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm">{{ session('error') }}</div>@endif
 
-    @if($devCode)
-    <div class="mb-6 bg-amber-50 border border-amber-200 text-amber-800 px-4 py-3 rounded-xl text-sm">
-        <strong>Dev only</strong> (this box never appears in production, and is only ever populated when <code>APP_ENV</code> isn't <code>production</code>) — your code is
-        <span class="font-mono font-bold tracking-widest">{{ $devCode }}</span>
-    </div>
-    @endif
-
     <div class="bg-white rounded-2xl shadow-sm p-8 space-y-6">
         <form action="{{ route('admin.two-factor.confirm') }}" method="POST" class="max-w-xs mx-auto">
             @csrf

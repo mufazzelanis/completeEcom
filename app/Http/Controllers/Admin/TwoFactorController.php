@@ -49,10 +49,6 @@ class TwoFactorController extends Controller
         return view('admin.two-factor.setup', [
             'enabled' => false,
             'email' => $user->email,
-            // Never populated in production — see Otp::generate()'s own env guard on
-            // otp_code_plain; this is the same email content shown on-screen for local
-            // testing where there's no real mail server to check.
-            'devCode' => app()->environment('production') ? null : $code,
         ]);
     }
 
