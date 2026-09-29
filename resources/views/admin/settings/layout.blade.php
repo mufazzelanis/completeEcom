@@ -108,3 +108,59 @@ $currentGroup = request()->route('group', 'general');
     </div>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+    // Every settings group's "Save ... Settings" form posts to the same
+    // admin.settings.update route (identified by its PATCH-spoof field) — intercept
+    // it here once instead of editing all ~24 group views individually. Forms with a
+    // file input are left alone (normal full-page submit) because their previews
+    // (logos, signature image, etc.) are rendered from the reloaded page's own HTML,
+    // not updated via JS.
+    document.addEventListener('DOMContentLoaded', () => {
+        document.querySelectorAll('form').forEach((form) => {
+            if (!form.querySelector('input[name="_method"][value="PATCH"]')) return;
+            if (form.querySelector('input[type="file"]')) return;
+
+            const submitBtn = form.querySelector('button[type="submit"]');
+            if (!submitBtn) return;
+            const originalLabel = submitBtn.innerHTML;
+
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = `
+                    <svg class="animate-spin -ml-1 mr-1.5 h-4 w-4 inline" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                    </svg>Saving...`;
+
+                try {
+                    const res = await fetch(form.action, {
+                        method: 'POST',
+                        body: new FormData(form),
+                        headers: { 'Accept': 'application/json' },
+                    });
+                    const data = await res.json().catch(() => ({}));
+                    settingsToast(res.ok, data.message || (res.ok ? 'Settings saved successfully.' : 'Something went wrong — please try again.'));
+                } catch (err) {
+                    settingsToast(false, 'Network error — please try again.');
+                } finally {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalLabel;
+                }
+            });
+        });
+    });
+
+    function settingsToast(success, message) {
+        document.getElementById('settings-ajax-toast')?.remove();
+        const toast = document.createElement('div');
+        toast.id = 'settings-ajax-toast';
+        toast.className = `fixed top-20 right-5 z-[100] px-4 py-3 rounded-xl text-sm font-medium shadow-lg flex items-center gap-2 text-white ${success ? 'bg-green-600' : 'bg-red-600'}`;
+        toast.textContent = message;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 3500);
+    }
+</script>
+@endpush

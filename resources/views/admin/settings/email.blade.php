@@ -80,6 +80,15 @@
     </div>
 </div>
 
+<div class="flex justify-end">
+    <button type="submit" class="px-6 py-2 bg-orange-600 text-white rounded-lg text-sm font-semibold hover:bg-orange-700 transition">Save Email Settings</button>
+</div>
+</form>
+
+{{-- Deliberately its own top-level form, not nested inside the settings form above —
+     a <form> nested inside another <form> is invalid HTML, and browsers respond to it
+     by closing the OUTER form as soon as they hit the (spurious) inner closing tag,
+     which silently knocked "Save Email Settings" outside of any form entirely. --}}
 <div class="bg-white rounded-xl shadow-sm border p-6">
     <h2 class="text-base font-semibold text-gray-900 pb-2 border-b mb-4">Test Email</h2>
     <form method="POST" action="{{ route('admin.settings.test-email') }}" class="flex gap-3">
@@ -92,9 +101,4 @@
     </form>
     <p class="text-xs text-gray-400 mt-2">Save settings first before testing.</p>
 </div>
-
-<div class="flex justify-end">
-    <button type="submit" class="px-6 py-2 bg-orange-600 text-white rounded-lg text-sm font-semibold hover:bg-orange-700 transition">Save Email Settings</button>
-</div>
-</form>
 @endsection

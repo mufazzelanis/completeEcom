@@ -87,6 +87,10 @@ class SettingController extends Controller
 
         Setting::bust();
 
+        if ($request->wantsJson()) {
+            return response()->json(['message' => 'Settings saved successfully.']);
+        }
+
         return back()->with('success', 'Settings saved successfully.');
     }
 
