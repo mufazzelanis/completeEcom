@@ -97,12 +97,34 @@
                     </td>
                     <td class="px-6 py-4 text-right font-semibold text-gray-900 dark:text-gray-100 text-sm">৳{{ number_format($order->total) }}</td>
                     <td class="px-6 py-4 text-center">
-                        <span class="px-2 py-1 rounded-full text-xs font-medium capitalize {{ $order->payment_status_badge }}">
-                            {{ $order->payment_status }}
-                        </span>
+                        <div class="flex items-center justify-center gap-1.5">
+                            <select data-inline-status data-field="payment_status" data-method="PUT"
+                                    data-url="{{ route('admin.orders.update', $order->id) }}"
+                                    data-current="{{ $order->payment_status }}"
+                                    class="cursor-pointer text-xs font-medium capitalize rounded-full pl-2 pr-1.5 py-1 border-0 focus:outline-none focus:ring-2 focus:ring-indigo-400 {{ $order->payment_status_badge }}">
+                                @foreach(['pending', 'paid', 'failed', 'refunded'] as $ps)
+                                    <option value="{{ $ps }}" {{ $order->payment_status === $ps ? 'selected' : '' }}>{{ ucfirst($ps) }}</option>
+                                @endforeach
+                            </select>
+                            @if($order->payment && $order->payment->status === 'pending_verification')
+                            <a href="{{ route('admin.payments.show', $order->payment->id) }}"
+                               title="Manual verification needed — {{ $order->payment->payment_method_name }}, Txn: {{ $order->payment->transaction_id ?? 'N/A' }}"
+                               class="flex-shrink-0 inline-flex items-center gap-0.5 bg-orange-50 dark:bg-orange-500/15 text-orange-600 dark:text-orange-400 text-[10px] font-semibold px-1.5 py-0.5 rounded-full hover:bg-orange-100 dark:hover:bg-orange-500/25 transition">
+                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                Verify
+                            </a>
+                            @endif
+                        </div>
                     </td>
                     <td class="px-6 py-4 text-center">
-                        <span class="px-2 py-1 rounded-full text-xs font-medium capitalize {{ $order->status_badge }}">{{ $order->status }}</span>
+                        <select data-inline-status data-field="status" data-method="PATCH"
+                                data-url="{{ route('admin.orders.status', $order->id) }}"
+                                data-current="{{ $order->status }}"
+                                class="cursor-pointer text-xs font-medium capitalize rounded-full pl-2 pr-1.5 py-1 border-0 focus:outline-none focus:ring-2 focus:ring-indigo-400 {{ $order->status_badge }}">
+                            @foreach(['pending', 'processing', 'shipped', 'delivered', 'cancelled', 'refunded'] as $s)
+                                <option value="{{ $s }}" {{ $order->status === $s ? 'selected' : '' }}>{{ ucfirst($s) }}</option>
+                            @endforeach
+                        </select>
                     </td>
                     <td class="px-6 py-4 text-center text-xs text-gray-500 dark:text-gray-400">{{ $order->created_at->format('M d, Y') }}</td>
                     <td class="px-6 py-4 text-center">
@@ -125,4 +147,75 @@
     </table>
     <div class="px-6 py-4 border-t border-gray-100 dark:border-gray-800">{{ $orders->links() }}</div>
 </div>
+
+@push('scripts')
+<script>
+    // Inline-editable Status/Payment selects on the orders list — lets an admin change
+    // either without opening the order detail page. Submits via fetch to the SAME
+    // admin.orders.status / admin.orders.update routes the detail page's own dropdowns
+    // use, then recolors the pill in place (these exact class strings already exist in
+    // Order::getStatusBadgeAttribute()/getPaymentStatusBadgeAttribute(), so Tailwind has
+    // already compiled them — no dynamic/unsafelisted classes here).
+    const STATUS_BADGE_CLASSES = {
+        pending:    'bg-yellow-100 text-yellow-800 dark:bg-yellow-500/15 dark:text-yellow-400',
+        processing: 'bg-blue-100 text-blue-800 dark:bg-blue-500/15 dark:text-blue-400',
+        shipped:    'bg-purple-100 text-purple-800 dark:bg-purple-500/15 dark:text-purple-400',
+        delivered:  'bg-green-100 text-green-800 dark:bg-green-500/15 dark:text-green-400',
+        cancelled:  'bg-red-100 text-red-800 dark:bg-red-500/15 dark:text-red-400',
+        refunded:   'bg-gray-100 text-gray-800 dark:bg-gray-500/15 dark:text-gray-400',
+    };
+    const PAYMENT_BADGE_CLASSES = {
+        pending:  'bg-yellow-100 text-yellow-800 dark:bg-yellow-500/15 dark:text-yellow-400',
+        paid:     'bg-green-100 text-green-800 dark:bg-green-500/15 dark:text-green-400',
+        failed:   'bg-red-100 text-red-800 dark:bg-red-500/15 dark:text-red-400',
+        refunded: 'bg-gray-100 text-gray-800 dark:bg-gray-500/15 dark:text-gray-400',
+    };
+    const SELECT_BASE_CLASS = 'cursor-pointer text-xs font-medium capitalize rounded-full pl-2 pr-1.5 py-1 border-0 focus:outline-none focus:ring-2 focus:ring-indigo-400';
+
+    document.addEventListener('DOMContentLoaded', () => {
+        document.querySelectorAll('[data-inline-status]').forEach((select) => {
+            select.addEventListener('change', () => updateOrderField(select));
+        });
+    });
+
+    async function updateOrderField(select) {
+        const field = select.dataset.field;
+        const method = select.dataset.method;
+        const url = select.dataset.url;
+        const prevValue = select.dataset.current;
+        const newValue = select.value;
+        const map = field === 'status' ? STATUS_BADGE_CLASSES : PAYMENT_BADGE_CLASSES;
+
+        select.disabled = true;
+        const body = new FormData();
+        body.append('_token', document.querySelector('meta[name="csrf-token"]').content);
+        body.append('_method', method);
+        body.append(field, newValue);
+
+        try {
+            const res = await fetch(url, { method: 'POST', body, headers: { 'Accept': 'application/json' } });
+            if (!res.ok) throw new Error('Request failed');
+
+            select.dataset.current = newValue;
+            select.className = SELECT_BASE_CLASS + ' ' + (map[newValue] || '');
+            ordersListToast(true, (field === 'status' ? 'Order status' : 'Payment status') + ' updated.');
+        } catch (err) {
+            select.value = prevValue;
+            ordersListToast(false, 'Could not update — please try again.');
+        } finally {
+            select.disabled = false;
+        }
+    }
+
+    function ordersListToast(success, message) {
+        document.getElementById('orders-list-toast')?.remove();
+        const toast = document.createElement('div');
+        toast.id = 'orders-list-toast';
+        toast.className = `fixed top-20 right-5 z-[100] px-4 py-3 rounded-xl text-sm font-medium shadow-lg text-white ${success ? 'bg-green-600' : 'bg-red-600'}`;
+        toast.textContent = message;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 3000);
+    }
+</script>
+@endpush
 @endsection
