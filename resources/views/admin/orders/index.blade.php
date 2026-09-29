@@ -98,18 +98,38 @@
                     <td class="px-6 py-4 text-right font-semibold text-gray-900 dark:text-gray-100 text-sm">৳{{ number_format($order->total) }}</td>
                     <td class="px-6 py-4 text-center">
                         <div class="flex items-center justify-center gap-1.5">
-                            <select data-inline-status data-field="payment_status" data-method="PUT"
-                                    data-url="{{ route('admin.orders.update', $order->id) }}"
-                                    data-current="{{ $order->payment_status }}"
-                                    class="cursor-pointer text-xs font-medium capitalize rounded-full pl-2 pr-1.5 py-1 border-0 focus:outline-none focus:ring-2 focus:ring-indigo-400 {{ $order->payment_status_badge }}">
-                                @foreach(['pending', 'paid', 'failed', 'refunded'] as $ps)
-                                    <option value="{{ $ps }}" {{ $order->payment_status === $ps ? 'selected' : '' }}>{{ ucfirst($ps) }}</option>
-                                @endforeach
-                            </select>
+                            <div x-data="inlineStatusDropdown({
+                                    url: '{{ route('admin.orders.update', $order->id) }}',
+                                    method: 'PUT', field: 'payment_status',
+                                    current: '{{ $order->payment_status }}',
+                                    options: { pending: 'Pending', paid: 'Paid', failed: 'Failed', refunded: 'Refunded' },
+                                    badgeMap: PAYMENT_BADGE_CLASSES,
+                                 })">
+                                <button type="button" @click="toggle($event)" :disabled="saving"
+                                        class="inline-flex items-center gap-1 pl-2.5 pr-1.5 py-1 rounded-full text-xs font-medium capitalize transition disabled:opacity-60"
+                                        :class="badgeMap[current]">
+                                    <span x-text="options[current]"></span>
+                                    <svg class="w-3 h-3 opacity-60 transition-transform" :class="open && 'rotate-180'" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
+                                </button>
+                                <template x-teleport="body">
+                                    <div x-show="open" x-cloak @click.outside="close()" :style="panelStyle"
+                                         class="fixed z-[200] w-36 bg-white dark:bg-gray-800 rounded-xl shadow-xl ring-1 ring-gray-200 dark:ring-gray-700 py-1.5 text-sm"
+                                         x-transition:enter="transition ease-out duration-100" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100">
+                                        <template x-for="(label, key) in options" :key="key">
+                                            <button type="button" @click="select(key)"
+                                                    class="w-full flex items-center justify-between px-3.5 py-2 text-left capitalize hover:bg-gray-50 dark:hover:bg-gray-700/60 transition-colors"
+                                                    :class="key === current ? 'text-gray-900 dark:text-white font-semibold' : 'text-gray-600 dark:text-gray-300'">
+                                                <span x-text="label"></span>
+                                                <svg x-show="key === current" x-cloak class="w-3.5 h-3.5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+                                            </button>
+                                        </template>
+                                    </div>
+                                </template>
+                            </div>
                             @if($order->payment && $order->payment->status === 'pending_verification')
                             <a href="{{ route('admin.payments.show', $order->payment->id) }}"
                                title="Manual verification needed — {{ $order->payment->payment_method_name }}, Txn: {{ $order->payment->transaction_id ?? 'N/A' }}"
-                               class="flex-shrink-0 inline-flex items-center gap-0.5 bg-orange-50 dark:bg-orange-500/15 text-orange-600 dark:text-orange-400 text-[10px] font-semibold px-1.5 py-0.5 rounded-full hover:bg-orange-100 dark:hover:bg-orange-500/25 transition">
+                               class="flex-shrink-0 inline-flex items-center gap-1 bg-orange-50 dark:bg-orange-500/15 text-orange-600 dark:text-orange-400 text-[11px] font-semibold px-2 py-1 rounded-full hover:bg-orange-100 dark:hover:bg-orange-500/25 transition">
                                 <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                                 Verify
                             </a>
@@ -117,14 +137,34 @@
                         </div>
                     </td>
                     <td class="px-6 py-4 text-center">
-                        <select data-inline-status data-field="status" data-method="PATCH"
-                                data-url="{{ route('admin.orders.status', $order->id) }}"
-                                data-current="{{ $order->status }}"
-                                class="cursor-pointer text-xs font-medium capitalize rounded-full pl-2 pr-1.5 py-1 border-0 focus:outline-none focus:ring-2 focus:ring-indigo-400 {{ $order->status_badge }}">
-                            @foreach(['pending', 'processing', 'shipped', 'delivered', 'cancelled', 'refunded'] as $s)
-                                <option value="{{ $s }}" {{ $order->status === $s ? 'selected' : '' }}>{{ ucfirst($s) }}</option>
-                            @endforeach
-                        </select>
+                        <div x-data="inlineStatusDropdown({
+                                url: '{{ route('admin.orders.status', $order->id) }}',
+                                method: 'PATCH', field: 'status',
+                                current: '{{ $order->status }}',
+                                options: { pending: 'Pending', processing: 'Processing', shipped: 'Shipped', delivered: 'Delivered', cancelled: 'Cancelled', refunded: 'Refunded' },
+                                badgeMap: STATUS_BADGE_CLASSES,
+                             })" class="inline-block">
+                            <button type="button" @click="toggle($event)" :disabled="saving"
+                                    class="inline-flex items-center gap-1 pl-2.5 pr-1.5 py-1 rounded-full text-xs font-medium capitalize transition disabled:opacity-60"
+                                    :class="badgeMap[current]">
+                                <span x-text="options[current]"></span>
+                                <svg class="w-3 h-3 opacity-60 transition-transform" :class="open && 'rotate-180'" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
+                            </button>
+                            <template x-teleport="body">
+                                <div x-show="open" x-cloak @click.outside="close()" :style="panelStyle"
+                                     class="fixed z-[200] w-36 bg-white dark:bg-gray-800 rounded-xl shadow-xl ring-1 ring-gray-200 dark:ring-gray-700 py-1.5 text-sm"
+                                     x-transition:enter="transition ease-out duration-100" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100">
+                                    <template x-for="(label, key) in options" :key="key">
+                                        <button type="button" @click="select(key)"
+                                                class="w-full flex items-center justify-between px-3.5 py-2 text-left capitalize hover:bg-gray-50 dark:hover:bg-gray-700/60 transition-colors"
+                                                :class="key === current ? 'text-gray-900 dark:text-white font-semibold' : 'text-gray-600 dark:text-gray-300'">
+                                            <span x-text="label"></span>
+                                            <svg x-show="key === current" x-cloak class="w-3.5 h-3.5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+                                        </button>
+                                    </template>
+                                </div>
+                            </template>
+                        </div>
                     </td>
                     <td class="px-6 py-4 text-center text-xs text-gray-500 dark:text-gray-400">{{ $order->created_at->format('M d, Y') }}</td>
                     <td class="px-6 py-4 text-center">
@@ -150,13 +190,14 @@
 
 @push('scripts')
 <script>
-    // Inline-editable Status/Payment selects on the orders list — lets an admin change
-    // either without opening the order detail page. Submits via fetch to the SAME
-    // admin.orders.status / admin.orders.update routes the detail page's own dropdowns
-    // use, then recolors the pill in place (these exact class strings already exist in
-    // Order::getStatusBadgeAttribute()/getPaymentStatusBadgeAttribute(), so Tailwind has
-    // already compiled them — no dynamic/unsafelisted classes here).
-    const STATUS_BADGE_CLASSES = {
+    // Custom dropdown (not a native <select>) for the inline Status/Payment editors on
+    // the orders list — a native select's own arrow rendered awkwardly cramped against
+    // the colored pill, and its options menu can't be styled at all. Submits via fetch
+    // to the SAME admin.orders.status / admin.orders.update routes the detail page's own
+    // forms use, then recolors the pill in place. These exact class strings already exist
+    // literally in Order::getStatusBadgeAttribute()/getPaymentStatusBadgeAttribute(), so
+    // Tailwind has already compiled them — nothing here is an unsafelisted dynamic class.
+    window.STATUS_BADGE_CLASSES = {
         pending:    'bg-yellow-100 text-yellow-800 dark:bg-yellow-500/15 dark:text-yellow-400',
         processing: 'bg-blue-100 text-blue-800 dark:bg-blue-500/15 dark:text-blue-400',
         shipped:    'bg-purple-100 text-purple-800 dark:bg-purple-500/15 dark:text-purple-400',
@@ -164,47 +205,63 @@
         cancelled:  'bg-red-100 text-red-800 dark:bg-red-500/15 dark:text-red-400',
         refunded:   'bg-gray-100 text-gray-800 dark:bg-gray-500/15 dark:text-gray-400',
     };
-    const PAYMENT_BADGE_CLASSES = {
+    window.PAYMENT_BADGE_CLASSES = {
         pending:  'bg-yellow-100 text-yellow-800 dark:bg-yellow-500/15 dark:text-yellow-400',
         paid:     'bg-green-100 text-green-800 dark:bg-green-500/15 dark:text-green-400',
         failed:   'bg-red-100 text-red-800 dark:bg-red-500/15 dark:text-red-400',
         refunded: 'bg-gray-100 text-gray-800 dark:bg-gray-500/15 dark:text-gray-400',
     };
-    const SELECT_BASE_CLASS = 'cursor-pointer text-xs font-medium capitalize rounded-full pl-2 pr-1.5 py-1 border-0 focus:outline-none focus:ring-2 focus:ring-indigo-400';
 
-    document.addEventListener('DOMContentLoaded', () => {
-        document.querySelectorAll('[data-inline-status]').forEach((select) => {
-            select.addEventListener('change', () => updateOrderField(select));
-        });
-    });
+    // The panel is x-teleport'd to <body> (escaping the table's overflow-x-auto, which
+    // would otherwise clip it exactly like the admin sidebar's flyout menus did) so its
+    // position has to be computed from the trigger button's own screen position on open.
+    function inlineStatusDropdown({ url, method, field, current, options, badgeMap }) {
+        return {
+            open: false,
+            saving: false,
+            current,
+            options,
+            badgeMap,
+            panelTop: 0,
+            panelLeft: 0,
+            toggle(event) {
+                if (this.saving) return;
+                this.open ? this.close() : this.openMenu(event);
+            },
+            openMenu(event) {
+                const rect = event.currentTarget.getBoundingClientRect();
+                this.panelTop = rect.bottom + 6;
+                this.panelLeft = rect.left;
+                this.open = true;
+            },
+            close() { this.open = false; },
+            get panelStyle() {
+                return `top:${this.panelTop}px; left:${this.panelLeft}px;`;
+            },
+            async select(key) {
+                this.open = false;
+                if (key === this.current) return;
+                const prev = this.current;
+                this.current = key;
+                this.saving = true;
 
-    async function updateOrderField(select) {
-        const field = select.dataset.field;
-        const method = select.dataset.method;
-        const url = select.dataset.url;
-        const prevValue = select.dataset.current;
-        const newValue = select.value;
-        const map = field === 'status' ? STATUS_BADGE_CLASSES : PAYMENT_BADGE_CLASSES;
+                const body = new FormData();
+                body.append('_token', document.querySelector('meta[name="csrf-token"]').content);
+                body.append('_method', method);
+                body.append(field, key);
 
-        select.disabled = true;
-        const body = new FormData();
-        body.append('_token', document.querySelector('meta[name="csrf-token"]').content);
-        body.append('_method', method);
-        body.append(field, newValue);
-
-        try {
-            const res = await fetch(url, { method: 'POST', body, headers: { 'Accept': 'application/json' } });
-            if (!res.ok) throw new Error('Request failed');
-
-            select.dataset.current = newValue;
-            select.className = SELECT_BASE_CLASS + ' ' + (map[newValue] || '');
-            ordersListToast(true, (field === 'status' ? 'Order status' : 'Payment status') + ' updated.');
-        } catch (err) {
-            select.value = prevValue;
-            ordersListToast(false, 'Could not update — please try again.');
-        } finally {
-            select.disabled = false;
-        }
+                try {
+                    const res = await fetch(url, { method: 'POST', body, headers: { 'Accept': 'application/json' } });
+                    if (!res.ok) throw new Error('Request failed');
+                    ordersListToast(true, (field === 'status' ? 'Order status' : 'Payment status') + ' updated.');
+                } catch (err) {
+                    this.current = prev;
+                    ordersListToast(false, 'Could not update — please try again.');
+                } finally {
+                    this.saving = false;
+                }
+            },
+        };
     }
 
     function ordersListToast(success, message) {
