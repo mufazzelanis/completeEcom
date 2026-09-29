@@ -16,6 +16,7 @@ use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
 
@@ -58,5 +59,49 @@ class AppServiceProvider extends ServiceProvider
 
         Event::listen(Login::class, RecordLoginActivityListener::class);
         Event::listen(Logout::class, RecordLogoutActivityListener::class);
+
+        $this->applyMailSettings();
+    }
+
+    /**
+     * Settings → Email & SMTP saves into the settings table, but nothing previously
+     * read those columns back — every mail always used whatever was hardcoded in
+     * .env, silently ignoring the admin panel. Wired here instead of at the .env
+     * level so the panel (and its "Send Test" button) actually does something.
+     */
+    protected function applyMailSettings(): void
+    {
+        try {
+            if (!Schema::hasTable('settings')) {
+                return;
+            }
+        } catch (\Throwable $e) {
+            return;
+        }
+
+        $mailer = setting('mail_mailer');
+        if ($mailer) {
+            config(['mail.default' => $mailer]);
+        }
+
+        if ($mailer === 'smtp' && setting('mail_host')) {
+            config([
+                'mail.mailers.smtp.host' => setting('mail_host'),
+                'mail.mailers.smtp.port' => (int) setting('mail_port', 587),
+                'mail.mailers.smtp.username' => setting('mail_username') ?: null,
+                'mail.mailers.smtp.password' => setting('mail_password') ?: null,
+                // Laravel infers STARTTLS ("smtp") vs implicit TLS ("smtps") from the
+                // scheme; port 465 already implies smtps on its own, so this only needs
+                // to force it for the "SSL" choice on a non-465 port.
+                'mail.mailers.smtp.scheme' => setting('mail_encryption', 'tls') === 'ssl' ? 'smtps' : null,
+            ]);
+        }
+
+        if ($from = setting('mail_from_address')) {
+            config(['mail.from.address' => $from]);
+        }
+        if ($fromName = setting('mail_from_name')) {
+            config(['mail.from.name' => $fromName]);
+        }
     }
 }
