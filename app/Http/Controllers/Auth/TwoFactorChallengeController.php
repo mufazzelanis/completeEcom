@@ -7,13 +7,11 @@ use App\Models\Cart;
 use App\Models\Otp;
 use App\Models\User;
 use App\Models\Wishlist;
+use App\Support\OtpMailer;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\View\View;
-use Throwable;
 
 class TwoFactorChallengeController extends Controller
 {
@@ -93,13 +91,13 @@ class TwoFactorChallengeController extends Controller
 
     private function sendCode(string $email, string $code): void
     {
-        try {
-            Mail::raw("Your login verification code is: {$code}\n\nThis code expires in 5 minutes.", function ($message) use ($email) {
-                $message->to($email)->subject('Your login verification code');
-            });
-        } catch (Throwable $e) {
-            Log::warning('Login 2FA OTP email failed to send: ' . $e->getMessage());
-        }
+        OtpMailer::send(
+            $email,
+            $code,
+            'Your login verification code',
+            'Use the code below to finish signing in to your account.',
+            'Login 2FA'
+        );
     }
 
     /**
