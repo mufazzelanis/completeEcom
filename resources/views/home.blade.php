@@ -270,7 +270,7 @@
 @if($categories->count() > 0)
 <div class="mx-3 md:mx-0 mt-3 md:mt-4 bg-white dark:bg-gray-900 rounded-2xl md:rounded-none shadow-sm md:shadow-none">
     <div class="max-w-[1200px] mx-auto px-4 py-6">
-        <x-storefront.section-header title="Categories" :view-all-url="route('categories.index')" />
+        <x-storefront.section-header title="Categories" :view-all-url="route('categories.index')" :count="$categories->count()" />
         {{-- Mobile: a swipeable horizontal row (fixed-width tiles, scroll-snap, no "More"
              button needed at all — every category is one swipe away) instead of a grid
              capped at 6 with a toggle to reveal the rest. This is the same pattern
@@ -332,7 +332,7 @@
     <div class="mx-3 md:mx-0 mt-3 md:mt-4 rounded-2xl md:rounded-none shadow-sm md:shadow-none {{ $sec->theme === 'sale' ? 'bg-gradient-to-r from-red-500 to-orange-500' : 'bg-white dark:bg-gray-900' }}" x-data="{ expanded: false }">
         <div class="max-w-[1200px] mx-auto px-4 py-6">
             <x-storefront.section-header :title="$sec->title" :subtitle="$sec->subtitle" :view-all-url="$sec->getViewAllUrl()"
-                :view-all-label="$sec->getViewAllLabelText()" :theme="$sec->theme === 'sale' ? 'sale' : 'default'" />
+                :view-all-label="$sec->getViewAllLabelText()" :theme="$sec->theme === 'sale' ? 'sale' : 'default'" :count="$totalCount" />
             @php
                 // Mobile is always a fixed 2-column grid (see getGridColsClass), so
                 // capping the always-visible tier at 8 keeps mobile's first view to

@@ -1,9 +1,14 @@
-@props(['title', 'subtitle' => null, 'viewAllUrl' => null, 'viewAllLabel' => 'View All', 'theme' => 'default'])
+@props(['title', 'subtitle' => null, 'viewAllUrl' => null, 'viewAllLabel' => 'View All', 'theme' => 'default', 'count' => null])
 <div class="flex items-end justify-between gap-3 mb-5 reveal">
     <div class="min-w-0">
         <div class="flex items-center gap-2.5">
             <span class="w-1.5 h-5 rounded-full flex-shrink-0 {{ $theme === 'sale' ? 'bg-white' : 'bg-gradient-to-b from-orange-500 to-red-500' }}"></span>
             <h2 class="text-lg md:text-xl font-extrabold tracking-tight truncate {{ $theme === 'sale' ? 'text-white' : 'text-gray-900 dark:text-white' }}">{{ $title }}</h2>
+            {{-- A real count (not a fabricated "hot" tag) — a quiet abundance/trust signal
+                 that costs nothing to show since the caller already queried it. --}}
+            @if($count)
+                <span class="hidden sm:inline-flex items-center text-[11px] font-bold px-2 py-0.5 rounded-full {{ $theme === 'sale' ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400' }}">{{ number_format($count) }}</span>
+            @endif
         </div>
         @if($subtitle)
             <p class="text-xs md:text-sm mt-0.5 ml-4 {{ $theme === 'sale' ? 'text-white/80' : 'text-gray-500 dark:text-gray-400' }}">{{ $subtitle }}</p>

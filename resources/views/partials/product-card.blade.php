@@ -11,6 +11,10 @@
     $isInCart = auth()->check()
         ? \App\Models\Cart::where('user_id', auth()->id())->where('product_id', $product->id)->exists()
         : \App\Models\Cart::where('session_id', session()->getId())->where('product_id', $product->id)->exists();
+    // Only shown when there's no discount/flash badge already in that corner — a genuine,
+    // data-backed freshness signal (real created_at, not a fabricated "trending" label)
+    // rather than clutter competing with the price badge for the same spot.
+    $isNew = !$isFlash && !$hasDiscount && $product->created_at->gt(now()->subDays(14));
 @endphp
 <div class="h-full flex flex-col bg-white rounded-xl shadow-sm hover:shadow-xl hover:shadow-gray-200/60 transition-all duration-300 group overflow-hidden ring-1 ring-gray-100 hover:ring-orange-200 hover:-translate-y-1 relative">
     <a href="{{ route('products.show', $product->slug) }}" class="block relative">
@@ -38,6 +42,10 @@
             @elseif($hasDiscount)
                 <span class="absolute top-2 left-2 bg-gradient-to-r from-orange-500 to-amber-500 text-white text-[10px] font-bold px-2 py-1 rounded-full shadow-sm">
                     -{{ $discountPct }}%
+                </span>
+            @elseif($isNew)
+                <span class="absolute top-2 left-2 bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-[10px] font-bold px-2 py-1 rounded-full shadow-sm">
+                    NEW
                 </span>
             @endif
 

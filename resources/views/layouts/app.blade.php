@@ -462,11 +462,22 @@ $navCategories = \App\Models\Category::with(['children' => fn($q) => $q->active(
 </div>
 @endif
 
-{{-- Announcement Bar --}}
+{{-- Announcement Bar — a pulsing dot + subtle sheen over whatever bg/text color the admin
+     picked (Settings -> Header), so a plain promo line reads as an attention-grabbing
+     banner rather than inert text, without touching the admin's own color choices. --}}
 @if($announcementEnabled && $announcementText)
-<div style="background: {{ $announcementBg }}; color: {{ $announcementColor }};" class="text-sm py-1.5 text-center font-medium px-4" x-data="{ show: true }" x-show="show">
-    {!! $announcementText !!}
-    <button @click="show = false" class="ml-3 opacity-70 hover:opacity-100 text-lg leading-none" style="color: {{ $announcementColor }};">&times;</button>
+<div style="background: {{ $announcementBg }}; color: {{ $announcementColor }};" class="relative overflow-hidden text-sm py-2 text-center font-semibold px-10" x-data="{ show: true }" x-show="show">
+    <div class="pointer-events-none absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0"></div>
+    <span class="relative inline-flex items-center gap-2">
+        <span class="relative flex h-2 w-2 flex-shrink-0">
+            <span class="absolute inline-flex h-full w-full rounded-full opacity-75 animate-ping" style="background: {{ $announcementColor }};"></span>
+            <span class="relative inline-flex rounded-full h-2 w-2" style="background: {{ $announcementColor }};"></span>
+        </span>
+        {!! $announcementText !!}
+    </span>
+    <button @click="show = false" class="absolute right-3 top-1/2 -translate-y-1/2 opacity-70 hover:opacity-100 transition" style="color: {{ $announcementColor }};" aria-label="Dismiss">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
+    </button>
 </div>
 @endif
 
