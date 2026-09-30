@@ -39,78 +39,93 @@
 @section('content')
 
 {{-- ═══════════ HERO BANNER CAROUSEL ═══════════ --}}
-<div class="max-w-[1200px] mx-auto px-4 pt-4" x-data="{
-    current: 0,
-    total: {{ max($banners->count(), 1) }},
-    init() {
-        @if($banners->count() > 1)
-        setInterval(() => { this.current = (this.current + 1) % this.total }, 5000);
-        @endif
-    }
-}">
-    {{-- One fixed ratio at every breakpoint (not a different one for mobile vs desktop) —
-         matches the 1920×600 (16:5) size the admin is told to upload at (admin.banners.
-         create/edit), so an upload at that ratio is never cropped, on any screen. The old
-         2:1-on-mobile / 3:1-on-desktop split is exactly what was cropping the tops/bottoms
-         off hero banners: a single fixed-ratio upload can't satisfy two different ratios. --}}
-    <div class="relative rounded-xl overflow-hidden bg-gray-200 aspect-[16/5]">
-        @if($banners->count() > 0)
-            @foreach($banners as $i => $banner)
-            <div x-show="current === {{ $i }}" x-transition:enter="transition ease-out duration-500" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
-                 x-transition:leave="transition ease-in duration-300" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
-                 class="absolute inset-0">
-                @if($banner->image)
-                    <a href="{{ $banner->button_link ?: '#' }}">
-                        {{-- Every slide is in the DOM at once (x-show just toggles visibility,
-                             not presence) — without hints, the browser fetches all of them
-                             immediately and the actual LCP image (slide 0, the only one visible
-                             on load) competes for bandwidth with slides nobody's looking at yet. --}}
-                        <img src="{{ Storage::url($banner->image) }}" alt="{{ $banner->title }}" class="w-full h-full object-cover"
-                            @if($i === 0) fetchpriority="high" @else loading="lazy" @endif>
-                        <div class="absolute inset-0 bg-gradient-to-r from-black/50 to-transparent"></div>
-                        <div class="absolute inset-0 flex items-center px-5 md:px-14">
-                            <div class="animate-fade-in-up">
-                                @if($banner->subtitle)<p class="text-white/80 text-sm font-medium mb-2">{{ $banner->subtitle }}</p>@endif
-                                <h2 class="text-white text-xl md:text-4xl font-extrabold mb-2 leading-tight">{{ $banner->title }}</h2>
-                                @if($banner->description)<p class="text-white/70 text-sm mb-4 hidden md:block max-w-md">{{ $banner->description }}</p>@endif
-                                @if($banner->button_text)
-                                    <span class="inline-block bg-white text-gray-900 px-6 py-2 rounded-full text-sm font-bold hover:bg-gray-100 hover:scale-105 transition-all">{{ $banner->button_text }}</span>
-                                @endif
+<div class="relative max-w-[1200px] mx-auto px-4 pt-4">
+    {{-- Soft ambient glow behind the hero card — purely decorative depth, clipped by the
+         page's own overflow so it never creates a horizontal scrollbar. --}}
+    <div class="pointer-events-none absolute -top-4 left-1/2 -translate-x-1/2 w-[90%] h-[80%] bg-gradient-to-r from-orange-300/30 via-pink-300/20 to-indigo-300/30 blur-3xl rounded-full"></div>
+
+    <div class="relative" x-data="{
+        current: 0,
+        total: {{ max($banners->count(), 1) }},
+        init() {
+            @if($banners->count() > 1)
+            setInterval(() => { this.current = (this.current + 1) % this.total }, 5000);
+            @endif
+        }
+    }">
+        {{-- One fixed ratio at every breakpoint (not a different one for mobile vs desktop) —
+             matches the 1920×600 (16:5) size the admin is told to upload at (admin.banners.
+             create/edit), so an upload at that ratio is never cropped, on any screen. The old
+             2:1-on-mobile / 3:1-on-desktop split is exactly what was cropping the tops/bottoms
+             off hero banners: a single fixed-ratio upload can't satisfy two different ratios. --}}
+        <div class="relative rounded-2xl overflow-hidden bg-gray-200 aspect-[16/5] shadow-xl shadow-orange-900/5">
+            @if($banners->count() > 0)
+                @foreach($banners as $i => $banner)
+                <div x-show="current === {{ $i }}" x-transition:enter="transition ease-out duration-700" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
+                     x-transition:leave="transition ease-in duration-300" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
+                     class="absolute inset-0 overflow-hidden">
+                    @if($banner->image)
+                        <a href="{{ $banner->button_link ?: '#' }}" class="block w-full h-full">
+                            {{-- Every slide is in the DOM at once (x-show just toggles visibility,
+                                 not presence) — without hints, the browser fetches all of them
+                                 immediately and the actual LCP image (slide 0, the only one visible
+                                 on load) competes for bandwidth with slides nobody's looking at yet.
+                                 The slow scale (Ken Burns) only plays while a slide is the active
+                                 one, restarting fresh each time it comes back around. --}}
+                            <img src="{{ Storage::url($banner->image) }}" alt="{{ $banner->title }}"
+                                class="w-full h-full object-cover transition-transform duration-[6000ms] ease-linear"
+                                :class="current === {{ $i }} ? 'scale-110' : 'scale-100'"
+                                @if($i === 0) fetchpriority="high" @else loading="lazy" @endif>
+                            <div class="absolute inset-0 bg-gradient-to-r from-black/65 via-black/25 to-transparent"></div>
+                            <div class="absolute inset-0 flex items-center px-5 md:px-14">
+                                <div class="animate-fade-in-up max-w-lg">
+                                    @if($banner->subtitle)
+                                        <span class="inline-block bg-white/15 backdrop-blur-sm border border-white/25 text-white/90 text-[11px] md:text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full mb-3">{{ $banner->subtitle }}</span>
+                                    @endif
+                                    <h2 class="text-white text-xl md:text-4xl font-extrabold mb-2 leading-tight [text-wrap:balance]">{{ $banner->title }}</h2>
+                                    @if($banner->description)<p class="text-white/80 text-sm mb-4 hidden md:block max-w-md">{{ $banner->description }}</p>@endif
+                                    @if($banner->button_text)
+                                        <span class="btn-glow inline-flex items-center gap-1.5 bg-white text-gray-900 px-6 py-2.5 rounded-full text-sm font-bold hover:bg-gray-100 hover:scale-105 transition-all shadow-lg">
+                                            {{ $banner->button_text }}
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+                                        </span>
+                                    @endif
+                                </div>
                             </div>
+                        </a>
+                    @endif
+                </div>
+                @endforeach
+            @else
+                {{-- Default Hero --}}
+                <div class="absolute inset-0 bg-gradient-to-r from-orange-500 via-red-500 to-pink-500 bg-[length:200%_200%] animate-[gradientPan_8s_ease_infinite]">
+                    <div class="absolute inset-0 flex items-center px-5 md:px-14">
+                        <div class="animate-fade-in-up">
+                            <p class="text-white/80 text-sm font-medium mb-2">Welcome to {{ setting('site_name', 'ShopVista') }}</p>
+                            <h2 class="text-white text-xl md:text-5xl font-extrabold mb-3 leading-tight">Discover Amazing Deals</h2>
+                            <p class="text-white/70 text-sm mb-5 hidden md:block">Shop thousands of products at unbeatable prices</p>
+                            <a href="{{ route('shop.index') }}" class="btn-glow inline-block bg-white text-gray-900 px-8 py-2.5 rounded-full text-sm font-bold hover:bg-gray-100 hover:scale-105 transition-all shadow-lg">Shop Now</a>
                         </div>
-                    </a>
-                @endif
-            </div>
-            @endforeach
-        @else
-            {{-- Default Hero --}}
-            <div class="absolute inset-0 bg-gradient-to-r from-orange-500 via-red-500 to-pink-500 bg-[length:200%_200%] animate-[gradientPan_8s_ease_infinite]">
-                <div class="absolute inset-0 flex items-center px-5 md:px-14">
-                    <div class="animate-fade-in-up">
-                        <p class="text-white/80 text-sm font-medium mb-2">Welcome to {{ setting('site_name', 'ShopVista') }}</p>
-                        <h2 class="text-white text-xl md:text-5xl font-extrabold mb-3 leading-tight">Discover Amazing Deals</h2>
-                        <p class="text-white/70 text-sm mb-5 hidden md:block">Shop thousands of products at unbeatable prices</p>
-                        <a href="{{ route('shop.index') }}" class="btn-glow inline-block bg-white text-gray-900 px-8 py-2.5 rounded-full text-sm font-bold hover:bg-gray-100 hover:scale-105 transition-all shadow-lg">Shop Now</a>
                     </div>
                 </div>
-            </div>
-        @endif
+            @endif
 
-        {{-- Navigation Arrows --}}
-        @if($banners->count() > 1)
-        <button @click="current = (current - 1 + total) % total" class="absolute left-2 md:left-3 top-1/2 -translate-y-1/2 w-10 h-10 md:w-9 md:h-9 bg-black/30 hover:bg-black/50 text-white rounded-full flex items-center justify-center transition backdrop-blur-sm" aria-label="Previous">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
-        </button>
-        <button @click="current = (current + 1) % total" class="absolute right-2 md:right-3 top-1/2 -translate-y-1/2 w-10 h-10 md:w-9 md:h-9 bg-black/30 hover:bg-black/50 text-white rounded-full flex items-center justify-center transition backdrop-blur-sm" aria-label="Next">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
-        </button>
-        <div class="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
-            @foreach($banners as $i => $banner)
-            <button @click="current = {{ $i }}" class="w-2.5 h-2.5 rounded-full transition-all duration-300" aria-label="Go to slide {{ $i + 1 }}"
-                    :class="current === {{ $i }} ? 'bg-white w-5' : 'bg-white/50'"></button>
-            @endforeach
+            {{-- Navigation Arrows --}}
+            @if($banners->count() > 1)
+            <button @click="current = (current - 1 + total) % total" class="absolute left-2 md:left-3 top-1/2 -translate-y-1/2 w-10 h-10 md:w-9 md:h-9 bg-white/10 hover:bg-white/25 text-white rounded-full flex items-center justify-center transition backdrop-blur-md ring-1 ring-white/30" aria-label="Previous">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+            </button>
+            <button @click="current = (current + 1) % total" class="absolute right-2 md:right-3 top-1/2 -translate-y-1/2 w-10 h-10 md:w-9 md:h-9 bg-white/10 hover:bg-white/25 text-white rounded-full flex items-center justify-center transition backdrop-blur-md ring-1 ring-white/30" aria-label="Next">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+            </button>
+            <div class="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
+                @foreach($banners as $i => $banner)
+                <button @click="current = {{ $i }}" class="h-1.5 rounded-full transition-all duration-300" aria-label="Go to slide {{ $i + 1 }}"
+                        :class="current === {{ $i }} ? 'bg-white w-7' : 'bg-white/50 w-1.5 hover:bg-white/75'"></button>
+                @endforeach
+            </div>
+            @endif
         </div>
-        @endif
     </div>
 </div>
 
@@ -161,31 +176,34 @@
      look is untouched (mx-0/rounded-none/shadow-none resets it back to full-bleed there). --}}
 <div class="mx-3 md:mx-0 mt-3 md:mt-4 bg-white dark:bg-gray-900 rounded-2xl md:rounded-none shadow-sm md:shadow-none">
     <div class="max-w-[1200px] mx-auto px-4 py-3">
+        @php
+            $highlightGradients = ['from-orange-400 to-red-500', 'from-emerald-400 to-teal-500', 'from-indigo-400 to-blue-500', 'from-pink-400 to-fuchsia-500'];
+        @endphp
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4 reveal-group">
-            @foreach($highlights as $f)
+            @foreach($highlights as $idx => $f)
                 @if($f['link'])
                     <a href="{{ $f['link'] }}" @if($f['blank']) target="_blank" rel="noopener" @endif
-                       class="flex items-center gap-3 -m-1 p-1 rounded-lg hover:bg-orange-50 transition">
-                        <div class="w-10 h-10 bg-orange-50 rounded-lg flex items-center justify-center flex-shrink-0">
-                            <svg class="w-5 h-5 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                       class="group flex items-center gap-3 -m-1.5 p-1.5 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800/60 hover:-translate-y-0.5 transition-all duration-200">
+                        <div class="w-11 h-11 bg-gradient-to-br {{ $highlightGradients[$idx % 4] }} rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm group-hover:shadow-md group-hover:scale-105 transition-all">
+                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="{{ $f['icon'] }}"/>
                             </svg>
                         </div>
                         <div class="min-w-0">
-                            <p class="font-bold text-gray-800 text-xs">{{ $f['text'] }}</p>
-                            <p class="text-gray-500 text-[10px] truncate">{{ $f['sub'] }}</p>
+                            <p class="font-bold text-gray-800 dark:text-gray-100 text-xs">{{ $f['text'] }}</p>
+                            <p class="text-gray-500 dark:text-gray-400 text-[10px] truncate">{{ $f['sub'] }}</p>
                         </div>
                     </a>
                 @else
                     <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 bg-orange-50 rounded-lg flex items-center justify-center flex-shrink-0">
-                            <svg class="w-5 h-5 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div class="w-11 h-11 bg-gradient-to-br {{ $highlightGradients[$idx % 4] }} rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm">
+                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="{{ $f['icon'] }}"/>
                             </svg>
                         </div>
                         <div class="min-w-0">
-                            <p class="font-bold text-gray-800 text-xs">{{ $f['text'] }}</p>
-                            <p class="text-gray-500 text-[10px] truncate">{{ $f['sub'] }}</p>
+                            <p class="font-bold text-gray-800 dark:text-gray-100 text-xs">{{ $f['text'] }}</p>
+                            <p class="text-gray-500 dark:text-gray-400 text-[10px] truncate">{{ $f['sub'] }}</p>
                         </div>
                     </div>
                 @endif
@@ -214,24 +232,30 @@
         <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
             <div class="flex items-center gap-3">
                 <div class="flex items-center gap-2">
-                    <svg class="w-6 h-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-                    <h2 class="text-lg md:text-xl font-extrabold text-gray-900">Flash Sale</h2>
+                    <span class="relative flex h-6 w-6 items-center justify-center">
+                        <span class="absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-60 animate-ping"></span>
+                        <svg class="relative w-5 h-5 text-red-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M11.983 1.907a.75.75 0 00-1.292-.657l-8 9.5A.75.75 0 003.25 12H9v6.093a.75.75 0 001.292.657l8-9.5A.75.75 0 0018 8H12V1.907z" clip-rule="evenodd"/></svg>
+                    </span>
+                    <h2 class="text-lg md:text-xl font-extrabold text-gray-900 dark:text-white">Flash Sale</h2>
                 </div>
                 <div class="flex items-center gap-1.5">
-                    <div class="bg-gray-900 text-white text-xs font-bold px-2 py-1 rounded min-w-[28px] text-center">
+                    <div class="bg-gradient-to-b from-red-500 to-red-600 text-white text-xs font-bold px-2 py-1 rounded-md min-w-[28px] text-center shadow-sm">
                         <span x-text="String(hours).padStart(2,'0')">00</span>
                     </div>
-                    <span class="text-gray-900 font-bold text-xs">:</span>
-                    <div class="bg-gray-900 text-white text-xs font-bold px-2 py-1 rounded min-w-[28px] text-center">
+                    <span class="text-red-500 font-bold text-xs">:</span>
+                    <div class="bg-gradient-to-b from-red-500 to-red-600 text-white text-xs font-bold px-2 py-1 rounded-md min-w-[28px] text-center shadow-sm">
                         <span x-text="String(minutes).padStart(2,'0')">00</span>
                     </div>
-                    <span class="text-gray-900 font-bold text-xs">:</span>
-                    <div class="bg-gray-900 text-white text-xs font-bold px-2 py-1 rounded min-w-[28px] text-center">
+                    <span class="text-red-500 font-bold text-xs">:</span>
+                    <div class="bg-gradient-to-b from-red-500 to-red-600 text-white text-xs font-bold px-2 py-1 rounded-md min-w-[28px] text-center shadow-sm">
                         <span x-text="String(seconds).padStart(2,'0')">00</span>
                     </div>
                 </div>
             </div>
-            <a href="{{ route('shop.index') }}?on_sale=1" class="text-orange-700 hover:text-orange-800 font-bold text-sm transition">SHOP ALL →</a>
+            <a href="{{ route('shop.index') }}?on_sale=1" class="group inline-flex items-center gap-1 bg-red-50 hover:bg-red-100 dark:bg-red-500/10 dark:hover:bg-red-500/20 text-red-600 dark:text-red-400 px-3.5 py-1.5 rounded-full font-bold text-xs transition">
+                SHOP ALL
+                <svg class="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
+            </a>
         </div>
         <div class="flex gap-3 overflow-x-auto scrollbar-hide pb-2">
             @foreach($flashSaleProducts->take(10) as $fsp)
@@ -246,10 +270,7 @@
 @if($categories->count() > 0)
 <div class="mx-3 md:mx-0 mt-3 md:mt-4 bg-white dark:bg-gray-900 rounded-2xl md:rounded-none shadow-sm md:shadow-none">
     <div class="max-w-[1200px] mx-auto px-4 py-6">
-        <div class="flex items-center justify-between mb-5">
-            <h2 class="text-lg font-extrabold text-gray-900">Categories</h2>
-            <a href="{{ route('categories.index') }}" class="text-orange-700 hover:text-orange-800 font-bold text-sm transition">VIEW ALL →</a>
-        </div>
+        <x-storefront.section-header title="Categories" :view-all-url="route('categories.index')" />
         <div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-3 reveal-group" x-data="{ expanded: false }">
             @foreach($categories as $category)
                 {{-- Past the 6th tile, stay hidden on mobile until "More" is tapped;
@@ -310,19 +331,8 @@
     @php $sec = $entry['section']; $totalCount = $entry['totalCount']; @endphp
     <div class="mx-3 md:mx-0 mt-3 md:mt-4 rounded-2xl md:rounded-none shadow-sm md:shadow-none {{ $sec->theme === 'sale' ? 'bg-gradient-to-r from-red-500 to-orange-500' : 'bg-white dark:bg-gray-900' }}" x-data="{ expanded: false }">
         <div class="max-w-[1200px] mx-auto px-4 py-6">
-            <div class="flex items-center justify-between mb-5">
-                <div class="flex items-center gap-3">
-                    @if($sec->theme === 'sale')
-                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
-                    @endif
-                    <div>
-                        <h2 class="text-lg font-extrabold {{ $sec->theme === 'sale' ? 'text-white' : 'text-gray-900' }}">{{ $sec->title }}</h2>
-                        @if($sec->subtitle)<p class="{{ $sec->theme === 'sale' ? 'text-white/80' : 'text-gray-500' }} text-xs mt-0.5">{{ $sec->subtitle }}</p>@endif
-                    </div>
-                </div>
-                <a href="{{ $sec->getViewAllUrl() }}"
-                   class="{{ $sec->theme === 'sale' ? 'text-white/80 hover:text-white' : 'text-orange-700 hover:text-orange-800' }} font-bold text-sm transition">{{ $sec->getViewAllLabelText() }} →</a>
-            </div>
+            <x-storefront.section-header :title="$sec->title" :subtitle="$sec->subtitle" :view-all-url="$sec->getViewAllUrl()"
+                :view-all-label="$sec->getViewAllLabelText()" :theme="$sec->theme === 'sale' ? 'sale' : 'default'" />
             @php
                 // Mobile is always a fixed 2-column grid (see getGridColsClass), so
                 // capping the always-visible tier at 8 keeps mobile's first view to
@@ -426,10 +436,7 @@ $reviewThemes = [
 @if($brands->count() > 0)
 <div class="mx-3 md:mx-0 mt-3 md:mt-4 bg-white dark:bg-gray-900 rounded-2xl md:rounded-none shadow-sm md:shadow-none">
     <div class="max-w-[1200px] mx-auto px-4 py-6">
-        <div class="flex items-center justify-between mb-5">
-            <h2 class="text-lg font-extrabold text-gray-900">Top Brands</h2>
-            <a href="{{ route('brands.index') }}" class="text-orange-700 hover:text-orange-800 font-bold text-sm transition">VIEW ALL →</a>
-        </div>
+        <x-storefront.section-header title="Top Brands" :view-all-url="route('brands.index')" />
         <div class="carousel-container flex gap-3 overflow-x-auto scrollbar-hide pb-2 scroll-smooth reveal-group">
             @foreach($brands as $brand)
                 <a href="{{ route('shop.index') }}?brand={{ $brand->slug }}"
@@ -461,26 +468,34 @@ $reviewThemes = [
             @endforeach
         </div>
         <div class="text-center mt-6">
-            <a href="{{ route('shop.index') }}" class="inline-block bg-orange-500 text-white px-10 py-2.5 rounded-lg font-bold text-sm hover:bg-orange-600 transition shadow-md">{{ setting('just_for_you_button_text', 'View More Products') }}</a>
+            <a href="{{ route('shop.index') }}" class="group inline-flex items-center gap-2 bg-gradient-to-r from-orange-500 to-red-500 text-white px-10 py-2.5 rounded-full font-bold text-sm hover:shadow-lg hover:shadow-orange-500/30 hover:-translate-y-0.5 transition-all duration-300 shadow-md">
+                {{ setting('just_for_you_button_text', 'View More Products') }}
+                <svg class="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+            </a>
         </div>
     </div>
 </div>
 @endif
 
 {{-- ═══════════ TRUST BANNER ═══════════ --}}
-<div class="mt-4">
+<div class="mt-4 mb-2">
     <div class="max-w-[1200px] mx-auto px-4">
-        <div class="bg-gradient-to-r from-gray-800 to-gray-900 rounded-xl p-6 md:p-8">
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-6 text-center reveal-group">
+        <div class="relative overflow-hidden bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 rounded-2xl p-6 md:p-8 reveal">
+            <div class="pointer-events-none absolute -top-10 -right-10 w-56 h-56 bg-orange-500/10 blur-3xl rounded-full"></div>
+            <div class="pointer-events-none absolute -bottom-10 -left-10 w-56 h-56 bg-indigo-500/10 blur-3xl rounded-full"></div>
+            <div class="relative grid grid-cols-2 md:grid-cols-4 gap-6 text-center reveal-group">
                 @foreach([
-                    ['num' => '100%', 'label' => 'Genuine Products'],
-                    ['num' => '7 Days', 'label' => 'Easy Returns'],
-                    ['num' => '24/7', 'label' => 'Customer Support'],
-                    ['num' => 'Secure', 'label' => 'Payment System'],
+                    ['icon' => 'M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z', 'num' => '100%', 'label' => 'Genuine Products'],
+                    ['icon' => 'M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99', 'num' => '7 Days', 'label' => 'Easy Returns'],
+                    ['icon' => 'M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z', 'num' => '24/7', 'label' => 'Customer Support'],
+                    ['icon' => 'M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z', 'num' => 'Secure', 'label' => 'Payment System'],
                 ] as $stat)
-                <div>
+                <div class="group">
+                    <div class="w-10 h-10 mx-auto mb-2 bg-white/10 rounded-xl flex items-center justify-center group-hover:bg-white/20 group-hover:scale-110 transition-all duration-300">
+                        <svg class="w-5 h-5 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="{{ $stat['icon'] }}"/></svg>
+                    </div>
                     <p class="text-white text-lg md:text-2xl font-extrabold">{{ $stat['num'] }}</p>
-                    <p class="text-gray-500 text-xs mt-1">{{ $stat['label'] }}</p>
+                    <p class="text-gray-400 text-xs mt-1">{{ $stat['label'] }}</p>
                 </div>
                 @endforeach
             </div>

@@ -12,7 +12,7 @@
         ? \App\Models\Cart::where('user_id', auth()->id())->where('product_id', $product->id)->exists()
         : \App\Models\Cart::where('session_id', session()->getId())->where('product_id', $product->id)->exists();
 @endphp
-<div class="h-full flex flex-col bg-white rounded-lg shadow-sm hover:shadow-lg transition-all duration-300 group overflow-hidden border border-transparent hover:border-orange-200 relative">
+<div class="h-full flex flex-col bg-white rounded-xl shadow-sm hover:shadow-xl hover:shadow-gray-200/60 transition-all duration-300 group overflow-hidden ring-1 ring-gray-100 hover:ring-orange-200 hover:-translate-y-1 relative">
     <a href="{{ route('products.show', $product->slug) }}" class="block relative">
         {{-- object-contain + padding (not cover) — a product photo can be any shape or have
              any amount of its own white-background padding baked in (most do), and cropping
@@ -32,11 +32,11 @@
             @endif
 
             @if($isFlash)
-                <span class="absolute top-0 left-0 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-br-lg">
+                <span class="absolute top-2 left-2 flex items-center gap-0.5 bg-gradient-to-r from-red-500 to-rose-500 text-white text-[10px] font-bold px-2 py-1 rounded-full shadow-sm">
                     ⚡ -{{ $discountPct }}%
                 </span>
             @elseif($hasDiscount)
-                <span class="absolute top-0 left-0 bg-orange-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-br-lg">
+                <span class="absolute top-2 left-2 bg-gradient-to-r from-orange-500 to-amber-500 text-white text-[10px] font-bold px-2 py-1 rounded-full shadow-sm">
                     -{{ $discountPct }}%
                 </span>
             @endif
