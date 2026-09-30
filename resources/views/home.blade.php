@@ -271,36 +271,36 @@
 <div class="mx-3 md:mx-0 mt-3 md:mt-4 bg-white dark:bg-gray-900 rounded-2xl md:rounded-none shadow-sm md:shadow-none">
     <div class="max-w-[1200px] mx-auto px-4 py-6">
         <x-storefront.section-header title="Categories" :view-all-url="route('categories.index')" />
-        <div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-3 reveal-group" x-data="{ expanded: false }">
-            @foreach($categories as $category)
-                {{-- Past the 6th tile, stay hidden on mobile until "More" is tapped;
-                     sm:!flex forces the tile back on at the sm breakpoint and up,
-                     where the grid already has room to show everything at once. --}}
-                <a href="{{ route('shop.category', $category->slug) }}"
-                   @if($loop->index >= 6) x-show="expanded" x-cloak @endif
-                   class="group flex flex-col items-center p-3 rounded-xl hover:bg-orange-50 transition-all duration-200 {{ $loop->index >= 6 ? 'sm:!flex' : '' }}">
-                    <div class="w-14 h-14 md:w-16 md:h-16 bg-gradient-to-br from-orange-100 to-orange-50 rounded-2xl flex items-center justify-center mb-2 group-hover:from-orange-200 group-hover:to-orange-100 transition-all group-hover:scale-110 group-hover:-translate-y-1 duration-300 shadow-sm overflow-hidden">
-                        @if($category->image)
-                            <img src="{{ Storage::url($category->image) }}" alt="{{ $category->name }}" loading="lazy" decoding="async" class="w-full h-full object-cover">
-                        @else
-                            {{-- A generic tag icon (not two-letter initials) reads as an
-                                 intentional, uniform icon set — initials look like a raw
-                                 unstyled fallback the moment more than a couple of
-                                 categories are missing a photo. --}}
-                            <svg class="w-7 h-7 md:w-8 md:h-8 text-orange-400 group-hover:animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
-                        @endif
-                    </div>
-                    <p class="text-[10px] md:text-xs font-semibold text-gray-700 text-center leading-tight group-hover:text-orange-600 transition line-clamp-2">{{ $category->name }}</p>
-                </a>
-            @endforeach
-            @if($categories->count() > 6)
-            <div class="col-span-3 sm:hidden text-center mt-1" x-show="!expanded">
-                <button type="button" @click="expanded = true" class="inline-flex items-center gap-1 text-orange-700 hover:text-orange-800 font-bold text-sm transition">
-                    More
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
-                </button>
+        {{-- Mobile: a swipeable horizontal row (fixed-width tiles, scroll-snap, no "More"
+             button needed at all — every category is one swipe away) instead of a grid
+             capped at 6 with a toggle to reveal the rest. This is the same pattern
+             Daraz/AliExpress/Amazon's own apps use for a category rail on a phone, and it
+             reads as smoother/more native than a static grid + button. sm: and up reverts
+             to the original grid (there's already room to show everything at once there,
+             so a scroller would just be wasted horizontal space on a wide screen). --}}
+        <div class="relative">
+            <div class="flex sm:grid gap-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 overflow-x-auto sm:overflow-visible snap-x snap-mandatory sm:snap-none scrollbar-hide pb-1 reveal-group">
+                @foreach($categories as $category)
+                    <a href="{{ route('shop.category', $category->slug) }}"
+                       class="group w-20 flex-shrink-0 sm:w-auto sm:flex-shrink snap-start flex flex-col items-center p-3 rounded-xl hover:bg-orange-50 dark:hover:bg-gray-800/60 transition-all duration-200">
+                        <div class="w-14 h-14 md:w-16 md:h-16 bg-gradient-to-br from-orange-100 to-orange-50 rounded-2xl flex items-center justify-center mb-2 group-hover:from-orange-200 group-hover:to-orange-100 transition-all group-hover:scale-110 group-hover:-translate-y-1 duration-300 shadow-sm overflow-hidden">
+                            @if($category->image)
+                                <img src="{{ Storage::url($category->image) }}" alt="{{ $category->name }}" loading="lazy" decoding="async" class="w-full h-full object-cover">
+                            @else
+                                {{-- A generic tag icon (not two-letter initials) reads as an
+                                     intentional, uniform icon set — initials look like a raw
+                                     unstyled fallback the moment more than a couple of
+                                     categories are missing a photo. --}}
+                                <svg class="w-7 h-7 md:w-8 md:h-8 text-orange-400 group-hover:animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
+                            @endif
+                        </div>
+                        <p class="text-[10px] md:text-xs font-semibold text-gray-700 dark:text-gray-200 text-center leading-tight group-hover:text-orange-600 transition line-clamp-2">{{ $category->name }}</p>
+                    </a>
+                @endforeach
             </div>
-            @endif
+            {{-- Right-edge fade — hints there's more to swipe to without needing a "More"
+                 button; invisible once everything already fits (nothing to scroll to). --}}
+            <div class="sm:hidden pointer-events-none absolute top-0 right-0 bottom-1 w-10 bg-gradient-to-l from-white dark:from-gray-900 to-transparent"></div>
         </div>
     </div>
 </div>
