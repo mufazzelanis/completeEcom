@@ -179,31 +179,38 @@
         @php
             $highlightGradients = ['from-orange-400 to-red-500', 'from-emerald-400 to-teal-500', 'from-indigo-400 to-blue-500', 'from-pink-400 to-fuchsia-500'];
         @endphp
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 reveal-group">
+        {{-- A single row of 4 on every screen size, not a 2x2 grid on mobile — with only 4
+             short trust items that already all fit at once, a horizontal *scroller* would
+             hide two of them behind a swipe, working against the whole point of a trust
+             strip (reassure the customer instantly, not after an extra gesture). Mobile
+             instead gets a more compact vertical icon-over-label tile (sub-text hidden —
+             no room for it at 4-across on a phone); sm: and up keeps the original
+             icon-beside-text layout with the sub-line. --}}
+        <div class="grid grid-cols-4 gap-2 sm:gap-4 reveal-group">
             @foreach($highlights as $idx => $f)
                 @if($f['link'])
                     <a href="{{ $f['link'] }}" @if($f['blank']) target="_blank" rel="noopener" @endif
-                       class="group flex items-center gap-3 -m-1.5 p-1.5 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800/60 hover:-translate-y-0.5 transition-all duration-200">
-                        <div class="w-11 h-11 bg-gradient-to-br {{ $highlightGradients[$idx % 4] }} rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm group-hover:shadow-md group-hover:scale-105 transition-all">
-                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                       class="group flex flex-col sm:flex-row items-center gap-1.5 sm:gap-3 text-center sm:text-left p-1.5 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800/60 sm:hover:-translate-y-0.5 transition-all duration-200">
+                        <div class="w-9 h-9 sm:w-11 sm:h-11 bg-gradient-to-br {{ $highlightGradients[$idx % 4] }} rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm group-hover:shadow-md group-hover:scale-105 transition-all">
+                            <svg class="w-4 h-4 sm:w-5 sm:h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="{{ $f['icon'] }}"/>
                             </svg>
                         </div>
                         <div class="min-w-0">
-                            <p class="font-bold text-gray-800 dark:text-gray-100 text-xs">{{ $f['text'] }}</p>
-                            <p class="text-gray-500 dark:text-gray-400 text-[10px] truncate">{{ $f['sub'] }}</p>
+                            <p class="font-bold text-gray-800 dark:text-gray-100 text-[10px] sm:text-xs leading-tight">{{ $f['text'] }}</p>
+                            <p class="hidden sm:block text-gray-500 dark:text-gray-400 text-[10px] truncate">{{ $f['sub'] }}</p>
                         </div>
                     </a>
                 @else
-                    <div class="flex items-center gap-3">
-                        <div class="w-11 h-11 bg-gradient-to-br {{ $highlightGradients[$idx % 4] }} rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm">
-                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div class="flex flex-col sm:flex-row items-center gap-1.5 sm:gap-3 text-center sm:text-left p-1.5">
+                        <div class="w-9 h-9 sm:w-11 sm:h-11 bg-gradient-to-br {{ $highlightGradients[$idx % 4] }} rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm">
+                            <svg class="w-4 h-4 sm:w-5 sm:h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="{{ $f['icon'] }}"/>
                             </svg>
                         </div>
                         <div class="min-w-0">
-                            <p class="font-bold text-gray-800 dark:text-gray-100 text-xs">{{ $f['text'] }}</p>
-                            <p class="text-gray-500 dark:text-gray-400 text-[10px] truncate">{{ $f['sub'] }}</p>
+                            <p class="font-bold text-gray-800 dark:text-gray-100 text-[10px] sm:text-xs leading-tight">{{ $f['text'] }}</p>
+                            <p class="hidden sm:block text-gray-500 dark:text-gray-400 text-[10px] truncate">{{ $f['sub'] }}</p>
                         </div>
                     </div>
                 @endif
