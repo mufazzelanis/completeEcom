@@ -297,8 +297,11 @@
                          a smaller footprint, and the ring + press-scale make it unmistakably
                          tappable rather than just decorative. --}}
                     <a href="{{ route('shop.category', $category->slug) }}"
-                       class="group w-16 flex-shrink-0 sm:w-auto sm:flex-shrink snap-start flex flex-col items-center gap-2 p-1.5 rounded-xl active:scale-95 transition-transform duration-150">
-                        <div class="relative w-14 h-14 md:w-16 md:h-16 rounded-full p-[2.5px] bg-gradient-to-br from-orange-400 via-rose-400 to-pink-500 shadow-sm group-hover:shadow-lg group-hover:shadow-orange-500/20 group-hover:scale-105 transition-all duration-300">
+                       class="group w-14 flex-shrink-0 sm:w-auto sm:flex-shrink snap-start flex flex-col items-center gap-2 p-1.5 rounded-xl active:scale-95 transition-transform duration-150">
+                        {{-- category-ring (app.blade.php <style>) is a continuously-spinning
+                             conic-gradient border — smaller than before, too, so one more
+                             tile fits in the same mobile viewport width. --}}
+                        <div class="category-ring relative w-12 h-12 md:w-14 md:h-14 rounded-full p-[2.5px] shadow-sm group-hover:shadow-lg group-hover:shadow-orange-500/20 group-hover:scale-105 transition-all duration-300">
                             <div class="w-full h-full rounded-full bg-white dark:bg-gray-900 p-[3px]">
                                 <div class="w-full h-full rounded-full overflow-hidden bg-gradient-to-br from-orange-50 to-orange-100 dark:from-gray-800 dark:to-gray-700 flex items-center justify-center">
                                     @if($category->image)

@@ -392,6 +392,24 @@ $pageTwitterImage = trim($__env->yieldContent('twitter_image', $pageOgImage));
         .fab-pop-in{animation:fabPopIn .5s cubic-bezier(.34,1.56,.64,1) both}
         @media (prefers-reduced-motion: reduce){ .fab-pop-in{animation:none} }
 
+        /* Continuously-rotating gradient ring for the homepage "Shop by Category" circles
+           — a conic-gradient spun via an animated custom property (not a `transform:
+           rotate()` on the whole ring, which would spin the photo inside it too) so only
+           the colored border itself appears to revolve. @property is what makes the angle
+           animatable/interpolated at all; browsers without it (very old Safari/Firefox)
+           just see a static gradient at 0deg — a harmless fallback, not a broken one. */
+        @property --category-ring-angle {
+            syntax: '<angle>';
+            inherits: false;
+            initial-value: 0deg;
+        }
+        @keyframes categoryRingSpin { to { --category-ring-angle: 360deg; } }
+        .category-ring {
+            background: conic-gradient(from var(--category-ring-angle), #fb923c, #fb7185, #ec4899, #fb923c);
+            animation: categoryRingSpin 4s linear infinite;
+        }
+        @media (prefers-reduced-motion: reduce){ .category-ring{animation:none} }
+
         /* showToast() entrance/exit — slides in from the right and fades, reverses
            on the way out (class added by the same setTimeout that schedules removal). */
         @keyframes toastIn{from{opacity:0;transform:translateX(24px)}to{opacity:1;transform:translateX(0)}}
