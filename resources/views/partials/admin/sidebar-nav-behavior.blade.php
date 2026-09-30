@@ -68,12 +68,56 @@
             var asideRect = sidebar.getBoundingClientRect();
             body.style.top = Math.max(4, groupRect.top - asideRect.top - 4) + 'px';
         };
+
+        // [data-flyout-open] state machine (app.css reads it, not :hover) — see the CSS
+        // comment above .admin-nav-group__body for why: the rail is a contiguous vertical
+        // strip of icons, so reaching for a low item in a tall flyout sweeps the mouse
+        // across other icons on the way there. OPEN_DELAY means a brief graze across one
+        // doesn't switch to it; CLOSE_DELAY means briefly leaving the current one (to
+        // physically travel to its own flyout) doesn't hide it first.
+        var OPEN_DELAY = 150;
+        var CLOSE_DELAY = 300;
+        var openTimer = null;
+        var closeTimers = {}; // one per group, since more than one can be mid-close at once
+        var openGroup = null;
+
+        var reallyOpen = function (group) {
+            if (openGroup && openGroup !== group) openGroup.removeAttribute('data-flyout-open');
+            positionFlyout(group);
+            group.setAttribute('data-flyout-open', '1');
+            openGroup = group;
+        };
+        var reallyClose = function (group) {
+            group.removeAttribute('data-flyout-open');
+            if (openGroup === group) openGroup = null;
+        };
+
         groups.forEach(function (g) {
-            g.addEventListener('mouseenter', function () { positionFlyout(g); });
+            g.addEventListener('mouseenter', function () {
+                if (!sidebar || sidebar.getAttribute('data-collapsed') !== '1') return;
+                if (closeTimers[groupName(g)]) { clearTimeout(closeTimers[groupName(g)]); delete closeTimers[groupName(g)]; }
+                if (openGroup === g) return; // already open — just cancelled its pending close above
+                if (openTimer) clearTimeout(openTimer);
+                openTimer = setTimeout(function () { openTimer = null; reallyOpen(g); }, OPEN_DELAY);
+            });
+            g.addEventListener('mouseleave', function () {
+                if (!sidebar || sidebar.getAttribute('data-collapsed') !== '1') return;
+                if (openTimer) { clearTimeout(openTimer); openTimer = null; }
+                var name = groupName(g);
+                closeTimers[name] = setTimeout(function () { delete closeTimers[name]; reallyClose(g); }, CLOSE_DELAY);
+            });
         });
+        // Keyboard focus stays instant (CSS :focus-within already shows it with no delay)
+        // — this only needs to keep `top` correct and the JS state in sync so a mouse
+        // move afterward doesn't fight with what Tab just opened.
         nav.addEventListener('focusin', function (event) {
             var group = event.target.closest('[data-nav-group]');
-            if (group) positionFlyout(group);
+            if (!group) return;
+            positionFlyout(group);
+            if (openTimer) { clearTimeout(openTimer); openTimer = null; }
+            var name = groupName(group);
+            if (closeTimers[name]) { clearTimeout(closeTimers[name]); delete closeTimers[name]; }
+            reallyOpen(group);
         });
 
         // The group holding the current page is always open; otherwise only groups pinned open by hand.

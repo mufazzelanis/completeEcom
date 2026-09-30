@@ -438,7 +438,16 @@ html.dark .prose .blog-promo-link:hover .blog-promo-frame { box-shadow: 0 16px 3
         z-index: 60;
     }
     #admin-sidebar[data-collapsed="1"] .admin-nav-group__inner { overflow: visible; }
-    #admin-sidebar[data-collapsed="1"] .admin-nav-group:hover .admin-nav-group__body,
+    /* Driven by [data-flyout-open], NOT :hover — the rail icons are a contiguous vertical
+       strip, so a straight-line mouse path from one icon toward a LOW item in its own
+       (tall) flyout necessarily sweeps across other icons in between (the flyout sits to
+       the right, but the path getting there crosses their y-range first). Under pure
+       :hover that instantly stole the flyout to whichever icon the path grazed — the
+       classic "safe triangle" problem every hover mega-menu has. sidebar-nav-behavior.
+       blade.php debounces opening (so a brief graze doesn't switch) and delays closing
+       (so briefly leaving to travel toward the flyout doesn't hide it). :focus-within
+       stays instant, since keyboard Tab has no such graze problem. */
+    #admin-sidebar[data-collapsed="1"] .admin-nav-group[data-flyout-open="1"] .admin-nav-group__body,
     #admin-sidebar[data-collapsed="1"] .admin-nav-group:focus-within .admin-nav-group__body {
         opacity: 1; visibility: visible !important;
         transition: opacity 0.15s ease;
@@ -448,7 +457,7 @@ html.dark .prose .blog-promo-link:hover .blog-promo-frame { box-shadow: 0 16px 3
        pinned open — which has nothing to do with hovering a *collapsed* group's icon.
        Without this, hovering a closed group showed an empty flyout box: the body itself
        went visible, but its inner (actual link) content stayed hidden underneath it. */
-    #admin-sidebar[data-collapsed="1"] .admin-nav-group:hover .admin-nav-group__inner,
+    #admin-sidebar[data-collapsed="1"] .admin-nav-group[data-flyout-open="1"] .admin-nav-group__inner,
     #admin-sidebar[data-collapsed="1"] .admin-nav-group:focus-within .admin-nav-group__inner {
         visibility: visible !important;
     }
