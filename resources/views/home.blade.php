@@ -288,18 +288,26 @@
         <div class="relative">
             <div class="flex sm:grid gap-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 overflow-x-auto sm:overflow-visible snap-x snap-mandatory sm:snap-none scrollbar-hide pb-1 reveal-group">
                 @foreach($categories as $category)
+                    {{-- Circular "story ring" tile (Instagram/Daraz "Shop by Category" pattern)
+                         instead of a square icon block — reads as noticeably more polished at
+                         a smaller footprint, and the ring + press-scale make it unmistakably
+                         tappable rather than just decorative. --}}
                     <a href="{{ route('shop.category', $category->slug) }}"
-                       class="group w-20 flex-shrink-0 sm:w-auto sm:flex-shrink snap-start flex flex-col items-center p-3 rounded-xl hover:bg-orange-50 dark:hover:bg-gray-800/60 transition-all duration-200">
-                        <div class="w-14 h-14 md:w-16 md:h-16 bg-gradient-to-br from-orange-100 to-orange-50 rounded-2xl flex items-center justify-center mb-2 group-hover:from-orange-200 group-hover:to-orange-100 transition-all group-hover:scale-110 group-hover:-translate-y-1 duration-300 shadow-sm overflow-hidden">
-                            @if($category->image)
-                                <img src="{{ Storage::url($category->image) }}" alt="{{ $category->name }}" loading="lazy" decoding="async" class="w-full h-full object-cover">
-                            @else
-                                {{-- A generic tag icon (not two-letter initials) reads as an
-                                     intentional, uniform icon set — initials look like a raw
-                                     unstyled fallback the moment more than a couple of
-                                     categories are missing a photo. --}}
-                                <svg class="w-7 h-7 md:w-8 md:h-8 text-orange-400 group-hover:animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
-                            @endif
+                       class="group w-16 flex-shrink-0 sm:w-auto sm:flex-shrink snap-start flex flex-col items-center gap-2 p-1.5 rounded-xl active:scale-95 transition-transform duration-150">
+                        <div class="relative w-14 h-14 md:w-16 md:h-16 rounded-full p-[2.5px] bg-gradient-to-br from-orange-400 via-rose-400 to-pink-500 shadow-sm group-hover:shadow-lg group-hover:shadow-orange-500/20 group-hover:scale-105 transition-all duration-300">
+                            <div class="w-full h-full rounded-full bg-white dark:bg-gray-900 p-[3px]">
+                                <div class="w-full h-full rounded-full overflow-hidden bg-gradient-to-br from-orange-50 to-orange-100 dark:from-gray-800 dark:to-gray-700 flex items-center justify-center">
+                                    @if($category->image)
+                                        <img src="{{ Storage::url($category->image) }}" alt="{{ $category->name }}" loading="lazy" decoding="async" class="w-full h-full object-cover">
+                                    @else
+                                        {{-- A generic tag icon (not two-letter initials) reads as an
+                                             intentional, uniform icon set — initials look like a raw
+                                             unstyled fallback the moment more than a couple of
+                                             categories are missing a photo. --}}
+                                        <svg class="w-6 h-6 md:w-7 md:h-7 text-orange-400 group-hover:animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
+                                    @endif
+                                </div>
+                            </div>
                         </div>
                         <p class="text-[10px] md:text-xs font-semibold text-gray-700 dark:text-gray-200 text-center leading-tight group-hover:text-orange-600 transition line-clamp-2">{{ $category->name }}</p>
                     </a>
