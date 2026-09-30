@@ -360,20 +360,30 @@
         <div class="relative max-w-[1200px] mx-auto px-4 py-6">
             <x-storefront.section-header :title="$sec->title" :subtitle="$sec->subtitle" :view-all-url="$sec->getViewAllUrl()"
                 :view-all-label="$sec->getViewAllLabelText()" :theme="$sec->theme === 'sale' ? 'sale' : 'default'" :count="$totalCount" />
-            {{-- Mobile: a horizontal swipe row (every product up to the admin's own
-                 product_limit shown at once — no separate "mobile cap" needed anymore,
-                 since scrolling replaces the old "only 4 rows, tap More for the rest"
-                 split). sm: and up is the unchanged admin-configured grid. Only products
-                 BEYOND product_limit (the true overflow into the extra fetched batch)
-                 stay behind "View More", the same on both layouts now. --}}
-            <div class="flex sm:grid {{ $sec->getGridColsClass() }} gap-3 overflow-x-auto sm:overflow-visible snap-x snap-mandatory sm:snap-none scrollbar-hide pb-1 reveal-group">
+            {{-- Back to the familiar grid + "View More" button (swiping felt less natural
+                 here than it did for Categories) — but newly-revealed cards now fade/slide
+                 in instead of just popping into existence, which they never did before. --}}
+            @php
+                // Mobile is always a fixed 2-column grid (see getGridColsClass), so
+                // capping the always-visible tier at 8 keeps mobile's first view to
+                // 4 rows regardless of how many columns/products_limit the admin
+                // picked for desktop — the rest still shows immediately at sm+.
+                $mobileCap = min(8, $sec->product_limit);
+            @endphp
+            <div class="grid {{ $sec->getGridColsClass() }} gap-3 reveal-group">
                 @foreach($entry['products'] as $i => $product)
-                    @if($i < $sec->product_limit)
-                        <div class="w-40 flex-shrink-0 snap-start sm:w-auto sm:flex-shrink">
+                    @if($i < $mobileCap)
+                        @include('partials.product-card', ['product' => $product])
+                    @elseif($i < $sec->product_limit)
+                        {{-- Within the admin's chosen limit, so always shown on desktop;
+                             on mobile it waits behind "More" alongside the true overflow. --}}
+                        <div x-show="expanded" x-cloak class="sm:!block"
+                             x-transition:enter="transition ease-out duration-400" x-transition:enter-start="opacity-0 translate-y-3" x-transition:enter-end="opacity-100 translate-y-0">
                             @include('partials.product-card', ['product' => $product])
                         </div>
                     @else
-                        <div x-show="expanded" x-cloak class="w-40 flex-shrink-0 snap-start sm:w-auto sm:flex-shrink">
+                        <div x-show="expanded" x-cloak
+                             x-transition:enter="transition ease-out duration-400" x-transition:enter-start="opacity-0 translate-y-3" x-transition:enter-end="opacity-100 translate-y-0">
                             @include('partials.product-card', ['product' => $product])
                         </div>
                     @endif
@@ -382,11 +392,24 @@
             {{-- Only rendered when there's actually more to reveal — clicking stays right
                  here on the homepage and shows the rest of this section's fetched batch,
                  no navigation away (unlike the small "View All" link above, which still
-                 goes to the full /shop listing). --}}
+                 goes to the full /shop listing). When the only hidden tier is the
+                 mobile row cap (nothing held back on desktop), the button itself is
+                 mobile-only — there'd be nothing left for it to reveal at sm+. --}}
             @if($totalCount > $sec->product_limit)
             <div class="text-center mt-6" x-show="!expanded">
                 <button type="button" @click="expanded = true"
-                   class="inline-block {{ $sec->theme === 'sale' ? 'bg-white text-orange-600 hover:bg-gray-100' : 'bg-orange-500 text-white hover:bg-orange-600' }} px-10 py-2.5 rounded-lg font-bold text-sm transition shadow-md">{{ $sec->getViewAllLabelText() }}</button>
+                   class="group inline-flex items-center gap-2 {{ $sec->theme === 'sale' ? 'bg-white text-orange-600 hover:bg-gray-100' : 'bg-gradient-to-r from-orange-500 to-red-500 text-white hover:shadow-lg hover:shadow-orange-500/30' }} px-10 py-2.5 rounded-full font-bold text-sm transition-all duration-300 shadow-md hover:-translate-y-0.5">
+                    {{ $sec->getViewAllLabelText() }}
+                    <svg class="w-4 h-4 group-hover:translate-y-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
+                </button>
+            </div>
+            @elseif($sec->product_limit > $mobileCap)
+            <div class="text-center mt-6 sm:hidden" x-show="!expanded">
+                <button type="button" @click="expanded = true"
+                   class="group inline-flex items-center gap-2 {{ $sec->theme === 'sale' ? 'bg-white text-orange-600 hover:bg-gray-100' : 'bg-gradient-to-r from-orange-500 to-red-500 text-white hover:shadow-lg hover:shadow-orange-500/30' }} px-10 py-2.5 rounded-full font-bold text-sm transition-all duration-300 shadow-md hover:-translate-y-0.5">
+                    {{ $sec->getViewAllLabelText() }}
+                    <svg class="w-4 h-4 group-hover:translate-y-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
+                </button>
             </div>
             @endif
         </div>
