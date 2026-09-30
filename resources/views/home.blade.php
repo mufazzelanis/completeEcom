@@ -191,7 +191,11 @@
                 @if($f['link'])
                     <a href="{{ $f['link'] }}" @if($f['blank']) target="_blank" rel="noopener" @endif
                        class="group flex flex-col sm:flex-row items-center gap-1.5 sm:gap-3 text-center sm:text-left p-1.5 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800/60 sm:hover:-translate-y-0.5 transition-all duration-200">
-                        <div class="w-9 h-9 sm:w-11 sm:h-11 bg-gradient-to-br {{ $highlightGradients[$idx % 4] }} rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm group-hover:shadow-md group-hover:scale-105 transition-all">
+                        {{-- No group-hover:scale here — a transform-based hover would fight the
+                             continuous .icon-float animation over the same `transform` property
+                             (they'd visibly stutter against each other). Shadow-only hover
+                             feedback instead. --}}
+                        <div class="icon-float icon-float-{{ $idx + 1 }} w-9 h-9 sm:w-11 sm:h-11 bg-gradient-to-br {{ $highlightGradients[$idx % 4] }} rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm group-hover:shadow-md transition-shadow">
                             <svg class="w-4 h-4 sm:w-5 sm:h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="{{ $f['icon'] }}"/>
                             </svg>
@@ -203,7 +207,7 @@
                     </a>
                 @else
                     <div class="flex flex-col sm:flex-row items-center gap-1.5 sm:gap-3 text-center sm:text-left p-1.5">
-                        <div class="w-9 h-9 sm:w-11 sm:h-11 bg-gradient-to-br {{ $highlightGradients[$idx % 4] }} rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm">
+                        <div class="icon-float icon-float-{{ $idx + 1 }} w-9 h-9 sm:w-11 sm:h-11 bg-gradient-to-br {{ $highlightGradients[$idx % 4] }} rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm">
                             <svg class="w-4 h-4 sm:w-5 sm:h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="{{ $f['icon'] }}"/>
                             </svg>

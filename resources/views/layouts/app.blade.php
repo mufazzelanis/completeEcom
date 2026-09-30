@@ -372,6 +372,19 @@ $pageTwitterImage = trim($__env->yieldContent('twitter_image', $pageOgImage));
         .pop-bounce{animation:popBounce .45s ease-out}
         @media (prefers-reduced-motion: reduce){ .pop-bounce{animation:none} }
 
+        /* Gentle, continuous float for the trust-bar icon circles (Free Shipping/Secure
+           Payment/Easy Returns/24-7 Support) — an "always alive" idle animation instead of
+           one that only reacts to hover. Staggered per icon via .icon-float-1..4 so they
+           drift slightly out of phase rather than bobbing in unison, which reads as more
+           organic than four icons moving in lockstep. */
+        @keyframes iconFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+        .icon-float{animation:iconFloat 3s ease-in-out infinite}
+        .icon-float-1{animation-delay:0s}
+        .icon-float-2{animation-delay:.3s}
+        .icon-float-3{animation-delay:.6s}
+        .icon-float-4{animation-delay:.9s}
+        @media (prefers-reduced-motion: reduce){ .icon-float{animation:none} }
+
         /* showToast() entrance/exit — slides in from the right and fades, reverses
            on the way out (class added by the same setTimeout that schedules removal). */
         @keyframes toastIn{from{opacity:0;transform:translateX(24px)}to{opacity:1;transform:translateX(0)}}
