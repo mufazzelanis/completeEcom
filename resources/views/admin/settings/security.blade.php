@@ -57,7 +57,7 @@
             <input type="hidden" name="two_factor_enabled" value="0">
             <input type="checkbox" name="two_factor_enabled" value="1" class="rounded text-orange-600"
                    @checked(setting('two_factor_enabled','1') == '1')>
-            <span class="text-sm text-gray-700">Require 2FA for Admin</span>
+            <span class="text-sm text-gray-700">Enable Two-Factor Authentication (2FA)</span>
         </label>
         <label class="flex items-center gap-2 cursor-pointer">
             <input type="hidden" name="force_https" value="0">
@@ -66,6 +66,9 @@
             <span class="text-sm text-gray-700">Force HTTPS</span>
         </label>
     </div>
+    <p class="text-xs text-gray-400 mt-2">
+        Master switch for 2FA site-wide — required for admins/managers/staff, and also what lets customers and sellers turn on the optional email-code login step from their own Security/Profile page. Turning this off skips the code step for everyone, even accounts that already turned it on.
+    </p>
 </div>
 
 <div class="bg-white rounded-xl shadow-sm border p-6 space-y-4">

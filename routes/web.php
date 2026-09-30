@@ -85,9 +85,11 @@ use App\Http\Controllers\AccountReturnController;
 use App\Http\Controllers\ReturnRequestController;
 use App\Http\Controllers\SearchController;
 use App\Http\Controllers\SecurityController;
+use App\Http\Controllers\Seller\TwoFactorController as SellerTwoFactorController;
 use App\Http\Controllers\ShopController;
 use App\Http\Controllers\SitemapController;
 use App\Http\Controllers\SupportTicketController;
+use App\Http\Controllers\TwoFactorController as AccountTwoFactorController;
 use App\Http\Controllers\Seller\CategoryController as SellerCategoryController;
 use App\Http\Controllers\Seller\DashboardController as SellerDashboardController;
 use App\Http\Controllers\Seller\OrderController as SellerOrderController;
@@ -259,6 +261,15 @@ Route::middleware('auth')->group(function () {
 
         // Security / Login Activity
         Route::get('/security', [SecurityController::class, 'index'])->name('security');
+
+        // Two-factor authentication — opt-in, unlike the admin version (see
+        // App\Http\Controllers\TwoFactorController's docblock).
+        Route::prefix('two-factor')->name('two-factor.')->group(function () {
+            Route::get('/', [AccountTwoFactorController::class, 'show'])->name('show');
+            Route::post('/confirm', [AccountTwoFactorController::class, 'confirm'])->middleware('throttle:10,1')->name('confirm');
+            Route::post('/disable', [AccountTwoFactorController::class, 'disable'])->name('disable');
+            Route::post('/recovery-codes', [AccountTwoFactorController::class, 'regenerateRecoveryCodes'])->name('recovery-codes');
+        });
     });
 
     // Become a Seller
@@ -277,6 +288,14 @@ Route::middleware('auth')->group(function () {
         Route::get('reports/download', [SellerReportController::class, 'download'])->name('reports.download');
         Route::get('profile', [SellerProfileController::class, 'edit'])->name('profile.edit');
         Route::put('profile', [SellerProfileController::class, 'update'])->name('profile.update');
+
+        // Two-factor authentication — opt-in, same reasoning as the customer account version.
+        Route::prefix('two-factor')->name('two-factor.')->group(function () {
+            Route::get('/', [SellerTwoFactorController::class, 'show'])->name('show');
+            Route::post('/confirm', [SellerTwoFactorController::class, 'confirm'])->middleware('throttle:10,1')->name('confirm');
+            Route::post('/disable', [SellerTwoFactorController::class, 'disable'])->name('disable');
+            Route::post('/recovery-codes', [SellerTwoFactorController::class, 'regenerateRecoveryCodes'])->name('recovery-codes');
+        });
     });
 
     // Admin two-factor enrollment — deliberately outside the admin+2FA-enforcing
