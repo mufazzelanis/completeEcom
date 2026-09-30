@@ -23,7 +23,7 @@
 
     {{-- Theme Toggle --}}
     <button @click="$store.theme.toggle()" type="button"
-        class="p-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition"
+        class="p-2 rounded-full text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 active:scale-90 tap-spring transition-all duration-200"
         :aria-label="$store.theme.dark ? 'Switch to light mode' : 'Switch to dark mode'">
         <svg x-show="!$store.theme.dark" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
         <svg x-show="$store.theme.dark" x-cloak class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
@@ -34,7 +34,7 @@
          the desktop-only category bar. Same ping-ring-over-solid-dot "live" badge used for
          the other Blogs entries, positioned like a notification-count badge would be. --}}
     <a href="{{ setting('nav_blog_url') ?: route('blog.index') }}" aria-label="Blog"
-        class="relative p-2 text-gray-600 dark:text-gray-300 hover:text-orange-700 transition">
+        class="relative p-2 rounded-full text-gray-600 dark:text-gray-300 hover:text-orange-700 hover:bg-gray-100 dark:hover:bg-gray-800 active:scale-90 tap-spring transition-all duration-200">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 20H7a2 2 0 01-2-2V4a2 2 0 012-2h7l5 5v11a2 2 0 01-2 2z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 2v5h5M9 13h6m-6 4h4"/></svg>
         <span class="absolute top-1 right-1 flex h-2 w-2">
             <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
@@ -46,12 +46,12 @@
          instead of just navigating to the shop page, so tapping this actually lets you
          type a search rather than dropping you on an unfiltered product listing. --}}
     <button type="button" @click="mobileOpen = true; $nextTick(() => $refs.mobileSearchInput.focus())"
-        class="md:hidden p-2 text-gray-600 dark:text-gray-300 hover:text-orange-700" aria-label="Search">
+        class="md:hidden p-2 rounded-full text-gray-600 dark:text-gray-300 hover:text-orange-700 hover:bg-gray-100 dark:hover:bg-gray-800 active:scale-90 tap-spring transition-all duration-200" aria-label="Search">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
     </button>
 
     {{-- Cart --}}
-    <a href="{{ route('cart.index') }}" aria-label="Cart" class="relative p-2 text-gray-600 dark:text-gray-300 hover:text-orange-700 transition group">
+    <a href="{{ route('cart.index') }}" aria-label="Cart" class="relative p-2 rounded-full text-gray-600 dark:text-gray-300 hover:text-orange-700 hover:bg-gray-100 dark:hover:bg-gray-800 active:scale-90 tap-spring transition-all duration-200 group">
         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
         @php
             $cartCount = auth()->check()
@@ -64,7 +64,7 @@
 
     {{-- Wishlist --}}
     @auth
-    <a href="{{ route('wishlist.index') }}" aria-label="Wishlist" class="hidden md:block p-2 text-gray-600 dark:text-gray-300 hover:text-red-500 transition">
+    <a href="{{ route('wishlist.index') }}" aria-label="Wishlist" class="hidden md:block p-2 rounded-full text-gray-600 dark:text-gray-300 hover:text-red-500 hover:bg-gray-100 dark:hover:bg-gray-800 active:scale-90 tap-spring transition-all duration-200">
         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>
     </a>
     @endauth
@@ -122,7 +122,7 @@
     @endauth
 
     {{-- Mobile Menu Toggle --}}
-    <button @click="mobileOpen = !mobileOpen" class="md:hidden p-2 text-gray-600 dark:text-gray-300" aria-label="Toggle menu">
+    <button @click="mobileOpen = !mobileOpen" class="md:hidden p-2 rounded-full text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 active:scale-90 tap-spring transition-all duration-200" aria-label="Toggle menu">
         <svg x-show="!mobileOpen" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
         <svg x-show="mobileOpen" x-cloak class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
     </button>

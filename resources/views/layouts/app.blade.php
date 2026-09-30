@@ -410,6 +410,12 @@ $pageTwitterImage = trim($__env->yieldContent('twitter_image', $pageOgImage));
         }
         @media (prefers-reduced-motion: reduce){ .category-ring{animation:none} }
 
+        /* iOS-style "spring" release on tap — used together with an active:scale-* utility
+           (Tailwind handles the :active state itself; this only swaps the easing curve for
+           the snap-back so it overshoots slightly instead of a flat ease, the small detail
+           that makes a tap feel tactile rather than just a a plain size change). */
+        .tap-spring{transition-timing-function:cubic-bezier(.34,1.56,.64,1)}
+
         /* showToast() entrance/exit — slides in from the right and fades, reverses
            on the way out (class added by the same setTimeout that schedules removal). */
         @keyframes toastIn{from{opacity:0;transform:translateX(24px)}to{opacity:1;transform:translateX(0)}}
@@ -520,7 +526,10 @@ $navCategories = \App\Models\Category::with(['children' => fn($q) => $q->active(
 @endif
 
 {{-- Main Header --}}
-<header class="bg-white dark:bg-gray-900 shadow-sm {{ $stickyHeader ? 'sticky top-0' : '' }} z-50 transition-colors" x-data="{ mobileOpen: false }">
+{{-- Frosted-glass header when sticky — content actually scrolls underneath it, so the
+     translucency + blur reads as real depth (iOS navigation-bar style) rather than a flat
+     opaque bar; a non-sticky header has nothing moving under it to blur, so it stays solid. --}}
+<header class="{{ $stickyHeader ? 'bg-white/75 dark:bg-gray-900/75 backdrop-blur-xl backdrop-saturate-150 sticky top-0' : 'bg-white dark:bg-gray-900' }} shadow-sm z-50 transition-colors" x-data="{ mobileOpen: false }">
     <div class="max-w-[1200px] mx-auto px-4">
         @if($headerLayout === 'centered')
             {{-- Centered layout: logo on its own row, search + actions below --}}
