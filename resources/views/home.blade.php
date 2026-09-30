@@ -351,29 +351,29 @@
 {{-- ═══════════ HOMEPAGE PRODUCT SECTIONS (admin-managed) ═══════════ --}}
 @foreach($homeSections as $entry)
     @php $sec = $entry['section']; $totalCount = $entry['totalCount']; @endphp
-    <div class="mx-3 md:mx-0 mt-3 md:mt-4 rounded-2xl md:rounded-none shadow-sm md:shadow-none {{ $sec->theme === 'sale' ? 'bg-gradient-to-r from-red-500 to-orange-500' : 'bg-white dark:bg-gray-900' }}" x-data="{ expanded: false }">
-        <div class="max-w-[1200px] mx-auto px-4 py-6">
+    <div class="relative overflow-hidden mx-3 md:mx-0 mt-3 md:mt-4 rounded-2xl md:rounded-none shadow-sm md:shadow-none {{ $sec->theme === 'sale' ? 'bg-gradient-to-r from-red-500 to-orange-500' : 'bg-white dark:bg-gray-900' }}" x-data="{ expanded: false }">
+        {{-- Same quiet corner-glow treatment as the trust banner — breaks up the run of
+             flat white section cards down the page without competing with the products. --}}
+        @if($sec->theme !== 'sale')
+        <div class="pointer-events-none absolute -top-16 -right-16 w-48 h-48 bg-orange-500/5 dark:bg-orange-500/10 blur-3xl rounded-full"></div>
+        @endif
+        <div class="relative max-w-[1200px] mx-auto px-4 py-6">
             <x-storefront.section-header :title="$sec->title" :subtitle="$sec->subtitle" :view-all-url="$sec->getViewAllUrl()"
                 :view-all-label="$sec->getViewAllLabelText()" :theme="$sec->theme === 'sale' ? 'sale' : 'default'" :count="$totalCount" />
-            @php
-                // Mobile is always a fixed 2-column grid (see getGridColsClass), so
-                // capping the always-visible tier at 8 keeps mobile's first view to
-                // 4 rows regardless of how many columns/products_limit the admin
-                // picked for desktop — the rest still shows immediately at sm+.
-                $mobileCap = min(8, $sec->product_limit);
-            @endphp
-            <div class="grid {{ $sec->getGridColsClass() }} gap-3 reveal-group">
+            {{-- Mobile: a horizontal swipe row (every product up to the admin's own
+                 product_limit shown at once — no separate "mobile cap" needed anymore,
+                 since scrolling replaces the old "only 4 rows, tap More for the rest"
+                 split). sm: and up is the unchanged admin-configured grid. Only products
+                 BEYOND product_limit (the true overflow into the extra fetched batch)
+                 stay behind "View More", the same on both layouts now. --}}
+            <div class="flex sm:grid {{ $sec->getGridColsClass() }} gap-3 overflow-x-auto sm:overflow-visible snap-x snap-mandatory sm:snap-none scrollbar-hide pb-1 reveal-group">
                 @foreach($entry['products'] as $i => $product)
-                    @if($i < $mobileCap)
-                        @include('partials.product-card', ['product' => $product])
-                    @elseif($i < $sec->product_limit)
-                        {{-- Within the admin's chosen limit, so always shown on desktop;
-                             on mobile it waits behind "More" alongside the true overflow. --}}
-                        <div x-show="expanded" x-cloak class="sm:!block">
+                    @if($i < $sec->product_limit)
+                        <div class="w-40 flex-shrink-0 snap-start sm:w-auto sm:flex-shrink">
                             @include('partials.product-card', ['product' => $product])
                         </div>
                     @else
-                        <div x-show="expanded" x-cloak>
+                        <div x-show="expanded" x-cloak class="w-40 flex-shrink-0 snap-start sm:w-auto sm:flex-shrink">
                             @include('partials.product-card', ['product' => $product])
                         </div>
                     @endif
@@ -381,17 +381,10 @@
             </div>
             {{-- Only rendered when there's actually more to reveal — clicking stays right
                  here on the homepage and shows the rest of this section's fetched batch,
-                 no navigation away (unlike the small "VIEW ALL" link above, which still
-                 goes to the full /shop listing). When the only hidden tier is the
-                 mobile row cap (nothing held back on desktop), the button itself is
-                 mobile-only — there'd be nothing left for it to reveal at sm+. --}}
+                 no navigation away (unlike the small "View All" link above, which still
+                 goes to the full /shop listing). --}}
             @if($totalCount > $sec->product_limit)
             <div class="text-center mt-6" x-show="!expanded">
-                <button type="button" @click="expanded = true"
-                   class="inline-block {{ $sec->theme === 'sale' ? 'bg-white text-orange-600 hover:bg-gray-100' : 'bg-orange-500 text-white hover:bg-orange-600' }} px-10 py-2.5 rounded-lg font-bold text-sm transition shadow-md">{{ $sec->getViewAllLabelText() }}</button>
-            </div>
-            @elseif($sec->product_limit > $mobileCap)
-            <div class="text-center mt-6 sm:hidden" x-show="!expanded">
                 <button type="button" @click="expanded = true"
                    class="inline-block {{ $sec->theme === 'sale' ? 'bg-white text-orange-600 hover:bg-gray-100' : 'bg-orange-500 text-white hover:bg-orange-600' }} px-10 py-2.5 rounded-lg font-bold text-sm transition shadow-md">{{ $sec->getViewAllLabelText() }}</button>
             </div>
