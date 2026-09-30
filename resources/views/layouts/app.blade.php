@@ -385,6 +385,13 @@ $pageTwitterImage = trim($__env->yieldContent('twitter_image', $pageOgImage));
         .icon-float-4{animation-delay:.9s}
         @media (prefers-reduced-motion: reduce){ .icon-float{animation:none} }
 
+        /* One-time bounce-in for the floating WhatsApp/contact buttons on first paint —
+           "both" fill mode holds the 0%-state (invisible, scaled to nothing) until the
+           animation actually starts, so there's no flash of a full-size button first. */
+        @keyframes fabPopIn{0%{transform:scale(0);opacity:0}60%{transform:scale(1.15);opacity:1}100%{transform:scale(1)}}
+        .fab-pop-in{animation:fabPopIn .5s cubic-bezier(.34,1.56,.64,1) both}
+        @media (prefers-reduced-motion: reduce){ .fab-pop-in{animation:none} }
+
         /* showToast() entrance/exit — slides in from the right and fades, reverses
            on the way out (class added by the same setTimeout that schedules removal). */
         @keyframes toastIn{from{opacity:0;transform:translateX(24px)}to{opacity:1;transform:translateX(0)}}
@@ -754,14 +761,59 @@ $navCategories = \App\Models\Category::with(['children' => fn($q) => $q->active(
         ], fn ($c) => !empty($c['url']) && $c['enabled']);
     @endphp
     @if(!empty($floatingContacts))
+        @php $primaryContact = $floatingContacts[array_key_first($floatingContacts)]; @endphp
         {{-- bottom-20 (not bottom-4) on mobile — partials.storefront.bottom-nav is a fixed
              full-width bar pinned to the very bottom on small screens (md:hidden), so
              anything closer than that overlaps it. Desktop has no such bar. --}}
-        <div class="fixed left-3 md:left-4 bottom-20 md:bottom-6 z-40 flex flex-col gap-3">
-            @foreach($floatingContacts as $contact)
+        <div class="fixed left-3 md:left-4 bottom-20 md:bottom-6 z-40 flex flex-col gap-3"
+             x-data="{
+                showTip: false,
+                init() {
+                    try { if (sessionStorage.getItem('fabTipDismissed')) return; } catch (e) {}
+                    setTimeout(() => { this.showTip = true; }, 2500);
+                },
+                dismiss() {
+                    this.showTip = false;
+                    try { sessionStorage.setItem('fabTipDismissed', '1'); } catch (e) {}
+                },
+             }">
+            {{-- A one-time greeting bubble (like a real chat widget's preview card) instead
+                 of a bare icon that just sits there — appears once, a few seconds after
+                 load, and remembers being dismissed for the rest of the browser session
+                 (sessionStorage) so it never nags on every page. Scoped to the first/
+                 highest-priority enabled channel only — a single clear invitation reads
+                 better than duplicating it per icon when several channels are on. --}}
+            <div x-show="showTip" x-cloak
+                 x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-2 scale-95" x-transition:enter-end="opacity-100 translate-y-0 scale-100"
+                 x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100 scale-100" x-transition:leave-end="opacity-0 scale-95"
+                 class="absolute bottom-0 left-14 md:left-16 w-64 bg-white dark:bg-gray-800 rounded-2xl shadow-2xl ring-1 ring-black/5 dark:ring-white/10 p-4">
+                <button @click="dismiss()" type="button" class="absolute -top-2 -right-2 w-5 h-5 bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 rounded-full flex items-center justify-center text-gray-600 dark:text-gray-200 transition" aria-label="Close">
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+                <div class="flex items-start gap-2.5">
+                    <span class="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 text-white shadow-sm" style="background-color: {{ $primaryContact['bg'] }}">
+                        <svg class="w-[1.125rem] h-[1.125rem]" fill="currentColor" viewBox="0 0 24 24">{!! $primaryContact['icon'] !!}</svg>
+                    </span>
+                    <div class="min-w-0 pt-0.5">
+                        <p class="text-xs font-bold text-gray-900 dark:text-gray-100">{{ setting('site_name', 'ShopVista') }}</p>
+                        <p class="text-[11px] text-gray-500 dark:text-gray-400 mt-1 leading-relaxed">👋 Hi there! Need help finding something? We're online — chat with us.</p>
+                    </div>
+                </div>
+                <a href="{{ $primaryContact['url'] }}" target="_blank" rel="noopener" @click="dismiss()"
+                   class="mt-3 flex items-center justify-center gap-1.5 text-white text-xs font-bold py-2.5 rounded-xl transition hover:opacity-90 shadow-sm"
+                   style="background-color: {{ $primaryContact['bg'] }}">
+                    {{ $primaryContact['label'] }}
+                </a>
+                {{-- Little speech-bubble tail pointing down at the button — a plain
+                     rotated square half-hidden behind the card's own bottom edge. --}}
+                <div class="absolute -bottom-1.5 left-4 w-3 h-3 bg-white dark:bg-gray-800 rotate-45 -z-10 ring-1 ring-black/5 dark:ring-white/10"></div>
+            </div>
+
+            @foreach($floatingContacts as $i => $contact)
                 <a href="{{ $contact['url'] }}" target="_blank" rel="noopener" aria-label="{{ $contact['label'] }}" title="{{ $contact['label'] }}"
-                   class="relative w-11 h-11 md:w-12 md:h-12 rounded-full text-white shadow-lg flex items-center justify-center hover:scale-110 transition-transform duration-200"
-                   style="background-color: {{ $contact['bg'] }}">
+                   @if($loop->first) @click="showTip = false" @endif
+                   class="fab-pop-in relative w-11 h-11 md:w-12 md:h-12 rounded-full text-white shadow-lg flex items-center justify-center hover:scale-110 transition-transform duration-200"
+                   style="background-color: {{ $contact['bg'] }}; animation-delay: {{ $i * 100 }}ms">
                     <span class="absolute inset-0 rounded-full animate-ping opacity-75" style="background-color: {{ $contact['bg'] }}" aria-hidden="true"></span>
                     <svg class="relative w-5 h-5 md:w-6 md:h-6" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">{!! $contact['icon'] !!}</svg>
                 </a>
