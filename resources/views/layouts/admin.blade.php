@@ -48,6 +48,48 @@
     @stack('styles')
 </head>
 <body class="bg-gray-100 dark:bg-gray-950 bg-[radial-gradient(circle_at_top_right,rgba(234,88,12,0.05),transparent_45%)] dark:bg-[radial-gradient(circle_at_top_right,rgba(234,88,12,0.07),transparent_45%)] font-sans antialiased transition-colors">
+{{-- Every admin nav click is a real full-page reload, not an SPA route — on a slow
+     mobile connection there's a visible gap between tapping a link and the next page
+     actually painting, with nothing on screen to say the tap registered. This bar
+     appears the instant any real in-app link/form is activated and creeps toward 85%;
+     the browser's own navigation simply replaces the whole page once it lands, so it
+     never needs to be hidden or driven to 100% itself. --}}
+<div id="admin-page-loader" class="fixed top-0 left-0 h-[3px] bg-gradient-to-r from-orange-400 via-orange-500 to-red-500 z-[9999] opacity-0 transition-[width,opacity] ease-out" style="width:0%; transition-duration: 6000ms, 150ms;"></div>
+<script>
+    (function () {
+        var bar = document.getElementById('admin-page-loader');
+        var started = false;
+        function start() {
+            if (started) return;
+            started = true;
+            bar.style.opacity = '1';
+            // Forces the 0% state to actually paint before jumping to 85%, so the
+            // browser has something to transition from instead of snapping straight there.
+            requestAnimationFrame(function () {
+                requestAnimationFrame(function () { bar.style.width = '85%'; });
+            });
+        }
+        document.addEventListener('click', function (e) {
+            if (e.defaultPrevented || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+            var link = e.target.closest('a[href]');
+            if (!link || link.target === '_blank' || link.hasAttribute('download')) return;
+            var href = link.getAttribute('href');
+            if (!href || href.charAt(0) === '#' || href.indexOf('javascript:') === 0) return;
+            var url;
+            try { url = new URL(link.href, window.location.href); } catch (err) { return; }
+            if (url.origin !== window.location.origin) return;
+            if (url.pathname === window.location.pathname && url.search === window.location.search && url.hash) return; // in-page anchor
+            start();
+        });
+        document.addEventListener('submit', function (e) {
+            if (e.defaultPrevented) return;
+            start();
+        });
+        // A page restored from bfcache (browser Back/Forward) never fires a fresh load —
+        // without this the bar would stay stuck on screen from the navigation that left it.
+        window.addEventListener('pageshow', function () { started = false; bar.style.opacity = '0'; bar.style.width = '0%'; });
+    })();
+</script>
 @include('partials.confirm-modal')
 
 @php
@@ -172,7 +214,14 @@ $adminNavIndex = [
     </div>
 
     <!-- Sidebar -->
-    <aside id="admin-sidebar" class="fixed inset-y-0 left-0 z-50 w-64 bg-white dark:bg-gradient-to-b dark:from-gray-900 dark:to-gray-950 text-gray-700 dark:text-white border-r border-gray-200 dark:border-transparent flex flex-col flex-shrink-0 transform transition-transform duration-200 ease-in-out lg:translate-x-0 lg:relative lg:z-30"
+    {{-- sb-pre-init (app.css) puts the sidebar off-screen on mobile / in place on desktop
+         via a plain CSS media query, before Alpine has even loaded — without it, the
+         element has no transform at all until Alpine's :class binding below applies on
+         mount, so on every full page navigation it flashed fully visible at the left
+         edge for a moment and then slid away, which is the "jerk" on every nav click.
+         x-init drops the helper class the instant Alpine takes over; its own binding
+         evaluates to the same closed state on mobile, so there's no visible handoff. --}}
+    <aside id="admin-sidebar" x-init="$el.classList.remove('sb-pre-init')" class="sb-pre-init fixed inset-y-0 left-0 z-50 w-64 bg-white dark:bg-gradient-to-b dark:from-gray-900 dark:to-gray-950 text-gray-700 dark:text-white border-r border-gray-200 dark:border-transparent flex flex-col flex-shrink-0 transform transition-transform duration-200 ease-in-out lg:translate-x-0 lg:relative lg:z-30"
            :class="$store.adminSidebar.open ? 'translate-x-0' : '-translate-x-full'">
         <!-- Logo -->
         <div class="sb-header flex items-center justify-between px-6 py-5 border-b border-gray-100 dark:border-gray-700 flex-shrink-0">
