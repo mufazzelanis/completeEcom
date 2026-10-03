@@ -39,12 +39,10 @@
 @section('content')
 
 {{-- ═══════════ HERO BANNER CAROUSEL ═══════════ --}}
-{{-- Edge-to-edge on mobile (no side padding) instead of a contained card with margins —
-     the aspect ratio stays the same fixed 16:5 at every breakpoint (see the note below;
-     a per-breakpoint ratio is what used to crop banner uploads), so a wider mobile hero
-     is also a taller one, which is the actual "make it bigger" lever here. sm: and up
-     goes back to the contained, padded layout — there's enough room there already. --}}
-<div class="relative max-w-[1200px] mx-auto px-0 sm:px-4 pt-0 sm:pt-4">
+{{-- Back to the contained, rounded card — the edge-to-edge/square-cornered mobile
+     version was tried and explicitly asked back out of. "Bigger" now comes from a
+     taller mobile-only fixed height instead of a different aspect ratio (see below). --}}
+<div class="relative max-w-[1200px] mx-auto px-4 pt-4">
     {{-- Soft ambient glow behind the hero card — purely decorative depth, clipped by the
          page's own overflow so it never creates a horizontal scrollbar. --}}
     <div class="pointer-events-none absolute -top-4 left-1/2 -translate-x-1/2 w-[90%] h-[80%] bg-gradient-to-r from-orange-300/30 via-pink-300/20 to-indigo-300/30 blur-3xl rounded-full"></div>
@@ -52,26 +50,34 @@
     <div class="relative" x-data="{
         current: 0,
         total: {{ max($banners->count(), 1) }},
+        touchX: null,
         init() {
             @if($banners->count() > 1)
             setInterval(() => { this.current = (this.current + 1) % this.total }, 5000);
             @endif
+        },
+        onTouchStart(e) { this.touchX = e.changedTouches[0].clientX; },
+        onTouchEnd(e) {
+            if (this.touchX === null) return;
+            const dx = e.changedTouches[0].clientX - this.touchX;
+            this.touchX = null;
+            if (Math.abs(dx) < 40) return;  // a tap/scroll, not a swipe
+            this.current = dx < 0 ? (this.current + 1) % this.total : (this.current - 1 + this.total) % this.total;
         }
-    }">
-        {{-- One fixed ratio at every breakpoint (not a different one for mobile vs desktop) —
-             matches the 1920×600 (16:5) size the admin is told to upload at (admin.banners.
-             create/edit), so an upload at that ratio is never cropped, on any screen. The old
-             2:1-on-mobile / 3:1-on-desktop split is exactly what was cropping the tops/bottoms
-             off hero banners: a single fixed-ratio upload can't satisfy two different ratios. --}}
-        {{-- min-h is a floor, not a second ratio — on anything 360px and up the box is
-             still exactly the 16:5 the admin uploads at; only below that (an iPhone SE
-             1st-gen-class width nobody's shipping new today) does it stop shrinking the
-             box, which would otherwise clip the subtitle/headline/button stack. --}}
-        <div class="relative rounded-none sm:rounded-2xl overflow-hidden bg-gray-200 aspect-[16/5] min-h-[112px] sm:min-h-0 shadow-none sm:shadow-xl sm:shadow-orange-900/5">
+    }" @touchstart.passive="onTouchStart($event)" @touchend.passive="onTouchEnd($event)">
+        {{-- Desktop keeps the fixed 16:5 ratio the admin is told to upload at
+             (admin.banners.create/edit) so an upload is never cropped there — the old
+             2:1-on-mobile / 3:1-on-desktop split is exactly what used to crop the tops/
+             bottoms off banners. Mobile uses a taller flat height instead (h-56): still
+             one single consistent crop behavior per breakpoint, just a deliberately
+             bigger one on the screen size that was actually asked for, without touching
+             desktop's sizing at all. --}}
+        <div class="relative rounded-2xl overflow-hidden bg-gray-200 h-56 sm:h-auto sm:aspect-[16/5] shadow-xl shadow-orange-900/5">
             @if($banners->count() > 0)
                 @foreach($banners as $i => $banner)
-                <div x-show="current === {{ $i }}" x-transition:enter="transition ease-out duration-700" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
-                     x-transition:leave="transition ease-in duration-300" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
+                <div x-show="current === {{ $i }}"
+                     x-transition:enter="transition ease-[cubic-bezier(.16,1,.3,1)] duration-700" x-transition:enter-start="opacity-0 scale-105" x-transition:enter-end="opacity-100 scale-100"
+                     x-transition:leave="transition ease-in duration-300" x-transition:leave-start="opacity-100 scale-100" x-transition:leave-end="opacity-0 scale-105"
                      class="absolute inset-0 overflow-hidden">
                     @if($banner->image)
                         <a href="{{ $banner->button_link ?: '#' }}" class="block w-full h-full">
@@ -92,7 +98,7 @@
                                         <span class="inline-block bg-white/15 backdrop-blur-sm border border-white/25 text-white/90 text-[11px] md:text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full mb-3">{{ $banner->subtitle }}</span>
                                     @endif
                                     <h2 class="text-white text-2xl md:text-4xl font-extrabold mb-2 leading-tight [text-wrap:balance]">{{ $banner->title }}</h2>
-                                    @if($banner->description)<p class="text-white/80 text-sm mb-4 hidden md:block max-w-md">{{ $banner->description }}</p>@endif
+                                    @if($banner->description)<p class="text-white/80 text-sm mb-4 max-w-md line-clamp-2">{{ $banner->description }}</p>@endif
                                     @if($banner->button_text)
                                         <span class="btn-glow inline-flex items-center gap-1.5 bg-white text-gray-900 px-5 md:px-6 py-2 md:py-2.5 rounded-full text-sm font-bold hover:bg-gray-100 hover:scale-105 transition-all shadow-lg">
                                             {{ $banner->button_text }}
@@ -112,7 +118,7 @@
                         <div class="animate-fade-in-up">
                             <p class="text-white/80 text-sm font-medium mb-2">Welcome to {{ setting('site_name', 'ShopVista') }}</p>
                             <h2 class="text-white text-2xl md:text-5xl font-extrabold mb-3 leading-tight">Discover Amazing Deals</h2>
-                            <p class="text-white/70 text-sm mb-5 hidden md:block">Shop thousands of products at unbeatable prices</p>
+                            <p class="text-white/70 text-sm mb-5">Shop thousands of products at unbeatable prices</p>
                             <a href="{{ route('shop.index') }}" class="btn-glow inline-block bg-white text-gray-900 px-6 md:px-8 py-2 md:py-2.5 rounded-full text-sm font-bold hover:bg-gray-100 hover:scale-105 transition-all shadow-lg">Shop Now</a>
                         </div>
                     </div>
