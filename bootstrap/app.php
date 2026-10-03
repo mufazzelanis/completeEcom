@@ -43,10 +43,17 @@ return Application::configure(basePath: dirname(__DIR__))
         // Drains the default queue (bulk product imports, Facebook Conversions API
         // events, etc.) without needing a long-running `queue:work` process, which
         // most shared hosts don't allow — this piggybacks on the same one-cron-entry
-        // `schedule:run` setup as everything else above. --max-time keeps it well
-        // under the next minute's tick; withoutOverlapping skips a run if the
-        // previous minute's worker is still draining a big job.
-        $schedule->command('queue:work --stop-when-empty --max-time=50')
+        // `schedule:run` setup as everything else above. --stop-when-empty means it
+        // exits almost instantly when there's nothing queued, but when there IS a
+        // backlog it was keeping a PHP process alive for up to 50 of every 60 seconds
+        // (83% of the time) — on shared hosting, where the account is capped at a
+        // small number of concurrent processes (CloudLinux/LVE), that was enough to
+        // starve an incoming visitor's request of a process slot entirely, producing
+        // exactly the "site times out, then loads fine 5-10s later" symptom. 15s
+        // caps the contention window at 25% of each minute instead; a big backlog
+        // just drains over a few more ticks rather than one long one. withoutOverlapping
+        // still skips a run if the previous minute's worker hasn't finished.
+        $schedule->command('queue:work --stop-when-empty --max-time=15')
             ->everyMinute()
             ->withoutOverlapping();
         // OrderObserver keeps sales_reports in sync in real time; this nightly run
