@@ -279,16 +279,15 @@
 
 {{-- ═══════════ CATEGORIES GRID ═══════════ --}}
 @if($categories->count() > 0)
-{{-- A plain flat-white card here read as dead, empty padding above the heading,
-     between it and the rings, and below the rings — nothing wrong structurally,
-     just visually inert. A soft gradient wash + two ambient glow blobs (the same
-     decoration language the product sections below already use) gives those
-     same gaps actual texture instead of removing them. --}}
+{{-- The gaps here (above the heading, under it, below the rings) were flagged
+     twice — a softer gradient fill wasn't the fix, the gaps themselves were
+     just too big on a card with this little content. Padding and the header's
+     own margin are both cut back hard instead. --}}
 <div class="mx-3 md:mx-0 mt-3 md:mt-4 relative overflow-hidden bg-gradient-to-b from-orange-50/70 via-white to-white dark:from-orange-500/5 dark:via-gray-900 dark:to-gray-900 rounded-2xl md:rounded-none shadow-sm md:shadow-none">
     <div class="pointer-events-none absolute -top-12 -left-12 w-40 h-40 bg-orange-400/10 blur-3xl rounded-full"></div>
     <div class="pointer-events-none absolute -bottom-12 -right-12 w-40 h-40 bg-red-400/10 blur-3xl rounded-full"></div>
-    <div class="relative max-w-[1200px] mx-auto px-4 pt-5 pb-5">
-        <x-storefront.section-header title="Categories" :view-all-url="route('categories.index')" :count="$categories->count()" />
+    <div class="relative max-w-[1200px] mx-auto px-4 pt-3 pb-3">
+        <x-storefront.section-header title="Categories" :view-all-url="route('categories.index')" :count="$categories->count()" spacing="mb-3" />
         {{-- Mobile: a swipeable horizontal row (fixed-width tiles, scroll-snap, no "More"
              button needed at all — every category is one swipe away) instead of a grid
              capped at 6 with a toggle to reveal the rest. This is the same pattern

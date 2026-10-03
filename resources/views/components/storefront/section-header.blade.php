@@ -1,5 +1,5 @@
-@props(['title', 'subtitle' => null, 'viewAllUrl' => null, 'viewAllLabel' => 'View All', 'theme' => 'default', 'count' => null])
-<div class="flex items-end justify-between gap-3 mb-5 reveal">
+@props(['title', 'subtitle' => null, 'viewAllUrl' => null, 'viewAllLabel' => 'View All', 'theme' => 'default', 'count' => null, 'spacing' => 'mb-5'])
+<div class="flex items-end justify-between gap-3 {{ $spacing }} reveal">
     <div class="min-w-0">
         <div class="flex items-center gap-2.5">
             <span class="w-1.5 h-5 rounded-full flex-shrink-0 {{ $theme === 'sale' ? 'bg-white' : 'bg-gradient-to-b from-orange-500 to-red-500' }}"></span>
