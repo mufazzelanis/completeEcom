@@ -116,7 +116,13 @@
             </div>
             <x-input-error :messages="$errors->get('code')" class="mt-2" />
 
-            <div class="flex items-center justify-between mt-3 text-xs text-gray-400 dark:text-gray-500">
+            {{-- flex-wrap + gap (not a strict single line) — without it, this row had no
+                 safe fallback if the two sides ever needed more width than it had (a
+                 larger browser/OS text-size setting, a translated label that's longer
+                 than English, a brief fallback-font flash before the custom font
+                 finishes loading): the text could only overflow or get squeezed, never
+                 wrap, which is what let it visually collide with content below. --}}
+            <div class="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 mt-3 text-xs text-gray-400 dark:text-gray-500">
                 <span x-show="secondsLeft > 0" x-text="'Code expires in ' + formatTime(secondsLeft)"></span>
                 <span x-show="secondsLeft === 0" class="text-red-500">Code likely expired — request a new one</span>
                 <button type="button" @click="useRecovery()" class="text-orange-600 hover:text-orange-700 font-medium">
@@ -142,7 +148,7 @@
             </button>
         </div>
 
-        <div class="flex items-center justify-between mt-6">
+        <div class="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 mt-6">
             <a href="{{ route('two-factor.challenge', ['resend' => 1]) }}"
                class="text-sm font-medium"
                :class="resendCooldown > 0 ? 'text-gray-300 dark:text-gray-600 pointer-events-none' : 'text-orange-600 hover:text-orange-700'">
