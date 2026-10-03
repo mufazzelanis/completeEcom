@@ -39,7 +39,12 @@
 @section('content')
 
 {{-- ═══════════ HERO BANNER CAROUSEL ═══════════ --}}
-<div class="relative max-w-[1200px] mx-auto px-4 pt-4">
+{{-- Edge-to-edge on mobile (no side padding) instead of a contained card with margins —
+     the aspect ratio stays the same fixed 16:5 at every breakpoint (see the note below;
+     a per-breakpoint ratio is what used to crop banner uploads), so a wider mobile hero
+     is also a taller one, which is the actual "make it bigger" lever here. sm: and up
+     goes back to the contained, padded layout — there's enough room there already. --}}
+<div class="relative max-w-[1200px] mx-auto px-0 sm:px-4 pt-0 sm:pt-4">
     {{-- Soft ambient glow behind the hero card — purely decorative depth, clipped by the
          page's own overflow so it never creates a horizontal scrollbar. --}}
     <div class="pointer-events-none absolute -top-4 left-1/2 -translate-x-1/2 w-[90%] h-[80%] bg-gradient-to-r from-orange-300/30 via-pink-300/20 to-indigo-300/30 blur-3xl rounded-full"></div>
@@ -58,7 +63,11 @@
              create/edit), so an upload at that ratio is never cropped, on any screen. The old
              2:1-on-mobile / 3:1-on-desktop split is exactly what was cropping the tops/bottoms
              off hero banners: a single fixed-ratio upload can't satisfy two different ratios. --}}
-        <div class="relative rounded-2xl overflow-hidden bg-gray-200 aspect-[16/5] shadow-xl shadow-orange-900/5">
+        {{-- min-h is a floor, not a second ratio — on anything 360px and up the box is
+             still exactly the 16:5 the admin uploads at; only below that (an iPhone SE
+             1st-gen-class width nobody's shipping new today) does it stop shrinking the
+             box, which would otherwise clip the subtitle/headline/button stack. --}}
+        <div class="relative rounded-none sm:rounded-2xl overflow-hidden bg-gray-200 aspect-[16/5] min-h-[112px] sm:min-h-0 shadow-none sm:shadow-xl sm:shadow-orange-900/5">
             @if($banners->count() > 0)
                 @foreach($banners as $i => $banner)
                 <div x-show="current === {{ $i }}" x-transition:enter="transition ease-out duration-700" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
@@ -77,15 +86,15 @@
                                 :class="current === {{ $i }} ? 'scale-110' : 'scale-100'"
                                 @if($i === 0) fetchpriority="high" @else loading="lazy" @endif>
                             <div class="absolute inset-0 bg-gradient-to-r from-black/65 via-black/25 to-transparent"></div>
-                            <div class="absolute inset-0 flex items-center px-5 md:px-14">
+                            <div class="absolute inset-0 flex items-center px-6 md:px-14">
                                 <div class="animate-fade-in-up max-w-lg">
                                     @if($banner->subtitle)
                                         <span class="inline-block bg-white/15 backdrop-blur-sm border border-white/25 text-white/90 text-[11px] md:text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full mb-3">{{ $banner->subtitle }}</span>
                                     @endif
-                                    <h2 class="text-white text-xl md:text-4xl font-extrabold mb-2 leading-tight [text-wrap:balance]">{{ $banner->title }}</h2>
+                                    <h2 class="text-white text-2xl md:text-4xl font-extrabold mb-2 leading-tight [text-wrap:balance]">{{ $banner->title }}</h2>
                                     @if($banner->description)<p class="text-white/80 text-sm mb-4 hidden md:block max-w-md">{{ $banner->description }}</p>@endif
                                     @if($banner->button_text)
-                                        <span class="btn-glow inline-flex items-center gap-1.5 bg-white text-gray-900 px-6 py-2.5 rounded-full text-sm font-bold hover:bg-gray-100 hover:scale-105 transition-all shadow-lg">
+                                        <span class="btn-glow inline-flex items-center gap-1.5 bg-white text-gray-900 px-5 md:px-6 py-2 md:py-2.5 rounded-full text-sm font-bold hover:bg-gray-100 hover:scale-105 transition-all shadow-lg">
                                             {{ $banner->button_text }}
                                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
                                         </span>
@@ -99,12 +108,12 @@
             @else
                 {{-- Default Hero --}}
                 <div class="absolute inset-0 bg-gradient-to-r from-orange-500 via-red-500 to-pink-500 bg-[length:200%_200%] animate-[gradientPan_8s_ease_infinite]">
-                    <div class="absolute inset-0 flex items-center px-5 md:px-14">
+                    <div class="absolute inset-0 flex items-center px-6 md:px-14">
                         <div class="animate-fade-in-up">
                             <p class="text-white/80 text-sm font-medium mb-2">Welcome to {{ setting('site_name', 'ShopVista') }}</p>
-                            <h2 class="text-white text-xl md:text-5xl font-extrabold mb-3 leading-tight">Discover Amazing Deals</h2>
+                            <h2 class="text-white text-2xl md:text-5xl font-extrabold mb-3 leading-tight">Discover Amazing Deals</h2>
                             <p class="text-white/70 text-sm mb-5 hidden md:block">Shop thousands of products at unbeatable prices</p>
-                            <a href="{{ route('shop.index') }}" class="btn-glow inline-block bg-white text-gray-900 px-8 py-2.5 rounded-full text-sm font-bold hover:bg-gray-100 hover:scale-105 transition-all shadow-lg">Shop Now</a>
+                            <a href="{{ route('shop.index') }}" class="btn-glow inline-block bg-white text-gray-900 px-6 md:px-8 py-2 md:py-2.5 rounded-full text-sm font-bold hover:bg-gray-100 hover:scale-105 transition-all shadow-lg">Shop Now</a>
                         </div>
                     </div>
                 </div>
@@ -112,10 +121,10 @@
 
             {{-- Navigation Arrows --}}
             @if($banners->count() > 1)
-            <button @click="current = (current - 1 + total) % total" class="absolute left-2 md:left-3 top-1/2 -translate-y-1/2 w-10 h-10 md:w-9 md:h-9 bg-white/10 hover:bg-white/25 text-white rounded-full flex items-center justify-center transition backdrop-blur-md ring-1 ring-white/30" aria-label="Previous">
+            <button @click="current = (current - 1 + total) % total" class="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 md:w-9 md:h-9 bg-white/10 hover:bg-white/25 text-white rounded-full flex items-center justify-center transition backdrop-blur-md ring-1 ring-white/30" aria-label="Previous">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
             </button>
-            <button @click="current = (current + 1) % total" class="absolute right-2 md:right-3 top-1/2 -translate-y-1/2 w-10 h-10 md:w-9 md:h-9 bg-white/10 hover:bg-white/25 text-white rounded-full flex items-center justify-center transition backdrop-blur-md ring-1 ring-white/30" aria-label="Next">
+            <button @click="current = (current + 1) % total" class="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 md:w-9 md:h-9 bg-white/10 hover:bg-white/25 text-white rounded-full flex items-center justify-center transition backdrop-blur-md ring-1 ring-white/30" aria-label="Next">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
             </button>
             <div class="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
