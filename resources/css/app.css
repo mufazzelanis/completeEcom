@@ -325,20 +325,30 @@ html.dark .prose .blog-promo-link:hover .blog-promo-frame { box-shadow: 0 16px 3
  * content height with no JS measuring. */
 [data-admin-nav][data-nav-init="pending"] { visibility: hidden; }   /* hidden until the script has restored scroll/open state, so nothing visibly jumps */
 
-.admin-nav-scroll { scrollbar-width: thin; scrollbar-color: rgba(255, 255, 255, 0.18) transparent; }
+.admin-nav-scroll { scrollbar-width: thin; scrollbar-color: rgba(0, 0, 0, 0.15) transparent; }
 .admin-nav-scroll::-webkit-scrollbar { width: 6px; }
-.admin-nav-scroll::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.16); border-radius: 999px; }
-.admin-nav-scroll::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.3); }
+.admin-nav-scroll::-webkit-scrollbar-thumb { background: rgba(0, 0, 0, 0.12); border-radius: 999px; }
+.admin-nav-scroll::-webkit-scrollbar-thumb:hover { background: rgba(0, 0, 0, 0.22); }
+html.dark .admin-nav-scroll { scrollbar-color: rgba(255, 255, 255, 0.18) transparent; }
+html.dark .admin-nav-scroll::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.16); }
+html.dark .admin-nav-scroll::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.3); }
 
+/* The sidebar itself follows light/dark mode now (layouts/admin.blade.php's <aside>),
+   so this sticky toolbar — the one strip of chrome not driven by Tailwind's own
+   dark: classes — needs its own light/dark pair to actually match the bar it sits
+   on top of while scrolling, instead of staying permanently dark-themed. */
 .admin-nav-toolbar {
     position: sticky; top: -1rem; z-index: 5;      /* nav has py-4: -1rem makes it pin flush to the top edge */
     margin: -1rem -1rem 0.25rem; padding: 0.6rem 1rem 0.4rem;
     display: flex; align-items: center; justify-content: space-between;
-    background: rgb(17 24 39);                      /* gray-900, same as the sidebar */
+    background: #fff;                               /* matches the light sidebar */
     font-size: 0.6875rem; color: rgb(107 114 128);
 }
-.admin-nav-toolbar button { color: rgb(156 163 175); transition: color 0.15s; }
-.admin-nav-toolbar button:hover { color: #fff; }
+.admin-nav-toolbar button { color: rgb(107 114 128); transition: color 0.15s; }
+.admin-nav-toolbar button:hover { color: rgb(17 24 39); }
+html.dark .admin-nav-toolbar { background: rgb(17 24 39); }     /* gray-900, same as the dark sidebar */
+html.dark .admin-nav-toolbar button { color: rgb(156 163 175); }
+html.dark .admin-nav-toolbar button:hover { color: #fff; }
 
 .admin-nav-group { padding-top: 0.5rem; }
 .admin-nav-group__head {
@@ -347,10 +357,12 @@ html.dark .prose .blog-promo-link:hover .blog-promo-frame { box-shadow: 0 16px 3
     font-size: 0.75rem; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase;
     color: rgb(107 114 128); transition: color 0.15s, background-color 0.15s;
 }
-.admin-nav-group__head:hover { color: rgb(229 231 235); background: rgba(255, 255, 255, 0.05); }
+.admin-nav-group__head:hover { color: rgb(17 24 39); background: rgba(0, 0, 0, 0.04); }
 .admin-nav-group__head:focus-visible { outline: 2px solid rgb(234 88 12); outline-offset: -2px; }
 .admin-nav-group__title { flex: 1; text-align: left; }
-.admin-nav-group[data-has-active="1"] .admin-nav-group__title { color: rgb(209 213 219); }
+.admin-nav-group[data-has-active="1"] .admin-nav-group__title { color: rgb(55 65 81); }
+html.dark .admin-nav-group__head:hover { color: rgb(229 231 235); background: rgba(255, 255, 255, 0.05); }
+html.dark .admin-nav-group[data-has-active="1"] .admin-nav-group__title { color: rgb(209 213 219); }
 
 .admin-nav-group__chev { width: 0.9rem; height: 0.9rem; flex-shrink: 0; transform: rotate(-90deg); transition: transform 0.2s ease; }
 .admin-nav-group[data-open="1"] .admin-nav-group__chev { transform: rotate(0deg); }
