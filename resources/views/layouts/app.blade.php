@@ -529,7 +529,14 @@ $navCategories = \App\Models\Category::with(['children' => fn($q) => $q->active(
 {{-- Frosted-glass header when sticky — content actually scrolls underneath it, so the
      translucency + blur reads as real depth (iOS navigation-bar style) rather than a flat
      opaque bar; a non-sticky header has nothing moving under it to blur, so it stays solid. --}}
-<header class="{{ $stickyHeader ? 'bg-white/75 dark:bg-gray-900/75 backdrop-blur-xl backdrop-saturate-150 sticky top-0' : 'bg-white dark:bg-gray-900' }} shadow-sm z-50 transition-colors" x-data="{ mobileOpen: false }">
+{{-- Wrapping the header + its off-canvas drawer in one x-data scope, rather than
+     putting mobileOpen on <header> itself, matters here: the drawer below is
+     `position: fixed`, and a sticky header has `backdrop-blur-xl` — a CSS filter,
+     which (like `transform`) makes its element a containing block for fixed
+     descendants. Nested inside <header>, the drawer would be clipped to the
+     header's own ~70px-tall box instead of the full viewport. --}}
+<div x-data="{ mobileOpen: false }" x-effect="document.body.style.overflow = mobileOpen ? 'hidden' : ''">
+<header class="{{ $stickyHeader ? 'bg-white/75 dark:bg-gray-900/75 backdrop-blur-xl backdrop-saturate-150 sticky top-0' : 'bg-white dark:bg-gray-900' }} shadow-sm z-50 transition-colors">
     <div class="max-w-[1200px] mx-auto px-4">
         @if($headerLayout === 'centered')
             {{-- Centered layout: logo on its own row, search + actions below --}}
@@ -598,135 +605,155 @@ $navCategories = \App\Models\Category::with(['children' => fn($q) => $q->active(
     </div>
     @endif
 
-    {{-- Mobile Menu --}}
-    <div x-show="mobileOpen" x-cloak x-transition @click.outside="mobileOpen = false" @keydown.escape.window="mobileOpen = false" class="md:hidden bg-white dark:bg-gray-900 border-t border-gray-100 dark:border-gray-700 shadow-xl">
-        <div class="p-4">
-            {{-- Lazy-mounted (x-if, not x-show) — this has its own x-data/fetch/debounce
-                 wiring, so this way Alpine never sets any of that up on page load for the
-                 ~most visitors who never open the mobile menu; only when mobileOpen flips
-                 true does it actually get built. --}}
-            <template x-if="mobileOpen">
-            <div class="relative mb-4" x-data="{
-                    query: '{{ addslashes(request('search', '')) }}',
-                    results: { products: [], categories: [] },
-                    open: false,
-                    async fetchSuggestions() {
-                        if (this.query.length < 2) { this.open = false; return; }
-                        try {
-                            const res = await fetch('/search/suggest?q=' + encodeURIComponent(this.query));
-                            this.results = await res.json();
-                            this.open = this.results.products.length > 0 || this.results.categories.length > 0;
-                        } catch (e) {}
-                    }
-                }" @click.outside="open = false">
-                <form action="{{ route('shop.index') }}" method="GET" class="flex" @submit="open = false">
-                    <input type="text" name="search" x-ref="mobileSearchInput" x-model="query"
-                        @input.debounce.300ms="fetchSuggestions()"
-                        @focus="query.length > 1 && fetchSuggestions()"
-                        @keydown.escape="open = false"
-                        placeholder="Search products..." aria-label="Search products" autocomplete="off"
-                        class="flex-1 border-2 border-orange-400 rounded-l-md px-4 py-2 text-sm focus:outline-none focus:border-orange-500">
-                    <button type="submit" aria-label="Search" class="bg-orange-500 text-white px-4 py-2 rounded-r-md flex-shrink-0">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-                    </button>
-                </form>
-                {{-- Auto-suggest dropdown — same /search/suggest endpoint the desktop search bar uses --}}
-                <div x-show="open" x-cloak x-transition
-                     class="absolute top-full left-0 right-0 bg-white dark:bg-gray-800 rounded-b-lg shadow-2xl border border-gray-100 dark:border-gray-700 z-[200] overflow-hidden fade-in max-h-80 overflow-y-auto">
-                    <template x-if="results.categories && results.categories.length > 0">
-                        <div class="border-b border-gray-100 dark:border-gray-700">
-                            <p class="px-4 pt-3 pb-1 text-[10px] font-bold text-orange-400 uppercase tracking-wider">{{ t('header.categories', 'Categories', [], 'header') }}</p>
-                            <template x-for="cat in results.categories" :key="cat.url">
-                                <a :href="cat.url" @click="open = false; mobileOpen = false"
-                                   class="flex items-center px-4 py-2 hover:bg-orange-50 dark:hover:bg-gray-700 gap-2 text-sm text-gray-700 dark:text-gray-200 hover:text-orange-600 transition">
-                                    <svg class="w-3.5 h-3.5 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
-                                    <span x-text="cat.name"></span>
-                                </a>
-                            </template>
+</header>
+
+{{-- Backdrop — dims and blocks the page behind the drawer; tapping it closes
+     the drawer, same as the X button or Escape. --}}
+<div x-show="mobileOpen" x-cloak x-transition.opacity class="md:hidden fixed inset-0 bg-black/50 z-[45]" @click="mobileOpen = false" aria-hidden="true"></div>
+
+{{-- Mobile Menu — a real off-canvas slide-in drawer (fixed over the page, its
+     own scroll, a dedicated close button) rather than an in-flow accordion
+     that used to just push the page content down. Every link inside closes it
+     explicitly so it can never get left stuck open via bfcache back-navigation. --}}
+<div x-show="mobileOpen" x-cloak
+     x-transition:enter="transition ease-out duration-300" x-transition:enter-start="translate-x-full" x-transition:enter-end="translate-x-0"
+     x-transition:leave="transition ease-in duration-200" x-transition:leave-start="translate-x-0" x-transition:leave-end="translate-x-full"
+     @keydown.escape.window="mobileOpen = false"
+     class="md:hidden fixed inset-y-0 right-0 z-50 w-[85%] max-w-sm bg-white dark:bg-gray-900 shadow-2xl flex flex-col"
+     style="padding-top: env(safe-area-inset-top);">
+    <div class="flex items-center justify-between px-4 py-4 border-b border-gray-100 dark:border-gray-700 flex-shrink-0">
+        <span class="font-bold text-gray-900 dark:text-gray-100">{{ t('header.menu', 'Menu', [], 'header') }}</span>
+        <button @click="mobileOpen = false" aria-label="Close menu" class="w-9 h-9 flex items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 active:scale-90 tap-spring transition-transform">
+            <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+    </div>
+    <div class="p-4 overflow-y-auto" style="padding-bottom: calc(1rem + env(safe-area-inset-bottom));">
+        {{-- Lazy-mounted (x-if, not x-show) — this has its own x-data/fetch/debounce
+             wiring, so this way Alpine never sets any of that up on page load for the
+             ~most visitors who never open the mobile menu; only when mobileOpen flips
+             true does it actually get built. --}}
+        <template x-if="mobileOpen">
+        <div class="relative mb-4" x-data="{
+                query: '{{ addslashes(request('search', '')) }}',
+                results: { products: [], categories: [] },
+                open: false,
+                async fetchSuggestions() {
+                    if (this.query.length < 2) { this.open = false; return; }
+                    try {
+                        const res = await fetch('/search/suggest?q=' + encodeURIComponent(this.query));
+                        this.results = await res.json();
+                        this.open = this.results.products.length > 0 || this.results.categories.length > 0;
+                    } catch (e) {}
+                }
+            }" @click.outside="open = false">
+            <form action="{{ route('shop.index') }}" method="GET" class="flex" @submit="open = false">
+                <input type="text" name="search" x-ref="mobileSearchInput" x-model="query"
+                    @input.debounce.300ms="fetchSuggestions()"
+                    @focus="query.length > 1 && fetchSuggestions()"
+                    @keydown.escape="open = false"
+                    placeholder="Search products..." aria-label="Search products" autocomplete="off"
+                    class="flex-1 border-2 border-orange-400 rounded-l-md px-4 py-2 text-sm focus:outline-none focus:border-orange-500">
+                <button type="submit" aria-label="Search" class="bg-orange-500 text-white px-4 py-2 rounded-r-md flex-shrink-0">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                </button>
+            </form>
+            {{-- Auto-suggest dropdown — same /search/suggest endpoint the desktop search bar uses --}}
+            <div x-show="open" x-cloak x-transition
+                 class="absolute top-full left-0 right-0 bg-white dark:bg-gray-800 rounded-b-lg shadow-2xl border border-gray-100 dark:border-gray-700 z-[200] overflow-hidden fade-in max-h-80 overflow-y-auto">
+                <template x-if="results.categories && results.categories.length > 0">
+                    <div class="border-b border-gray-100 dark:border-gray-700">
+                        <p class="px-4 pt-3 pb-1 text-[10px] font-bold text-orange-400 uppercase tracking-wider">{{ t('header.categories', 'Categories', [], 'header') }}</p>
+                        <template x-for="cat in results.categories" :key="cat.url">
+                            <a :href="cat.url" @click="open = false; mobileOpen = false"
+                               class="flex items-center px-4 py-2 hover:bg-orange-50 dark:hover:bg-gray-700 gap-2 text-sm text-gray-700 dark:text-gray-200 hover:text-orange-600 transition">
+                                <svg class="w-3.5 h-3.5 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
+                                <span x-text="cat.name"></span>
+                            </a>
+                        </template>
+                    </div>
+                </template>
+                <template x-if="results.products && results.products.length > 0">
+                    <div>
+                        <p class="px-4 pt-3 pb-1 text-[10px] font-bold text-orange-400 uppercase tracking-wider">{{ t('header.products', 'Products', [], 'header') }}</p>
+                        <template x-for="product in results.products" :key="product.url">
+                            <a :href="product.url" @click="open = false; mobileOpen = false"
+                               class="flex items-center px-4 py-2.5 hover:bg-orange-50 dark:hover:bg-gray-700 gap-3 transition">
+                                <div class="w-10 h-10 bg-gray-100 rounded overflow-hidden flex-shrink-0 flex items-center justify-center p-0.5">
+                                    <img x-show="product.image" :src="product.image" :alt="product.name" class="w-full h-full object-contain">
+                                    <svg x-show="!product.image" class="w-5 h-5 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-sm font-medium text-gray-800 dark:text-gray-100 truncate" x-text="product.name"></p>
+                                    <p class="text-xs font-bold text-orange-700" x-text="product.price"></p>
+                                </div>
+                            </a>
+                        </template>
+                        <div class="px-4 py-2.5 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
+                            <a :href="'{{ route('shop.index') }}?search=' + encodeURIComponent(query)" @click="mobileOpen = false"
+                               class="text-xs text-orange-700 hover:text-orange-800 font-semibold">
+                                {{ t('header.see_all_results', 'See all results for', [], 'header') }} "<span x-text="query"></span>" &rarr;
+                            </a>
                         </div>
-                    </template>
-                    <template x-if="results.products && results.products.length > 0">
-                        <div>
-                            <p class="px-4 pt-3 pb-1 text-[10px] font-bold text-orange-400 uppercase tracking-wider">{{ t('header.products', 'Products', [], 'header') }}</p>
-                            <template x-for="product in results.products" :key="product.url">
-                                <a :href="product.url" @click="open = false; mobileOpen = false"
-                                   class="flex items-center px-4 py-2.5 hover:bg-orange-50 dark:hover:bg-gray-700 gap-3 transition">
-                                    <div class="w-10 h-10 bg-gray-100 rounded overflow-hidden flex-shrink-0 flex items-center justify-center p-0.5">
-                                        <img x-show="product.image" :src="product.image" :alt="product.name" class="w-full h-full object-contain">
-                                        <svg x-show="!product.image" class="w-5 h-5 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-                                    </div>
-                                    <div class="flex-1 min-w-0">
-                                        <p class="text-sm font-medium text-gray-800 dark:text-gray-100 truncate" x-text="product.name"></p>
-                                        <p class="text-xs font-bold text-orange-700" x-text="product.price"></p>
-                                    </div>
-                                </a>
-                            </template>
-                            <div class="px-4 py-2.5 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
-                                <a :href="'{{ route('shop.index') }}?search=' + encodeURIComponent(query)" @click="mobileOpen = false"
-                                   class="text-xs text-orange-700 hover:text-orange-800 font-semibold">
-                                    {{ t('header.see_all_results', 'See all results for', [], 'header') }} "<span x-text="query"></span>" &rarr;
-                                </a>
-                            </div>
-                        </div>
-                    </template>
+                    </div>
+                </template>
+            </div>
+        </div>
+        </template>
+        @auth
+            <div class="flex items-center gap-3 pb-3 border-b border-gray-100 dark:border-gray-700 mb-3">
+                <div class="w-10 h-10 bg-gradient-to-br from-orange-400 to-red-500 rounded-full flex items-center justify-center">
+                    <span class="text-white font-bold">{{ strtoupper(substr(auth()->user()->name, 0, 1)) }}</span>
+                </div>
+                <div>
+                    <p class="font-bold text-sm text-gray-900 dark:text-gray-100">{{ auth()->user()->name }}</p>
+                    <p class="text-xs text-gray-500 dark:text-gray-400">{{ auth()->user()->email }}</p>
                 </div>
             </div>
-            </template>
-            @auth
-                <div class="flex items-center gap-3 pb-3 border-b border-gray-100 dark:border-gray-700 mb-3">
-                    <div class="w-10 h-10 bg-gradient-to-br from-orange-400 to-red-500 rounded-full flex items-center justify-center">
-                        <span class="text-white font-bold">{{ strtoupper(substr(auth()->user()->name, 0, 1)) }}</span>
-                    </div>
-                    <div>
-                        <p class="font-bold text-sm text-gray-900 dark:text-gray-100">{{ auth()->user()->name }}</p>
-                        <p class="text-xs text-gray-500 dark:text-gray-400">{{ auth()->user()->email }}</p>
+        @endauth
+        <nav class="space-y-1">
+            <a href="{{ route('home') }}" @click="mobileOpen = false" class="block px-3 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-orange-50 dark:hover:bg-gray-800 hover:text-orange-600 rounded-lg transition">{{ t('header.home', 'Home', [], 'header') }}</a>
+            <a href="{{ route('shop.index') }}" @click="mobileOpen = false" class="block px-3 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-orange-50 dark:hover:bg-gray-800 hover:text-orange-600 rounded-lg transition">{{ t('header.shop_all', 'Shop All', [], 'header') }}</a>
+            <a href="{{ setting('nav_blog_url') ?: route('blog.index') }}" @click="mobileOpen = false"
+               class="flex items-center gap-2 px-3 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-orange-50 dark:hover:bg-gray-800 hover:text-orange-600 rounded-lg transition font-medium">
+                <span class="relative flex h-2 w-2">
+                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                    <span class="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+                </span>
+                {{ t('header.blog', 'Blogs', [], 'header') }}
+            </a>
+            @php
+                $mobileCategories = \App\Models\Category::whereNull('parent_id')->active()->withCount('products')->orderBy('sort_order')->limit(8)->get();
+            @endphp
+            @if($mobileCategories->count() > 0)
+                <div x-data="{ showCats: false }">
+                    <button @click="showCats = !showCats" class="flex items-center justify-between w-full px-3 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-orange-50 dark:hover:bg-gray-800 hover:text-orange-600 rounded-lg transition">
+                        <span>{{ t('header.categories', 'Categories', [], 'header') }}</span>
+                        <svg class="w-4 h-4 transition-transform" :class="showCats ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                    </button>
+                    <div x-show="showCats" x-cloak class="pl-4 space-y-1 mt-1">
+                        @foreach($mobileCategories as $cat)
+                            <a href="{{ route('shop.category', $cat->slug) }}" @click="mobileOpen = false" class="block px-3 py-2 text-xs text-gray-600 dark:text-gray-300 hover:bg-orange-50 dark:hover:bg-gray-800 hover:text-orange-600 rounded-lg transition">{{ $cat->name }}</a>
+                        @endforeach
+                        <a href="{{ route('shop.index') }}" @click="mobileOpen = false" class="block px-3 py-2 text-xs text-orange-700 font-medium hover:bg-orange-50 dark:hover:bg-gray-800 rounded-lg transition">{{ t('header.view_all_categories', 'View All Categories', [], 'header') }} →</a>
                     </div>
                 </div>
+            @endif
+            @auth
+                <a href="{{ route('orders.index') }}" @click="mobileOpen = false" class="block px-3 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-orange-50 dark:hover:bg-gray-800 hover:text-orange-600 rounded-lg transition">{{ t('header.my_orders', 'My Orders', [], 'header') }}</a>
+                <a href="{{ route('wishlist.index') }}" @click="mobileOpen = false" class="block px-3 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-orange-50 dark:hover:bg-gray-800 hover:text-orange-600 rounded-lg transition">{{ t('header.wishlist', 'Wishlist', [], 'header') }}</a>
+                <a href="{{ route('account.dashboard') }}" @click="mobileOpen = false" class="block px-3 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-orange-50 dark:hover:bg-gray-800 hover:text-orange-600 rounded-lg transition">{{ t('header.my_account', 'My Account', [], 'header') }}</a>
+                <form method="POST" action="{{ route('logout') }}">
+                    @csrf
+                    <button type="submit" class="block w-full text-left px-3 py-2.5 text-sm text-red-500 hover:bg-red-50 dark:hover:bg-gray-800 rounded-lg transition">{{ t('header.logout', 'Logout', [], 'header') }}</button>
+                </form>
+            @else
+                <a href="{{ route('login') }}" @click="mobileOpen = false" class="block px-3 py-2.5 text-sm text-orange-600 font-medium hover:bg-orange-50 dark:hover:bg-gray-800 rounded-lg transition">{{ t('header.login', 'Login', [], 'header') }}</a>
+                <a href="{{ route('register') }}" @click="mobileOpen = false" class="block px-3 py-2.5 text-sm text-white bg-orange-500 text-center font-medium rounded-lg hover:bg-orange-600 transition">{{ t('header.signup', 'Sign Up', [], 'header') }}</a>
             @endauth
-            <nav class="space-y-1">
-                <a href="{{ route('home') }}" class="block px-3 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-orange-50 dark:hover:bg-gray-800 hover:text-orange-600 rounded-lg transition">{{ t('header.home', 'Home', [], 'header') }}</a>
-                <a href="{{ route('shop.index') }}" class="block px-3 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-orange-50 dark:hover:bg-gray-800 hover:text-orange-600 rounded-lg transition">{{ t('header.shop_all', 'Shop All', [], 'header') }}</a>
-                <a href="{{ setting('nav_blog_url') ?: route('blog.index') }}" @click="mobileOpen = false"
-                   class="flex items-center gap-2 px-3 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-orange-50 dark:hover:bg-gray-800 hover:text-orange-600 rounded-lg transition font-medium">
-                    <span class="relative flex h-2 w-2">
-                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                        <span class="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
-                    </span>
-                    {{ t('header.blog', 'Blogs', [], 'header') }}
-                </a>
-                @php
-                    $mobileCategories = \App\Models\Category::whereNull('parent_id')->active()->withCount('products')->orderBy('sort_order')->limit(8)->get();
-                @endphp
-                @if($mobileCategories->count() > 0)
-                    <div x-data="{ showCats: false }">
-                        <button @click="showCats = !showCats" class="flex items-center justify-between w-full px-3 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-orange-50 dark:hover:bg-gray-800 hover:text-orange-600 rounded-lg transition">
-                            <span>{{ t('header.categories', 'Categories', [], 'header') }}</span>
-                            <svg class="w-4 h-4 transition-transform" :class="showCats ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
-                        </button>
-                        <div x-show="showCats" x-cloak class="pl-4 space-y-1 mt-1">
-                            @foreach($mobileCategories as $cat)
-                                <a href="{{ route('shop.category', $cat->slug) }}" class="block px-3 py-2 text-xs text-gray-600 dark:text-gray-300 hover:bg-orange-50 dark:hover:bg-gray-800 hover:text-orange-600 rounded-lg transition">{{ $cat->name }}</a>
-                            @endforeach
-                            <a href="{{ route('shop.index') }}" class="block px-3 py-2 text-xs text-orange-700 font-medium hover:bg-orange-50 dark:hover:bg-gray-800 rounded-lg transition">{{ t('header.view_all_categories', 'View All Categories', [], 'header') }} →</a>
-                        </div>
-                    </div>
-                @endif
-                @auth
-                    <a href="{{ route('orders.index') }}" class="block px-3 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-orange-50 dark:hover:bg-gray-800 hover:text-orange-600 rounded-lg transition">{{ t('header.my_orders', 'My Orders', [], 'header') }}</a>
-                    <a href="{{ route('wishlist.index') }}" class="block px-3 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-orange-50 dark:hover:bg-gray-800 hover:text-orange-600 rounded-lg transition">{{ t('header.wishlist', 'Wishlist', [], 'header') }}</a>
-                    <a href="{{ route('account.dashboard') }}" class="block px-3 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-orange-50 dark:hover:bg-gray-800 hover:text-orange-600 rounded-lg transition">{{ t('header.my_account', 'My Account', [], 'header') }}</a>
-                    <form method="POST" action="{{ route('logout') }}">
-                        @csrf
-                        <button type="submit" class="block w-full text-left px-3 py-2.5 text-sm text-red-500 hover:bg-red-50 dark:hover:bg-gray-800 rounded-lg transition">{{ t('header.logout', 'Logout', [], 'header') }}</button>
-                    </form>
-                @else
-                    <a href="{{ route('login') }}" class="block px-3 py-2.5 text-sm text-orange-600 font-medium hover:bg-orange-50 dark:hover:bg-gray-800 rounded-lg transition">{{ t('header.login', 'Login', [], 'header') }}</a>
-                    <a href="{{ route('register') }}" class="block px-3 py-2.5 text-sm text-white bg-orange-500 text-center font-medium rounded-lg hover:bg-orange-600 transition">{{ t('header.signup', 'Sign Up', [], 'header') }}</a>
-                @endauth
-            </nav>
-        </div>
+        </nav>
     </div>
-</header>
+</div>
+</div>
 
 {{-- Flash Messages --}}
 @if(session('success'))
