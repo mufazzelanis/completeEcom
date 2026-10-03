@@ -87,6 +87,12 @@ class PageController extends Controller
             return back()->withInput()->withErrors(['recaptcha' => 'Please complete the reCAPTCHA verification.']);
         }
 
+        // A confirmed-bot honeypot trip isn't told apart in the response — tipping
+        // a bot off (or rejecting outright) just teaches it to adapt. The lead is
+        // still recorded with its reason so nothing real is ever silently dropped;
+        // it's just excluded from the admin alert feed and visibly flagged below.
+        $spamReason = \App\Services\SpamGuard::check($request);
+
         // Until now this form saved nothing. Every message is now a CRM lead so it can't get lost.
         try {
             $contact = app(\App\Services\Crm\CrmContacts::class)->forEmail($request->email, 'contact_form', $request->name);
@@ -95,18 +101,25 @@ class PageController extends Controller
                 'name' => mb_substr($request->name, 0, 250),
                 'email' => $request->email,
                 'source' => 'contact_form',
+                'ip_address' => $request->ip(),
+                'user_agent' => mb_substr((string) $request->userAgent(), 0, 250),
+                'is_spam' => $spamReason !== null,
+                'spam_reason' => $spamReason,
                 'stage' => 'new',
                 'interest' => mb_substr($request->subject . "
 
 " . $request->message, 0, 5000),
             ]);
-            \App\Services\AdminAlerts\AdminAlerts::notify(
-                type: 'crm_lead',
-                title: 'New lead: ' . $lead->name,
-                body: mb_substr($request->subject, 0, 120),
-                url: route('admin.crm.leads.show', $lead),
-                data: ['lead_id' => $lead->id],
-            );
+
+            if ($spamReason === null) {
+                \App\Services\AdminAlerts\AdminAlerts::notify(
+                    type: 'crm_lead',
+                    title: 'New lead: ' . $lead->name,
+                    body: mb_substr($request->subject, 0, 120),
+                    url: route('admin.crm.leads.show', $lead),
+                    data: ['lead_id' => $lead->id],
+                );
+            }
         } catch (\Throwable $e) {
             report($e);
         }

@@ -24,6 +24,11 @@ class CrmLeadController extends Controller
             $like = '%' . str_replace(['%', '_'], ['\\%', '\\_'], $s) . '%';
             $q->where(fn ($w) => $w->where('name', 'like', $like)->orWhere('phone', 'like', $like)->orWhere('email', 'like', $like)->orWhere('company', 'like', $like));
         }
+        if ($request->input('spam') === '1') {
+            $q->where('is_spam', true);
+        } elseif ($request->input('spam') === '0') {
+            $q->where('is_spam', false);
+        }
 
         // Closed columns only show the last 30 days so the board stays a working surface, not an archive.
         $q->where(fn ($w) => $w->whereNotIn('stage', ['won', 'lost'])->orWhere('updated_at', '>=', now()->subDays(30)));

@@ -3,7 +3,12 @@
 
 @section('content')
 <div class="flex items-center justify-between mb-6">
-    <p class="text-sm text-gray-500">{{ $activeCount }} active subscriber(s)</p>
+    <p class="text-sm text-gray-500">
+        {{ $activeCount }} active subscriber(s)
+        @if($spamCount > 0)
+            · <span class="text-red-500 font-medium">{{ $spamCount }} flagged as spam</span>
+        @endif
+    </p>
 </div>
 
 @if(session('success'))<div class="mb-4 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-xl text-sm">{{ session('success') }}</div>@endif
@@ -16,6 +21,7 @@
             <option value="">All statuses</option>
             <option value="active" {{ request('status') === 'active' ? 'selected' : '' }}>Active</option>
             <option value="unsubscribed" {{ request('status') === 'unsubscribed' ? 'selected' : '' }}>Unsubscribed</option>
+            <option value="spam" {{ request('status') === 'spam' ? 'selected' : '' }}>Flagged as spam</option>
         </select>
         <button type="submit" class="bg-indigo-600 text-white px-4 py-2 rounded-xl text-sm hover:bg-indigo-700 transition">Filter</button>
         @if(request('search') || request('status'))<a href="{{ route('admin.newsletter.index') }}" class="px-4 py-2 border border-gray-200 rounded-xl text-sm text-gray-600 hover:bg-gray-50 transition">Clear</a>@endif
@@ -28,6 +34,7 @@
             <tr class="text-xs text-gray-500 uppercase tracking-wider">
                 <th class="px-6 py-3 text-left">Email</th>
                 <th class="px-6 py-3 text-center">Status</th>
+                <th class="px-6 py-3 text-left">IP Address</th>
                 <th class="px-6 py-3 text-left">Subscribed</th>
                 <th class="px-6 py-3 text-right">Actions</th>
             </tr>
@@ -37,12 +44,18 @@
             <tr class="hover:bg-gray-50 transition">
                 <td class="px-6 py-4 text-sm text-gray-800">{{ $subscriber->email }}</td>
                 <td class="px-6 py-4 text-center">
-                    @if($subscriber->is_active)
-                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">Active</span>
-                    @else
-                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-500">Unsubscribed</span>
-                    @endif
+                    <div class="flex items-center justify-center gap-1.5 flex-wrap">
+                        @if($subscriber->is_active)
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">Active</span>
+                        @else
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-500">Unsubscribed</span>
+                        @endif
+                        @if($subscriber->is_spam)
+                            <span title="{{ $subscriber->spam_reason === 'honeypot' ? 'Filled a hidden field — confirmed bot' : 'Submitted implausibly fast' }}" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700">⚠ Spam</span>
+                        @endif
+                    </div>
                 </td>
+                <td class="px-6 py-4 text-sm text-gray-400 font-mono">{{ $subscriber->ip_address ?? '—' }}</td>
                 <td class="px-6 py-4 text-sm text-gray-500">{{ $subscriber->subscribed_at?->format('M d, Y') ?? '—' }}</td>
                 <td class="px-6 py-4 text-right">
                     <form action="{{ route('admin.newsletter.destroy', $subscriber) }}" method="POST" onsubmit="return uiConfirm(event, 'Remove this subscriber?')">
@@ -52,7 +65,7 @@
                 </td>
             </tr>
             @empty
-            <tr><td colspan="4" class="px-6 py-12 text-center text-gray-400 text-sm">No subscribers yet.</td></tr>
+            <tr><td colspan="5" class="px-6 py-12 text-center text-gray-400 text-sm">No subscribers yet.</td></tr>
             @endforelse
         </tbody>
     </table>

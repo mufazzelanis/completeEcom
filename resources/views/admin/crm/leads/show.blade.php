@@ -25,9 +25,13 @@
                         @if($lead->phone)<span>📞 {{ $lead->phone }}</span>@endif
                         @if($lead->email)<span>✉️ {{ $lead->email }}</span>@endif
                         <span>via {{ CrmLead::SOURCES[$lead->source] ?? $lead->source }} · {{ $lead->created_at->diffForHumans() }}</span>
+                        @if($lead->ip_address)<span class="font-mono text-xs">IP: {{ $lead->ip_address }}</span>@endif
                     </div>
                 </div>
                 <div class="flex items-center gap-2">
+                    @if($lead->is_spam)
+                        <span title="{{ $lead->spam_reason === 'honeypot' ? 'Filled a hidden field — confirmed bot' : 'Submitted implausibly fast' }}" class="text-xs font-semibold px-2.5 py-1 rounded-full bg-red-100 text-red-700">⚠ Flagged as spam</span>
+                    @endif
                     <span class="text-xs font-semibold px-2.5 py-1 rounded-full {{ Ui::badge($st['color']) }}">{{ $st['label'] }}</span>
                     @if($lead->value > 0)<span class="text-sm font-bold text-gray-800">{{ Ui::money($lead->value) }}</span>@endif
                 </div>

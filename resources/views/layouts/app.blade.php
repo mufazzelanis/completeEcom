@@ -886,12 +886,19 @@ $navCategories = \App\Models\Category::with(['children' => fn($q) => $q->active(
                     <p class="text-gray-400 text-sm mt-1">{{ t('footer.newsletter_subtitle', 'Get updates on new arrivals, deals, and exclusive offers.', [], 'footer') }}</p>
                 </div>
                 <div class="w-full md:w-auto">
-                    <form action="{{ route('newsletter.subscribe') }}" method="POST" class="flex w-full md:w-auto">
+                    <form action="{{ route('newsletter.subscribe') }}" method="POST" class="flex flex-col gap-2 w-full md:w-auto">
                         @csrf
-                        <input type="email" name="email" value="{{ old('email') }}" placeholder="{{ t('footer.email_placeholder', 'Enter your email', [], 'footer') }}" aria-label="{{ t('footer.email_placeholder', 'Enter your email', [], 'footer') }}" required class="flex-1 md:w-72 px-4 py-2.5 rounded-l-lg bg-gray-700 text-white border border-gray-600 focus:outline-none focus:border-orange-500 text-sm placeholder-gray-500">
-                        <button type="submit" class="bg-orange-500 text-white px-6 py-2.5 rounded-r-lg font-medium text-sm hover:bg-orange-600 transition whitespace-nowrap">{{ t('footer.subscribe', 'Subscribe', [], 'footer') }}</button>
+                        @include('partials.honeypot')
+                        <div class="flex w-full">
+                            <input type="email" name="email" value="{{ old('email') }}" placeholder="{{ t('footer.email_placeholder', 'Enter your email', [], 'footer') }}" aria-label="{{ t('footer.email_placeholder', 'Enter your email', [], 'footer') }}" required class="flex-1 md:w-72 px-4 py-2.5 rounded-l-lg bg-gray-700 text-white border border-gray-600 focus:outline-none focus:border-orange-500 text-sm placeholder-gray-500">
+                            <button type="submit" class="bg-orange-500 text-white px-6 py-2.5 rounded-r-lg font-medium text-sm hover:bg-orange-600 transition whitespace-nowrap">{{ t('footer.subscribe', 'Subscribe', [], 'footer') }}</button>
+                        </div>
+                        {{-- A no-op unless an admin enables reCAPTCHA in Settings → Security; v3
+                             stays fully invisible here, v2 would show its checkbox widget. --}}
+                        @include('partials.recaptcha')
                     </form>
                     @error('email')<p class="text-red-400 text-xs mt-1.5">{{ $message }}</p>@enderror
+                    @error('recaptcha')<p class="text-red-400 text-xs mt-1.5">{{ $message }}</p>@enderror
                 </div>
             </div>
         </div>

@@ -44,6 +44,7 @@
                 </div>
                 @error('recaptcha')<p class="text-red-500 text-xs">{{ $message }}</p>@enderror
                 @include('partials.recaptcha')
+                @include('partials.honeypot')
                 <button type="submit" class="w-full bg-indigo-600 text-white py-3 rounded-xl text-sm font-semibold hover:bg-indigo-700 transition">
                     Send Message
                 </button>

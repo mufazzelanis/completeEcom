@@ -14,6 +14,7 @@
             'source' => CrmLead::SOURCES[$l->source] ?? $l->source, 'owner' => $l->owner?->name, 'contact' => $l->contact_id,
             'close' => optional($l->expected_close_on)->format('d M'), 'overdue' => $l->expected_close_on && $l->expected_close_on->isPast() && ! in_array($l->stage, ['won', 'lost']),
             'age' => $l->created_at->diffForHumans(null, true), 'interest' => \Illuminate\Support\Str::limit((string) $l->interest, 80),
+            'isSpam' => (bool) $l->is_spam, 'ip' => $l->ip_address,
         ])->values();
     }
 @endphp
@@ -64,8 +65,13 @@
             <input name="q" value="{{ request('q') }}" placeholder="Search leads…" class="border border-gray-200 rounded-xl px-3.5 py-2 text-sm w-52 focus:outline-none focus:ring-2 focus:ring-orange-400">
             <select name="owner" class="border border-gray-200 rounded-xl px-3 py-2 text-sm"><option value="">All owners</option>@foreach($staff as $u)<option value="{{ $u->id }}" @selected((string) request('owner') === (string) $u->id)>{{ $u->name }}</option>@endforeach</select>
             <select name="source" class="border border-gray-200 rounded-xl px-3 py-2 text-sm"><option value="">All sources</option>@foreach(CrmLead::SOURCES as $k => $l)<option value="{{ $k }}" @selected(request('source') === $k)>{{ $l }}</option>@endforeach</select>
+            <select name="spam" class="border border-gray-200 rounded-xl px-3 py-2 text-sm">
+                <option value="">All leads</option>
+                <option value="0" @selected(request('spam') === '0')>Hide flagged spam</option>
+                <option value="1" @selected(request('spam') === '1')>Flagged spam only</option>
+            </select>
             <button class="bg-gray-800 text-white px-4 py-2 rounded-xl text-sm hover:bg-gray-700">Filter</button>
-            @if(request()->hasAny(['q', 'owner', 'source']))<a href="{{ route('admin.crm.leads.index') }}" class="text-sm text-gray-500 px-2">Reset</a>@endif
+            @if(request()->hasAny(['q', 'owner', 'source', 'spam']))<a href="{{ route('admin.crm.leads.index') }}" class="text-sm text-gray-500 px-2">Reset</a>@endif
         </form>
         @if($canManage)<button type="button" @click="showAdd = true" class="bg-orange-600 text-white px-4 py-2 rounded-xl text-sm font-medium hover:bg-orange-700">+ New lead</button>@endif
     </div>
@@ -89,7 +95,10 @@
                         <div :draggable="{{ $canManage ? 'true' : 'false' }}" @dragstart="start($event, c, s.key)" @dragend="dragging = null; over = null"
                              class="bg-white rounded-xl border border-gray-100 shadow-sm p-3 cursor-grab active:cursor-grabbing hover:shadow-md transition">
                             <a :href="url('showUrl', c.id)" class="block">
-                                <div class="font-medium text-sm text-gray-800 truncate" x-text="c.name"></div>
+                                <div class="flex items-center gap-1.5">
+                                    <div class="font-medium text-sm text-gray-800 truncate" x-text="c.name"></div>
+                                    <span x-show="c.isSpam" title="Flagged by the spam guard" class="flex-shrink-0 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-red-100 text-red-700">⚠ Spam</span>
+                                </div>
                                 <div class="text-xs text-gray-400 truncate" x-show="c.company" x-text="c.company"></div>
                                 <p class="text-xs text-gray-500 mt-1 line-clamp-2" x-show="c.interest" x-text="c.interest"></p>
                             </a>

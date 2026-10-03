@@ -10,8 +10,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class CrmLead extends Model
 {
     protected $table = 'crm_leads';
-    protected $fillable = ['contact_id', 'name', 'phone', 'email', 'company', 'source', 'stage', 'value', 'expected_close_on', 'interest', 'lost_reason', 'owner_id', 'position', 'won_at', 'lost_at'];
-    protected $casts = ['value' => 'decimal:2', 'expected_close_on' => 'date', 'won_at' => 'datetime', 'lost_at' => 'datetime'];
+    protected $fillable = ['contact_id', 'name', 'phone', 'email', 'company', 'source', 'ip_address', 'user_agent', 'is_spam', 'spam_reason', 'stage', 'value', 'expected_close_on', 'interest', 'lost_reason', 'owner_id', 'position', 'won_at', 'lost_at'];
+    protected $casts = ['value' => 'decimal:2', 'expected_close_on' => 'date', 'won_at' => 'datetime', 'lost_at' => 'datetime', 'is_spam' => 'boolean'];
 
     public const STAGES = [
         'new'         => ['label' => 'New',         'color' => 'blue',   'probability' => 10],

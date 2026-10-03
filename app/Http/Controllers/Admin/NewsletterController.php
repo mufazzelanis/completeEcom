@@ -15,14 +15,17 @@ class NewsletterController extends Controller
         if ($request->filled('search')) {
             $query->where('email', 'like', '%'.$request->search.'%');
         }
-        if ($request->filled('status')) {
+        if ($request->input('status') === 'spam') {
+            $query->where('is_spam', true);
+        } elseif ($request->filled('status')) {
             $query->where('is_active', $request->status === 'active');
         }
 
         $subscribers = $query->latest('subscribed_at')->paginate(30)->withQueryString();
         $activeCount = NewsletterSubscriber::where('is_active', true)->count();
+        $spamCount = NewsletterSubscriber::where('is_spam', true)->count();
 
-        return view('admin.newsletter.index', compact('subscribers', 'activeCount'));
+        return view('admin.newsletter.index', compact('subscribers', 'activeCount', 'spamCount'));
     }
 
     public function destroy(NewsletterSubscriber $subscriber)
