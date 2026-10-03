@@ -39,10 +39,15 @@
 @section('content')
 
 {{-- ═══════════ HERO BANNER CAROUSEL ═══════════ --}}
-{{-- Back to the contained, rounded card — the edge-to-edge/square-cornered mobile
-     version was tried and explicitly asked back out of. "Bigger" now comes from a
-     taller mobile-only fixed height instead of a different aspect ratio (see below). --}}
-<div class="relative max-w-[1200px] mx-auto px-4 pt-4">
+{{-- The h-56 fixed mobile height (previous commit) made the hero bigger but forced
+     object-cover to blow the image up ~2x to fill a box far taller than its native
+     16:5 ratio, cropping/zooming it badly — exactly what was just reported. Back to
+     one single aspect-[16/5] everywhere (zero crop, matches what admins are told to
+     upload at) so the image is never distorted; "bigger" instead comes from going
+     edge-to-edge on mobile only, which stays rounded (corners are still visible
+     against the page background even flush to the screen edge) while keeping the
+     exact same crop-free ratio as desktop. --}}
+<div class="relative max-w-[1200px] mx-auto px-0 sm:px-4 pt-0 sm:pt-4">
     {{-- Soft ambient glow behind the hero card — purely decorative depth, clipped by the
          page's own overflow so it never creates a horizontal scrollbar. --}}
     <div class="pointer-events-none absolute -top-4 left-1/2 -translate-x-1/2 w-[90%] h-[80%] bg-gradient-to-r from-orange-300/30 via-pink-300/20 to-indigo-300/30 blur-3xl rounded-full"></div>
@@ -65,14 +70,13 @@
             this.current = dx < 0 ? (this.current + 1) % this.total : (this.current - 1 + this.total) % this.total;
         }
     }" @touchstart.passive="onTouchStart($event)" @touchend.passive="onTouchEnd($event)">
-        {{-- Desktop keeps the fixed 16:5 ratio the admin is told to upload at
-             (admin.banners.create/edit) so an upload is never cropped there — the old
-             2:1-on-mobile / 3:1-on-desktop split is exactly what used to crop the tops/
-             bottoms off banners. Mobile uses a taller flat height instead (h-56): still
-             one single consistent crop behavior per breakpoint, just a deliberately
-             bigger one on the screen size that was actually asked for, without touching
-             desktop's sizing at all. --}}
-        <div class="relative rounded-2xl overflow-hidden bg-gray-200 h-56 sm:h-auto sm:aspect-[16/5] shadow-xl shadow-orange-900/5">
+        {{-- One fixed 16:5 ratio at every breakpoint — matches the 1920×600 size admins
+             are told to upload at (admin.banners.create/edit), so the image is always
+             shown at its native crop, never stretched/zoomed to fill a mismatched box. --}}
+        {{-- min-h is a floor, not a second ratio — 360px and up stays exactly 16:5; only
+             below that (sub-iPhone-SE widths) does it stop shrinking, which would
+             otherwise clip the subtitle/headline/button stack. --}}
+        <div class="relative rounded-2xl overflow-hidden bg-gray-200 aspect-[16/5] min-h-[112px] sm:min-h-0 shadow-lg sm:shadow-xl shadow-orange-900/5">
             @if($banners->count() > 0)
                 @foreach($banners as $i => $banner)
                 <div x-show="current === {{ $i }}"
@@ -98,7 +102,7 @@
                                         <span class="inline-block bg-white/15 backdrop-blur-sm border border-white/25 text-white/90 text-[11px] md:text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full mb-3">{{ $banner->subtitle }}</span>
                                     @endif
                                     <h2 class="text-white text-2xl md:text-4xl font-extrabold mb-2 leading-tight [text-wrap:balance]">{{ $banner->title }}</h2>
-                                    @if($banner->description)<p class="text-white/80 text-sm mb-4 max-w-md line-clamp-2">{{ $banner->description }}</p>@endif
+                                    @if($banner->description)<p class="text-white/80 text-sm mb-4 hidden md:block max-w-md">{{ $banner->description }}</p>@endif
                                     @if($banner->button_text)
                                         <span class="btn-glow inline-flex items-center gap-1.5 bg-white text-gray-900 px-5 md:px-6 py-2 md:py-2.5 rounded-full text-sm font-bold hover:bg-gray-100 hover:scale-105 transition-all shadow-lg">
                                             {{ $banner->button_text }}
@@ -118,7 +122,7 @@
                         <div class="animate-fade-in-up">
                             <p class="text-white/80 text-sm font-medium mb-2">Welcome to {{ setting('site_name', 'ShopVista') }}</p>
                             <h2 class="text-white text-2xl md:text-5xl font-extrabold mb-3 leading-tight">Discover Amazing Deals</h2>
-                            <p class="text-white/70 text-sm mb-5">Shop thousands of products at unbeatable prices</p>
+                            <p class="text-white/70 text-sm mb-5 hidden md:block">Shop thousands of products at unbeatable prices</p>
                             <a href="{{ route('shop.index') }}" class="btn-glow inline-block bg-white text-gray-900 px-6 md:px-8 py-2 md:py-2.5 rounded-full text-sm font-bold hover:bg-gray-100 hover:scale-105 transition-all shadow-lg">Shop Now</a>
                         </div>
                     </div>
