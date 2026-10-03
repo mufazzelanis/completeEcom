@@ -3,25 +3,30 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 
 class Setting extends Model
 {
+    private const CACHE_KEY = 'app_settings_all';
+
     protected $fillable = ['key', 'value', 'group'];
 
     /**
-     * No cross-request cache — every request reads settings straight from the
-     * database. This is only a per-request reuse so a single page load that calls
-     * setting() dozens of times doesn't run dozens of identical queries; it is
-     * reset (see boot()) at the start of every request and never persisted.
+     * Backed by the app's cache store (persists across requests — see allFresh()),
+     * busted on every write via the model events below and the explicit bust() call
+     * already made after every admin Settings save. setting() is called dozens of
+     * times on every single page (header, footer, every section on the homepage,
+     * ...), so this is the difference between one query-or-cache-hit per request
+     * total, versus one every single time any page used to load.
      */
     protected static ?array $requestCache = null;
 
     protected static function booted(): void
     {
-        static::created(fn () => static::$requestCache = null);
-        static::updated(fn () => static::$requestCache = null);
-        static::deleted(fn () => static::$requestCache = null);
+        static::created(fn () => static::bust());
+        static::updated(fn () => static::bust());
+        static::deleted(fn () => static::bust());
     }
 
     public static function get(string $key, mixed $default = null): mixed
@@ -44,6 +49,7 @@ class Setting extends Model
     public static function bust(): void
     {
         static::$requestCache = null;
+        Cache::forget(self::CACHE_KEY);
     }
 
     public static function fileUrl(string $key, ?string $default = null): ?string
@@ -58,7 +64,10 @@ class Setting extends Model
     private static function allFresh(): array
     {
         if (static::$requestCache === null) {
-            static::$requestCache = static::query()->pluck('value', 'key')->all();
+            static::$requestCache = Cache::rememberForever(
+                self::CACHE_KEY,
+                fn () => static::query()->pluck('value', 'key')->all()
+            );
         }
 
         return static::$requestCache;

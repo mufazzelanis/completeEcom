@@ -12,7 +12,10 @@ class ShopController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Product::with(['category', 'brand', 'activeFlashSaleProduct'])->active();
+        // 'reviews' is needed by every product-card partial for its star rating
+        // (avg) and count — without it, each card lazy-loads its own reviews query,
+        // turning a 12-24-product listing page into 12-24+ extra DB round-trips.
+        $query = Product::with(['category', 'brand', 'activeFlashSaleProduct', 'reviews'])->active();
 
         if ($request->filled('search')) {
             $s = $request->search;
@@ -113,7 +116,7 @@ class ShopController extends Controller
             return redirect()->away($category->redirect_url, 301);
         }
 
-        $products = Product::with(['category', 'brand', 'activeFlashSaleProduct'])
+        $products = Product::with(['category', 'brand', 'activeFlashSaleProduct', 'reviews'])
             ->where(fn($q) => $q
                 ->where('category_id', $category->id)
                 ->orWhere('subcategory_id', $category->id)

@@ -24,7 +24,9 @@ class WishlistController extends Controller
 
     public function index()
     {
-        $wishlists = $this->getWishlistQuery()->with('product.activeFlashSaleProduct')->get();
+        // 'reviews'/'brand' are needed by every product-card partial for its star
+        // rating and brand name — without them each card lazy-loads its own queries.
+        $wishlists = $this->getWishlistQuery()->with('product.activeFlashSaleProduct', 'product.reviews', 'product.brand')->get();
         return view('wishlist.index', compact('wishlists'));
     }
 

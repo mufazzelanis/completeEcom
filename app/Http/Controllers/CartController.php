@@ -87,7 +87,9 @@ class CartController extends Controller
         $crossSellProducts = ProductRecommendation::whereIn('product_id', $cartProductIds)
             ->where('type', 'cross_sell')
             ->whereNotIn('recommended_product_id', $cartProductIds)
-            ->with('recommended.activeFlashSaleProduct')
+            // 'reviews'/'brand' are needed by every product-card partial for its star
+            // rating and brand name — without them each card lazy-loads its own queries.
+            ->with('recommended.activeFlashSaleProduct', 'recommended.reviews', 'recommended.brand')
             ->orderBy('sort_order')
             ->get()
             ->pluck('recommended')

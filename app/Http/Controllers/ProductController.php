@@ -38,8 +38,10 @@ class ProductController extends Controller
             $product->load(['colors', 'sizes', 'combinations.color', 'combinations.size']);
         }
 
+        // 'reviews'/'brand' are needed by every product-card partial for its star
+        // rating and brand name — without them each card lazy-loads its own queries.
         $related = Product::active()
-            ->with('activeFlashSaleProduct')
+            ->with('activeFlashSaleProduct', 'reviews', 'brand')
             ->where('category_id', $product->category_id)
             ->where('id', '!=', $product->id)
             ->take(4)->get();
