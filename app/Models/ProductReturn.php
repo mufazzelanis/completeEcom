@@ -30,17 +30,18 @@ class ProductReturn extends Model
     public function statusBadge(): string
     {
         return match($this->status) {
-            'pending'   => 'bg-yellow-100 text-yellow-700',
-            'approved'  => 'bg-green-100 text-green-700',
-            'rejected'  => 'bg-red-100 text-red-700',
-            'completed' => 'bg-blue-100 text-blue-700',
-            default     => 'bg-gray-100 text-gray-600',
+            'pending'     => 'bg-yellow-100 text-yellow-700',
+            'approved'    => 'bg-green-100 text-green-700',
+            'in_progress' => 'bg-purple-100 text-purple-700',
+            'rejected'    => 'bg-red-100 text-red-700',
+            'completed'   => 'bg-blue-100 text-blue-700',
+            default       => 'bg-gray-100 text-gray-600',
         };
     }
 
     public function statusLabel(): string
     {
-        return ucfirst($this->status);
+        return $this->status === 'in_progress' ? 'In Progress' : ucfirst($this->status);
     }
 
     public function refundTypeLabel(): string

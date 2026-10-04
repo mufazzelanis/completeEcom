@@ -480,6 +480,8 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::get('returns/{id}', [AdminReturnController::class, 'show'])->name('returns.show');
     Route::post('returns/{id}/approve', [AdminReturnController::class, 'approve'])->name('returns.approve');
     Route::post('returns/{id}/reject', [AdminReturnController::class, 'reject'])->name('returns.reject');
+    Route::post('returns/{id}/in-progress', [AdminReturnController::class, 'markInProgress'])->name('returns.inProgress');
+    Route::post('returns/{id}/complete', [AdminReturnController::class, 'complete'])->name('returns.complete');
 
     // Support Tickets
     Route::get('support-tickets', [AdminSupportTicketController::class, 'index'])->name('support-tickets.index');

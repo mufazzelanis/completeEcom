@@ -31,9 +31,11 @@ class ReturnController extends Controller
         $returns = $query->paginate(20);
 
         $stats = [
-            'pending'  => ProductReturn::where('status', 'pending')->count(),
-            'approved' => ProductReturn::where('status', 'approved')->count(),
-            'total'    => ProductReturn::count(),
+            'pending'     => ProductReturn::where('status', 'pending')->count(),
+            'approved'    => ProductReturn::where('status', 'approved')->count(),
+            'in_progress' => ProductReturn::where('status', 'in_progress')->count(),
+            'completed'   => ProductReturn::where('status', 'completed')->count(),
+            'total'       => ProductReturn::count(),
         ];
 
         return view('admin.returns.index', compact('returns', 'stats'));
@@ -120,6 +122,58 @@ class ReturnController extends Controller
         $this->notifyReturnStatus($return);
 
         return back()->with('success', 'Return request rejected.');
+    }
+
+    public function markInProgress(Request $request, int $id)
+    {
+        $return = ProductReturn::findOrFail($id);
+
+        if ($return->status !== 'approved') {
+            return back()->with('error', 'Only an approved return can be marked in progress.');
+        }
+
+        $request->validate([
+            'admin_note' => 'nullable|string|max:1000',
+        ]);
+
+        $return->update([
+            'status'       => 'in_progress',
+            'admin_note'   => $request->filled('admin_note') ? $request->admin_note : $return->admin_note,
+            'processed_by' => auth()->id(),
+            'processed_at' => now(),
+        ]);
+
+        $this->notifyReturnStatus($return);
+
+        return back()->with('success', 'Return marked as in progress.');
+    }
+
+    public function complete(Request $request, int $id)
+    {
+        $return = ProductReturn::findOrFail($id);
+
+        // Reachable from 'approved' directly (refund/exchange handled right away) or from
+        // 'in_progress' (it was being tracked and is now actually done) — either way this
+        // means the refund/exchange/store-credit has been handled outside this system
+        // (there's no payment-gateway refund API wired up here), not a second review step.
+        if (! in_array($return->status, ['approved', 'in_progress'])) {
+            return back()->with('error', 'Only an approved or in-progress return can be marked completed.');
+        }
+
+        $request->validate([
+            'admin_note' => 'nullable|string|max:1000',
+        ]);
+
+        $return->update([
+            'status'       => 'completed',
+            'admin_note'   => $request->filled('admin_note') ? $request->admin_note : $return->admin_note,
+            'processed_by' => auth()->id(),
+            'processed_at' => now(),
+        ]);
+
+        $this->notifyReturnStatus($return);
+
+        return back()->with('success', 'Return marked as completed.');
     }
 
     private function notifyReturnStatus(ProductReturn $return): void

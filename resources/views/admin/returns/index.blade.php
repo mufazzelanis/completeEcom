@@ -22,7 +22,7 @@
 @endif
 
 {{-- Stats --}}
-<div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+<div class="grid grid-cols-2 sm:grid-cols-5 gap-4 mb-6">
     <div class="bg-white rounded-2xl shadow-sm p-4">
         <p class="text-xs text-gray-500 mb-1">Pending Review</p>
         <p class="text-2xl font-bold text-orange-600">{{ $stats['pending'] }}</p>
@@ -30,6 +30,14 @@
     <div class="bg-white rounded-2xl shadow-sm p-4">
         <p class="text-xs text-gray-500 mb-1">Approved</p>
         <p class="text-2xl font-bold text-green-600">{{ $stats['approved'] }}</p>
+    </div>
+    <div class="bg-white rounded-2xl shadow-sm p-4">
+        <p class="text-xs text-gray-500 mb-1">In Progress</p>
+        <p class="text-2xl font-bold text-purple-600">{{ $stats['in_progress'] }}</p>
+    </div>
+    <div class="bg-white rounded-2xl shadow-sm p-4">
+        <p class="text-xs text-gray-500 mb-1">Completed</p>
+        <p class="text-2xl font-bold text-blue-600">{{ $stats['completed'] }}</p>
     </div>
     <div class="bg-white rounded-2xl shadow-sm p-4">
         <p class="text-xs text-gray-500 mb-1">Total Returns</p>
@@ -44,8 +52,8 @@
             class="border border-gray-200 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 w-64">
         <select name="status" class="border border-gray-200 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
             <option value="">All Status</option>
-            @foreach(['pending','approved','rejected','completed'] as $st)
-            <option value="{{ $st }}" {{ request('status') === $st ? 'selected' : '' }}>{{ ucfirst($st) }}</option>
+            @foreach(['pending' => 'Pending', 'approved' => 'Approved', 'in_progress' => 'In Progress', 'completed' => 'Completed', 'rejected' => 'Rejected'] as $st => $label)
+            <option value="{{ $st }}" {{ request('status') === $st ? 'selected' : '' }}>{{ $label }}</option>
             @endforeach
         </select>
         <button type="submit" class="bg-indigo-600 text-white px-4 py-2 rounded-xl text-sm hover:bg-indigo-700 transition">Filter</button>

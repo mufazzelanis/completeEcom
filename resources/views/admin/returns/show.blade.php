@@ -140,6 +140,47 @@
             </div>
             @endif
 
+            @if($return->status === 'approved')
+            {{-- In Progress — optional tracking step between Approve and Completed, for
+                 refunds/exchanges that take a few days (bank transfer, courier pickup for
+                 an exchange, etc.) rather than being resolved on the spot. --}}
+            <div class="bg-white rounded-2xl shadow-sm p-6">
+                <h3 class="font-semibold text-gray-800 mb-1">Mark In Progress</h3>
+                <p class="text-xs text-gray-500 mb-3">The {{ strtolower($return->refundTypeLabel()) }} is being processed (e.g. bank transfer sent, exchange item picked up) but isn't confirmed done yet.</p>
+                <form action="{{ route('admin.returns.inProgress', $return) }}" method="POST">
+                    @csrf
+                    <textarea name="admin_note" placeholder="Optional note (e.g. transfer initiated)" rows="2"
+                        class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm mb-3 focus:outline-none focus:ring-2 focus:ring-purple-400"></textarea>
+                    <button type="submit" class="w-full py-2.5 bg-purple-600 text-white rounded-xl text-sm font-semibold hover:bg-purple-700 transition">
+                        ↻ Mark In Progress
+                    </button>
+                </form>
+            </div>
+            @endif
+
+            @if(in_array($return->status, ['approved', 'in_progress']))
+            {{-- Complete — a separate step from Approve, since approving only restocks
+                 the item; the refund/exchange/store-credit itself happens outside this
+                 system (no payment-gateway refund API wired up here), so this just
+                 records that it's actually been handed to the customer and closes the
+                 request out instead of leaving it sitting in "Approved"/"In Progress"
+                 forever. Reachable directly from Approved too, for refunds resolved on
+                 the spot with no need to track an in-between state. --}}
+            <div class="bg-white rounded-2xl shadow-sm p-6">
+                <h3 class="font-semibold text-gray-800 mb-1">Mark as Completed</h3>
+                <p class="text-xs text-gray-500 mb-3">Once the {{ strtolower($return->refundTypeLabel()) }} has actually been handed to the customer, close this request out.</p>
+                <form action="{{ route('admin.returns.complete', $return) }}" method="POST"
+                      onsubmit="return uiConfirm(event, 'Mark this return as completed? This confirms the refund/exchange has been handled.')">
+                    @csrf
+                    <textarea name="admin_note" placeholder="Optional note (e.g. refund reference)" rows="2"
+                        class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm mb-3 focus:outline-none focus:ring-2 focus:ring-blue-400"></textarea>
+                    <button type="submit" class="w-full py-2.5 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700 transition">
+                        ✓ Mark Completed
+                    </button>
+                </form>
+            </div>
+            @endif
+
             {{-- Customer info --}}
             <div class="bg-white rounded-2xl shadow-sm p-6 space-y-3 text-sm">
                 <h3 class="font-semibold text-gray-800">Customer</h3>
