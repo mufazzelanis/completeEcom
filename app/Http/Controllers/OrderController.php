@@ -48,7 +48,9 @@ class OrderController extends Controller
             abort(403);
         }
 
-        if (!in_array($order->status, ['pending', 'processing'])) {
+        // Pending only — once an order moves to Processing, packing has likely already
+        // started, so self-cancel stops there and it becomes a support conversation instead.
+        if ($order->status !== 'pending') {
             return back()->with('error', 'This order cannot be cancelled.');
         }
 

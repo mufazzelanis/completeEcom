@@ -96,7 +96,9 @@
                 </div>
             </div>
 
-            @if(in_array($order->status, ['pending', 'processing']))
+            {{-- Pending only — once it's Processing, packing has likely already started, so
+                 self-cancel stops here and it becomes a support conversation instead. --}}
+            @if($order->status === 'pending')
                 <form action="{{ route('orders.cancel', $order->id) }}" method="POST">
                     @csrf
                     <button type="submit" onclick="return uiConfirm(event, 'Cancel this order?')"
