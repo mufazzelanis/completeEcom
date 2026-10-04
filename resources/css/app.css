@@ -393,6 +393,11 @@ html.dark .admin-nav-group[data-has-active="1"] .admin-nav-group__title { color:
 .sb-pre-init { transform: translateX(-100%); }
 @media (min-width: 1024px) { .sb-pre-init { transform: none; } }
 
+/* ── Turbo Drive progress bar (resources/js/app.js) ───────────────────────────────────
+ * Turbo injects this element itself on every intercepted navigation; restyled here to
+ * match the brand color instead of its default blue, on both the storefront and admin. */
+.turbo-progress-bar { height: 3px; background: linear-gradient(to right, #fb923c, #f97316, #ea580c); }
+
 /* ── Collapsible icon rail (desktop only) ─────────────────────────────────────────────
  * `data-collapsed` lives on <aside id="admin-sidebar">, set synchronously by
  * sidebar-nav-behavior.blade.php (same pre-Alpine script that restores the nav-group

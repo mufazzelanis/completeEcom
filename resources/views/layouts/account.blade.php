@@ -35,21 +35,11 @@ $cartCount = \App\Models\Cart::where('user_id', auth()->id())->sum('quantity');
         })();
     </script>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
-    <script>
-        document.addEventListener('alpine:init', () => {
-            Alpine.store('theme', {
-                dark: document.documentElement.classList.contains('dark'),
-                toggle() {
-                    this.dark = !this.dark;
-                    localStorage.setItem('site-theme', this.dark ? 'dark' : 'light');
-                    document.documentElement.classList.toggle('dark', this.dark);
-                },
-            });
-        });
-    </script>
+    {{-- theme store is registered once, unconditionally, in app.js itself — see the
+         comment there. --}}
     <style>[x-cloak]{display:none!important}</style>
 </head>
-<body class="bg-gray-50 dark:bg-gray-950 font-sans antialiased transition-colors pb-[calc(4rem_+_env(safe-area-inset-bottom))] md:pb-0" x-data="{ menuOpen: false }">
+<body data-theme-key="site-theme" class="bg-gray-50 dark:bg-gray-950 font-sans antialiased transition-colors pb-[calc(4rem_+_env(safe-area-inset-bottom))] md:pb-0" x-data="{ menuOpen: false }">
 @include('partials.confirm-modal')
 
 {{-- Top Nav — same logo size as the main storefront header (partials.storefront.header-logo)
@@ -169,7 +159,7 @@ $cartCount = \App\Models\Cart::where('user_id', auth()->id())->sum('quantity');
         </div>
         {{-- Logout --}}
         <div class="border-t border-gray-100 px-5 py-3">
-            <form method="POST" action="{{ route('logout') }}">
+            <form method="POST" action="{{ route('logout') }}" data-turbo="false">
                 @csrf
                 <button type="submit" class="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-red-50 text-red-600 text-sm font-semibold hover:bg-red-100 transition">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
@@ -252,7 +242,7 @@ $cartCount = \App\Models\Cart::where('user_id', auth()->id())->sum('quantity');
                     @if($inGroup)</div>@endif
 
                     <div class="border-t border-gray-100">
-                        <form method="POST" action="{{ route('logout') }}">
+                        <form method="POST" action="{{ route('logout') }}" data-turbo="false">
                             @csrf
                             <button type="submit" class="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-red-500 hover:bg-red-50 transition">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>

@@ -51,7 +51,7 @@
             <h3 class="font-semibold text-indigo-800 mb-3 text-sm">Your digital downloads are ready</h3>
             <div class="space-y-2">
                 @foreach($digitalItems as $item)
-                    <a href="{{ route('orders.download', [$order, $item]) }}" class="flex items-center justify-between bg-white rounded-lg px-4 py-3 hover:bg-indigo-50/50 transition">
+                    <a href="{{ route('orders.download', [$order, $item]) }}" data-turbo="false" class="flex items-center justify-between bg-white rounded-lg px-4 py-3 hover:bg-indigo-50/50 transition">
                         <span class="text-sm text-gray-700 dark:text-gray-700">{{ $item->product_name }}</span>
                         <span class="inline-flex items-center gap-1 text-indigo-600 text-xs font-semibold">
                             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-8-3V4m0 12l-4-4m4 4l4-4"/></svg>

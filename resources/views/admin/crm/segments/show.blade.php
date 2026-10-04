@@ -24,7 +24,7 @@
     </div>
     <div class="text-center px-4"><div class="text-3xl font-bold text-gray-800">{{ number_format($contacts->total()) }}</div><div class="text-xs text-gray-400">people right now</div></div>
     <div class="flex items-center gap-2">
-        <a href="{{ route('admin.crm.segments.export', $segment) }}" class="border border-gray-200 hover:bg-gray-50 px-3.5 py-2 rounded-xl text-sm text-gray-700">Export CSV</a>
+        <a href="{{ route('admin.crm.segments.export', $segment) }}" data-turbo="false" class="border border-gray-200 hover:bg-gray-50 px-3.5 py-2 rounded-xl text-sm text-gray-700">Export CSV</a>
         <a href="{{ route('admin.crm.contacts.index', ['segment' => $segment->id]) }}" class="border border-gray-200 hover:bg-gray-50 px-3.5 py-2 rounded-xl text-sm text-gray-700" title="Open in the directory to tag or assign everyone in bulk">Bulk actions</a>
         @if($canManage)<a href="{{ route('admin.crm.segments.edit', $segment) }}" class="bg-gray-800 text-white px-3.5 py-2 rounded-xl text-sm hover:bg-gray-700">Edit rules</a>@endif
     </div>

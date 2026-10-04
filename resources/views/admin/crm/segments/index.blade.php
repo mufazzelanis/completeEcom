@@ -29,7 +29,7 @@
             </div>
             <div class="mt-3 flex items-center gap-3 text-xs">
                 <a href="{{ route('admin.crm.segments.show', $s) }}" class="text-indigo-600 hover:underline">View people</a>
-                <a href="{{ route('admin.crm.segments.export', $s) }}" class="text-gray-500 hover:underline">Export CSV</a>
+                <a href="{{ route('admin.crm.segments.export', $s) }}" data-turbo="false" class="text-gray-500 hover:underline">Export CSV</a>
                 @if($canManage)<a href="{{ route('admin.crm.segments.edit', $s) }}" class="text-gray-500 hover:underline">Edit</a>@endif
                 <span class="ml-auto text-gray-300">{{ $s->match === 'any' ? 'ANY rule' : 'ALL rules' }}</span>
             </div>

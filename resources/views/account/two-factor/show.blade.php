@@ -37,7 +37,7 @@
 
     <div class="bg-white rounded-2xl shadow-sm p-6 mb-5">
         <h3 class="text-sm font-semibold text-gray-800 mb-3">Recovery Codes</h3>
-        <form action="{{ route('account.two-factor.recovery-codes') }}" method="POST" onsubmit="return uiConfirm(event, 'Generate new recovery codes? Your old codes will stop working.')">
+        <form action="{{ route('account.two-factor.recovery-codes') }}" method="POST" onsubmit="return uiConfirm(event, 'Generate new recovery codes? Your old codes will stop working.')" data-turbo="false">
             @csrf
             <button type="submit" class="text-sm text-indigo-600 hover:text-indigo-800 font-medium">Regenerate Recovery Codes</button>
         </form>
@@ -45,7 +45,7 @@
 
     <div class="bg-white rounded-2xl shadow-sm p-6">
         <h3 class="text-sm font-semibold text-gray-800 mb-3">Turn Off Two-Factor Authentication</h3>
-        <form action="{{ route('account.two-factor.disable') }}" method="POST" class="max-w-xs" onsubmit="return uiConfirm(event, 'Turn off two-factor authentication on your account?')">
+        <form action="{{ route('account.two-factor.disable') }}" method="POST" class="max-w-xs" onsubmit="return uiConfirm(event, 'Turn off two-factor authentication on your account?')" data-turbo="false">
             @csrf
             <label class="block text-xs font-medium text-gray-500 mb-1">Confirm your password</label>
             <input type="password" name="password" required

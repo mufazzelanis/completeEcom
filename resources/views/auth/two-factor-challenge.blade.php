@@ -97,7 +97,7 @@
                   this.$nextTick(() => this.focusBox(0));
               },
           }"
-          x-ref="form"
+          x-ref="form" data-turbo="false"
           @submit="submitting = true">
         @csrf
 
@@ -149,7 +149,7 @@
         </div>
 
         <div class="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 mt-6">
-            <a href="{{ route('two-factor.challenge', ['resend' => 1]) }}"
+            <a href="{{ route('two-factor.challenge', ['resend' => 1]) }}" data-turbo="false"
                class="text-sm font-medium"
                :class="resendCooldown > 0 ? 'text-gray-300 dark:text-gray-600 pointer-events-none' : 'text-orange-600 hover:text-orange-700'">
                 <span x-show="resendCooldown === 0">Resend code</span>

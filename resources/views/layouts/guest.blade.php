@@ -185,20 +185,10 @@
         .auth-fade-in { animation: authFadeIn .35s ease-out; }
     </style>
 
-    <script>
-        document.addEventListener('alpine:init', () => {
-            Alpine.store('theme', {
-                dark: document.documentElement.classList.contains('dark'),
-                toggle() {
-                    this.dark = !this.dark;
-                    localStorage.setItem('site-theme', this.dark ? 'dark' : 'light');
-                    document.documentElement.classList.toggle('dark', this.dark);
-                },
-            });
-        });
-    </script>
+    {{-- theme store is registered once, unconditionally, in app.js itself — see the
+         comment there. --}}
 </head>
-<body class="font-sans antialiased bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100 transition-colors">
+<body data-theme-key="site-theme" class="font-sans antialiased bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100 transition-colors">
 
     <div class="min-h-screen lg:grid lg:grid-cols-2">
 

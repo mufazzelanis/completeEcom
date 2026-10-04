@@ -298,18 +298,8 @@ $pageTwitterImage = trim($__env->yieldContent('twitter_image', $pageOgImage));
         @endif
     </style>
     @endif
-    <script>
-        document.addEventListener('alpine:init', () => {
-            Alpine.store('theme', {
-                dark: document.documentElement.classList.contains('dark'),
-                toggle() {
-                    this.dark = !this.dark;
-                    localStorage.setItem('site-theme', this.dark ? 'dark' : 'light');
-                    document.documentElement.classList.toggle('dark', this.dark);
-                },
-            });
-        });
-    </script>
+    {{-- theme store is registered once, unconditionally, in app.js itself — see the
+         comment there, and the matching note in layouts/admin.blade.php. --}}
     <style>
         [x-cloak]{display:none!important}
         .scrollbar-hide::-webkit-scrollbar{display:none}
@@ -443,27 +433,41 @@ $pageTwitterImage = trim($__env->yieldContent('twitter_image', $pageOgImage));
          a <style> tag never decodes back — silently corrupting any real-world CSS that uses
          quotes at all (which is most of it: quoted font names, content:"", url("...")). --}}
     @if($customCss)<style>{!! $customCss !!}</style>@endif
+    {{-- Turbo Drive (resources/js/app.js) swaps <body> on navigation instead of doing a
+         real browser load, so these external tracking scripts only ever execute once —
+         Turbo's own head-merging correctly recognizes the unchanged <script src> and
+         skips re-running it. The page-view calls below are moved into a turbo:load
+         listener instead of firing inline, so every virtual navigation (not just the
+         very first real one) still counts as a page view, with nothing double-counted. --}}
     @if($gaId || $adsConversionId)
     <script async src="https://www.googletagmanager.com/gtag/js?id={{ $gaId ?: $adsConversionId }}"></script>
     <script>
         window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());
-        @if($gaId)gtag('config','{{ $gaId }}');@endif
-        @if($adsConversionId)gtag('config','{{ $adsConversionId }}');@endif
         @if($googleEnhancedOn && $trackingData['google'])gtag('set','user_data',{!! Js::from($trackingData['google']) !!});@endif
+        document.addEventListener('turbo:load', function () {
+            @if($gaId)gtag('config','{{ $gaId }}');@endif
+            @if($adsConversionId)gtag('config','{{ $adsConversionId }}');@endif
+        });
     </script>
     @endif
     @if($gtmId)
-    <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer','{{ $gtmId }}');</script>
+    <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer','{{ $gtmId }}');
+        // Standard SPA pattern for GTM: push a virtual-pageview event on every Turbo
+        // navigation for any tag the admin has wired to trigger on it in their GTM container.
+        document.addEventListener('turbo:load', function () {
+            window.dataLayer.push({ event: 'virtualPageview', page_path: window.location.pathname + window.location.search });
+        });
+    </script>
     @endif
     @if($pixelOn)
     <script>
         !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');
         fbq('init','{{ $pixelId }}'@if($fbAdvancedMatchingOn && $trackingData['fb']), {!! Js::from($trackingData['fb']) !!}@endif);
-        fbq('track','PageView');
+        document.addEventListener('turbo:load', function () { fbq('track','PageView'); });
     </script>
     @endif
 </head>
-<body class="bg-gray-100 dark:bg-gray-950 font-sans antialiased transition-colors pb-[calc(4rem_+_env(safe-area-inset-bottom))] md:pb-0">
+<body data-theme-key="site-theme" class="bg-gray-100 dark:bg-gray-950 font-sans antialiased transition-colors pb-[calc(4rem_+_env(safe-area-inset-bottom))] md:pb-0">
 @if($gtmId)<noscript><iframe src="https://www.googletagmanager.com/ns.html?id={{ $gtmId }}" height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>@endif
 
 @include('partials.delivery-loader')
@@ -742,7 +746,7 @@ $navCategories = \App\Models\Category::with(['children' => fn($q) => $q->active(
                 <a href="{{ route('orders.index') }}" @click="mobileOpen = false" class="block px-3 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-orange-50 dark:hover:bg-gray-800 hover:text-orange-600 rounded-lg transition">{{ t('header.my_orders', 'My Orders', [], 'header') }}</a>
                 <a href="{{ route('wishlist.index') }}" @click="mobileOpen = false" class="block px-3 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-orange-50 dark:hover:bg-gray-800 hover:text-orange-600 rounded-lg transition">{{ t('header.wishlist', 'Wishlist', [], 'header') }}</a>
                 <a href="{{ route('account.dashboard') }}" @click="mobileOpen = false" class="block px-3 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-orange-50 dark:hover:bg-gray-800 hover:text-orange-600 rounded-lg transition">{{ t('header.my_account', 'My Account', [], 'header') }}</a>
-                <form method="POST" action="{{ route('logout') }}">
+                <form method="POST" action="{{ route('logout') }}" data-turbo="false">
                     @csrf
                     <button type="submit" class="block w-full text-left px-3 py-2.5 text-sm text-red-500 hover:bg-red-50 dark:hover:bg-gray-800 rounded-lg transition">{{ t('header.logout', 'Logout', [], 'header') }}</button>
                 </form>

@@ -1,6 +1,12 @@
 @extends('layouts.app')
 @section('title', 'Shopping Cart')
 
+@push('meta')
+{{-- Cart contents/stock can change between visits — Turbo Drive (resources/js/app.js)
+     should always fetch this page fresh, never show a cached snapshot. --}}
+<meta name="turbo-cache-control" content="no-cache">
+@endpush
+
 @section('content')
 <div class="max-w-7xl mx-auto px-4 py-8">
     <h1 class="text-2xl font-bold text-gray-900 mb-8">Shopping Cart</h1>

@@ -71,7 +71,7 @@
                 <td class="px-6 py-4">
                     <div class="flex items-center justify-center gap-2">
                         <a href="{{ route('admin.promo-codes.show', $batch) }}" class="text-indigo-600 hover:text-indigo-800 text-xs font-medium">View</a>
-                        <a href="{{ route('admin.promo-codes.download', $batch) }}" class="text-green-600 hover:text-green-800 text-xs font-medium">CSV</a>
+                        <a href="{{ route('admin.promo-codes.download', $batch) }}" data-turbo="false" class="text-green-600 hover:text-green-800 text-xs font-medium">CSV</a>
                         <form action="{{ route('admin.promo-codes.destroy', $batch) }}" method="POST" onsubmit="return uiConfirm(event, 'Delete this batch?')">
                             @csrf @method('DELETE')
                             <button class="text-red-500 hover:text-red-700 text-xs font-medium">Delete</button>

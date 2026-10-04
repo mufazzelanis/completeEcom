@@ -31,6 +31,11 @@ $sellerNavItems = [
     <title>@yield('title', 'Seller Dashboard') - {{ $siteName }}</title>
     @if($faviconUrl = setting_file_url('favicon'))<link rel="icon" href="{{ $faviconUrl }}">@endif
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    {{-- Loaded globally so Turbo Drive (resources/js/app.js) doesn't have to re-execute a
+         <script src> appearing fresh in swapped body content — the CDN's network latency
+         can beat a same-script-tag inline chart-init call that assumes it's already
+         loaded (see the matching comment in layouts/admin.blade.php). --}}
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <style>[x-cloak]{display:none!important}</style>
     @stack('styles')
 </head>
@@ -104,7 +109,7 @@ $sellerNavItems = [
             @endforeach
         </div>
         <div class="border-t border-gray-100 px-5 py-3">
-            <form method="POST" action="{{ route('logout') }}">
+            <form method="POST" action="{{ route('logout') }}" data-turbo="false">
                 @csrf
                 <button type="submit" class="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-red-50 text-red-600 text-sm font-semibold hover:bg-red-100 transition">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
@@ -159,7 +164,7 @@ $sellerNavItems = [
                     @if($inGroup)</div>@endif
 
                     <div class="border-t border-gray-100">
-                        <form method="POST" action="{{ route('logout') }}">
+                        <form method="POST" action="{{ route('logout') }}" data-turbo="false">
                             @csrf
                             <button type="submit" class="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-red-500 hover:bg-red-50 transition">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>

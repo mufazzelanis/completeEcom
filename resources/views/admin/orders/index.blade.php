@@ -170,7 +170,7 @@
                     <td class="px-6 py-4 text-center">
                         <div class="flex items-center justify-center gap-3">
                             <a href="{{ route('admin.orders.show', $order->id) }}" class="text-orange-600 dark:text-orange-400 hover:text-orange-800 dark:hover:text-orange-300 text-sm font-medium">View</a>
-                            <a href="{{ route('admin.orders.invoice', $order->id) }}" class="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 text-sm font-medium flex items-center gap-1" title="Download Invoice PDF">
+                            <a href="{{ route('admin.orders.invoice', $order->id) }}" data-turbo="false" class="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 text-sm font-medium flex items-center gap-1" title="Download Invoice PDF">
                                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
                                 PDF
                             </a>

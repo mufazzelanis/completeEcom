@@ -28,68 +28,37 @@
         })();
     </script>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
-    <script>
-        document.addEventListener('alpine:init', () => {
-            Alpine.store('theme', {
-                dark: document.documentElement.classList.contains('dark'),
-                toggle() {
-                    this.dark = !this.dark;
-                    localStorage.setItem('admin-theme', this.dark ? 'dark' : 'light');
-                    document.documentElement.classList.toggle('dark', this.dark);
-                },
-            });
-            // Global (not local x-data) so the mobile bottom quick-nav — a sibling of the
-            // sidebar/topbar wrapper, outside its x-data scope — can also open the sidebar
-            // drawer via its "More" tab, not just the topbar hamburger button.
-            Alpine.store('adminSidebar', { open: false });
-        });
-    </script>
+    {{-- Loaded globally here instead of once per report/analytics page (reports/*,
+         crm/analytics, crm/dashboard previously each had their own copy of this exact
+         tag). Turbo Drive (resources/js/app.js) swaps the body on navigation, and a
+         <script src> newly appearing there races the very next inline script that uses
+         it — confirmed: the CDN fetch's network latency meant `new Chart(...)` sometimes
+         ran before Chart.js had actually finished loading, throwing "Chart is not
+         defined". A <head> script doesn't have that problem — Turbo's head-merging
+         evaluates it correctly in order, and recognizes the identical src on every
+         later admin page instead of re-fetching it. --}}
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    {{-- theme/adminSidebar stores are registered once, unconditionally, in app.js itself —
+         not here behind an alpine:init listener. Alpine.start() (and the one-time
+         alpine:init event it fires) only ever runs once per Turbo session, on whichever
+         page happened to load first; a listener added by THIS layout's own inline script
+         does nothing if a different layout's page loaded first. --}}
+    {{-- Matches the HTTP no-cache headers above: this panel deals in live, often
+         sensitive data, so Turbo Drive (resources/js/app.js) should never show a
+         stale cached snapshot here either, on any page. --}}
+    <meta name="turbo-cache-control" content="no-cache">
     <style>[x-cloak]{display:none!important}</style>
     @stack('styles')
 </head>
-<body class="bg-gray-100 dark:bg-gray-950 bg-[radial-gradient(circle_at_top_right,rgba(234,88,12,0.05),transparent_45%)] dark:bg-[radial-gradient(circle_at_top_right,rgba(234,88,12,0.07),transparent_45%)] font-sans antialiased transition-colors">
-{{-- Every admin nav click is a real full-page reload, not an SPA route — on a slow
-     mobile connection there's a visible gap between tapping a link and the next page
-     actually painting, with nothing on screen to say the tap registered. This bar
-     appears the instant any real in-app link/form is activated and creeps toward 85%;
-     the browser's own navigation simply replaces the whole page once it lands, so it
-     never needs to be hidden or driven to 100% itself. --}}
-<div id="admin-page-loader" class="fixed top-0 left-0 h-[3px] bg-gradient-to-r from-orange-400 via-orange-500 to-red-500 z-[9999] opacity-0 transition-[width,opacity] ease-out" style="width:0%; transition-duration: 6000ms, 150ms;"></div>
-<script>
-    (function () {
-        var bar = document.getElementById('admin-page-loader');
-        var started = false;
-        function start() {
-            if (started) return;
-            started = true;
-            bar.style.opacity = '1';
-            // Forces the 0% state to actually paint before jumping to 85%, so the
-            // browser has something to transition from instead of snapping straight there.
-            requestAnimationFrame(function () {
-                requestAnimationFrame(function () { bar.style.width = '85%'; });
-            });
-        }
-        document.addEventListener('click', function (e) {
-            if (e.defaultPrevented || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
-            var link = e.target.closest('a[href]');
-            if (!link || link.target === '_blank' || link.hasAttribute('download')) return;
-            var href = link.getAttribute('href');
-            if (!href || href.charAt(0) === '#' || href.indexOf('javascript:') === 0) return;
-            var url;
-            try { url = new URL(link.href, window.location.href); } catch (err) { return; }
-            if (url.origin !== window.location.origin) return;
-            if (url.pathname === window.location.pathname && url.search === window.location.search && url.hash) return; // in-page anchor
-            start();
-        });
-        document.addEventListener('submit', function (e) {
-            if (e.defaultPrevented) return;
-            start();
-        });
-        // A page restored from bfcache (browser Back/Forward) never fires a fresh load —
-        // without this the bar would stay stuck on screen from the navigation that left it.
-        window.addEventListener('pageshow', function () { started = false; bar.style.opacity = '0'; bar.style.width = '0%'; });
-    })();
-</script>
+<body data-theme-key="admin-theme" class="bg-gray-100 dark:bg-gray-950 bg-[radial-gradient(circle_at_top_right,rgba(234,88,12,0.05),transparent_45%)] dark:bg-[radial-gradient(circle_at_top_right,rgba(234,88,12,0.07),transparent_45%)] font-sans antialiased transition-colors">
+{{-- Turbo Drive (resources/js/app.js) now intercepts admin nav clicks/form submits and
+     swaps the page via fetch instead of a real reload, with its own built-in top
+     progress bar (`.turbo-progress-bar` — see app.css) — this replaces the hand-rolled
+     loader that used to live here, which was built assuming every click was a real
+     full-page load. Flows that still ARE real navigations (logout, 2FA, invoice/report
+     downloads — see each view's data-turbo="false") don't show a bar at all now, same
+     as a normal link; that's an acceptable trade since those are one-off actions, not
+     the repeated in-app browsing this was built for. --}}
 @include('partials.confirm-modal')
 
 @php

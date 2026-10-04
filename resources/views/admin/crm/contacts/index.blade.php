@@ -34,7 +34,7 @@
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4h18M6 12h12M10 20h4"/></svg>
             Filters @if($activeFilters)<span class="bg-orange-600 text-white text-[10px] rounded-full px-1.5 py-0.5 font-bold">{{ $activeFilters }}</span>@endif
         </button>
-        <a href="{{ route('admin.crm.contacts.export', request()->query()) }}" class="flex items-center gap-1.5 border border-gray-200 bg-white px-3.5 py-2 rounded-xl text-sm text-gray-600 hover:bg-gray-50" title="Download everything matching the current filters">
+        <a href="{{ route('admin.crm.contacts.export', request()->query()) }}" data-turbo="false" class="flex items-center gap-1.5 border border-gray-200 bg-white px-3.5 py-2 rounded-xl text-sm text-gray-600 hover:bg-gray-50" title="Download everything matching the current filters">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
             CSV
         </a>

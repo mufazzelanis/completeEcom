@@ -14,7 +14,7 @@
     @if(session('error'))<div class="mb-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm">{{ session('error') }}</div>@endif
 
     <div class="bg-white rounded-2xl shadow-sm p-8 space-y-6">
-        <form action="{{ route('seller.two-factor.confirm') }}" method="POST" class="max-w-xs mx-auto">
+        <form action="{{ route('seller.two-factor.confirm') }}" method="POST" class="max-w-xs mx-auto" data-turbo="false">
             @csrf
             <label class="block text-sm font-medium text-gray-700 mb-1 text-center">Enter the 6-digit code</label>
             <input type="text" name="code" inputmode="numeric" maxlength="6" autocomplete="one-time-code" autofocus placeholder="123456"

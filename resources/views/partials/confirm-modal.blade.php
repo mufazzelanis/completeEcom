@@ -87,6 +87,11 @@
         return false;
     };
 
+    // Turbo Drive (resources/js/app.js) re-dispatches DOMContentLoaded on every
+    // navigation so this still wires up the fresh #ui-confirm-modal each page swaps
+    // in — but document itself is never replaced, so a plain `document.addEventListener`
+    // in here would silently stack up one more "Escape closes the modal" listener per
+    // navigation forever. Guarded to attach exactly once per real session.
     document.addEventListener('DOMContentLoaded', function () {
         const modal = modalEl();
         if (!modal) return;
@@ -95,9 +100,13 @@
         modal.addEventListener('click', function (e) {
             if (e.target.hasAttribute('data-confirm-backdrop')) settle(false);
         });
-        document.addEventListener('keydown', function (e) {
-            if (e.key === 'Escape' && !modal.hidden) settle(false);
-        });
+        if (!window.__uiConfirmKeydownBound) {
+            window.__uiConfirmKeydownBound = true;
+            document.addEventListener('keydown', function (e) {
+                const current = modalEl();
+                if (e.key === 'Escape' && current && !current.hidden) settle(false);
+            });
+        }
     });
 })();
 </script>

@@ -1,6 +1,13 @@
 @extends('layouts.app')
 @section('title', 'Checkout')
 
+@push('meta')
+{{-- Stock/pricing here can change between visits, and this is where CSRF-protected
+     payment forms live — Turbo Drive (resources/js/app.js) should always fetch this
+     page fresh, never show a cached snapshot from the back/forward cache. --}}
+<meta name="turbo-cache-control" content="no-cache">
+@endpush
+
 @section('content')
 <div class="max-w-[1200px] mx-auto px-4 py-8">
     <h1 class="text-2xl font-extrabold text-gray-900 mb-6">Checkout</h1>

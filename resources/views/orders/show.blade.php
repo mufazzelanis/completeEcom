@@ -36,7 +36,7 @@
                                 @endif
                                 <p class="text-gray-400 text-xs">৳{{ number_format($item->price) }} × {{ $item->quantity }}</p>
                                 @if($item->product?->isDigital())
-                                    <a href="{{ route('orders.download', [$order, $item]) }}" class="inline-flex items-center gap-1 text-indigo-600 hover:text-indigo-800 text-xs font-semibold mt-1">
+                                    <a href="{{ route('orders.download', [$order, $item]) }}" data-turbo="false" class="inline-flex items-center gap-1 text-indigo-600 hover:text-indigo-800 text-xs font-semibold mt-1">
                                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-8-3V4m0 12l-4-4m4 4l4-4"/></svg>
                                         Download
                                     </a>
