@@ -1185,14 +1185,9 @@ function setQuickAddButtonState(btn, inCart) {
 
     btn.title = inCart ? 'Remove from Cart' : btn.dataset.labelDefault;
 
-    btn.classList.toggle('bg-orange-500', inCart);
-    btn.classList.toggle('text-white', inCart);
-    btn.classList.toggle('hover:bg-orange-600', inCart);
-    btn.classList.toggle('bg-white', !inCart);
-    btn.classList.toggle('text-gray-500', !inCart);
-    btn.classList.toggle('hover:bg-orange-50', !inCart);
-    btn.classList.toggle('hover:text-orange-700', !inCart);
-
+    // Always the same solid orange circle now (the product card's floating corner
+    // button) — the icon swap to a checkmark is the "it's in your cart" signal, so
+    // there's no white/orange state to toggle here anymore.
     if (inCart) {
         btn.classList.remove('pop-bounce');
         void btn.offsetWidth;

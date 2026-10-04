@@ -49,47 +49,27 @@
                 </span>
             @endif
 
-            <div class="absolute top-2 right-2 flex flex-col items-end gap-2.5 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-200">
-                <button onclick="event.preventDefault(); toggleWishlist({{ $product->id }}, this)"
-                    class="w-11 h-11 bg-white rounded-full shadow-md flex items-center justify-center hover:bg-red-50 transition {{ $isWishlisted ? 'text-red-500' : 'text-gray-400 hover:text-red-500' }}"
-                    title="Add to Wishlist" aria-label="{{ $isWishlisted ? 'Remove from wishlist' : 'Add to wishlist' }} — {{ $product->name }}">
-                    <svg class="w-4 h-4" fill="{{ $isWishlisted ? 'currentColor' : 'none' }}" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
-                    </svg>
-                </button>
+            {{-- Heart alone up here now — the quick-add-to-cart button moved to a floating
+                 circle anchored on the card's bottom-right corner (see below), which reads
+                 as a much more deliberate, tappable "add" action than being buried in a
+                 stack of icons on the photo, and keeps this corner uncluttered. --}}
+            <button onclick="event.preventDefault(); toggleWishlist({{ $product->id }}, this)"
+                class="absolute top-2 right-2 w-9 h-9 bg-white rounded-full shadow-md flex items-center justify-center hover:bg-red-50 transition {{ $isWishlisted ? 'text-red-500' : 'text-gray-400 hover:text-red-500' }}"
+                title="Add to Wishlist" aria-label="{{ $isWishlisted ? 'Remove from wishlist' : 'Add to wishlist' }} — {{ $product->name }}">
+                <svg class="w-4 h-4" fill="{{ $isWishlisted ? 'currentColor' : 'none' }}" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+                </svg>
+            </button>
 
-                {{-- Quick add-to-cart — toggles this product in/out of the cart via AJAX, no page
-                     reload, so a customer browsing the grid can select several products without
-                     losing the "added" state on the ones they already picked. The button reflects
-                     actual cart membership (computed above as $isInCart) rather than a timed
-                     animation, so it stays selected until the customer explicitly un-selects it.
-                     Only shown for simple products with stock: variants aren't wired into the
-                     cart-add flow at all, so there's no UI here to pick one. --}}
-                @if($product->isSimple() && $product->available_stock > 0)
-                    @php
-                        $quickAddStyle = setting('add_to_cart_button_style', 'icon');
-                        $addToCartText = setting('add_to_cart_button_text', 'Add to Cart');
-                        $cartIconSvg = '<svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>';
-                        $checkIconSvg = '<svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>';
-                    @endphp
-                    <button onclick="event.preventDefault(); toggleCartItem({{ $product->id }}, this)"
-                        data-in-cart="{{ $isInCart ? 'true' : 'false' }}"
-                        data-product-name="{{ $product->name }}"
-                        data-product-price="{{ $effectivePrice }}"
-                        data-icon-default='{!! $cartIconSvg !!}'
-                        data-icon-added='{!! $checkIconSvg !!}'
-                        data-label-default="{{ $addToCartText }}"
-                        data-label-added="Added"
-                        class="quick-add-btn {{ $quickAddStyle === 'text' ? 'pl-2 pr-3 h-11' : 'w-11 h-11' }} rounded-full shadow-md flex items-center justify-center gap-1 transition {{ $isInCart ? 'bg-orange-500 text-white hover:bg-orange-600' : 'bg-white text-gray-500 hover:bg-orange-50 hover:text-orange-700' }}"
-                        title="{{ $isInCart ? 'Remove from Cart' : $addToCartText }}"
-                        aria-label="{{ $isInCart ? 'Remove from cart' : $addToCartText }} — {{ $product->name }}">
-                        <span class="quick-add-icon">{!! $isInCart ? $checkIconSvg : $cartIconSvg !!}</span>
-                        @if($quickAddStyle === 'text')
-                            <span class="text-[10px] font-bold whitespace-nowrap quick-add-label">{{ $isInCart ? 'Added' : $addToCartText }}</span>
-                        @endif
-                    </button>
-                @endif
-            </div>
+            {{-- A compact rating chip (one star + the average, not five) reading as a real
+                 app badge rather than a strip of icons — sits bottom-left of the photo so it
+                 never competes with the discount/flash/new badge in the opposite corner. --}}
+            @if($rating > 0)
+                <span class="absolute bottom-2 left-2 inline-flex items-center gap-0.5 bg-white/95 backdrop-blur-sm text-gray-800 text-[10px] font-bold px-1.5 py-0.5 rounded-full shadow-sm">
+                    <svg class="w-3 h-3 text-orange-400" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+                    {{ number_format($rating, 1) }}
+                </span>
+            @endif
 
             @if($product->available_stock <= 0)
                 <div class="absolute inset-0 bg-black/40 flex items-center justify-center">
@@ -99,7 +79,45 @@
         </div>
     </a>
 
-    <div class="p-3 flex flex-col flex-1">
+    {{-- Quick add-to-cart — toggles this product in/out of the cart via AJAX, no page
+         reload, so a customer browsing the grid can select several products without
+         losing the "added" state on the ones they already picked. The button reflects
+         actual cart membership (computed above as $isInCart) rather than a timed
+         animation, so it stays selected until the customer explicitly un-selects it.
+         Only shown for simple products with stock: variants aren't wired into the
+         cart-add flow at all, so there's no UI here to pick one. A negative top margin
+         (not absolute positioning) pulls it up to straddle the photo/content boundary —
+         anchored to the image's own bottom edge regardless of how tall the card ends up
+         being, and it sits outside the <a> above so its tap target doesn't nest inside
+         the "go to product" link. --}}
+    @if($product->isSimple() && $product->available_stock > 0)
+        @php
+            $quickAddStyle = setting('add_to_cart_button_style', 'icon');
+            $addToCartText = setting('add_to_cart_button_text', 'Add to Cart');
+            $cartIconSvg = '<svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>';
+            $checkIconSvg = '<svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>';
+        @endphp
+        <div class="relative z-10 flex justify-end px-3 -mt-5 pointer-events-none">
+            <button onclick="toggleCartItem({{ $product->id }}, this)"
+                data-in-cart="{{ $isInCart ? 'true' : 'false' }}"
+                data-product-name="{{ $product->name }}"
+                data-product-price="{{ $effectivePrice }}"
+                data-icon-default='{!! $cartIconSvg !!}'
+                data-icon-added='{!! $checkIconSvg !!}'
+                data-label-default="{{ $addToCartText }}"
+                data-label-added="Added"
+                class="quick-add-btn pointer-events-auto {{ $quickAddStyle === 'text' ? 'pl-2.5 pr-3.5 h-10' : 'w-10 h-10' }} rounded-full shadow-lg ring-4 ring-white bg-orange-500 text-white hover:bg-orange-600 flex items-center justify-center gap-1 transition active:scale-90"
+                title="{{ $isInCart ? 'Remove from Cart' : $addToCartText }}"
+                aria-label="{{ $isInCart ? 'Remove from cart' : $addToCartText }} — {{ $product->name }}">
+                <span class="quick-add-icon">{!! $isInCart ? $checkIconSvg : $cartIconSvg !!}</span>
+                @if($quickAddStyle === 'text')
+                    <span class="text-[10px] font-bold whitespace-nowrap quick-add-label">{{ $isInCart ? 'Added' : $addToCartText }}</span>
+                @endif
+            </button>
+        </div>
+    @endif
+
+    <div class="p-3 pt-4 flex flex-col flex-1">
         @if($product->brand)
             <p class="text-[10px] text-gray-500 font-medium uppercase tracking-wide mb-0.5">{{ $product->brand->name }}</p>
         @endif
@@ -109,23 +127,6 @@
                 {{ $product->name }}
             </h3>
         </a>
-
-        @if($rating > 0)
-            <div class="flex items-center gap-1 mt-1.5">
-                <div class="flex items-center">
-                    @for($i = 1; $i <= 5; $i++)
-                        @if($i <= floor($rating))
-                            <svg class="w-3 h-3 text-orange-400" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
-                        @elseif($i - 0.5 <= $rating)
-                            <svg class="w-3 h-3 text-orange-400" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
-                        @else
-                            <svg class="w-3 h-3 text-gray-200" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
-                        @endif
-                    @endfor
-                </div>
-                <span class="text-[10px] text-gray-500">({{ $reviewCount }})</span>
-            </div>
-        @endif
 
         {{-- Everything below is pinned to the bottom of the card via mt-auto, so price/
              stock-warning/Buy-Now line up at the same height across a row regardless of
