@@ -112,6 +112,31 @@
         {{-- Right: actions + customer --}}
         <div class="space-y-4">
 
+            {{-- Change Status — same always-visible dropdown the order page's "Update
+                 Status" card uses, for jumping straight to any status (fixing a mistake,
+                 skipping a step already handled elsewhere) instead of only moving forward
+                 one guided step at a time via the cards below. A plain form submit (full
+                 page reload), not the order page's fetch()-without-reload version — the
+                 cards below are conditional on the return's current status, so the page
+                 needs to actually re-render for them to match whatever was just picked
+                 here; an order's page has no such status-gated cards to go stale. Doesn't
+                 touch stock either way — Approve & Restock below is still the one path
+                 that actually restores inventory using the per-item quantities. --}}
+            <div class="bg-white rounded-2xl shadow-sm p-6">
+                <h3 class="font-semibold text-gray-800 mb-4">Change Status</h3>
+                <form action="{{ route('admin.returns.status', $return->id) }}" method="POST">
+                    @csrf @method('PATCH')
+                    <select name="status" class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm mb-3 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        @foreach(['pending' => 'Pending', 'approved' => 'Approved', 'in_progress' => 'In Progress', 'completed' => 'Completed', 'rejected' => 'Rejected'] as $val => $label)
+                            <option value="{{ $val }}" {{ $return->status === $val ? 'selected' : '' }}>{{ $label }}</option>
+                        @endforeach
+                    </select>
+                    <button type="submit" class="w-full bg-indigo-600 text-white py-2 rounded-xl text-sm font-medium hover:bg-indigo-700 transition">
+                        Update Status
+                    </button>
+                </form>
+            </div>
+
             @if($return->status === 'pending')
             {{-- Approve --}}
             <div class="bg-white rounded-2xl shadow-sm p-6">

@@ -176,6 +176,39 @@ class ReturnController extends Controller
         return back()->with('success', 'Return marked as completed.');
     }
 
+    /**
+     * A direct status dropdown — the same "Update Status" pattern admin/orders/show.blade.php
+     * already uses — for picking any status outright instead of only moving forward one
+     * guided step at a time via approve()/reject()/markInProgress()/complete() above. Doesn't
+     * touch stock: Approve & Restock (with its per-item quantities) stays the one path that
+     * actually restores inventory, so this is for fixing a mistaken status or skipping ahead
+     * on one already handled correctly elsewhere, not a replacement for it.
+     */
+    public function updateStatus(Request $request, int $id)
+    {
+        $return = ProductReturn::findOrFail($id);
+
+        $request->validate([
+            'status'     => 'required|in:pending,approved,in_progress,completed,rejected',
+            'admin_note' => 'nullable|string|max:1000',
+        ]);
+
+        $return->update([
+            'status'       => $request->status,
+            'admin_note'   => $request->filled('admin_note') ? $request->admin_note : $return->admin_note,
+            'processed_by' => auth()->id(),
+            'processed_at' => now(),
+        ]);
+
+        $this->notifyReturnStatus($return);
+
+        if ($request->expectsJson()) {
+            return response()->json(['message' => 'Return status updated.', 'status' => $return->status]);
+        }
+
+        return back()->with('success', 'Return status updated.');
+    }
+
     private function notifyReturnStatus(ProductReturn $return): void
     {
         if (! $return->user) {

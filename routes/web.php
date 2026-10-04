@@ -482,6 +482,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::post('returns/{id}/reject', [AdminReturnController::class, 'reject'])->name('returns.reject');
     Route::post('returns/{id}/in-progress', [AdminReturnController::class, 'markInProgress'])->name('returns.inProgress');
     Route::post('returns/{id}/complete', [AdminReturnController::class, 'complete'])->name('returns.complete');
+    Route::patch('returns/{id}/status', [AdminReturnController::class, 'updateStatus'])->name('returns.status');
 
     // Support Tickets
     Route::get('support-tickets', [AdminSupportTicketController::class, 'index'])->name('support-tickets.index');
