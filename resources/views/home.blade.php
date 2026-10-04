@@ -84,6 +84,15 @@
                      x-transition:leave="transition ease-in duration-300" x-transition:leave-start="opacity-100 scale-100" x-transition:leave-end="opacity-0 scale-105"
                      class="absolute inset-0 overflow-hidden">
                     @if($banner->image)
+                        @php
+                            // Title is optional — an image that already carries its own headline
+                            // shouldn't also get the page's text stamped on top of it. The dark
+                            // scrim exists only to keep text readable, so it's skipped entirely
+                            // for an image-only banner instead of needlessly darkening the photo.
+                            $hasOverlayText = $banner->title || $banner->subtitle || $banner->description;
+                            $btnBg = $banner->bg_color ?: '#ffffff';
+                            $btnText = $banner->text_color ?: '#1f2937';
+                        @endphp
                         <a href="{{ $banner->button_link ?: '#' }}" class="block w-full h-full">
                             {{-- Every slide is in the DOM at once (x-show just toggles visibility,
                                  not presence) — without hints, the browser fetches all of them
@@ -91,22 +100,32 @@
                                  on load) competes for bandwidth with slides nobody's looking at yet.
                                  The slow scale (Ken Burns) only plays while a slide is the active
                                  one, restarting fresh each time it comes back around. --}}
-                            <img src="{{ Storage::url($banner->image) }}" alt="{{ $banner->title }}"
+                            <img src="{{ Storage::url($banner->image) }}" alt="{{ $banner->title ?: $banner->subtitle ?: setting('site_name', 'Banner') }}"
                                 class="w-full h-full object-cover transition-transform duration-[6000ms] ease-linear"
                                 :class="current === {{ $i }} ? 'scale-110' : 'scale-100'"
                                 @if($i === 0) fetchpriority="high" @else loading="lazy" @endif>
+                            @if($hasOverlayText)
                             <div class="absolute inset-0 bg-gradient-to-r from-black/65 via-black/25 to-transparent"></div>
+                            @endif
                             <div class="absolute inset-0 flex items-center px-6 md:px-14">
                                 <div class="animate-fade-in-up max-w-lg">
                                     @if($banner->subtitle)
                                         <span class="inline-block bg-white/15 backdrop-blur-sm border border-white/25 text-white/90 text-[11px] md:text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full mb-3">{{ $banner->subtitle }}</span>
                                     @endif
-                                    <h2 class="text-white text-2xl md:text-4xl font-extrabold mb-2 leading-tight [text-wrap:balance]">{{ $banner->title }}</h2>
+                                    @if($banner->title)
+                                        <h2 class="text-white text-2xl md:text-4xl font-extrabold mb-2 leading-tight [text-wrap:balance]">{{ $banner->title }}</h2>
+                                    @endif
                                     @if($banner->description)<p class="text-white/80 text-sm mb-4 hidden md:block max-w-md">{{ $banner->description }}</p>@endif
                                     @if($banner->button_text)
-                                        <span class="btn-glow inline-flex items-center gap-1.5 bg-white text-gray-900 px-5 md:px-6 py-2 md:py-2.5 rounded-full text-sm font-bold hover:bg-gray-100 hover:scale-105 transition-all shadow-lg">
+                                        {{-- bg_color/text_color (Admin → Banners) actually drive this now — they
+                                             were being collected and saved but never once read anywhere, so a
+                                             custom color here silently did nothing. Smaller + an explicit color
+                                             (default a solid white/charcoal, same as before, when unset) reads as
+                                             a deliberate accent chip rather than a plain oversized white slab. --}}
+                                        <span class="btn-glow inline-flex items-center gap-1 px-3.5 py-1.5 md:px-4 md:py-2 rounded-full text-xs md:text-sm font-bold shadow-lg hover:scale-105 hover:brightness-110 transition-all"
+                                              style="background-color: {{ $btnBg }}; color: {{ $btnText }};">
                                             {{ $banner->button_text }}
-                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+                                            <svg class="w-3.5 h-3.5 md:w-4 md:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
                                         </span>
                                     @endif
                                 </div>

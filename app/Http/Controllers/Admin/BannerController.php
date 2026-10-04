@@ -23,7 +23,9 @@ class BannerController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'title'    => 'required|string|max:255',
+            // Nullable on purpose — a banner image that already has its own headline
+            // baked in doesn't need the page to stamp a second, redundant title on top.
+            'title'    => 'nullable|string|max:255',
             'position' => 'required|in:hero,top,middle,bottom,sidebar,popup',
             'image'    => 'nullable|image|max:4096',
         ]);
@@ -50,7 +52,7 @@ class BannerController extends Controller
     public function update(Request $request, Banner $banner)
     {
         $request->validate([
-            'title'    => 'required|string|max:255',
+            'title'    => 'nullable|string|max:255',
             'position' => 'required|in:hero,top,middle,bottom,sidebar,popup',
             'image'    => 'nullable|image|max:4096',
         ]);

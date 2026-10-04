@@ -15,9 +15,10 @@
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div class="col-span-2">
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Title <span class="text-red-500">*</span></label>
-                    <input type="text" name="title" value="{{ old('title', $banner->title) }}" required
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Title</label>
+                    <input type="text" name="title" value="{{ old('title', $banner->title) }}"
                         class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    <p class="mt-1 text-xs text-gray-400">Optional — leave blank if your image already has its own headline, so the page doesn't stack a second one on top of it.</p>
                 </div>
                 <div class="col-span-2">
                     <label class="block text-sm font-medium text-gray-700 mb-1">Subtitle</label>
