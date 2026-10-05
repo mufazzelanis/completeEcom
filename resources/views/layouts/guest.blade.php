@@ -263,11 +263,17 @@
                             <span class="font-bold text-lg tracking-tight">{{ $siteName }}</span>
                         @endif
                     </a>
-                    <button type="button" x-data @click="$store.theme.toggle()"
-                            class="w-9 h-9 rounded-full flex items-center justify-center text-white/90 hover:bg-white/15 transition"
+                    {{-- Glass variant — sits on an admin-configurable colored panel background,
+                         so this stays readable against any color instead of using the
+                         sky/indigo track from partials.theme-toggle. --}}
+                    <button type="button" x-data @click="$store.theme.toggle()" role="switch" :aria-checked="$store.theme.dark"
+                            class="relative inline-flex items-center w-12 h-6 rounded-full p-0.5 bg-white/20 hover:bg-white/30 ring-1 ring-white/30 backdrop-blur-sm transition-colors duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/70 active:scale-95 tap-spring"
                             aria-label="Toggle dark mode">
-                        <svg x-show="!$store.theme.dark" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
-                        <svg x-cloak x-show="$store.theme.dark" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
+                        <span class="pointer-events-none inline-flex items-center justify-center w-5 h-5 rounded-full bg-white shadow-md transform transition-transform duration-300"
+                            :class="$store.theme.dark ? 'translate-x-6' : 'translate-x-0'">
+                            <svg x-show="!$store.theme.dark" class="w-3.5 h-3.5 text-indigo-500" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
+                            <svg x-cloak x-show="$store.theme.dark" class="w-3.5 h-3.5 text-amber-500" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+                        </span>
                     </button>
                 </div>
 
@@ -289,13 +295,8 @@
             </div>
 
             {{-- Desktop-only top bar: branding already lives in the side panel, so just the toggle --}}
-            <div class="hidden lg:flex justify-end items-center px-6 py-5">
-                <button type="button" x-data @click="$store.theme.toggle()"
-                        class="w-9 h-9 rounded-full flex items-center justify-center text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition"
-                        aria-label="Toggle dark mode">
-                    <svg x-show="!$store.theme.dark" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
-                    <svg x-cloak x-show="$store.theme.dark" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
-                </button>
+            <div class="hidden lg:flex justify-end items-center px-6 py-5" x-data>
+                @include('partials.theme-toggle')
             </div>
 
             <div class="flex-1 flex flex-col items-center justify-center px-6 pb-12">
