@@ -4,7 +4,8 @@
         // the Sell card and, if validation fails, keep the choice via old() like any other field.
         $accountType = old('account_type', request()->query('intent') === 'vendor' ? 'vendor' : 'customer');
     @endphp
-    <form method="POST" action="{{ route('register') }}" x-data="{ accountType: '{{ $accountType }}' }">
+    <form method="POST" action="{{ route('register') }}" enctype="multipart/form-data"
+          x-data="{ accountType: '{{ $accountType }}', docType: '{{ old('document_type', 'nid') }}' }">
         @csrf
 
         <!-- Account type -->
@@ -26,9 +27,6 @@
                     <span class="text-[11px] text-gray-400 dark:text-gray-500 leading-tight">{{ __('Become a vendor') }}</span>
                 </label>
             </div>
-            <p class="mt-2 text-xs text-gray-400 dark:text-gray-500" x-show="accountType === 'vendor'" x-cloak>
-                {{ __("You'll fill out your business details right after this.") }}
-            </p>
         </div>
 
         <!-- Name -->
@@ -53,13 +51,101 @@
                           required autocomplete="new-password" />
         </div>
 
-        <div class="flex items-center justify-end mt-4">
+        {{-- Seller application — same fields/validation an already-logged-in customer fills in on
+             the "Become a Seller" page (resources/views/vendor-registration/create.blade.php), just
+             folded into registration itself so a new vendor doesn't have to fill two forms back to
+             back. Submitted together with the account fields above; RegisteredUserController creates
+             the pending Vendor row right after the user row when account_type is "vendor". --}}
+        <div x-show="accountType === 'vendor'" x-cloak class="mt-6 pt-5 border-t border-gray-100 dark:border-gray-800 space-y-4">
+            <p class="text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">{{ __('Seller details') }}</p>
+
+            <div>
+                <x-input-label value="{{ __('Business Name') }}" /> <span class="text-red-500">*</span>
+                <x-text-input name="business_name" :value="old('business_name')" class="w-full mt-1.5" />
+                <x-input-error :messages="$errors->get('business_name')" class="mt-1.5" />
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <x-input-label value="{{ __('Phone') }}" />
+                    <x-text-input name="phone" :value="old('phone')" class="w-full mt-1.5" />
+                </div>
+                <div>
+                    <x-input-label value="{{ __('Business Email') }}" />
+                    <x-text-input type="email" name="business_email" :value="old('business_email')" class="w-full mt-1.5" />
+                    <x-input-error :messages="$errors->get('business_email')" class="mt-1.5" />
+                </div>
+            </div>
+
+            <div>
+                <x-input-label value="{{ __('Website (if any)') }}" />
+                <x-text-input type="url" name="website" :value="old('website')" placeholder="https://yourshop.com" class="w-full mt-1.5" />
+                <x-input-error :messages="$errors->get('website')" class="mt-1.5" />
+            </div>
+
+            <div>
+                <x-input-label value="{{ __('Tell us about your business') }}" />
+                <textarea name="description" rows="3" maxlength="2000"
+                    placeholder="{{ __('What do you sell? Where are your products made or sourced from?') }}"
+                    class="w-full mt-1.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 px-4 py-2.5 text-sm placeholder:text-gray-400 dark:placeholder:text-gray-500 shadow-sm outline-none transition focus:border-orange-500 dark:focus:border-orange-600 focus:ring-4 focus:ring-orange-500/10 dark:focus:ring-orange-600/20 resize-none">{{ old('description') }}</textarea>
+            </div>
+
+            <div class="border-t border-gray-100 dark:border-gray-800 pt-4">
+                <x-input-label value="{{ __('Identity Verification') }}" /> <span class="text-red-500">*</span>
+                <p class="text-xs text-gray-400 dark:text-gray-500 mt-1 mb-3">{{ __("We need one of these to verify your identity before approving your seller account.") }}</p>
+
+                <div class="flex gap-2 mb-4">
+                    <label class="flex-1 flex items-center justify-center gap-2 border rounded-xl px-4 py-2.5 text-sm cursor-pointer transition-colors"
+                           :class="docType === 'nid' ? 'border-orange-500 bg-orange-50 dark:bg-orange-500/10 text-orange-700 dark:text-orange-400 font-medium' : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400'">
+                        <input type="radio" name="document_type" value="nid" x-model="docType" class="sr-only">
+                        {{ __('National ID (NID)') }}
+                    </label>
+                    <label class="flex-1 flex items-center justify-center gap-2 border rounded-xl px-4 py-2.5 text-sm cursor-pointer transition-colors"
+                           :class="docType === 'birth_certificate' ? 'border-orange-500 bg-orange-50 dark:bg-orange-500/10 text-orange-700 dark:text-orange-400 font-medium' : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400'">
+                        <input type="radio" name="document_type" value="birth_certificate" x-model="docType" class="sr-only">
+                        {{ __('Birth Certificate') }}
+                    </label>
+                </div>
+                <x-input-error :messages="$errors->get('document_type')" class="mb-3" />
+
+                <div x-show="docType === 'nid'" x-cloak class="space-y-4">
+                    <div>
+                        <x-input-label value="{{ __('NID Number') }}" />
+                        <x-text-input name="nid_number" :value="old('nid_number')" class="w-full mt-1.5" />
+                        <x-input-error :messages="$errors->get('nid_number')" class="mt-1.5" />
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <x-input-label value="{{ __('NID Front Side') }}" />
+                            <input type="file" name="nid_front_image" accept="image/*"
+                                class="w-full mt-1.5 border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 rounded-xl px-3 py-2 text-sm file:mr-3 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-medium file:bg-orange-50 dark:file:bg-orange-500/10 file:text-orange-700 dark:file:text-orange-400">
+                            <x-input-error :messages="$errors->get('nid_front_image')" class="mt-1.5" />
+                        </div>
+                        <div>
+                            <x-input-label value="{{ __('NID Back Side') }}" />
+                            <input type="file" name="nid_back_image" accept="image/*"
+                                class="w-full mt-1.5 border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 rounded-xl px-3 py-2 text-sm file:mr-3 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-medium file:bg-orange-50 dark:file:bg-orange-500/10 file:text-orange-700 dark:file:text-orange-400">
+                            <x-input-error :messages="$errors->get('nid_back_image')" class="mt-1.5" />
+                        </div>
+                    </div>
+                </div>
+
+                <div x-show="docType === 'birth_certificate'" x-cloak>
+                    <x-input-label value="{{ __('Birth Certificate Image') }}" />
+                    <input type="file" name="birth_certificate_image" accept="image/*"
+                        class="w-full mt-1.5 border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 rounded-xl px-3 py-2 text-sm file:mr-3 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-medium file:bg-orange-50 dark:file:bg-orange-500/10 file:text-orange-700 dark:file:text-orange-400">
+                    <x-input-error :messages="$errors->get('birth_certificate_image')" class="mt-1.5" />
+                </div>
+            </div>
+        </div>
+
+        <div class="flex items-center justify-end mt-6">
             <a class="underline text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:focus:ring-offset-gray-800" href="{{ route('login') }}">
                 {{ __('Already registered?') }}
             </a>
 
             <x-primary-button class="ms-4">
-                <span x-text="accountType === 'vendor' ? '{{ __('Create seller account') }}' : '{{ __('Register') }}'"></span>
+                <span x-text="accountType === 'vendor' ? '{{ __('Submit seller application') }}' : '{{ __('Register') }}'"></span>
             </x-primary-button>
         </div>
     </form>

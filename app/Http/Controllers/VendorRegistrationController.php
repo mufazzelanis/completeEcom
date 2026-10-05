@@ -69,18 +69,7 @@ class VendorRegistrationController extends Controller
         ]);
 
         $data = $request->only(['business_name', 'phone', 'email', 'website', 'description', 'document_type', 'nid_number']);
-        $folder = 'vendor-documents/' . auth()->id();
-
-        if ($request->document_type === 'nid') {
-            if ($request->hasFile('nid_front_image')) {
-                $data['nid_front_image'] = $request->file('nid_front_image')->store($folder, 'private');
-            }
-            if ($request->hasFile('nid_back_image')) {
-                $data['nid_back_image'] = $request->file('nid_back_image')->store($folder, 'private');
-            }
-        } elseif ($request->hasFile('birth_certificate_image')) {
-            $data['birth_certificate_image'] = $request->file('birth_certificate_image')->store($folder, 'private');
-        }
+        $data += Vendor::storeDocumentFiles($request, auth()->id(), $request->document_type);
 
         if ($isCorrection) {
             $vendor->update($data + ['status' => 'pending', 'correction_notes' => null]);

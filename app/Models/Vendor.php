@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
 class Vendor extends Model
@@ -31,6 +32,32 @@ class Vendor extends Model
         'business_name', 'phone', 'email', 'website', 'description',
         'logo', 'payout_method', 'payout_details',
     ];
+
+    /**
+     * Stores whichever identity document(s) match $documentType under a per-user private
+     * folder and returns just the resulting path(s) — shared by VendorRegistrationController
+     * (an existing customer applying from their account) and RegisteredUserController (a guest
+     * applying as part of registration itself), so this storage-path/disk logic lives in one
+     * place instead of two.
+     */
+    public static function storeDocumentFiles(Request $request, int $userId, string $documentType): array
+    {
+        $folder = 'vendor-documents/'.$userId;
+        $files = [];
+
+        if ($documentType === 'nid') {
+            if ($request->hasFile('nid_front_image')) {
+                $files['nid_front_image'] = $request->file('nid_front_image')->store($folder, 'private');
+            }
+            if ($request->hasFile('nid_back_image')) {
+                $files['nid_back_image'] = $request->file('nid_back_image')->store($folder, 'private');
+            }
+        } elseif ($request->hasFile('birth_certificate_image')) {
+            $files['birth_certificate_image'] = $request->file('birth_certificate_image')->store($folder, 'private');
+        }
+
+        return $files;
+    }
 
     protected static function boot()
     {
