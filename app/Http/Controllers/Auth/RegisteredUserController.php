@@ -39,6 +39,7 @@ class RegisteredUserController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
+            'account_type' => ['nullable', 'in:customer,vendor'],
         ]);
 
         $user = User::create([
@@ -59,6 +60,14 @@ class RegisteredUserController extends Controller
         event(new Registered($user));
 
         Auth::login($user);
+
+        // "Sell on :site" sends guests here with ?intent=vendor, carried through the form as
+        // account_type — skip straight to the seller application instead of the storefront
+        // home, so picking "Sell" doesn't dead-end back on a page about shopping.
+        if ($request->input('account_type') === 'vendor') {
+            return redirect()->route('vendor.apply')
+                ->with('success', 'Welcome to ' . setting('site_name', 'our marketplace') . '! Tell us about your business to start selling.');
+        }
 
         return redirect(route('home', absolute: false));
     }

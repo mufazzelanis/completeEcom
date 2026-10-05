@@ -63,13 +63,19 @@
     // on" reads at a glance instead of dropping straight into bare form fields (login was
     // previously the only one with no heading at all). two-factor.challenge keeps its own
     // in-page version instead (its subtitle needs the masked email, which only that view has).
+    // "Sell on :site" sends guests to register?intent=vendor — read back the same way the
+    // register form itself does (old() first, so a validation-error reload keeps the pick).
+    $registerIntent = request()->routeIs('register')
+        ? old('account_type', request()->query('intent') === 'vendor' ? 'vendor' : 'customer')
+        : 'customer';
     $authIcon = match (true) {
-        request()->routeIs('register') => 'user-plus',
+        request()->routeIs('register') => $registerIntent === 'vendor' ? 'store' : 'user-plus',
         request()->routeIs('password.request', 'password.reset') => 'key',
         request()->routeIs('verification.notice', 'password.confirm') => 'shield',
         default => 'lock',
     };
     [$authHeading, $authSubheading] = match (true) {
+        request()->routeIs('register') && $registerIntent === 'vendor' => ['Become a seller', "List your products and start selling on {$siteName}."],
         request()->routeIs('register') => ['Create your account', "Join {$siteName} — it only takes a minute."],
         request()->routeIs('password.request') => ['Forgot your password?', "No problem — we'll email you a link to reset it."],
         request()->routeIs('password.reset') => ['Set a new password', 'Choose a strong password you haven\'t used before.'],
@@ -87,7 +93,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
     <title>{{ match(true) {
-        request()->routeIs('register') => 'Register',
+        request()->routeIs('register') => $registerIntent === 'vendor' ? 'Become a Seller' : 'Register',
         request()->routeIs('login') => 'Login',
         request()->routeIs('password.request') => 'Forgot Password',
         request()->routeIs('password.reset') => 'Reset Password',
@@ -325,6 +331,9 @@
                                         @break
                                     @case('shield')
                                         <svg class="w-7 h-7 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+                                        @break
+                                    @case('store')
+                                        <svg class="w-7 h-7 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M3 3h18v4H3V3zm0 7h18v11H3V10zm4 4h4"/></svg>
                                         @break
                                     @default
                                         <svg class="w-7 h-7 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>

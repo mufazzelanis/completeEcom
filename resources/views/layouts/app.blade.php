@@ -493,7 +493,7 @@ $navCategories = \App\Models\Category::with(['children' => fn($q) => $q->active(
         <div class="flex items-center gap-4">
             <span>{{ $topbarText ?: t('header.welcome_default', 'Welcome to :site', ['site' => $siteName], 'header') }}</span>
             <span class="text-gray-600">|</span>
-            <a href="{{ route('vendor.apply') }}" class="hover:text-white transition">{{ t('header.sell_on', 'Sell on :site', ['site' => $siteName], 'header') }}</a>
+            <a href="{{ auth()->check() ? route('vendor.apply') : route('register', ['intent' => 'vendor']) }}" class="hover:text-white transition">{{ t('header.sell_on', 'Sell on :site', ['site' => $siteName], 'header') }}</a>
         </div>
         <div class="flex items-center gap-4">
             @if($topbarPhone)
@@ -1009,7 +1009,7 @@ $navCategories = \App\Models\Category::with(['children' => fn($q) => $q->active(
                     <li><a href="{{ $shopUrl }}" class="inline-block hover:text-orange-400 hover:translate-x-1 transition-all duration-200">{{ t('footer.shop', 'Shop', [], 'footer') }}</a></li>
                     <li><a href="{{ $blogUrl }}" class="inline-block hover:text-orange-400 hover:translate-x-1 transition-all duration-200">{{ t('footer.blog', 'Blog', [], 'footer') }}</a></li>
                     @if($aboutUrl)<li><a href="{{ $aboutUrl }}" class="inline-block hover:text-orange-400 hover:translate-x-1 transition-all duration-200">{{ t('footer.about_us', 'About Us', [], 'footer') }}</a></li>@endif
-                    <li><a href="{{ route('vendor.apply') }}" class="inline-block hover:text-orange-400 hover:translate-x-1 transition-all duration-200">{{ t('footer.sell_on', 'Sell on :site', ['site' => $siteName], 'footer') }}</a></li>
+                    <li><a href="{{ auth()->check() ? route('vendor.apply') : route('register', ['intent' => 'vendor']) }}" class="inline-block hover:text-orange-400 hover:translate-x-1 transition-all duration-200">{{ t('footer.sell_on', 'Sell on :site', ['site' => $siteName], 'footer') }}</a></li>
                 </ul>
             </div>
 
