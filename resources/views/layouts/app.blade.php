@@ -467,7 +467,15 @@ $pageTwitterImage = trim($__env->yieldContent('twitter_image', $pageOgImage));
     </script>
     @endif
 </head>
-<body data-theme-key="site-theme" class="bg-gray-100 dark:bg-gray-950 font-sans antialiased transition-colors pb-[calc(4rem_+_env(safe-area-inset-bottom))] md:pb-0">
+{{-- mobileOpen/its body-scroll-lock effect live here (not on a div wrapping just the
+     header) on purpose: position:sticky only has room to "stick" within its own
+     containing block, and a wrapper div holding nothing but the ~70px-tall header
+     would make THAT the containing block — sticky would run out of room and start
+     scrolling away almost immediately. <body> spans the whole page, so the header
+     (now a direct child of it, see below) has the full page height to stick within,
+     same as before the off-canvas drawer was introduced. Confirmed by reproducing the
+     broken behavior with the old wrapper and fixing it by removing it. --}}
+<body data-theme-key="site-theme" x-data="{ mobileOpen: false }" x-effect="document.body.style.overflow = mobileOpen ? 'hidden' : ''" class="bg-gray-100 dark:bg-gray-950 font-sans antialiased transition-colors pb-[calc(4rem_+_env(safe-area-inset-bottom))] md:pb-0">
 @if($gtmId)<noscript><iframe src="https://www.googletagmanager.com/ns.html?id={{ $gtmId }}" height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>@endif
 
 @include('partials.delivery-loader')
@@ -533,13 +541,12 @@ $navCategories = \App\Models\Category::with(['children' => fn($q) => $q->active(
 {{-- Frosted-glass header when sticky — content actually scrolls underneath it, so the
      translucency + blur reads as real depth (iOS navigation-bar style) rather than a flat
      opaque bar; a non-sticky header has nothing moving under it to blur, so it stays solid. --}}
-{{-- Wrapping the header + its off-canvas drawer in one x-data scope, rather than
-     putting mobileOpen on <header> itself, matters here: the drawer below is
-     `position: fixed`, and a sticky header has `backdrop-blur-xl` — a CSS filter,
-     which (like `transform`) makes its element a containing block for fixed
-     descendants. Nested inside <header>, the drawer would be clipped to the
-     header's own ~70px-tall box instead of the full viewport. --}}
-<div x-data="{ mobileOpen: false }" x-effect="document.body.style.overflow = mobileOpen ? 'hidden' : ''">
+{{-- mobileOpen lives on <body> (see the <body> tag above), not on a div wrapping just
+     the header: that also conveniently solves the drawer's own positioning need —
+     the drawer below is `position: fixed`, and a sticky header has `backdrop-blur-xl`
+     (a CSS filter, which like `transform` makes its element a containing block for
+     fixed descendants); as a sibling of <header> rather than nested inside it, the
+     drawer isn't affected by that at all. --}}
 <header class="{{ $stickyHeader ? 'bg-white/75 dark:bg-gray-900/75 backdrop-blur-xl backdrop-saturate-150 sticky top-0' : 'bg-white dark:bg-gray-900' }} shadow-sm z-50 transition-colors">
     <div class="max-w-[1200px] mx-auto px-4">
         @if($headerLayout === 'centered')
@@ -756,7 +763,6 @@ $navCategories = \App\Models\Category::with(['children' => fn($q) => $q->active(
             @endauth
         </nav>
     </div>
-</div>
 </div>
 
 {{-- Flash Messages --}}
