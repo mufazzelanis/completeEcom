@@ -521,12 +521,19 @@ $reviewThemes = [
         <x-storefront.section-header title="Top Brands" :view-all-url="route('brands.index')" />
         <div class="carousel-container flex gap-3 overflow-x-auto scrollbar-hide pb-2 scroll-smooth reveal-group">
             @foreach($brands as $brand)
+                {{-- Forced light tile (dark:bg-white/dark:border/dark:text below) rather than
+                     letting the site-wide dark-mode retrofit darken this one: brand logos are
+                     fixed-color artwork made for a light background, so a logo with a transparent
+                     background and dark-colored mark (e.g. Aveeno's) would otherwise vanish
+                     against the retrofit's near-black card — see resources/css/app.css's
+                     "Site-wide dark mode retrofit" comment, which calls out exactly this kind of
+                     spot as the one to carve out with its own selector. --}}
                 <a href="{{ route('shop.index') }}?brand={{ $brand->slug }}"
-                   class="flex-shrink-0 w-32 h-20 bg-gray-50 border border-gray-100 rounded-xl flex items-center justify-center hover:border-orange-300 hover:shadow-md transition-all duration-200 group">
+                   class="flex-shrink-0 w-32 h-20 bg-gray-50 dark:bg-white border border-gray-100 dark:border-gray-200 rounded-xl flex items-center justify-center hover:border-orange-300 hover:shadow-md dark:hover:shadow-black/30 transition-all duration-200 group">
                     @if($brand->logo)
                         <img src="{{ Storage::url($brand->logo) }}" alt="{{ $brand->name }}" loading="lazy" decoding="async" class="max-w-[80%] max-h-[60%] object-contain group-hover:scale-105 transition">
                     @else
-                        <span class="text-gray-500 font-bold text-sm group-hover:text-orange-700 transition">{{ $brand->name }}</span>
+                        <span class="text-gray-500 dark:text-gray-500 font-bold text-sm group-hover:text-orange-700 transition">{{ $brand->name }}</span>
                     @endif
                 </a>
             @endforeach
