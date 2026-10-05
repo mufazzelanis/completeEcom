@@ -15,6 +15,20 @@
     // data-backed freshness signal (real created_at, not a fabricated "trending" label)
     // rather than clutter competing with the price badge for the same spot.
     $isNew = !$isFlash && !$hasDiscount && $product->created_at->gt(now()->subDays(14));
+
+    // "Buy Now"/"Select Options" pill color (Settings → General → Storefront Buttons) — inline
+    // background-image/color rather than the Tailwind gradient classes they replace, so an
+    // admin-picked RGB color applies here; bg-[length:200%_auto]/hover:bg-right stay as plain
+    // utility classes below since they're separate CSS properties (size/position) that don't
+    // collide with this inline background-image. Defaults match the original hardcoded
+    // from-pink-500 via-fuchsia-500 to-orange-400 exactly, so an untouched install looks identical.
+    $orderButtonGradient = sprintf(
+        'linear-gradient(to right, %s, %s, %s)',
+        setting('order_button_color_from', '#ec4899'),
+        setting('order_button_color_via', '#d946ef'),
+        setting('order_button_color_to', '#fb923c'),
+    );
+    $orderButtonTextColor = setting('order_button_text_color', '#ffffff');
 @endphp
 <div class="h-full flex flex-col bg-white rounded-xl shadow-sm hover:shadow-xl hover:shadow-gray-200/60 transition-all duration-300 group overflow-hidden ring-1 ring-gray-100 hover:ring-orange-200 hover:-translate-y-1 relative">
     <a href="{{ route('products.show', $product->slug) }}" class="block relative">
@@ -150,7 +164,8 @@
                 {{-- Variable products need a color/size picked first — no matrix here
                      on the card, so send the customer to the product page to choose. --}}
                 <a href="{{ route('products.show', $product->slug) }}"
-                    class="inline-flex items-center gap-1 bg-[length:200%_auto] bg-gradient-to-r from-pink-500 via-fuchsia-500 to-orange-400 hover:bg-right text-white text-[11px] font-bold pl-2 pr-3 py-1 rounded-full shadow-sm hover:shadow-md transition-all duration-500 mt-2">
+                    style="background-image: {{ $orderButtonGradient }}; color: {{ $orderButtonTextColor }};"
+                    class="inline-flex items-center gap-1 bg-[length:200%_auto] hover:bg-right text-[11px] font-bold pl-2 pr-3 py-1 rounded-full shadow-sm hover:shadow-md transition-all duration-500 mt-2">
                     <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z"/></svg>
                     Select Options
                 </a>
@@ -162,7 +177,8 @@
                     <input type="hidden" name="product_id" value="{{ $product->id }}">
                     <input type="hidden" name="quantity" value="1">
                     <button type="submit" data-loader-message="Preparing your order&hellip;"
-                        class="inline-flex items-center gap-1 bg-[length:200%_auto] bg-gradient-to-r from-pink-500 via-fuchsia-500 to-orange-400 hover:bg-right text-white text-[11px] font-bold pl-2 pr-3 py-1 rounded-full shadow-sm hover:shadow-md transition-all duration-500">
+                        style="background-image: {{ $orderButtonGradient }}; color: {{ $orderButtonTextColor }};"
+                        class="inline-flex items-center gap-1 bg-[length:200%_auto] hover:bg-right text-[11px] font-bold pl-2 pr-3 py-1 rounded-full shadow-sm hover:shadow-md transition-all duration-500">
                         <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z"/></svg>
                         {{ setting('buy_now_button_text', 'Buy Now') }}
                     </button>

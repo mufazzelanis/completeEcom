@@ -105,7 +105,13 @@
 </div>
 
 {{-- Storefront Buttons --}}
-<div class="bg-white rounded-xl shadow-sm border p-6 space-y-4">
+<div class="bg-white rounded-xl shadow-sm border p-6 space-y-5"
+     x-data="{
+        from: '{{ setting('order_button_color_from', '#ec4899') }}',
+        via: '{{ setting('order_button_color_via', '#d946ef') }}',
+        to: '{{ setting('order_button_color_to', '#fb923c') }}',
+        textColor: '{{ setting('order_button_text_color', '#ffffff') }}',
+     }">
     <h2 class="text-base font-semibold text-gray-900 pb-2 border-b">Storefront Buttons</h2>
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
@@ -127,6 +133,57 @@
             <input type="text" name="add_to_cart_button_text" value="{{ setting('add_to_cart_button_text', 'Add to Cart') }}" maxlength="40"
                    class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-orange-500">
             <p class="text-xs text-gray-400 mt-1">Only shown when the style above is set to "Icon + Text".</p>
+        </div>
+    </div>
+
+    <div class="border-t pt-4">
+        <h3 class="text-sm font-semibold text-gray-800 mb-1">"Buy Now" / "Order Now" Button Color</h3>
+        <p class="text-xs text-gray-400 mb-3">The pill-shaped gradient button on every product card (and "Select Options" for products with size/color variants). Pick any RGB color for each stop — leave them untouched and the button keeps today's exact pink-to-orange look.</p>
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <div>
+                <label class="block text-xs font-medium text-gray-700 mb-1">Gradient Start</label>
+                <div class="flex items-center gap-1.5">
+                    <input type="color" name="order_button_color_from" x-model="from" class="h-9 w-10 flex-shrink-0 rounded border cursor-pointer">
+                    <input type="text" x-model="from" class="w-0 flex-1 border rounded px-2 py-1.5 text-xs text-gray-600 font-mono bg-gray-50">
+                </div>
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-gray-700 mb-1">Gradient Middle</label>
+                <div class="flex items-center gap-1.5">
+                    <input type="color" name="order_button_color_via" x-model="via" class="h-9 w-10 flex-shrink-0 rounded border cursor-pointer">
+                    <input type="text" x-model="via" class="w-0 flex-1 border rounded px-2 py-1.5 text-xs text-gray-600 font-mono bg-gray-50">
+                </div>
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-gray-700 mb-1">Gradient End</label>
+                <div class="flex items-center gap-1.5">
+                    <input type="color" name="order_button_color_to" x-model="to" class="h-9 w-10 flex-shrink-0 rounded border cursor-pointer">
+                    <input type="text" x-model="to" class="w-0 flex-1 border rounded px-2 py-1.5 text-xs text-gray-600 font-mono bg-gray-50">
+                </div>
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-gray-700 mb-1">Text Color</label>
+                <div class="flex items-center gap-1.5">
+                    <input type="color" name="order_button_text_color" x-model="textColor" class="h-9 w-10 flex-shrink-0 rounded border cursor-pointer">
+                    <input type="text" x-model="textColor" class="w-0 flex-1 border rounded px-2 py-1.5 text-xs text-gray-600 font-mono bg-gray-50">
+                </div>
+            </div>
+        </div>
+
+        {{-- Live preview — exact same pill shape + hover shimmer as the real button
+             (resources/views/partials/product-card.blade.php). --}}
+        <div class="mt-4 bg-gray-50 border rounded-xl p-4 flex items-center gap-3 flex-wrap">
+            <span class="text-xs text-gray-400">Preview:</span>
+            <button type="button" tabindex="-1"
+                class="inline-flex items-center gap-1 bg-[length:200%_auto] hover:bg-right text-[11px] font-bold pl-2 pr-3 py-1 rounded-full shadow-sm hover:shadow-md transition-all duration-500"
+                :style="{ backgroundImage: `linear-gradient(to right, ${from}, ${via}, ${to})`, color: textColor }">
+                <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z"/></svg>
+                <span x-text="@js(setting('buy_now_button_text', 'Buy Now'))"></span>
+            </button>
+            <button type="button" @click="from = '#ec4899'; via = '#d946ef'; to = '#fb923c'; textColor = '#ffffff';"
+                class="ml-auto text-xs text-gray-400 hover:text-orange-600 underline">
+                Reset to default
+            </button>
         </div>
     </div>
 </div>
