@@ -932,21 +932,29 @@ $navCategories = \App\Models\Category::with(['children' => fn($q) => $q->active(
                         <p class="text-gray-400 text-sm mt-1">{{ t('footer.newsletter_subtitle', 'Get updates on new arrivals, deals, and exclusive offers.', [], 'footer') }}</p>
                     </div>
                 </div>
-                <div class="w-full md:w-auto">
-                    <form action="{{ route('newsletter.subscribe') }}" method="POST" class="flex flex-col gap-2 w-full md:w-auto">
+                <div class="w-full md:w-auto" x-data="newsletterForm()">
+                    <form action="{{ route('newsletter.subscribe') }}" method="POST" class="flex flex-col gap-2 w-full md:w-auto" @submit.prevent="submit($event)">
                         @csrf
                         @include('partials.honeypot')
                         <div class="relative flex w-full rounded-full bg-white/5 border border-white/15 focus-within:border-orange-500 transition-colors p-1 shadow-inner">
                             <span class="hidden sm:flex items-center pl-3.5 text-gray-500">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
                             </span>
-                            <input type="email" name="email" value="{{ old('email') }}" placeholder="{{ t('footer.email_placeholder', 'Enter your email', [], 'footer') }}" aria-label="{{ t('footer.email_placeholder', 'Enter your email', [], 'footer') }}" required class="flex-1 md:w-72 min-w-0 px-4 sm:px-3 py-2.5 bg-transparent text-white border-0 focus:outline-none focus:ring-0 text-sm placeholder-gray-500">
-                            <button type="submit" class="btn-glow flex-shrink-0 bg-gradient-to-r from-orange-500 to-red-500 text-white px-6 py-2.5 rounded-full font-semibold text-sm hover:shadow-lg hover:shadow-orange-900/40 hover:-translate-y-0.5 active:translate-y-0 transition-all whitespace-nowrap">{{ t('footer.subscribe', 'Subscribe', [], 'footer') }}</button>
+                            <input type="email" name="email" value="{{ old('email') }}" placeholder="{{ t('footer.email_placeholder', 'Enter your email', [], 'footer') }}" aria-label="{{ t('footer.email_placeholder', 'Enter your email', [], 'footer') }}" required :disabled="sending" class="flex-1 md:w-72 min-w-0 px-4 sm:px-3 py-2.5 bg-transparent text-white border-0 focus:outline-none focus:ring-0 text-sm placeholder-gray-500 disabled:opacity-60">
+                            <button type="submit" :disabled="sending" class="btn-glow flex-shrink-0 bg-gradient-to-r from-orange-500 to-red-500 text-white px-6 py-2.5 rounded-full font-semibold text-sm hover:shadow-lg hover:shadow-orange-900/40 hover:-translate-y-0.5 active:translate-y-0 transition-all whitespace-nowrap disabled:opacity-70 disabled:cursor-not-allowed disabled:translate-y-0">
+                                <span x-show="!sending">{{ t('footer.subscribe', 'Subscribe', [], 'footer') }}</span>
+                                <span x-show="sending" x-cloak>…</span>
+                            </button>
                         </div>
                         {{-- A no-op unless an admin enables reCAPTCHA in Settings → Security; v3
-                             stays fully invisible here, v2 would show its checkbox widget. --}}
-                        @include('partials.recaptcha')
+                             stays fully invisible here, v2 shows its checkbox widget. ajax=true:
+                             if v3 fetches a token, it dispatches 'recaptcha:ready' on the form
+                             instead of calling a native form.submit() — newsletterForm() below
+                             listens for that and sends it via fetch() itself, so a subscriber
+                             with reCAPTCHA on still never triggers a real page navigation. --}}
+                        @include('partials.recaptcha', ['ajax' => true])
                     </form>
+                    <p x-show="message" x-cloak x-text="message" class="text-xs mt-1.5" :class="error ? 'text-red-400' : 'text-green-400'"></p>
                     @error('email')<p class="text-red-400 text-xs mt-1.5">{{ $message }}</p>@enderror
                     @error('recaptcha')<p class="text-red-400 text-xs mt-1.5">{{ $message }}</p>@enderror
                 </div>
@@ -1284,6 +1292,83 @@ async function toggleCartItem(productId, btn) {
 @if(session('tracked_add_to_cart'))
 <script>trackAddToCart(@json(session('tracked_add_to_cart')));</script>
 @endif
+
+<script>
+    // Footer newsletter form — plain fetch() POST (see NewsletterSubscriptionController's
+    // expectsJson() branches) instead of a normal form submit, so subscribing never reloads
+    // the page or jumps scroll position back to the top. reCAPTCHA is still fully enforced:
+    // the server already rejects a missing/invalid token (422), and this adds a client-side
+    // check too so a visitor can't even fire the request without completing it first — no
+    // silent "subscribed without captcha" path either way.
+    function newsletterForm() {
+        return {
+            sending: false,
+            message: null,
+            error: false,
+            init() {
+                // v3 reCAPTCHA (see partials/recaptcha.blade.php, ajax=true): once it fetches
+                // a token it dispatches this on the form instead of submitting natively.
+                this.$root.querySelector('form')?.addEventListener('recaptcha:ready', (e) => this.doSubmit(e.target));
+            },
+            submit(event) {
+                const form = event.target;
+                this.message = null;
+                this.error = false;
+
+                const v3Token = form.querySelector('#recaptcha_token');
+                if (v3Token && !v3Token.value) {
+                    // Token fetch is in flight — init()'s listener above calls doSubmit()
+                    // once 'recaptcha:ready' fires. Nothing to send yet.
+                    return;
+                }
+
+                const v2Response = form.querySelector('[name="g-recaptcha-response"]');
+                if (v2Response && !v2Response.value) {
+                    this.error = true;
+                    this.message = 'Please complete the reCAPTCHA before subscribing.';
+                    return;
+                }
+
+                this.doSubmit(form);
+            },
+            doSubmit(form) {
+                this.sending = true;
+                this.message = null;
+                this.error = false;
+
+                fetch(form.action, {
+                    method: 'POST',
+                    headers: { 'Accept': 'application/json' },
+                    body: new FormData(form),
+                })
+                    .then(async (response) => {
+                        const data = await response.json().catch(() => ({}));
+                        this.sending = false;
+                        this.error = !response.ok;
+                        this.message = data.message
+                            || (data.errors ? Object.values(data.errors)[0][0] : null)
+                            || (response.ok ? 'Subscribed!' : 'Something went wrong.');
+                        if (response.ok) {
+                            form.reset();
+                            if (window.grecaptcha && form.querySelector('.g-recaptcha')) {
+                                window.grecaptcha.reset();
+                            }
+                            if (form.querySelector('#recaptcha_token')) {
+                                form.querySelector('#recaptcha_token').value = '';
+                            }
+                        }
+                        setTimeout(() => { this.message = null; }, 6000);
+                    })
+                    .catch(() => {
+                        this.sending = false;
+                        this.error = true;
+                        this.message = 'Network error — please try again.';
+                        setTimeout(() => { this.message = null; }, 6000);
+                    });
+            },
+        };
+    }
+</script>
 
 @php $customJs = setting('custom_js', ''); @endphp
 {{-- Raw, not escaped — same reasoning as Custom CSS above. Virtually all real JS uses
