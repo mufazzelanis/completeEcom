@@ -620,12 +620,12 @@ $navCategories = \App\Models\Category::with(['children' => fn($q) => $q->active(
                              x-bind:style="`position:fixed; top:${top}px; left:${left}px;`"
                              class="bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-300 shadow-2xl shadow-black/10 dark:shadow-black/50 rounded-xl w-64 z-[150] ring-1 ring-black/5 dark:ring-white/10 overflow-hidden">
                             {{-- Brand-gradient accent strip, same top-of-card touch used for the
-                                 auth cards / announcement bar settings elsewhere in this app. --}}
+                                 auth cards / announcement bar settings elsewhere in this app. No
+                                 "Shop {{ '$navCat->name' }}" label beneath it — the nav link
+                                 you're hovering already says which category this is, so a second
+                                 copy of the same name right below it was pure redundancy. --}}
                             <div class="h-1 bg-gradient-to-r from-orange-500 via-pink-500 to-orange-400"></div>
-                            <p class="px-4 pt-2.5 pb-2 text-[11px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 border-b border-gray-100 dark:border-gray-800">
-                                Shop {{ $navCat->name }}
-                            </p>
-                            <div class="p-1.5">
+                            <div class="p-1.5 pt-2">
                                 @foreach($navCat->children as $child)
                                     <a href="{{ route('shop.category', $child->slug) }}"
                                        class="group flex items-center gap-3 px-2.5 py-2.5 rounded-lg hover:bg-orange-50 dark:hover:bg-orange-500/10 transition-colors duration-150">
