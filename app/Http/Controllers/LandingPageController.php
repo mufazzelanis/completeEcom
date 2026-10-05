@@ -170,6 +170,7 @@ class LandingPageController extends Controller
             ],
             rawUserFields: ['name' => $order->shipping_name, 'phone' => $order->shipping_phone],
             pixelIdOverride: $landingPage->fb_pixel_id ?: null,
+            accessTokenOverride: $landingPage->fb_capi_access_token ?: null,
         );
 
         return redirect()->route('landing.show', $landingPage)->with([

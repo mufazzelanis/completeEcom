@@ -164,7 +164,7 @@ class LandingPageController extends Controller
         // before ever reaching that trim().
         $request->merge(array_map(
             fn ($v) => is_string($v) ? trim($v) : $v,
-            $request->only(['fb_pixel_id', 'ga_measurement_id', 'google_ads_conversion_id', 'google_ads_conversion_label'])
+            $request->only(['fb_pixel_id', 'fb_capi_access_token', 'ga_measurement_id', 'google_ads_conversion_id', 'google_ads_conversion_label'])
         ));
 
         $request->validate([
@@ -213,6 +213,11 @@ class LandingPageController extends Controller
             // bounce the whole form. Each one independently optional; leaving any blank
             // just means that platform's site-wide default (or nothing) applies instead.
             'fb_pixel_id'                 => 'nullable|string|max:32|regex:/^[0-9]{5,32}$/',
+            // Only meaningful alongside a custom fb_pixel_id above — a Conversions API access
+            // token is scoped to one specific pixel on Meta's side, so server-side events for
+            // this page need this page's own token once it has its own pixel. No format regex
+            // (Meta's tokens are long opaque strings with no fixed shape).
+            'fb_capi_access_token'        => 'nullable|string|max:512',
             'ga_measurement_id'           => 'nullable|string|max:20|regex:/^G-[A-Za-z0-9]+$/',
             'google_ads_conversion_id'    => 'nullable|string|max:20|regex:/^AW-[0-9]+$/',
             'google_ads_conversion_label' => 'nullable|string|max:60|regex:/^[A-Za-z0-9_-]+$/',
@@ -237,7 +242,7 @@ class LandingPageController extends Controller
         // Trimmed and coerced to null (not '') when left blank — so `?:` fallbacks to the
         // site-wide setting elsewhere (layouts/landing.blade.php, show.blade.php) work the
         // same way brand_color's do, rather than an empty string silently "winning" over null.
-        foreach (['fb_pixel_id', 'ga_measurement_id', 'google_ads_conversion_id', 'google_ads_conversion_label'] as $pixelField) {
+        foreach (['fb_pixel_id', 'fb_capi_access_token', 'ga_measurement_id', 'google_ads_conversion_id', 'google_ads_conversion_label'] as $pixelField) {
             $value = trim((string) $request->input($pixelField, ''));
             $data[$pixelField] = $value !== '' ? $value : null;
         }

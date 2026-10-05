@@ -663,6 +663,17 @@
                 <p class="text-xs text-gray-400 mt-1">Meta Events Manager → Data Sources → your pixel. Fires PageView, ViewContent, InitiateCheckout, and Purchase automatically.</p>
             </div>
 
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Conversions API Access Token <span class="text-gray-400 font-normal">(only needed with a custom Pixel ID above)</span></label>
+                <input type="password" name="fb_capi_access_token" value="{{ old('fb_capi_access_token', $lp->fb_capi_access_token ?? '') }}" placeholder="EAAG..." autocomplete="new-password"
+                    class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                <p class="text-xs text-gray-400 mt-1">
+                    A Conversions API token is tied to one specific pixel on Meta's side — if this page uses its own Pixel ID above (a different ad account than the main store), the
+                    <a href="{{ route('admin.settings.show', 'facebook_pixel') }}" target="_blank" class="text-indigo-600 hover:underline">site-wide CAPI token</a>
+                    won't authenticate for it and server-side Purchase events will fail silently. Generate a token for this specific pixel in Meta Events Manager → Data Sources → this pixel → Settings → Conversions API, and paste it here. Leave blank if this page uses the site's own pixel, or if you only want client-side (browser Pixel) tracking for it.
+                </p>
+            </div>
+
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">GA4 Measurement ID</label>

@@ -14,7 +14,7 @@ class LandingPage extends Model
         'header_logo', 'favicon', 'order_button_text', 'brand_color',
         // Pixel tracking — per-page override of the site-wide Facebook Pixel / Google
         // Analytics / Google Ads settings, for campaigns that need their own ad-account pixel.
-        'fb_pixel_id', 'ga_measurement_id', 'google_ads_conversion_id', 'google_ads_conversion_label',
+        'fb_pixel_id', 'fb_capi_access_token', 'ga_measurement_id', 'google_ads_conversion_id', 'google_ads_conversion_label',
         'collect_address', 'require_address', 'order_form_fields',
         'thank_you_heading', 'thank_you_message', 'thank_you_redirect_url', 'thank_you_button_text',
         'meta_title', 'meta_description', 'og_image',

@@ -43,9 +43,12 @@
 <div class="bg-white rounded-xl shadow-sm border p-6 space-y-4 mt-6">
     <div class="flex items-center justify-between pb-2 border-b">
         <h2 class="text-base font-semibold text-gray-900">Conversions API (Server-Side Events)</h2>
-        @if(\App\Services\Facebook\ConversionsApi::isEnabled())
-            <a href="{{ route('admin.facebook-conversion-logs.index') }}" class="text-xs font-medium text-indigo-600 hover:text-indigo-800">View Recent Events →</a>
-        @endif
+        {{-- Always linked, not just when currently enabled — the log page has its own "not
+             fully configured" banner for that case, and hiding this link whenever setup is
+             incomplete (exactly when that banner is most useful) or CAPI is paused (same
+             "turn off without losing settings" idea as the Pixel toggle above) would strand
+             the admin with no way back to events already logged. --}}
+        <a href="{{ route('admin.facebook-conversion-logs.index') }}" class="text-xs font-medium text-indigo-600 hover:text-indigo-800">View Recent Events →</a>
     </div>
     <p class="text-xs text-gray-500">
         The Pixel above only fires from the visitor's browser — ad blockers, iOS tracking

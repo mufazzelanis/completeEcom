@@ -52,6 +52,12 @@ class ConversionsApi
      *                          raw PII never touches the jobs table.
      * @param string|null $pixelIdOverride A landing page's own fb_pixel_id, when the event
      *                          belongs to a specific campaign page rather than the site pixel.
+     * @param string|null $accessTokenOverride A landing page's own fb_capi_access_token. A CAPI
+     *                          access token is scoped to one specific pixel on Meta's side, so a
+     *                          page using $pixelIdOverride needs its own token too — the
+     *                          site-wide one is scoped to the site's own pixel and would fail
+     *                          Meta's auth check (logged as a 'failed' row, same as any other
+     *                          rejected event) if used for a different pixel.
      */
     public static function track(
         string $eventName,
@@ -61,14 +67,25 @@ class ConversionsApi
         ?Request $request = null,
         ?string $eventSourceUrl = null,
         ?string $pixelIdOverride = null,
+        ?string $accessTokenOverride = null,
     ): void {
-        if (!self::isEnabled()) {
+        $pixelId = $pixelIdOverride ?: setting('facebook_pixel_id', '');
+        $accessToken = $accessTokenOverride ?: setting('facebook_capi_access_token', '');
+
+        // Overridden pixel+token pairs (a landing page running its own ad account) are checked
+        // directly rather than through isEnabled(), which only reflects the SITE-WIDE
+        // credentials — gating a page that supplies both of its own on the site's separate
+        // "Enable Conversions API" toggle would be the wrong switch for the admin to have to
+        // flip, and could silently stop working if that unrelated toggle is ever turned off.
+        $usingOverride = $pixelIdOverride && $accessTokenOverride;
+        if (!$usingOverride && !self::isEnabled()) {
+            return;
+        }
+        if (!$pixelId || !$accessToken) {
             return;
         }
 
         $request ??= request();
-        $pixelId = $pixelIdOverride ?: setting('facebook_pixel_id', '');
-        $accessToken = setting('facebook_capi_access_token', '');
         $testEventCode = setting('facebook_capi_test_event_code', '');
 
         $userData = self::buildUserData($rawUserFields, $request);
