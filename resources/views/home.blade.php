@@ -395,7 +395,11 @@
 {{-- ═══════════ HOMEPAGE PRODUCT SECTIONS (admin-managed) ═══════════ --}}
 @foreach($homeSections as $entry)
     @php $sec = $entry['section']; $totalCount = $entry['totalCount']; @endphp
-    <div class="relative overflow-hidden mx-3 md:mx-0 mt-3 md:mt-4 rounded-2xl md:rounded-none shadow-sm md:shadow-none {{ $sec->theme === 'sale' ? 'bg-gradient-to-r from-red-500 to-orange-500' : 'bg-white dark:bg-gray-900' }}" x-data="{ expanded: false }">
+    {{-- revealedExtra: how many of the beyond-product_limit "overflow" products are currently
+         shown, staged in batches of $step (2 desktop rows' worth) per click instead of all at
+         once — a long section used to dump its entire remaining batch on the first click, which
+         read as an abrupt wall of products rather than a smooth, inviting "there's more" browse. --}}
+    <div class="relative overflow-hidden mx-3 md:mx-0 mt-3 md:mt-4 rounded-2xl md:rounded-none shadow-sm md:shadow-none {{ $sec->theme === 'sale' ? 'bg-gradient-to-r from-red-500 to-orange-500' : 'bg-white dark:bg-gray-900' }}" x-data="{ expanded: false, revealedExtra: 0 }">
         {{-- Same quiet corner-glow treatment as the trust banner — breaks up the run of
              flat white section cards down the page without competing with the products. --}}
         @if($sec->theme !== 'sale')
@@ -413,6 +417,14 @@
                 // 4 rows regardless of how many columns/products_limit the admin
                 // picked for desktop — the rest still shows immediately at sm+.
                 $mobileCap = min(8, $sec->product_limit);
+                // Step size for the "reveal more" button below: 2 rows at the section's own
+                // desktop column count (admin-configured, 2-6 — see getGridColsClass). Mobile is
+                // always a fixed 2-column grid regardless of that setting, so a step sized for a
+                // wide desktop grid reveals more than literally 2 rows there — an acceptable
+                // trade-off for one shared counter rather than tracking per-breakpoint reveal
+                // state, and still "staged in batches," never the old single all-at-once dump.
+                $step = $sec->columns * 2;
+                $overflowCount = max(0, count($entry['products']) - $sec->product_limit);
             @endphp
             <div class="grid {{ $sec->getGridColsClass() }} gap-3 reveal-group">
                 @foreach($entry['products'] as $i => $product)
@@ -426,7 +438,9 @@
                             @include('partials.product-card', ['product' => $product])
                         </div>
                     @else
-                        <div x-show="expanded" x-cloak
+                        {{-- This item's 1-indexed position within the overflow tier — shown once
+                             revealedExtra (bumped by $step per click) reaches it. --}}
+                        <div x-show="revealedExtra >= {{ $i - $sec->product_limit + 1 }}" x-cloak
                              x-transition:enter="transition ease-out duration-400" x-transition:enter-start="opacity-0 translate-y-3" x-transition:enter-end="opacity-100 translate-y-0">
                             @include('partials.product-card', ['product' => $product])
                         </div>
@@ -440,8 +454,8 @@
                  mobile row cap (nothing held back on desktop), the button itself is
                  mobile-only — there'd be nothing left for it to reveal at sm+. --}}
             @if($totalCount > $sec->product_limit)
-            <div class="text-center mt-6" x-show="!expanded">
-                <button type="button" @click="expanded = true"
+            <div class="text-center mt-6" x-show="revealedExtra < {{ $overflowCount }}">
+                <button type="button" @click="expanded = true; revealedExtra = Math.min(revealedExtra + {{ $step }}, {{ $overflowCount }})"
                    class="group inline-flex items-center gap-2 {{ $sec->theme === 'sale' ? 'bg-white text-orange-600 hover:bg-gray-100' : 'bg-gradient-to-r from-orange-500 to-red-500 text-white hover:shadow-lg hover:shadow-orange-500/30' }} px-10 py-2.5 rounded-full font-bold text-sm transition-all duration-300 shadow-md hover:-translate-y-0.5">
                     {{ $sec->getViewAllLabelText() }}
                     <svg class="w-4 h-4 group-hover:translate-y-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
