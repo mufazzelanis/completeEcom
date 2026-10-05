@@ -55,6 +55,19 @@ return [
             'AutoFormat.AutoParagraph' => true,
             'AutoFormat.RemoveEmpty'   => true,
         ],
+        // Single-line surfaces (header announcement bar, footer copyright line) — rendered
+        // inline ({!! !!} inside a <span>/<small>, not a block container), so no block-level
+        // tags and no AutoParagraph: the 'default'/'rich_content' profiles above both wrap a
+        // plain one-line banner in a literal <p>...</p>, which is invalid markup inside a
+        // <span> and, worse, shows up as literal "<p>" text next time the admin reopens this
+        // plain (non-WYSIWYG) <input> to edit it. Used by SettingController for
+        // announcement_text and copyright_text.
+        'inline' => [
+            'HTML.Allowed'             => 'b,strong,i,em,u,a[href|title|target],span[style],br',
+            'CSS.AllowedProperties'    => 'color,font-weight,font-style,text-decoration',
+            'AutoFormat.AutoParagraph' => false,
+            'AutoFormat.RemoveEmpty'   => true,
+        ],
         "youtube" => [
             "HTML.SafeIframe"      => 'true',
             "URI.SafeIframeRegexp" => "%^(http://|https://|//)(www.youtube.com/embed/|player.vimeo.com/video/)%",

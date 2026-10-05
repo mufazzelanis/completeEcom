@@ -53,7 +53,7 @@ class SettingController extends Controller
                 continue;
             }
             if (in_array($key, $rawHtmlKeys, true) && $value !== null) {
-                $value = clean($value);
+                $value = clean($value, 'inline');
             }
             Setting::set($key, $value, $group);
         }
