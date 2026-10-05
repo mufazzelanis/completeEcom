@@ -137,7 +137,11 @@
         @endif
 
         <a href="{{ route('products.show', $product->slug) }}" class="block">
-            <h3 class="text-xs text-gray-700 leading-snug line-clamp-2 h-8 group-hover:text-orange-700 transition-colors">
+            {{-- Bold + darker than before (was plain-weight text-gray-700, easy to skim past)
+                 — a customer reads this title before deciding to order, so low-contrast,
+                 light-weight type here directly costs orders. Hover now also underlines, not
+                 just recolors, so the "this is clickable" signal doesn't rely on color alone. --}}
+            <h3 class="text-xs font-semibold text-gray-800 leading-snug line-clamp-2 h-8 group-hover:text-orange-600 group-hover:underline decoration-orange-300 decoration-2 underline-offset-2 transition-colors duration-200">
                 {{ $product->name }}
             </h3>
         </a>
