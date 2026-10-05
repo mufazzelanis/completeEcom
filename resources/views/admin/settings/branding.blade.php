@@ -5,7 +5,9 @@
 <form method="POST" action="{{ route('admin.settings.update', 'branding') }}" enctype="multipart/form-data"
       x-data="{
           primary: '{{ setting('primary_color', '#ea580c') }}',
+          secondary: '{{ setting('secondary_color', '#ec4899') }}',
           accent: '{{ setting('accent_color', '#dc2626') }}',
+          text: '{{ setting('text_color', '#1f2937') }}',
       }">
 @csrf @method('PATCH')
 
@@ -97,9 +99,9 @@ $logos = [
         <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Secondary Color</label>
             <div class="flex items-center gap-2">
-                <input type="color" name="secondary_color" value="{{ setting('secondary_color', '#f97316') }}"
+                <input type="color" name="secondary_color" x-model="secondary"
                        class="h-9 w-16 rounded border cursor-pointer">
-                <input type="text" value="{{ setting('secondary_color', '#f97316') }}" readonly
+                <input type="text" x-model="secondary"
                        class="flex-1 border rounded px-2 py-1.5 text-xs text-gray-600 font-mono bg-gray-50">
             </div>
         </div>
@@ -115,15 +117,16 @@ $logos = [
         <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Text Color</label>
             <div class="flex items-center gap-2">
-                <input type="color" name="text_color" value="{{ setting('text_color', '#1f2937') }}"
+                <input type="color" name="text_color" x-model="text"
                        class="h-9 w-16 rounded border cursor-pointer">
-                <input type="text" value="{{ setting('text_color', '#1f2937') }}" readonly
+                <input type="text" x-model="text"
                        class="flex-1 border rounded px-2 py-1.5 text-xs text-gray-600 font-mono bg-gray-50">
             </div>
         </div>
     </div>
 
-    {{-- Live Preview --}}
+    {{-- Live Preview — all four colors, so changing Secondary or Text visibly does something
+         here too instead of only Primary/Accent having anything to point at. --}}
     <div class="border-t pt-4 mt-2">
         <p class="text-xs font-medium text-gray-500 mb-2">Preview:</p>
         <div class="rounded-xl border p-4 bg-gray-50">
@@ -139,11 +142,22 @@ $logos = [
                 <span class="font-bold text-lg" :style="{ color: primary }">
                     {{ setting('site_name', 'ShopVista') }}
                 </span>
+                <span class="px-2 py-0.5 rounded-full text-white text-[10px] font-bold uppercase tracking-wide"
+                      :style="{ backgroundColor: secondary }">
+                    Sale
+                </span>
             </div>
-            <div class="flex gap-2">
+            <p class="text-sm mb-3" :style="{ color: text }">
+                Body &amp; heading text looks like this across the storefront.
+            </p>
+            <div class="flex flex-wrap gap-2">
                 <button type="button" class="px-4 py-1.5 rounded-lg text-white text-xs font-semibold"
                         :style="{ backgroundColor: primary }">
                     Primary Button
+                </button>
+                <button type="button" class="px-4 py-1.5 rounded-lg text-white text-xs font-semibold"
+                        :style="{ backgroundColor: secondary }">
+                    Secondary Badge
                 </button>
                 <button type="button" class="px-4 py-1.5 rounded-lg text-white text-xs font-semibold"
                         :style="{ backgroundColor: accent }">
