@@ -578,28 +578,29 @@ $navCategories = \App\Models\Category::with(['children' => fn($q) => $q->active(
     <div class="bg-orange-700 hidden md:block border-t border-orange-600">
         <div class="max-w-[1200px] mx-auto px-4 flex items-center overflow-x-auto scrollbar-hide">
             @foreach($navCategories as $navCat)
-                {{-- top/left are recomputed on every open (not just once) since this bar
-                     scrolls horizontally (overflow-x-auto above) — a stale position from an
-                     earlier open would drift as the trigger's own position changes. The
-                     $nextTick pass after open=true measures the panel's real rendered width
-                     (via x-ref) and nudges `left` back inside the viewport, so a category near
-                     the right edge (e.g. "Rare Collections") doesn't render a dropdown that's
-                     partly cut off screen. --}}
-                <div class="relative flex-shrink-0" x-data="{ open: false, top: 0, left: 0 }"
-                     @mouseenter="
-                        open = true;
-                        const r = $el.getBoundingClientRect();
-                        top = r.bottom;
-                        left = r.left;
-                        $nextTick(() => {
-                            const panel = $refs.panel;
-                            if (!panel) return;
-                            const maxLeft = window.innerWidth - panel.offsetWidth - 12;
-                            if (left > maxLeft) left = Math.max(12, maxLeft);
-                        });
-                     "
-                     @mouseleave="open = false">
+                {{-- The panel below is x-teleport'd to <body> rather than left in place —
+                     <header> gets backdrop-blur-xl when sticky (frosted-glass effect), and
+                     backdrop-filter, like transform, makes its element the containing block for
+                     `position:fixed` descendants. Left in place, this panel's top/left (computed
+                     from getBoundingClientRect(), i.e. viewport-relative) would land relative to
+                     <header>'s own box instead of the viewport — rendering the whole panel
+                     shifted down by however tall the bars above <header> are, with a gap where
+                     the hero content shows through underneath. Same fix already used for the
+                     mobile drawer and the admin orders inline-status dropdown. top/left are
+                     recomputed on every open (not just once) since this bar also scrolls
+                     horizontally (overflow-x-auto above) — a stale position from an earlier open
+                     would drift as the trigger's own position changes. 256 below is w-64 in px
+                     (the panel's own fixed width) — clamping against it keeps a category near
+                     the right edge (e.g. "Rare Collections") from rendering partly off screen. --}}
+                <div class="relative flex-shrink-0" x-data="{ open: false, top: 0, left: 0 }">
                     <a href="{{ route('shop.category', $navCat->slug) }}"
+                       @mouseenter="
+                            open = true;
+                            const r = $el.getBoundingClientRect();
+                            top = r.bottom;
+                            left = Math.max(12, Math.min(r.left, window.innerWidth - 256 - 12));
+                       "
+                       @mouseleave="open = false"
                        class="inline-flex items-center gap-1 text-sm text-white whitespace-nowrap hover:bg-orange-800 px-3 py-2.5 transition font-medium">
                         {{ $navCat->name }}
                         @if($navCat->children->count() > 0)
@@ -607,7 +608,9 @@ $navCategories = \App\Models\Category::with(['children' => fn($q) => $q->active(
                         @endif
                     </a>
                     @if($navCat->children->count() > 0)
-                        <div x-show="open" x-cloak x-ref="panel"
+                    <template x-teleport="body">
+                        <div x-show="open" x-cloak
+                             @mouseenter="open = true" @mouseleave="open = false"
                              x-transition:enter="transition ease-out duration-150"
                              x-transition:enter-start="opacity-0 -translate-y-1"
                              x-transition:enter-end="opacity-100 translate-y-0"
@@ -651,6 +654,7 @@ $navCategories = \App\Models\Category::with(['children' => fn($q) => $q->active(
                                 </a>
                             </div>
                         </div>
+                    </template>
                     @endif
                 </div>
             @endforeach
