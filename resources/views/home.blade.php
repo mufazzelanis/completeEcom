@@ -425,6 +425,15 @@
                 // state, and still "staged in batches," never the old single all-at-once dump.
                 $step = $sec->columns * 2;
                 $overflowCount = max(0, count($entry['products']) - $sec->product_limit);
+
+                // Admin-chosen colors (Admin > Home Sections > edit > "See More" Button Color)
+                // override the hardcoded theme classes below only when both gradient stops are
+                // set — otherwise this stays null and the button keeps its exact current look.
+                $seeMoreBgStyle = $sec->getSeeMoreBackgroundStyle();
+                $seeMoreStyle = trim(($seeMoreBgStyle ?? '') . ($sec->see_more_text_color ? " color: {$sec->see_more_text_color};" : ''));
+                $seeMoreColorClasses = $seeMoreBgStyle
+                    ? 'hover:shadow-lg hover:shadow-black/10'
+                    : ($sec->theme === 'sale' ? 'bg-white text-orange-600 hover:bg-gray-100' : 'bg-gradient-to-r from-orange-500 to-red-500 text-white hover:shadow-lg hover:shadow-orange-500/30');
             @endphp
             <div class="grid {{ $sec->getGridColsClass() }} gap-3 reveal-group">
                 @foreach($entry['products'] as $i => $product)
@@ -456,16 +465,18 @@
             @if($totalCount > $sec->product_limit)
             <div class="text-center mt-6" x-show="revealedExtra < {{ $overflowCount }}">
                 <button type="button" @click="expanded = true; revealedExtra = Math.min(revealedExtra + {{ $step }}, {{ $overflowCount }})"
-                   class="group inline-flex items-center gap-2 {{ $sec->theme === 'sale' ? 'bg-white text-orange-600 hover:bg-gray-100' : 'bg-gradient-to-r from-orange-500 to-red-500 text-white hover:shadow-lg hover:shadow-orange-500/30' }} px-10 py-2.5 rounded-full font-bold text-sm transition-all duration-300 shadow-md hover:-translate-y-0.5">
-                    {{ $sec->getViewAllLabelText() }}
+                   @if($seeMoreStyle) style="{{ $seeMoreStyle }}" @endif
+                   class="group inline-flex items-center gap-2 {{ $seeMoreColorClasses }} px-10 py-2.5 rounded-full font-bold text-sm transition-all duration-300 shadow-md hover:-translate-y-0.5">
+                    {{ $sec->getSeeMoreLabelText() }}
                     <svg class="w-4 h-4 group-hover:translate-y-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
                 </button>
             </div>
             @elseif($sec->product_limit > $mobileCap)
             <div class="text-center mt-6 sm:hidden" x-show="!expanded">
                 <button type="button" @click="expanded = true"
-                   class="group inline-flex items-center gap-2 {{ $sec->theme === 'sale' ? 'bg-white text-orange-600 hover:bg-gray-100' : 'bg-gradient-to-r from-orange-500 to-red-500 text-white hover:shadow-lg hover:shadow-orange-500/30' }} px-10 py-2.5 rounded-full font-bold text-sm transition-all duration-300 shadow-md hover:-translate-y-0.5">
-                    {{ $sec->getViewAllLabelText() }}
+                   @if($seeMoreStyle) style="{{ $seeMoreStyle }}" @endif
+                   class="group inline-flex items-center gap-2 {{ $seeMoreColorClasses }} px-10 py-2.5 rounded-full font-bold text-sm transition-all duration-300 shadow-md hover:-translate-y-0.5">
+                    {{ $sec->getSeeMoreLabelText() }}
                     <svg class="w-4 h-4 group-hover:translate-y-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
                 </button>
             </div>

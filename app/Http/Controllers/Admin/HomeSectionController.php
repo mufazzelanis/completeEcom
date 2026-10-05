@@ -121,9 +121,24 @@ class HomeSectionController extends Controller
             'theme'            => 'required|in:light,sale',
             'view_all_query'   => 'nullable|string|max:100',
             'view_all_label'   => 'nullable|string|max:40',
+            'see_more_label'   => 'nullable|string|max:40',
+            'see_more_color_from' => 'nullable|regex:/^#[0-9a-fA-F]{6}$/',
+            'see_more_color_to'   => 'nullable|regex:/^#[0-9a-fA-F]{6}$/',
+            'see_more_text_color' => 'nullable|regex:/^#[0-9a-fA-F]{6}$/',
         ]);
 
         $data['is_active'] = $request->boolean('is_active', true);
+
+        // Explicit enabled flag (not just "was a color posted") — a <input type="color"> can
+        // never submit empty, so unchecking the "Custom Button Color" toggle in the form still
+        // posts a value for all three fields; without this flag there'd be no way to tell "the
+        // admin wants this cleared back to the default theme colors" from "field untouched."
+        // See landing-pages' brand_color_enabled, same pattern.
+        if (!$request->boolean('see_more_color_enabled')) {
+            $data['see_more_color_from'] = null;
+            $data['see_more_color_to'] = null;
+            $data['see_more_text_color'] = null;
+        }
 
         // The 'integer' validation rule above only checks the values, it doesn't cast
         // them — request input arrives as strings, so without this the stored array

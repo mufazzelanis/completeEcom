@@ -114,10 +114,10 @@
         </div>
 
         <div class="mt-5">
-            <label class="block text-sm font-medium text-gray-700 mb-1">"View All" Button Text</label>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Small "View All" Link Text <span class="text-xs text-gray-400 font-normal">(top-right of the section title)</span></label>
             <input type="text" name="view_all_label" value="{{ old('view_all_label', $s->view_all_label ?? '') }}" maxlength="40" placeholder="VIEW ALL"
                 class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500">
-            <p class="text-xs text-gray-400 mt-1">e.g. "See More", "Shop Now" — leave blank to keep the default "VIEW ALL".</p>
+            <p class="text-xs text-gray-400 mt-1">Takes customers to the full /shop listing. Leave blank to keep the default "VIEW ALL".</p>
         </div>
 
         {{-- "View All" link is computed automatically from Product Source + Category above —
@@ -136,6 +136,72 @@
                     class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500">
                 <p class="text-xs text-gray-400 mt-1">Only fill this in if you want the link to go somewhere other than the automatic preview above. Leave empty otherwise.</p>
             </div>
+        </div>
+    </div>
+
+    {{-- "See More" button — the big pill below the product grid that reveals more of this
+         section's products in place (home.blade.php), separate from the small "View All" link
+         above which navigates away to /shop. Its own text field (so the two don't have to read
+         identically) plus optional RGB colors, same enabled-toggle pattern as landing pages'
+         Custom Brand Color — a <input type="color"> can't represent "unset", so unchecking this
+         explicitly clears the saved colors rather than just hiding the pickers. --}}
+    <div class="pt-5 border-t border-gray-100"
+         x-data="{
+            label: {{ Js::from(old('see_more_label', $s->see_more_label ?? '')) }},
+            useCustomColor: {{ old('see_more_color_from', $s->see_more_color_from ?? null) ? 'true' : 'false' }},
+            from: {{ Js::from(old('see_more_color_from', $s->see_more_color_from ?? '#f97316')) }},
+            to: {{ Js::from(old('see_more_color_to', $s->see_more_color_to ?? '#ef4444')) }},
+            text: {{ Js::from(old('see_more_text_color', $s->see_more_text_color ?? '#ffffff')) }},
+         }">
+        <p class="text-sm font-semibold text-gray-800 mb-1">"See More" Button <span class="text-xs text-gray-400 font-normal">(reveals more products on this page)</span></p>
+
+        <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700 mb-1">Button Text</label>
+            <input type="text" name="see_more_label" x-model="label" maxlength="40" placeholder="See More"
+                class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500">
+            <p class="text-xs text-gray-400 mt-1">Leave blank to keep the default "See More".</p>
+        </div>
+
+        <label class="flex items-center gap-2 cursor-pointer mb-3">
+            <input type="checkbox" x-model="useCustomColor" class="rounded text-orange-600">
+            <span class="text-sm font-medium text-gray-700">Custom Button Color (RGB)</span>
+        </label>
+        <input type="hidden" name="see_more_color_enabled" :value="useCustomColor ? '1' : '0'">
+
+        <div x-show="useCustomColor" x-cloak class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+            <div>
+                <label class="block text-xs font-medium text-gray-700 mb-1">Gradient Start</label>
+                <div class="flex items-center gap-1.5">
+                    <input type="color" name="see_more_color_from" x-model="from" class="h-9 w-10 flex-shrink-0 rounded border cursor-pointer">
+                    <input type="text" x-model="from" class="w-0 flex-1 border rounded px-2 py-1.5 text-xs text-gray-600 font-mono bg-gray-50">
+                </div>
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-gray-700 mb-1">Gradient End</label>
+                <div class="flex items-center gap-1.5">
+                    <input type="color" name="see_more_color_to" x-model="to" class="h-9 w-10 flex-shrink-0 rounded border cursor-pointer">
+                    <input type="text" x-model="to" class="w-0 flex-1 border rounded px-2 py-1.5 text-xs text-gray-600 font-mono bg-gray-50">
+                </div>
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-gray-700 mb-1">Text Color</label>
+                <div class="flex items-center gap-1.5">
+                    <input type="color" name="see_more_text_color" x-model="text" class="h-9 w-10 flex-shrink-0 rounded border cursor-pointer">
+                    <input type="text" x-model="text" class="w-0 flex-1 border rounded px-2 py-1.5 text-xs text-gray-600 font-mono bg-gray-50">
+                </div>
+            </div>
+        </div>
+        <p class="text-xs text-gray-400 mb-3" x-show="!useCustomColor">Uses this section's Visual Style above (Light = orange-to-red gradient, Sale = white) unless you set a custom color here.</p>
+
+        <div class="bg-gray-50 border rounded-xl p-4 flex items-center gap-3">
+            <span class="text-xs text-gray-400 flex-shrink-0">Preview:</span>
+            <button type="button" tabindex="-1"
+                class="inline-flex items-center gap-2 px-6 py-2 rounded-full font-bold text-xs shadow-sm"
+                :style="useCustomColor ? { backgroundImage: `linear-gradient(to right, ${from}, ${to})`, color: text } : {}"
+                :class="!useCustomColor && 'bg-gradient-to-r from-orange-500 to-red-500 text-white'">
+                <span x-text="label || 'See More'"></span>
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
+            </button>
         </div>
     </div>
 

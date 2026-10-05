@@ -9,6 +9,7 @@ class HomeSection extends Model
     protected $fillable = [
         'title', 'subtitle', 'source_type', 'category_id', 'category_ids', 'product_limit', 'columns',
         'theme', 'view_all_query', 'view_all_label', 'is_active', 'sort_order',
+        'see_more_label', 'see_more_color_from', 'see_more_color_to', 'see_more_text_color',
     ];
 
     /**
@@ -154,5 +155,30 @@ class HomeSection extends Model
     public function getViewAllLabelText(): string
     {
         return $this->view_all_label ?: 'VIEW ALL';
+    }
+
+    /**
+     * Text for the big in-page "reveal more products" pill button (home.blade.php) — kept
+     * separate from getViewAllLabelText() above (the small header link to the full /shop
+     * listing) so the two don't have to read identically, since they do different things.
+     */
+    public function getSeeMoreLabelText(): string
+    {
+        return $this->see_more_label ?: 'See More';
+    }
+
+    /**
+     * The "reveal more" button's background — a CSS gradient string built from the admin's
+     * own two colors when both are set, otherwise null so the caller falls back to its
+     * existing hardcoded theme classes (bg-gradient-to-r from-orange-500 to-red-500, or the
+     * 'sale' theme's white/orange-text) and nothing changes for a section nobody's customized.
+     */
+    public function getSeeMoreBackgroundStyle(): ?string
+    {
+        if (!$this->see_more_color_from || !$this->see_more_color_to) {
+            return null;
+        }
+
+        return "background-image: linear-gradient(to right, {$this->see_more_color_from}, {$this->see_more_color_to});";
     }
 }
