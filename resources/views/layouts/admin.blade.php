@@ -195,7 +195,10 @@ $adminNavIndex = [
         <!-- Logo -->
         <div class="sb-header flex items-center justify-between px-6 py-5 border-b border-gray-100 dark:border-gray-700 flex-shrink-0">
             @php $logoUrl = setting_file_url('site_logo'); $iconUrl = setting_file_url('favicon') ?: $logoUrl; @endphp
-            <div class="sb-logo-full flex items-center space-x-3 min-w-0">
+            {{-- Both logo variants link back to the dashboard — previously plain <div>s with
+                 no href at all, so clicking the logo (the conventional "take me home" action
+                 in any admin panel) did nothing. --}}
+            <a href="{{ route('admin.dashboard') }}" class="sb-logo-full flex items-center space-x-3 min-w-0 hover:opacity-80 transition-opacity">
                 @if($logoUrl)
                 {{-- Logo only when one's set — the name/"Admin Panel" label was redundant
                      clutter next to an already-identifiable logo. --}}
@@ -209,10 +212,10 @@ $adminNavIndex = [
                     <div class="text-gray-500 dark:text-gray-400 text-xs">Admin Panel</div>
                 </div>
                 @endif
-            </div>
+            </a>
             {{-- Shown only in the collapsed icon rail (desktop) — a compact stand-in for the
                  wordmark above, which has no room once the sidebar is down to icon width. --}}
-            <div class="sb-logo-icon hidden">
+            <a href="{{ route('admin.dashboard') }}" class="sb-logo-icon hidden hover:opacity-80 transition-opacity">
                 @if($iconUrl)
                     <img src="{{ $iconUrl }}" alt="{{ setting('site_name','ShopVista') }}" class="w-8 h-8 object-contain rounded">
                 @else
@@ -220,7 +223,7 @@ $adminNavIndex = [
                         <span class="text-white font-bold">{{ strtoupper(substr(setting('site_name','S'),0,1)) }}</span>
                     </div>
                 @endif
-            </div>
+            </a>
             <button @click="$store.adminSidebar.open = false" class="lg:hidden text-gray-400 hover:text-gray-900 dark:hover:text-white">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
             </button>
