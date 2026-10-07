@@ -239,7 +239,7 @@
                             </svg>
                         </div>
                         <div class="min-w-0">
-                            <p class="font-bold text-gray-800 dark:text-gray-100 text-[10px] sm:text-xs leading-tight">{{ $f['text'] }}</p>
+                            <p class="font-bold text-gray-900 dark:text-gray-100 text-[10px] sm:text-xs leading-tight">{{ $f['text'] }}</p>
                             <p class="hidden sm:block text-gray-500 dark:text-gray-400 text-[10px] truncate">{{ $f['sub'] }}</p>
                         </div>
                     </a>
@@ -251,7 +251,7 @@
                             </svg>
                         </div>
                         <div class="min-w-0">
-                            <p class="font-bold text-gray-800 dark:text-gray-100 text-[10px] sm:text-xs leading-tight">{{ $f['text'] }}</p>
+                            <p class="font-bold text-gray-900 dark:text-gray-100 text-[10px] sm:text-xs leading-tight">{{ $f['text'] }}</p>
                             <p class="hidden sm:block text-gray-500 dark:text-gray-400 text-[10px] truncate">{{ $f['sub'] }}</p>
                         </div>
                     </div>
