@@ -375,13 +375,6 @@ $pageTwitterImage = trim($__env->yieldContent('twitter_image', $pageOgImage));
         .icon-float-4{animation-delay:.9s}
         @media (prefers-reduced-motion: reduce){ .icon-float{animation:none} }
 
-        /* One-time bounce-in for the floating WhatsApp/contact buttons on first paint —
-           "both" fill mode holds the 0%-state (invisible, scaled to nothing) until the
-           animation actually starts, so there's no flash of a full-size button first. */
-        @keyframes fabPopIn{0%{transform:scale(0);opacity:0}60%{transform:scale(1.15);opacity:1}100%{transform:scale(1)}}
-        .fab-pop-in{animation:fabPopIn .5s cubic-bezier(.34,1.56,.64,1) both}
-        @media (prefers-reduced-motion: reduce){ .fab-pop-in{animation:none} }
-
         /* Continuously-rotating gradient ring for the homepage "Shop by Category" circles
            — a conic-gradient spun via an animated custom property (not a `transform:
            rotate()` on the whole ring, which would spin the photo inside it too) so only
@@ -889,25 +882,36 @@ $navCategories = \App\Models\Category::with(['children' => fn($q) => $q->active(
         @php $primaryContact = $floatingContacts[array_key_first($floatingContacts)]; @endphp
         {{-- bottom-20 (not bottom-4) on mobile — partials.storefront.bottom-nav is a fixed
              full-width bar pinned to the very bottom on small screens (md:hidden), so
-             anything closer than that overlaps it. Desktop has no such bar. --}}
-        <div class="fixed left-3 md:left-4 bottom-20 md:bottom-6 z-40 flex flex-col gap-3"
+             anything closer than that overlaps it. Desktop has no such bar.
+
+             Redesigned from "every enabled channel floats on screen at once" to a single
+             trigger that expands into a speed-dial menu — with 3-4 channels on, a wall of
+             permanently-visible pinging circles reads as cluttered/spammy rather than
+             inviting. One bubble, click to reveal the rest, click again (or tap outside,
+             or Escape) to collapse. --}}
+        <div class="fixed left-3 md:left-4 bottom-20 md:bottom-6 z-40"
              x-data="{
+                open: false,
                 showTip: false,
                 init() {
                     try { if (sessionStorage.getItem('fabTipDismissed')) return; } catch (e) {}
-                    setTimeout(() => { this.showTip = true; }, 2500);
+                    setTimeout(() => { if (!this.open) this.showTip = true; }, 2500);
                 },
                 dismiss() {
                     this.showTip = false;
                     try { sessionStorage.setItem('fabTipDismissed', '1'); } catch (e) {}
                 },
-             }">
+                toggle() {
+                    this.open = !this.open;
+                    if (this.open) this.dismiss();
+                },
+             }"
+             @keydown.escape.window="open = false">
             {{-- A one-time greeting bubble (like a real chat widget's preview card) instead
                  of a bare icon that just sits there — appears once, a few seconds after
                  load, and remembers being dismissed for the rest of the browser session
-                 (sessionStorage) so it never nags on every page. Scoped to the first/
-                 highest-priority enabled channel only — a single clear invitation reads
-                 better than duplicating it per icon when several channels are on. --}}
+                 (sessionStorage) so it never nags on every page. Now invites opening the
+                 menu (not a direct link to one channel), since there may be several. --}}
             <div x-show="showTip" x-cloak
                  x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-2 scale-95" x-transition:enter-end="opacity-100 translate-y-0 scale-100"
                  x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100 scale-100" x-transition:leave-end="opacity-0 scale-95"
@@ -924,25 +928,60 @@ $navCategories = \App\Models\Category::with(['children' => fn($q) => $q->active(
                         <p class="text-[11px] text-gray-500 dark:text-gray-400 mt-1 leading-relaxed">👋 Hi there! Need help finding something? We're online — chat with us.</p>
                     </div>
                 </div>
-                <a href="{{ $primaryContact['url'] }}" target="_blank" rel="noopener" @click="dismiss()"
-                   class="mt-3 flex items-center justify-center gap-1.5 text-white text-xs font-bold py-2.5 rounded-xl transition hover:opacity-90 shadow-sm"
+                <button type="button" @click="toggle()"
+                   class="mt-3 w-full flex items-center justify-center gap-1.5 text-white text-xs font-bold py-2.5 rounded-xl transition hover:opacity-90 shadow-sm"
                    style="background-color: {{ $primaryContact['bg'] }}">
-                    {{ $primaryContact['label'] }}
-                </a>
+                    Chat with us
+                </button>
                 {{-- Little speech-bubble tail pointing down at the button — a plain
                      rotated square half-hidden behind the card's own bottom edge. --}}
                 <div class="absolute -bottom-1.5 left-4 w-3 h-3 bg-white dark:bg-gray-800 rotate-45 -z-10 ring-1 ring-black/5 dark:ring-white/10"></div>
             </div>
 
-            @foreach($floatingContacts as $i => $contact)
-                <a href="{{ $contact['url'] }}" target="_blank" rel="noopener" aria-label="{{ $contact['label'] }}" title="{{ $contact['label'] }}"
-                   @if($loop->first) @click="showTip = false" @endif
-                   class="fab-pop-in relative w-11 h-11 md:w-12 md:h-12 rounded-full text-white shadow-lg flex items-center justify-center hover:scale-110 transition-transform duration-200"
-                   style="background-color: {{ $contact['bg'] }}; animation-delay: {{ $i * 100 }}ms">
-                    <span class="absolute inset-0 rounded-full animate-ping opacity-75" style="background-color: {{ $contact['bg'] }}" aria-hidden="true"></span>
-                    <svg class="relative w-5 h-5 md:w-6 md:h-6" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">{!! $contact['icon'] !!}</svg>
-                </a>
-            @endforeach
+            {{-- Backdrop — tap outside the menu (mobile especially) collapses it, same
+                 convention as every other overlay in this app. --}}
+            <div x-show="open" x-cloak class="fixed inset-0 -z-10" @click="open = false" aria-hidden="true"></div>
+
+            {{-- Channel icons — fan upward from the trigger when open, each with its own
+                 brand color and a staggered pop/settle so several appearing at once reads
+                 as one deliberate motion rather than everything snapping in together. --}}
+            <div class="absolute bottom-full left-0 mb-3 flex flex-col-reverse gap-3">
+                @foreach($floatingContacts as $i => $contact)
+                    <a x-show="open" x-cloak href="{{ $contact['url'] }}" target="_blank" rel="noopener"
+                       aria-label="{{ $contact['label'] }}"
+                       x-transition:enter="transition ease-out duration-300"
+                       x-transition:enter-start="opacity-0 scale-50 translate-y-3"
+                       x-transition:enter-end="opacity-100 scale-100 translate-y-0"
+                       x-transition:leave="transition ease-in duration-150"
+                       x-transition:leave-start="opacity-100 scale-100"
+                       x-transition:leave-end="opacity-0 scale-50 translate-y-3"
+                       style="background-color: {{ $contact['bg'] }}; transition-delay: {{ $i * 40 }}ms"
+                       class="group relative w-11 h-11 md:w-12 md:h-12 rounded-full text-white shadow-lg flex items-center justify-center hover:scale-110 active:scale-95 tap-spring transition-transform">
+                        <svg class="w-5 h-5 md:w-6 md:h-6" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">{!! $contact['icon'] !!}</svg>
+                        {{-- Label flyout — desktop (hover) only; mobile has no hover, and the
+                             aria-label above already covers screen readers either way. --}}
+                        <span class="hidden md:block absolute left-full ml-3 top-1/2 -translate-y-1/2 whitespace-nowrap bg-gray-900 dark:bg-gray-700 text-white text-xs font-semibold px-2.5 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-150 shadow-lg">
+                            {{ $contact['label'] }}
+                        </span>
+                    </a>
+                @endforeach
+            </div>
+
+            {{-- Main trigger — a red "live chat" bubble (the universal color for this kind
+                 of widget) rather than any one channel's brand color, since it now
+                 represents all of them. The icon morphs chat-bubble <-> close, and on
+                 desktop hovering while closed grows it into a pill with a "Chat with us"
+                 label — a bit of extra presence desktop has the cursor/hover signal to
+                 support, which a touch screen doesn't. --}}
+            <button type="button" @click="toggle()" aria-label="Contact us" :aria-expanded="open.toString()"
+                    class="group relative h-12 md:h-14 rounded-full text-white shadow-xl flex items-center justify-center gap-2 bg-gradient-to-br from-red-500 to-rose-600 px-3 md:px-3.5 md:hover:px-5 w-12 md:w-14 md:hover:w-auto hover:shadow-2xl hover:-translate-y-0.5 active:scale-95 tap-spring transition-all duration-300">
+                <span x-show="!open" class="absolute inset-0 rounded-full bg-red-500 opacity-60 animate-ping" aria-hidden="true"></span>
+                <span class="relative flex-shrink-0">
+                    <svg x-show="!open" class="w-5 h-5 md:w-6 md:h-6" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16a2 2 0 012 2v10a2 2 0 01-2 2H8l-4 4V6a2 2 0 012-2z"/></svg>
+                    <svg x-show="open" x-cloak class="w-5 h-5 md:w-6 md:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
+                </span>
+                <span x-show="!open" class="relative hidden md:max-w-0 md:group-hover:max-w-xs md:group-hover:inline overflow-hidden whitespace-nowrap text-sm font-bold transition-all duration-300">Chat with us</span>
+            </button>
         </div>
     @endif
 @endif
