@@ -521,12 +521,14 @@ $navCategories = \App\Models\Category::with(['children' => fn($q) => $q->active(
 </div>
 @endif
 
-{{-- Announcement Bar — a pulsing dot + subtle sheen over whatever bg/text color the admin
-     picked (Settings -> Header), so a plain promo line reads as an attention-grabbing
-     banner rather than inert text, without touching the admin's own color choices. --}}
+{{-- Announcement Bar — a pulsing dot + continuous "flowing" motion (drift + glint, see
+     the <style> block above) over whatever bg/text color the admin picked (Settings ->
+     Header), so a plain promo line reads as a living, attention-grabbing banner rather
+     than inert text, without touching the admin's own color choices. --}}
 @if($announcementEnabled && $announcementText)
 <div style="background: {{ $announcementBg }}; color: {{ $announcementColor }};" class="relative overflow-hidden text-sm py-2 text-center font-semibold px-10" x-data="{ show: true }" x-show="show">
-    <div class="pointer-events-none absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0"></div>
+    <div class="pointer-events-none absolute inset-0 announcement-drift"></div>
+    <div class="pointer-events-none absolute inset-0 announcement-glint"></div>
     <span class="relative inline-flex items-center gap-2">
         <span class="relative flex h-2 w-2 flex-shrink-0">
             <span class="absolute inline-flex h-full w-full rounded-full opacity-75 animate-ping" style="background: {{ $announcementColor }};"></span>

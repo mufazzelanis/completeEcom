@@ -129,7 +129,8 @@
             </p>
             <div class="rounded-lg overflow-hidden ring-1 ring-gray-100 transition-opacity duration-300" :class="enabled ? 'opacity-100' : 'opacity-40'">
                 <div class="relative overflow-hidden text-sm py-2 text-center font-semibold px-10" :style="`background: ${bg}; color: ${color};`">
-                    <div class="pointer-events-none absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0"></div>
+                    <div class="pointer-events-none absolute inset-0 announcement-drift"></div>
+                    <div class="pointer-events-none absolute inset-0 announcement-glint"></div>
                     <span class="relative inline-flex items-center gap-2">
                         <span class="relative flex h-2 w-2 flex-shrink-0">
                             <span class="absolute inline-flex h-full w-full rounded-full opacity-75 animate-ping" :style="`background: ${color};`"></span>

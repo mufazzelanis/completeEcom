@@ -8,6 +8,35 @@
 .scrollbar-hide::-webkit-scrollbar { display: none; }
 .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
 
+/* Announcement Bar "flowing" motion (layouts/app.blade.php's real bar, and the matching
+   live preview in admin/settings/header.blade.php) — global, not either layout's own inline
+   <style>, since the admin preview needs the exact same animation the storefront uses so
+   what the admin sees really is what ships. Two layered animations instead of a flat
+   static sheen, so the bar reads as continuously alive rather than inert text. Both animate
+   background-position (in %), not transform — robust at any bar width, unlike a
+   transform-based band that has to be hand-tuned per element size.
+   1) announcement-drift: a soft diagonal stripe texture drifting slowly, the "water
+      surface" ambient layer.
+   2) announcement-glint: a brighter band sweeping fully across every ~3.6s, the
+      eye-catching highlight on top. Same admin-editable bg/text color (inline style)
+      still shows through underneath both — these only add motion, not a new color choice
+      the admin didn't pick. */
+@keyframes announcementDrift { to { background-position: -200px 0; } }
+.announcement-drift {
+    background-image: repeating-linear-gradient(-55deg, rgba(255,255,255,.16) 0 12px, rgba(255,255,255,0) 12px 34px);
+    background-size: 200px 100%;
+    animation: announcementDrift 5s linear infinite;
+}
+@keyframes announcementGlint { 0% { background-position: 160% 0; } 100% { background-position: -60% 0; } }
+.announcement-glint {
+    background-image: linear-gradient(100deg, transparent 0%, transparent 42%, rgba(255,255,255,.55) 50%, transparent 58%, transparent 100%);
+    background-size: 220% 100%;
+    animation: announcementGlint 3.6s cubic-bezier(.4,0,.2,1) infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+    .announcement-drift, .announcement-glint { animation: none; }
+}
+
 /*
  * ── Site-wide dark mode retrofit ─────────────────────────────────────────────
  * Dark mode (Tailwind's `darkMode: 'class'`, toggled via the theme switcher in
