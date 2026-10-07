@@ -879,7 +879,21 @@ $navCategories = \App\Models\Category::with(['children' => fn($q) => $q->active(
         ], fn ($c) => !empty($c['url']) && $c['enabled']);
     @endphp
     @if(!empty($floatingContacts))
-        @php $primaryContact = $floatingContacts[array_key_first($floatingContacts)]; @endphp
+        @php
+            $primaryContact = $floatingContacts[array_key_first($floatingContacts)];
+            // Main trigger's own text/color (Settings -> Social Media -> Main Trigger Button)
+            // — separate from any one channel's brand color since the bubble now represents
+            // all of them. Unset color stays null so the button keeps its literal
+            // from-red-500 to-rose-600 Tailwind classes below (pixel-identical default)
+            // rather than an inline style that merely happens to match them.
+            $fabLabel = setting('floating_widget_label', 'Chat with us');
+            $fabGreeting = setting('floating_widget_greeting', "👋 Hi there! Need help finding something? We're online — chat with us.");
+            $fabColorFrom = setting('floating_widget_color_from', '');
+            $fabColorTo = setting('floating_widget_color_to', '');
+            $fabGradientStyle = $fabColorFrom && $fabColorTo
+                ? "background-image: linear-gradient(to bottom right, {$fabColorFrom}, {$fabColorTo});"
+                : null;
+        @endphp
         {{-- bottom-20 (not bottom-4) on mobile — partials.storefront.bottom-nav is a fixed
              full-width bar pinned to the very bottom on small screens (md:hidden), so
              anything closer than that overlaps it. Desktop has no such bar.
@@ -925,13 +939,13 @@ $navCategories = \App\Models\Category::with(['children' => fn($q) => $q->active(
                     </span>
                     <div class="min-w-0 pt-0.5">
                         <p class="text-xs font-bold text-gray-900 dark:text-gray-100">{{ setting('site_name', 'ShopVista') }}</p>
-                        <p class="text-[11px] text-gray-500 dark:text-gray-400 mt-1 leading-relaxed">👋 Hi there! Need help finding something? We're online — chat with us.</p>
+                        <p class="text-[11px] text-gray-500 dark:text-gray-400 mt-1 leading-relaxed">{{ $fabGreeting }}</p>
                     </div>
                 </div>
                 <button type="button" @click="toggle()"
                    class="mt-3 w-full flex items-center justify-center gap-1.5 text-white text-xs font-bold py-2.5 rounded-xl transition hover:opacity-90 shadow-sm"
                    style="background-color: {{ $primaryContact['bg'] }}">
-                    Chat with us
+                    {{ $fabLabel }}
                 </button>
                 {{-- Little speech-bubble tail pointing down at the button — a plain
                      rotated square half-hidden behind the card's own bottom edge. --}}
@@ -974,13 +988,14 @@ $navCategories = \App\Models\Category::with(['children' => fn($q) => $q->active(
                  label — a bit of extra presence desktop has the cursor/hover signal to
                  support, which a touch screen doesn't. --}}
             <button type="button" @click="toggle()" aria-label="Contact us" :aria-expanded="open.toString()"
-                    class="group relative h-12 md:h-14 rounded-full text-white shadow-xl flex items-center justify-center gap-2 bg-gradient-to-br from-red-500 to-rose-600 px-3 md:px-3.5 md:hover:px-5 w-12 md:w-14 md:hover:w-auto hover:shadow-2xl hover:-translate-y-0.5 active:scale-95 tap-spring transition-all duration-300">
-                <span x-show="!open" class="absolute inset-0 rounded-full bg-red-500 opacity-60 animate-ping" aria-hidden="true"></span>
+                    @if($fabGradientStyle) style="{{ $fabGradientStyle }}" @endif
+                    class="group relative h-12 md:h-14 rounded-full text-white shadow-xl flex items-center justify-center gap-2 {{ $fabGradientStyle ? '' : 'bg-gradient-to-br from-red-500 to-rose-600' }} px-3 md:px-3.5 md:hover:px-5 w-12 md:w-14 md:hover:w-auto hover:shadow-2xl hover:-translate-y-0.5 active:scale-95 tap-spring transition-all duration-300">
+                <span x-show="!open" class="absolute inset-0 rounded-full opacity-60 animate-ping {{ $fabColorFrom ? '' : 'bg-red-500' }}" @if($fabColorFrom) style="background-color: {{ $fabColorFrom }};" @endif aria-hidden="true"></span>
                 <span class="relative flex-shrink-0">
                     <svg x-show="!open" class="w-5 h-5 md:w-6 md:h-6" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16a2 2 0 012 2v10a2 2 0 01-2 2H8l-4 4V6a2 2 0 012-2z"/></svg>
                     <svg x-show="open" x-cloak class="w-5 h-5 md:w-6 md:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
                 </span>
-                <span x-show="!open" class="relative hidden md:max-w-0 md:group-hover:max-w-xs md:group-hover:inline overflow-hidden whitespace-nowrap text-sm font-bold transition-all duration-300">Chat with us</span>
+                <span x-show="!open" class="relative hidden md:max-w-0 md:group-hover:max-w-xs md:group-hover:inline overflow-hidden whitespace-nowrap text-sm font-bold transition-all duration-300">{{ $fabLabel }}</span>
             </button>
         </div>
     @endif

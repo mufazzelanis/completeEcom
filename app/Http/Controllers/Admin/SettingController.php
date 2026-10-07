@@ -46,6 +46,15 @@ class SettingController extends Controller
         // banner, footer copyright line) — sanitize on write, same as Page::content.
         $rawHtmlKeys = ['announcement_text', 'copyright_text'];
 
+        // Floating contact widget color — a type="color" input can never submit "empty",
+        // so this explicit flag (same "Custom Button Color" toggle pattern as home
+        // sections' See More button) is what actually tells the server to clear a
+        // previously-saved custom color back to the widget's own default red, rather
+        // than keep whatever the still-submitted (but untouched) color inputs contain.
+        if ($group === 'social' && !$request->boolean('floating_widget_color_enabled')) {
+            $request->merge(['floating_widget_color_from' => null, 'floating_widget_color_to' => null]);
+        }
+
         // Save regular fields (skip Laravel internals, delete_ prefixed keys, and _hex companions)
         $skip = ['_token', '_method'];
         foreach ($request->except($skip) as $key => $value) {

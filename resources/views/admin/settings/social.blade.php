@@ -84,6 +84,68 @@
         </label>
         @endforeach
     </div>
+
+    {{-- Main trigger (layouts/app.blade.php) — the single red bubble all the channels
+         above fan out from. Its own color/text, separate from any one channel's brand
+         color since it represents all of them. --}}
+    <div class="border-t pt-4"
+         x-data="{
+            label: {{ Js::from(setting('floating_widget_label', 'Chat with us')) }},
+            greeting: {{ Js::from(setting('floating_widget_greeting', "👋 Hi there! Need help finding something? We're online — chat with us.")) }},
+            useCustomColor: {{ setting('floating_widget_color_from') ? 'true' : 'false' }},
+            from: {{ Js::from(setting('floating_widget_color_from', '#ef4444')) }},
+            to: {{ Js::from(setting('floating_widget_color_to', '#e11d48')) }},
+         }">
+        <p class="text-sm font-semibold text-gray-800 mb-3">Main Trigger Button</p>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Button Text <span class="text-xs text-gray-400 font-normal">(desktop hover label)</span></label>
+                <input type="text" name="floating_widget_label" x-model="label" maxlength="30" placeholder="Chat with us"
+                    class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-orange-500">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Greeting Message <span class="text-xs text-gray-400 font-normal">(one-time popup)</span></label>
+                <input type="text" name="floating_widget_greeting" x-model="greeting" maxlength="150"
+                    class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-orange-500">
+            </div>
+        </div>
+
+        <label class="flex items-center gap-2 cursor-pointer mb-3">
+            <input type="checkbox" x-model="useCustomColor" class="rounded text-orange-600">
+            <span class="text-sm font-medium text-gray-700">Custom Button Color (RGB)</span>
+        </label>
+        <input type="hidden" name="floating_widget_color_enabled" :value="useCustomColor ? '1' : '0'">
+
+        <div x-show="useCustomColor" x-cloak class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+            <div>
+                <label class="block text-xs font-medium text-gray-700 mb-1">Gradient Start</label>
+                <div class="flex items-center gap-1.5">
+                    <input type="color" name="floating_widget_color_from" x-model="from" class="h-9 w-10 flex-shrink-0 rounded border cursor-pointer">
+                    <input type="text" x-model="from" class="w-0 flex-1 border rounded px-2 py-1.5 text-xs text-gray-600 font-mono bg-gray-50">
+                </div>
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-gray-700 mb-1">Gradient End</label>
+                <div class="flex items-center gap-1.5">
+                    <input type="color" name="floating_widget_color_to" x-model="to" class="h-9 w-10 flex-shrink-0 rounded border cursor-pointer">
+                    <input type="text" x-model="to" class="w-0 flex-1 border rounded px-2 py-1.5 text-xs text-gray-600 font-mono bg-gray-50">
+                </div>
+            </div>
+        </div>
+        <p class="text-xs text-gray-400 mb-3" x-show="!useCustomColor">Uses the default red. Turn this on to pick your own.</p>
+
+        {{-- Live preview — same markup/shape as the real trigger button. --}}
+        <div class="bg-gray-50 border rounded-xl p-4 flex items-center gap-4">
+            <span class="text-xs text-gray-400 flex-shrink-0">Preview:</span>
+            <button type="button" tabindex="-1"
+                class="relative h-12 rounded-full text-white shadow-lg flex items-center justify-center gap-2 px-3.5"
+                :style="useCustomColor ? { backgroundImage: `linear-gradient(to bottom right, ${from}, ${to})` } : { backgroundImage: 'linear-gradient(to bottom right, #ef4444, #e11d48)' }">
+                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M4 4h16a2 2 0 012 2v10a2 2 0 01-2 2H8l-4 4V6a2 2 0 012-2z"/></svg>
+                <span class="text-sm font-bold" x-text="label"></span>
+            </button>
+        </div>
+    </div>
 </div>
 
 <div class="flex justify-end">
