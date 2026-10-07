@@ -152,6 +152,10 @@ $pageTwitterImage = trim($__env->yieldContent('twitter_image', $pageOgImage));
          full-screen under the store's own name/icon/color instead of inside browser chrome. --}}
     <link rel="manifest" href="{{ route('manifest') }}">
     <meta name="theme-color" content="{{ $primaryColor }}">
+    {{-- Standards-based tag (Chrome/Edge/etc.) alongside the Apple-prefixed ones — Safari/iOS
+         still only recognizes the apple- versions (Apple hasn't adopted the standard name), so
+         both are needed; Chrome DevTools flags the apple- one alone as deprecated without this. --}}
+    <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="{{ $siteName }}">

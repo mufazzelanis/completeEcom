@@ -15,6 +15,10 @@
          the dashboard, not the shop itself — see App\Http\Controllers\ManifestController. --}}
     <link rel="manifest" href="{{ route('admin.manifest') }}">
     <meta name="theme-color" content="{{ setting('primary_color', '#ea580c') }}">
+    {{-- Standards-based tag (Chrome/Edge/etc.) alongside the Apple-prefixed ones — Safari/iOS
+         still only recognizes the apple- versions (Apple hasn't adopted the standard name), so
+         both are needed; Chrome DevTools flags the apple- one alone as deprecated without this. --}}
+    <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="{{ setting('site_name', 'ShopVista') }} Admin">
