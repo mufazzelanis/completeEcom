@@ -587,6 +587,7 @@ $navCategories = \App\Models\Category::with(['children' => fn($q) => $q->active(
                      would drift as the trigger's own position changes. 256 below is w-64 in px
                      (the panel's own fixed width) — clamping against it keeps a category near
                      the right edge (e.g. "Rare Collections") from rendering partly off screen. --}}
+                @php $isActiveCat = request()->is('shop/category/'.$navCat->slug); @endphp
                 <div class="relative flex-shrink-0" x-data="{ open: false, top: 0, left: 0 }">
                     <a href="{{ route('shop.category', $navCat->slug) }}"
                        @mouseenter="
@@ -596,11 +597,19 @@ $navCategories = \App\Models\Category::with(['children' => fn($q) => $q->active(
                             left = Math.max(12, Math.min(r.left, window.innerWidth - 256 - 12));
                        "
                        @mouseleave="open = false"
-                       class="inline-flex items-center gap-1 text-sm text-white whitespace-nowrap hover:bg-orange-800 px-3 py-2.5 transition font-medium">
-                        {{ $navCat->name }}
+                       class="group relative inline-flex items-center gap-1 text-sm text-white whitespace-nowrap px-3 py-2.5 font-medium active:scale-95 tap-spring">
+                        {{-- Animated hover pill — scales in behind the label from nothing rather
+                             than an abrupt flat background swap, and stays lightly on for
+                             whichever category page is currently open ("you are here"). --}}
+                        <span class="absolute inset-x-1 inset-y-1 rounded-lg bg-white/15 transition-transform duration-200 ease-out {{ $isActiveCat ? 'scale-100' : 'scale-0 group-hover:scale-100' }}"></span>
+                        <span class="relative group-hover:-translate-y-0.5 transition-transform duration-200 ease-out">{{ $navCat->name }}</span>
                         @if($navCat->children->count() > 0)
-                            <svg class="w-3 h-3 opacity-75 transition-transform duration-200" :class="open ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
+                            <svg class="relative w-3 h-3 opacity-75 transition-transform duration-200" :class="open ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
                         @endif
+                        {{-- Underline sweep — grows from the center on hover (or stays grown
+                             for the active category), a second "this is clickable" signal
+                             beyond the pill alone. --}}
+                        <span class="absolute left-1/2 bottom-1 h-0.5 bg-white rounded-full -translate-x-1/2 transition-all duration-300 ease-out {{ $isActiveCat ? 'w-5' : 'w-0 group-hover:w-5' }}"></span>
                     </a>
                     @if($navCat->children->count() > 0)
                     <template x-teleport="body">
@@ -658,14 +667,20 @@ $navCategories = \App\Models\Category::with(['children' => fn($q) => $q->active(
                  out from the plain category links next to it and actually draws a click,
                  rather than reading as just another menu entry. --}}
             <a href="{{ setting('nav_blog_url') ?: route('blog.index') }}"
-               class="relative inline-flex items-center gap-2 text-sm text-white whitespace-nowrap hover:bg-orange-800 px-3 py-2.5 font-semibold transition flex-shrink-0">
+               class="group relative inline-flex items-center gap-2 text-sm text-white whitespace-nowrap px-3 py-2.5 font-semibold flex-shrink-0 active:scale-95 tap-spring">
+                <span class="absolute inset-x-1 inset-y-1 rounded-lg bg-white/15 scale-0 group-hover:scale-100 transition-transform duration-200 ease-out"></span>
                 <span class="relative flex h-2 w-2">
                     <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
                     <span class="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
                 </span>
-                {{ t('header.blog', 'Blogs', [], 'header') }}
+                <span class="relative group-hover:-translate-y-0.5 transition-transform duration-200 ease-out">{{ t('header.blog', 'Blogs', [], 'header') }}</span>
+                <span class="absolute left-1/2 bottom-1 h-0.5 bg-white rounded-full w-0 -translate-x-1/2 group-hover:w-5 transition-all duration-300 ease-out"></span>
             </a>
-            <a href="{{ route('shop.index') }}" class="inline-flex items-center text-sm text-white whitespace-nowrap hover:text-white px-3 py-2.5 ml-auto font-medium transition">{{ t('header.all_products', 'All Products', [], 'header') }} →</a>
+            <a href="{{ route('shop.index') }}" class="group relative inline-flex items-center gap-1.5 text-sm text-white whitespace-nowrap px-3 py-2.5 ml-auto font-medium active:scale-95 tap-spring">
+                <span class="absolute inset-x-1 inset-y-1 rounded-lg bg-white/15 scale-0 group-hover:scale-100 transition-transform duration-200 ease-out"></span>
+                <span class="relative group-hover:-translate-y-0.5 transition-transform duration-200 ease-out">{{ t('header.all_products', 'All Products', [], 'header') }}</span>
+                <svg class="relative w-3.5 h-3.5 transition-transform duration-200 group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+            </a>
         </div>
     </div>
     @endif
