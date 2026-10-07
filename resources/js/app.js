@@ -31,6 +31,15 @@ Alpine.store('theme', {
 // Harmless on non-admin pages, where nothing reads it.
 Alpine.store('adminSidebar', { open: false });
 
+// Drives the mobile dynamic search bar (layouts/app.blade.php, right under the header) —
+// global rather than a page-scoped x-init's own `window.addEventListener('scroll', ...)`
+// on purpose: Turbo swaps <body> on every navigation, which tears down that page's Alpine
+// component but does NOT remove a listener it registered directly on `window` — each
+// navigation would leave one more stale listener behind, a leak that grows for as long as
+// the tab stays open. Registered once here (module scripts never re-run under Turbo), with
+// a single shared scroll listener below, exactly like the theme/adminSidebar stores above.
+Alpine.store('mobileSearchBar', { visible: false });
+
 Alpine.start();
 
 // ── Turbo Drive compatibility shims ──────────────────────────────────────────
@@ -72,4 +81,22 @@ document.addEventListener('turbo:load', () => {
 //    it stuck open on the page that loads next, since nothing else resets it.
 document.addEventListener('turbo:load', () => {
     Alpine.store('adminSidebar').open = false;
+});
+
+// 4. One scroll listener for the whole Turbo session (see the store above) rather than
+//    one per page. Resets to hidden on every navigation — scrollY often starts back at 0
+//    on a fresh page anyway, but a same-page Turbo visit (e.g. a filter link) can land
+//    with the browser preserving scroll position, and the bar popping in already-visible
+//    before the customer has scrolled this page at all would look like a glitch.
+let mobileSearchBarTicking = false;
+window.addEventListener('scroll', () => {
+    if (mobileSearchBarTicking) return;
+    mobileSearchBarTicking = true;
+    requestAnimationFrame(() => {
+        Alpine.store('mobileSearchBar').visible = window.scrollY > 220;
+        mobileSearchBarTicking = false;
+    });
+}, { passive: true });
+document.addEventListener('turbo:load', () => {
+    Alpine.store('mobileSearchBar').visible = false;
 });

@@ -687,6 +687,8 @@ $navCategories = \App\Models\Category::with(['children' => fn($q) => $q->active(
 
 </header>
 
+@include('partials.storefront.mobile-scroll-search')
+
 {{-- Backdrop — dims and blocks the page behind the drawer; tapping it closes
      the drawer, same as the X button or Escape. --}}
 <div x-show="mobileOpen" x-cloak x-transition.opacity class="md:hidden fixed inset-0 bg-black/50 z-[45]" @click="mobileOpen = false" aria-hidden="true"></div>
