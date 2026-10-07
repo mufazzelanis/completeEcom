@@ -724,6 +724,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
         Route::get('settings/{group}', [AdminSettingController::class, 'show'])->name('settings.show');
         Route::patch('settings/{group}', [AdminSettingController::class, 'update'])->name('settings.update');
         Route::post('settings/test-email', [AdminSettingController::class, 'testEmail'])->name('settings.test-email');
+        Route::post('settings/test-telegram', [AdminSettingController::class, 'testTelegram'])->name('settings.test-telegram');
     });
 
 });

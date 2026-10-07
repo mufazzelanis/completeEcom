@@ -10,6 +10,7 @@ use App\Observers\CrmOrderObserver;
 use App\Observers\CrmUserObserver;
 use App\Observers\OrderAlertObserver;
 use App\Observers\OrderObserver;
+use App\Observers\TelegramOrderObserver;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Auth\Events\Logout;
 use Illuminate\Cache\RateLimiting\Limit;
@@ -46,6 +47,7 @@ class AppServiceProvider extends ServiceProvider
 
         Order::observe(OrderObserver::class);
         Order::observe(OrderAlertObserver::class);
+        Order::observe(TelegramOrderObserver::class);
         Order::observe(CrmOrderObserver::class);
         User::observe(CrmUserObserver::class);
 

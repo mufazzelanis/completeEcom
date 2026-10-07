@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\NotificationLog;
 use App\Models\Setting;
+use App\Services\Telegram\TelegramNotifier;
 use App\Support\ImageOptimizer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -116,5 +118,24 @@ class SettingController extends Controller
         } catch (\Throwable $e) {
             return back()->with('error', 'Failed: ' . $e->getMessage());
         }
+    }
+
+    public function testTelegram()
+    {
+        if (!TelegramNotifier::isEnabled()) {
+            return back()->with('error', 'Fill in the Bot Token and Chat ID and save settings first, then try again.');
+        }
+
+        TelegramNotifier::send(
+            '✅ <b>Test message</b> — Telegram notifications are set up correctly for ' . e(setting('site_name', config('app.name'))) . '.',
+            'test'
+        );
+
+        $log = NotificationLog::where('channel', 'telegram')->latest('id')->first();
+        if ($log && $log->status === 'failed') {
+            return back()->with('error', 'Telegram rejected the message: ' . $log->error);
+        }
+
+        return back()->with('success', 'Test message sent — check your Telegram chat.');
     }
 }
