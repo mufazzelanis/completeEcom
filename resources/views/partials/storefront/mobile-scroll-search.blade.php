@@ -5,8 +5,17 @@
      menu drawer just to search. Visibility is driven by the global Alpine.store
      ('mobileSearchBar') (resources/js/app.js) — one window-level scroll listener shared
      across the whole Turbo session, not a fresh one per page (see that store's own comment
-     for why a page-scoped listener would leak under Turbo). --}}
-<div class="md:hidden sticky top-0 z-30" x-data="{
+     for why a page-scoped listener would leak under Turbo).
+
+     `top` is conditional, not a flat 0 — when the header above is itself sticky
+     ($stickyHeader), this bar needs to pin BELOW it (var(--header-height), kept in sync by
+     a ResizeObserver in app.js) rather than at the same top:0 offset: two sibling sticky
+     elements both at top:0 don't auto-stack, they occupy the exact same spot, and <header>'s
+     higher z-index (z-50 vs this bar's z-30) was winning there, hiding this bar completely
+     regardless of its own visible/hidden state. When the header ISN'T sticky it scrolls
+     away entirely, so this bar correctly becomes the topmost sticky element at top:0 once
+     reached — no offset needed in that case. --}}
+<div class="md:hidden sticky z-30" style="top: {{ $stickyHeader ? 'var(--header-height, 56px)' : '0px' }};" x-data="{
         query: '',
         results: { products: [], categories: [] },
         open: false,

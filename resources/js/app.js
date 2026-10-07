@@ -100,3 +100,26 @@ window.addEventListener('scroll', () => {
 document.addEventListener('turbo:load', () => {
     Alpine.store('mobileSearchBar').visible = false;
 });
+
+// 5. The mobile search bar (layouts/app.blade.php) is `position: sticky; top: var(--header-
+//    height)` so it pins directly below <header> instead of underneath it — two sibling
+//    sticky elements both sitting at `top: 0` don't auto-stack, they just occupy the exact
+//    same spot, and since <header> has the higher z-index it was silently winning there,
+//    hiding the bar completely even once its `visible` store flag was true. <header>'s own
+//    height isn't a fixed number (announcement bar/top bar toggle independently, fonts and
+//    admin-configured padding vary it further), so it's measured and kept in sync via
+//    ResizeObserver rather than hard-coded. Re-targeted on every turbo:load (not just once)
+//    because Turbo replaces <body> wholesale on navigation — an observer left watching the
+//    old (now-detached) <header> node would silently stop updating after the first visit.
+let headerResizeObserver = null;
+function observeHeaderHeight() {
+    const headerEl = document.querySelector('header');
+    if (!headerEl || !('ResizeObserver' in window)) return;
+    headerResizeObserver?.disconnect();
+    headerResizeObserver = new ResizeObserver(() => {
+        document.documentElement.style.setProperty('--header-height', `${headerEl.offsetHeight}px`);
+    });
+    headerResizeObserver.observe(headerEl);
+}
+observeHeaderHeight();
+document.addEventListener('turbo:load', observeHeaderHeight);
