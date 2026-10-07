@@ -65,4 +65,8 @@ return Application::configure(basePath: dirname(__DIR__))
         // the hourly pass just fires reminders for tasks that have come due.
         $schedule->command('crm:refresh')->dailyAt('01:00');
         $schedule->command('crm:refresh', ['--reminders' => true])->hourly();
+
+        // Keeps the homepage personalized section's source tables (product_views,
+        // search_queries) from growing forever — see the command's own docblock.
+        $schedule->command('personalization:prune')->dailyAt('02:00');
     })->create();

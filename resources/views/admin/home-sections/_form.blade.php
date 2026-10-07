@@ -49,13 +49,21 @@
                     'new_arrivals' => 'New Arrivals (newest first)',
                     'on_sale'      => 'On Sale (has a sale price)',
                     'category'     => 'Specific Category (latest from one category)',
+                    'personalized' => 'Personalized (For You) — different per visitor',
                 ] as $val => $label)
                 <option value="{{ $val }}" {{ old('source_type', $s->source_type ?? 'featured') === $val ? 'selected' : '' }}>{{ $label }}</option>
                 @endforeach
             </select>
+            <p class="text-xs text-gray-400 mt-1" x-show="sourceType === 'personalized'" x-cloak>
+                Mixes each visitor's own recent searches/viewed products with generally popular
+                items, so no two people necessarily see the same grid — a first-time visitor
+                with no history yet still gets a full, lively feed from the popular-items side.
+                No title/badge is shown for this section on the storefront; it just reads as
+                more products. The Title below is only for your own reference in this list.
+            </p>
         </div>
 
-        <div class="mt-5">
+        <div class="mt-5" x-show="sourceType !== 'personalized'" x-cloak>
             <label class="block text-sm font-medium text-gray-700 mb-1">
                 Limit to Categories
                 <span class="text-xs text-gray-400 font-normal" x-show="sourceType === 'category'">(required for "Specific Category")</span>

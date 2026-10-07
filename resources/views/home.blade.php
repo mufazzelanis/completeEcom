@@ -406,8 +406,14 @@
         <div class="pointer-events-none absolute -top-16 -right-16 w-48 h-48 bg-orange-500/5 dark:bg-orange-500/10 blur-3xl rounded-full"></div>
         @endif
         <div class="relative max-w-[1200px] mx-auto px-4 py-6">
+            {{-- Personalized sections show no title/badge/"View All" at all — by design
+                 (Admin > Home Sections > Product Source > Personalized), so it reads as
+                 just more products rather than a labeled "recommended for you" block. The
+                 Title field still exists for the admin's own reference in the section list. --}}
+            @unless($sec->source_type === 'personalized')
             <x-storefront.section-header :title="$sec->title" :subtitle="$sec->subtitle" :view-all-url="$sec->getViewAllUrl()"
                 :view-all-label="$sec->getViewAllLabelText()" :theme="$sec->theme === 'sale' ? 'sale' : 'default'" :count="$totalCount" />
+            @endunless
             {{-- Back to the familiar grid + "View More" button (swiping felt less natural
                  here than it did for Categories) — but newly-revealed cards now fade/slide
                  in instead of just popping into existence, which they never did before. --}}

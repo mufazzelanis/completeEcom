@@ -111,6 +111,10 @@ class HomeSection extends Model
      */
     public function getProducts()
     {
+        if ($this->source_type === 'personalized') {
+            return $this->personalizedProducts ??= $this->buildPersonalizedProducts();
+        }
+
         return $this->baseQuery()->take(self::MAX_FETCH)->get();
     }
 
@@ -121,7 +125,114 @@ class HomeSection extends Model
      */
     public function getTotalAvailableCount(): int
     {
+        if ($this->source_type === 'personalized') {
+            // "Total" doesn't mean quite the same thing here — there's no single fixed
+            // filter, just however many products buildPersonalizedProducts() could fill
+            // the feed with (personalized matches + general fallback). Reusing the
+            // already-built list (memoized on the instance) both answers "is there enough
+            // to bother with See More" correctly AND avoids computing the whole thing twice
+            // in the same request (home.blade.php calls both this and getProducts()).
+            return $this->getProducts()->count();
+        }
+
         return $this->baseQuery()->count();
+    }
+
+    /**
+     * Not persisted — getProducts()/getTotalAvailableCount() both need the same computed
+     * personalized list within one request (building it involves several queries), so it's
+     * built once and reused rather than recomputed per call.
+     */
+    private $personalizedProducts = null;
+
+    /**
+     * The homepage "for you" feed (Admin > Home Sections > Product Source > "Personalized
+     * (For You)"). Deliberately a MIX, not a purely personalized list: a brand-new guest
+     * with no search/view history yet would otherwise see an empty or near-empty section,
+     * and even for a returning visitor, filling the whole grid with only their own narrow
+     * interests reads as a filter bubble rather than "more to discover." Two signals, each
+     * re-matched against the CURRENT catalog (not resolved once and cached, which could
+     * point at products that are since out of stock/deleted):
+     *   1. Categories of this visitor's recently viewed products (ProductView).
+     *   2. Their recent search terms, re-run as a live name/description match (SearchQuery).
+     * Whatever's left after that (always true for a first-time guest, often true even for
+     * a returning one) is filled with generally popular products, and the combined list is
+     * shuffled once so it reads as a single blended feed rather than "personalized block,
+     * then generic block" — no visible seam between the two.
+     */
+    private function buildPersonalizedProducts()
+    {
+        $userId = auth()->id();
+        $sessionId = session()->getId();
+
+        $viewedQuery = ProductView::query()->orderByDesc('viewed_at')->limit(30)
+            ->with('product:id,category_id,subcategory_id');
+        $userId ? $viewedQuery->where('user_id', $userId) : $viewedQuery->where('session_id', $sessionId);
+        $viewed = $viewedQuery->get()->filter(fn ($v) => $v->product);
+
+        $viewedProductIds = $viewed->pluck('product_id');
+        $interestedCategoryIds = $viewed->pluck('product.category_id')
+            ->merge($viewed->pluck('product.subcategory_id'))
+            ->filter()
+            ->unique()
+            ->values();
+
+        $searchQuery = SearchQuery::query()->orderByDesc('searched_at')->limit(10);
+        $userId ? $searchQuery->where('user_id', $userId) : $searchQuery->where('session_id', $sessionId);
+        $terms = $searchQuery->pluck('query');
+
+        $personalizedIds = collect();
+
+        if ($interestedCategoryIds->isNotEmpty()) {
+            $personalizedIds = $personalizedIds->merge(
+                Product::active()
+                    ->where(fn ($q) => $q
+                        ->whereIn('category_id', $interestedCategoryIds)
+                        ->orWhereIn('subcategory_id', $interestedCategoryIds))
+                    ->whereNotIn('id', $viewedProductIds)
+                    ->inRandomOrder()
+                    ->limit(self::MAX_FETCH)
+                    ->pluck('id')
+            );
+        }
+
+        foreach ($terms as $term) {
+            $personalizedIds = $personalizedIds->merge(
+                Product::active()
+                    ->where(fn ($q) => $q->where('name', 'like', "%{$term}%")->orWhere('short_description', 'like', "%{$term}%"))
+                    ->whereNotIn('id', $viewedProductIds)
+                    ->limit(10)
+                    ->pluck('id')
+            );
+        }
+
+        $personalizedIds = $personalizedIds->unique()->values();
+
+        // Fill the rest with generally popular products — always runs for a first-time
+        // guest (both signals above are empty), and tops up a returning visitor's feed
+        // whenever their own history doesn't fill the whole batch on its own.
+        $remaining = self::MAX_FETCH - $personalizedIds->count();
+        $fallbackIds = collect();
+        if ($remaining > 0) {
+            $fallbackIds = Product::active()
+                ->whereNotIn('id', $personalizedIds)
+                // Also excluded here, not just from the two personalized queries above —
+                // otherwise a product this visitor already looked at can slip back in
+                // through the popularity fallback once it's no longer in $personalizedIds,
+                // showing them the exact item they just viewed again instead of something
+                // new to discover.
+                ->whereNotIn('id', $viewedProductIds)
+                ->orderByDesc('views')
+                ->limit($remaining)
+                ->pluck('id');
+        }
+
+        $allIds = $personalizedIds->merge($fallbackIds)->unique()->take(self::MAX_FETCH);
+
+        return Product::with('category', 'brand', 'reviews', 'activeFlashSaleProduct')
+            ->whereIn('id', $allIds)
+            ->get()
+            ->shuffle();
     }
 
     /**
@@ -133,6 +244,12 @@ class HomeSection extends Model
     {
         if ($this->view_all_query) {
             return route('shop.index') . '?' . $this->view_all_query;
+        }
+
+        // No single filter to replicate for a personalized mix — plain /shop (everything)
+        // is the only honest destination.
+        if ($this->source_type === 'personalized') {
+            return route('shop.index');
         }
 
         $params = match ($this->source_type) {

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Brand;
 use App\Models\Category;
 use App\Models\Product;
+use App\Models\SearchQuery;
 use App\Models\Tag;
 use Illuminate\Http\Request;
 
@@ -24,6 +25,10 @@ class ShopController extends Controller
                 ->orWhere('sku', 'like', "%$s%")
                 ->orWhere('short_description', 'like', "%$s%")
             );
+            // An actually-submitted search (landed here), not every autosuggest keystroke —
+            // see SearchQuery::record()'s own docblock. Feeds the homepage personalized
+            // section (HomeSection::getPersonalizedProducts()).
+            SearchQuery::record($s, auth()->id(), session()->getId());
         }
 
         if ($request->filled('category')) {

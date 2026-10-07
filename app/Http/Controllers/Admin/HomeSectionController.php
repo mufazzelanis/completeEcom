@@ -113,7 +113,7 @@ class HomeSectionController extends Controller
         $data = $request->validate([
             'title'            => 'required|string|max:100',
             'subtitle'         => 'nullable|string|max:150',
-            'source_type'      => 'required|in:featured,top_selling,new_arrivals,on_sale,category',
+            'source_type'      => 'required|in:featured,top_selling,new_arrivals,on_sale,category,personalized',
             'category_ids'     => 'nullable|array|required_if:source_type,category',
             'category_ids.*'   => 'integer|exists:categories,id',
             'product_limit'    => 'required|integer|min:2|max:32',

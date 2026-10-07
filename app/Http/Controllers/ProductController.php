@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Product;
+use App\Models\ProductView;
 use App\Models\Review;
 use App\Services\ActivityLogger;
 use App\Services\Facebook\ConversionsApi;
@@ -24,6 +25,11 @@ class ProductController extends Controller
 
         $product->increment('views');
         ActivityLogger::log('product.view', "Viewed product: {$product->name}", $product);
+        // Per-visitor history behind the homepage personalized section
+        // (HomeSection::getPersonalizedProducts()) — separate from the two lines above,
+        // which are a site-wide counter and an admin audit log respectively, neither of
+        // which can answer "what has THIS visitor looked at."
+        ProductView::record($product->id, auth()->id(), session()->getId());
         $product->load([
             'category', 'brand', 'images', 'reviews.user', 'faqs', 'activeFlashSaleProduct',
             'crossSells.recommended.activeFlashSaleProduct',
