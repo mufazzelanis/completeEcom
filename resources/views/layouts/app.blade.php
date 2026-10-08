@@ -225,45 +225,45 @@ $pageTwitterImage = trim($__env->yieldContent('twitter_image', $pageOgImage));
          Accent→red (each admin field's own default hex is that exact Tailwind shade), and
          Text→gray-800 (the default body/heading text color). --}}
     <style>
-        @if($brandShades)
-        @foreach($brandShades as $step => $hex)
-        .bg-orange-{{ $step }} { background-color: {{ $hex }} !important; }
-        .text-orange-{{ $step }} { color: {{ $hex }} !important; }
-        .border-orange-{{ $step }} { border-color: {{ $hex }} !important; }
-        .ring-orange-{{ $step }} { --tw-ring-color: {{ $hex }} !important; }
-        .hover\:bg-orange-{{ $step }}:hover { background-color: {{ $hex }} !important; }
-        .hover\:text-orange-{{ $step }}:hover { color: {{ $hex }} !important; }
-        .hover\:border-orange-{{ $step }}:hover { border-color: {{ $hex }} !important; }
-        .focus\:ring-orange-{{ $step }}:focus { --tw-ring-color: {{ $hex }} !important; }
-        .focus\:border-orange-{{ $step }}:focus { border-color: {{ $hex }} !important; }
+        {{-- Pale steps (bg/border 50–300) and deep text steps (700–900) are tuned for white
+             cards, so they're light-mode only here; dark mode gets the same treatment app.css
+             gives every other hue — a translucent wash of the brand's 500 and its light text
+             shades — or the selected checkout card etc. stays a glaring light patch. --}}
+        @foreach(['orange' => $brandShades, 'pink' => $secondaryShades, 'red' => $accentShades] as $hue => $shades)
+        @if($shades)
+        @php
+            $rgb500 = implode(' ', array_map('hexdec', str_split(ltrim($shades['500'], '#'), 2)));
+            $darkBg = ['50' => "rgb($rgb500 / 12%)", '100' => "rgb($rgb500 / 18%)", '200' => "rgb($rgb500 / 28%)"];
+            $darkBorder = ['100' => "rgb($rgb500 / 20%)", '200' => "rgb($rgb500 / 30%)", '300' => "rgb($rgb500 / 45%)"];
+            $darkText = ['700' => $shades['300'], '800' => $shades['200'], '900' => $shades['100']];
+        @endphp
+        @foreach($shades as $step => $hex)
+        @php
+            $bgScope = isset($darkBg[$step]) ? 'html:not(.dark) ' : '';
+            $textScope = isset($darkText[$step]) ? 'html:not(.dark) ' : '';
+            $borderScope = isset($darkBorder[$step]) ? 'html:not(.dark) ' : '';
+        @endphp
+        {{ $bgScope }}.bg-{{ $hue }}-{{ $step }} { background-color: {{ $hex }} !important; }
+        {{ $textScope }}.text-{{ $hue }}-{{ $step }} { color: {{ $hex }} !important; }
+        {{ $borderScope }}.border-{{ $hue }}-{{ $step }} { border-color: {{ $hex }} !important; }
+        .ring-{{ $hue }}-{{ $step }} { --tw-ring-color: {{ $hex }} !important; }
+        {{ $bgScope }}.hover\:bg-{{ $hue }}-{{ $step }}:hover { background-color: {{ $hex }} !important; }
+        {{ $textScope }}.hover\:text-{{ $hue }}-{{ $step }}:hover { color: {{ $hex }} !important; }
+        {{ $borderScope }}.hover\:border-{{ $hue }}-{{ $step }}:hover { border-color: {{ $hex }} !important; }
+        .focus\:ring-{{ $hue }}-{{ $step }}:focus { --tw-ring-color: {{ $hex }} !important; }
+        {{ $borderScope }}.focus\:border-{{ $hue }}-{{ $step }}:focus { border-color: {{ $hex }} !important; }
+        @endforeach
+        @foreach($darkBg as $step => $val)
+        html.dark .bg-{{ $hue }}-{{ $step }}, html.dark .hover\:bg-{{ $hue }}-{{ $step }}:hover { background-color: {{ $val }} !important; }
+        @endforeach
+        @foreach($darkText as $step => $val)
+        html.dark .text-{{ $hue }}-{{ $step }}, html.dark .hover\:text-{{ $hue }}-{{ $step }}:hover { color: {{ $val }} !important; }
+        @endforeach
+        @foreach($darkBorder as $step => $val)
+        html.dark .border-{{ $hue }}-{{ $step }}, html.dark .hover\:border-{{ $hue }}-{{ $step }}:hover { border-color: {{ $val }} !important; }
         @endforeach
         @endif
-        @if($secondaryShades)
-        @foreach($secondaryShades as $step => $hex)
-        .bg-pink-{{ $step }} { background-color: {{ $hex }} !important; }
-        .text-pink-{{ $step }} { color: {{ $hex }} !important; }
-        .border-pink-{{ $step }} { border-color: {{ $hex }} !important; }
-        .ring-pink-{{ $step }} { --tw-ring-color: {{ $hex }} !important; }
-        .hover\:bg-pink-{{ $step }}:hover { background-color: {{ $hex }} !important; }
-        .hover\:text-pink-{{ $step }}:hover { color: {{ $hex }} !important; }
-        .hover\:border-pink-{{ $step }}:hover { border-color: {{ $hex }} !important; }
-        .focus\:ring-pink-{{ $step }}:focus { --tw-ring-color: {{ $hex }} !important; }
-        .focus\:border-pink-{{ $step }}:focus { border-color: {{ $hex }} !important; }
         @endforeach
-        @endif
-        @if($accentShades)
-        @foreach($accentShades as $step => $hex)
-        .bg-red-{{ $step }} { background-color: {{ $hex }} !important; }
-        .text-red-{{ $step }} { color: {{ $hex }} !important; }
-        .border-red-{{ $step }} { border-color: {{ $hex }} !important; }
-        .ring-red-{{ $step }} { --tw-ring-color: {{ $hex }} !important; }
-        .hover\:bg-red-{{ $step }}:hover { background-color: {{ $hex }} !important; }
-        .hover\:text-red-{{ $step }}:hover { color: {{ $hex }} !important; }
-        .hover\:border-red-{{ $step }}:hover { border-color: {{ $hex }} !important; }
-        .focus\:ring-red-{{ $step }}:focus { --tw-ring-color: {{ $hex }} !important; }
-        .focus\:border-red-{{ $step }}:focus { border-color: {{ $hex }} !important; }
-        @endforeach
-        @endif
         @if($textColorChanged)
         {{-- Light mode only: a dark text color chosen for white cards would vanish on the
              dark-mode surfaces, which keep app.css's own light-gray text instead. --}}
