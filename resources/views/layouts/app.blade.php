@@ -398,17 +398,21 @@ $pageTwitterImage = trim($__env->yieldContent('twitter_image', $pageOgImage));
            the colored border itself appears to revolve. @property is what makes the angle
            animatable/interpolated at all; browsers without it (very old Safari/Firefox)
            just see a static gradient at 0deg — a harmless fallback, not a broken one. */
-        @property --category-ring-angle {
-            syntax: '<angle>';
-            inherits: false;
-            initial-value: 0deg;
-        }
-        @keyframes categoryRingSpin { to { --category-ring-angle: 360deg; } }
-        .category-ring {
-            background: conic-gradient(from var(--category-ring-angle), #fb923c, #fb7185, #ec4899, #fb923c);
+        /* Performance: the gradient sits on a ::before layer that's rotated with `transform`
+           (GPU-composited) — animating the custom property directly forced a style recalc +
+           repaint of every ring on every frame, on the main thread, for as long as the page
+           was open (Lighthouse: non-composited animation). Only the layer behind the white
+           inner disc spins, so the photo stays still exactly as before; overflow + the
+           ring's own rounded-full clip the spinning square to the circle. */
+        @keyframes categoryRingSpin { to { transform: rotate(360deg); } }
+        .category-ring { overflow: hidden; isolation: isolate; }
+        .category-ring::before {
+            content: ''; position: absolute; inset: 0; z-index: -1;
+            background: conic-gradient(#fb923c, #fb7185, #ec4899, #fb923c);
             animation: categoryRingSpin 4s linear infinite;
+            will-change: transform;
         }
-        @media (prefers-reduced-motion: reduce){ .category-ring{animation:none} }
+        @media (prefers-reduced-motion: reduce){ .category-ring::before{animation:none} }
 
         /* iOS-style "spring" release on tap — used together with an active:scale-* utility
            (Tailwind handles the :active state itself; this only swaps the easing curve for
@@ -471,7 +475,18 @@ $pageTwitterImage = trim($__env->yieldContent('twitter_image', $pageOgImage));
     @endif
     @if($pixelOn)
     <script>
-        !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');
+        {{-- Facebook's standard snippet, except fbevents.js (~200 KB, ~400 ms of main-thread
+             blocking on a mid-range phone per Lighthouse) is fetched only after the page has
+             finished loading (+4 s) or on the visitor's first scroll/tap/keypress, whichever
+             comes first. The fbq() stub below exists immediately and queues every call
+             (init, PageView, AddToCart, Purchase…) — fbevents.js replays the queue when it
+             arrives, so no event is dropped, they're just sent a moment later. --}}
+        !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];
+            var evs=['scroll','pointerdown','keydown','touchstart'];
+            var load=function(){if(t)return;evs.forEach(function(ev){f.removeEventListener(ev,load)});t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)};
+            evs.forEach(function(ev){f.addEventListener(ev,load,{passive:true})});
+            if(b.readyState==='complete'){setTimeout(load,4000)}else{f.addEventListener('load',function(){setTimeout(load,4000)})}
+        }(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');
         fbq('init','{{ $pixelId }}'@if($fbAdvancedMatchingOn && $trackingData['fb']), {!! Js::from($trackingData['fb']) !!}@endif);
         document.addEventListener('turbo:load', function () { fbq('track','PageView'); });
     </script>
@@ -1040,7 +1055,7 @@ $navCategories = \App\Models\Category::with(['children' => fn($q) => $q->active(
 </main>
 
 {{-- Footer --}}
-<footer class="relative overflow-hidden bg-gradient-to-b from-gray-900 via-gray-900 to-black text-gray-300 mt-0">
+<footer class="cv-auto relative overflow-hidden bg-gradient-to-b from-gray-900 via-gray-900 to-black text-gray-300 mt-0">
     {{-- Ambient corner glows — the same decoration language as the trust-banner card and
          hero section above, so the footer reads as part of the same design system
          instead of plain flat panels stacked at the bottom of the page. --}}

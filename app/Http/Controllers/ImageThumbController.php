@@ -16,7 +16,7 @@ use Illuminate\Support\Facades\Storage;
  */
 class ImageThumbController extends Controller
 {
-    public const WIDTHS = [96, 200, 400, 800];
+    public const WIDTHS = [96, 200, 400, 800, 1200];
 
     public function show(int $width, string $path)
     {

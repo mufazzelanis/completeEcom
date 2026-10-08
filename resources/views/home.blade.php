@@ -107,7 +107,10 @@
                                  on load) competes for bandwidth with slides nobody's looking at yet.
                                  The slow scale (Ken Burns) only plays while a slide is the active
                                  one, restarting fresh each time it comes back around. --}}
-                            <img src="{{ Storage::url($banner->image) }}" alt="{{ $banner->title ?: $banner->subtitle ?: setting('site_name', 'Banner') }}"
+                            <img src="{{ Storage::url($banner->image) }}"
+                                srcset="{{ image_thumb($banner->image, 800) }} 800w, {{ image_thumb($banner->image, 1200) }} 1200w, {{ Storage::url($banner->image) }} 1920w"
+                                sizes="(max-width: 1200px) 100vw, 1200px" width="1920" height="600"
+                                alt="{{ $banner->title ?: $banner->subtitle ?: setting('site_name', 'Banner') }}"
                                 class="w-full h-full object-cover transition-transform duration-[6000ms] ease-linear"
                                 :class="current === {{ $i }} ? 'scale-110' : 'scale-100'"
                                 @if($i === 0) fetchpriority="high" @else loading="lazy" @endif>
@@ -409,7 +412,7 @@
     {{-- Only the first product_limit cards are rendered; the overflow (up to the section's
          fetched batch) is pulled from home.section-products a batch at a time on "See More",
          instead of shipping every hidden card in the initial HTML. --}}
-    <div class="relative overflow-hidden mx-3 md:mx-0 mt-3 md:mt-4 rounded-2xl md:rounded-none shadow-sm md:shadow-none {{ $sec->theme === 'sale' ? 'bg-gradient-to-r from-red-500 to-orange-500' : 'bg-white dark:bg-gray-900' }}"
+    <div class="cv-auto relative overflow-hidden mx-3 md:mx-0 mt-3 md:mt-4 rounded-2xl md:rounded-none shadow-sm md:shadow-none {{ $sec->theme === 'sale' ? 'bg-gradient-to-r from-red-500 to-orange-500' : 'bg-white dark:bg-gray-900' }}"
          x-data="{
             expanded: false, loading: false,
             next: {{ min($sec->product_limit, count($entry['products'])) }},
@@ -525,7 +528,7 @@ $reviewThemes = [
     ['bg' => 'from-purple-50 to-fuchsia-100', 'ring' => 'ring-purple-200', 'avatar' => 'from-purple-500 to-fuchsia-500', 'quote' => 'text-purple-300', 'star' => 'text-purple-500', 'bar' => 'from-purple-400 to-fuchsia-500'],
 ];
 @endphp
-<div class="mx-3 md:mx-0 mt-3 md:mt-4 py-8 bg-gradient-to-r from-indigo-50 via-white to-orange-50 overflow-hidden rounded-2xl md:rounded-none shadow-sm md:shadow-none">
+<div class="cv-auto mx-3 md:mx-0 mt-3 md:mt-4 py-8 bg-gradient-to-r from-indigo-50 via-white to-orange-50 overflow-hidden rounded-2xl md:rounded-none shadow-sm md:shadow-none">
     <div class="max-w-[1200px] mx-auto px-4 mb-6 text-center reveal">
         <h2 class="text-lg md:text-2xl font-extrabold bg-gradient-to-r from-pink-500 via-orange-500 to-indigo-500 bg-clip-text text-transparent inline-block">What Our Customers Say</h2>
         <p class="text-gray-500 dark:text-gray-500 text-xs md:text-sm mt-1">Real reviews from real, happy buyers</p>
@@ -570,7 +573,7 @@ $reviewThemes = [
 
 {{-- ═══════════ BRANDS ═══════════ --}}
 @if($brands->count() > 0)
-<div class="mx-3 md:mx-0 mt-3 md:mt-4 bg-white dark:bg-gray-900 rounded-2xl md:rounded-none shadow-sm md:shadow-none">
+<div class="cv-auto mx-3 md:mx-0 mt-3 md:mt-4 bg-white dark:bg-gray-900 rounded-2xl md:rounded-none shadow-sm md:shadow-none">
     <div class="max-w-[1200px] mx-auto px-4 py-6">
         <x-storefront.section-header title="Top Brands" :view-all-url="route('brands.index')" />
         <div class="carousel-container flex gap-3 overflow-x-auto scrollbar-hide pb-2 scroll-smooth reveal-group">
@@ -598,7 +601,7 @@ $reviewThemes = [
 
 {{-- ═══════════ JUST FOR YOU (personalized feel — overflow from the New Arrivals section) ═══════════ --}}
 @if($justForYou->isNotEmpty())
-<div class="mx-3 md:mx-0 mt-3 md:mt-4 bg-white dark:bg-gray-900 rounded-2xl md:rounded-none shadow-sm md:shadow-none">
+<div class="cv-auto mx-3 md:mx-0 mt-3 md:mt-4 bg-white dark:bg-gray-900 rounded-2xl md:rounded-none shadow-sm md:shadow-none">
     <div class="max-w-[1200px] mx-auto px-4 py-6">
         <div class="flex items-center justify-center mb-5">
             <div class="h-px bg-gray-200 flex-1"></div>
@@ -621,7 +624,7 @@ $reviewThemes = [
 @endif
 
 {{-- ═══════════ TRUST BANNER ═══════════ --}}
-<div class="mt-4 mb-2">
+<div class="cv-auto mt-4 mb-2">
     <div class="max-w-[1200px] mx-auto px-4">
         <div class="relative overflow-hidden bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 rounded-2xl p-6 md:p-8 reveal">
             <div class="pointer-events-none absolute -top-10 -right-10 w-56 h-56 bg-orange-500/10 blur-3xl rounded-full"></div>

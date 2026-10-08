@@ -21,20 +21,28 @@
       eye-catching highlight on top. Same admin-editable bg/text color (inline style)
       still shows through underneath both — these only add motion, not a new color choice
       the admin didn't pick. */
-@keyframes announcementDrift { to { background-position: -200px 0; } }
-.announcement-drift {
+/* Performance: both layers move with `transform` (GPU-composited) rather than animating
+   background-position, which repaints the layer on the main thread every frame — Lighthouse
+   flagged these infinite animations as non-composited, eating CPU for the whole page load on
+   mobile. Same look: the drift layer is one 200px pattern-period wider than the bar and slides
+   back exactly one period (seamless loop); the glint layer is a bar-wide band swept across. */
+@keyframes announcementDrift { to { transform: translateX(-200px); } }
+.announcement-drift.announcement-drift {
+    right: -200px;
     background-image: repeating-linear-gradient(-55deg, rgba(255,255,255,.16) 0 12px, rgba(255,255,255,0) 12px 34px);
     background-size: 200px 100%;
     animation: announcementDrift 5s linear infinite;
+    will-change: transform;
 }
-@keyframes announcementGlint { 0% { background-position: 160% 0; } 100% { background-position: -60% 0; } }
+@keyframes announcementGlint { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
 .announcement-glint {
-    background-image: linear-gradient(100deg, transparent 0%, transparent 42%, rgba(255,255,255,.55) 50%, transparent 58%, transparent 100%);
-    background-size: 220% 100%;
+    background-image: linear-gradient(100deg, transparent 0%, transparent 32%, rgba(255,255,255,.55) 50%, transparent 68%, transparent 100%);
     animation: announcementGlint 3.6s cubic-bezier(.4,0,.2,1) infinite;
+    will-change: transform;
 }
 @media (prefers-reduced-motion: reduce) {
     .announcement-drift, .announcement-glint { animation: none; }
+    .announcement-glint { transform: translateX(-100%); }
 }
 
 /*
@@ -114,355 +122,6 @@
     html.dark [class~="border-gray-300"]  { border-color: theme('colors.gray.600'); }
     html.dark [class~="divide-gray-100"] > :not([hidden]) ~ :not([hidden]) { border-color: theme('colors.gray.800'); }
 
-    /* Colored tints — every palette's pale info/success/warning boxes, badges and
-       selected-card highlights (bg-*-50/100/200, border-*-100..300) become a
-       translucent wash of that color, and their dark text (text-*-700..900)
-       becomes the matching light shade, so they still read as "blue box" /
-       "green badge" on a dark page instead of glaring light patches.
-       `:where(html.dark)` + the extra `[class]` keeps these at exactly the
-       specificity of a hand-placed `dark:` utility (.dark\:x:is(.dark *)), so
-       any element's own `dark:` class still wins (it's emitted later), while
-       these still beat the plain light-mode utility they're replacing. */
-    :where(html.dark) [class~="bg-red-50"][class] { background-color: theme('colors.red.500 / 12%'); }
-    :where(html.dark) [class~="hover:bg-red-50"][class]:hover { background-color: theme('colors.red.500 / 12%'); }
-    :where(html.dark) [class~="bg-red-100"][class] { background-color: theme('colors.red.500 / 18%'); }
-    :where(html.dark) [class~="hover:bg-red-100"][class]:hover { background-color: theme('colors.red.500 / 18%'); }
-    :where(html.dark) [class~="bg-red-200"][class] { background-color: theme('colors.red.500 / 28%'); }
-    :where(html.dark) [class~="text-red-700"][class] { color: theme('colors.red.300'); }
-    :where(html.dark) [class~="hover:text-red-700"][class]:hover { color: theme('colors.red.300'); }
-    :where(html.dark) [class~="text-red-800"][class] { color: theme('colors.red.200'); }
-    :where(html.dark) [class~="hover:text-red-800"][class]:hover { color: theme('colors.red.200'); }
-    :where(html.dark) [class~="text-red-900"][class] { color: theme('colors.red.100'); }
-    :where(html.dark) [class~="hover:text-red-900"][class]:hover { color: theme('colors.red.100'); }
-    :where(html.dark) [class~="border-red-100"][class] { border-color: theme('colors.red.500 / 20%'); }
-    :where(html.dark) [class~="border-red-200"][class] { border-color: theme('colors.red.500 / 30%'); }
-    :where(html.dark) [class~="hover:border-red-200"][class]:hover { border-color: theme('colors.red.500 / 30%'); }
-    :where(html.dark) [class~="border-red-300"][class] { border-color: theme('colors.red.500 / 45%'); }
-    :where(html.dark) [class~="hover:border-red-300"][class]:hover { border-color: theme('colors.red.500 / 45%'); }
-    :where(html.dark) [class~="from-red-50"][class] { --tw-gradient-from: theme('colors.red.500 / 12%') var(--tw-gradient-from-position); --tw-gradient-to: theme('colors.red.500 / 0%') var(--tw-gradient-to-position); --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to); }
-    :where(html.dark) [class~="to-red-50"][class] { --tw-gradient-to: theme('colors.red.500 / 12%') var(--tw-gradient-to-position); }
-    :where(html.dark) [class~="from-red-100"][class] { --tw-gradient-from: theme('colors.red.500 / 18%') var(--tw-gradient-from-position); --tw-gradient-to: theme('colors.red.500 / 0%') var(--tw-gradient-to-position); --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to); }
-    :where(html.dark) [class~="to-red-100"][class] { --tw-gradient-to: theme('colors.red.500 / 18%') var(--tw-gradient-to-position); }
-    :where(html.dark) [class~="bg-orange-50"][class] { background-color: theme('colors.orange.500 / 12%'); }
-    :where(html.dark) [class~="hover:bg-orange-50"][class]:hover { background-color: theme('colors.orange.500 / 12%'); }
-    :where(html.dark) [class~="bg-orange-100"][class] { background-color: theme('colors.orange.500 / 18%'); }
-    :where(html.dark) [class~="hover:bg-orange-100"][class]:hover { background-color: theme('colors.orange.500 / 18%'); }
-    :where(html.dark) [class~="bg-orange-200"][class] { background-color: theme('colors.orange.500 / 28%'); }
-    :where(html.dark) [class~="text-orange-700"][class] { color: theme('colors.orange.300'); }
-    :where(html.dark) [class~="hover:text-orange-700"][class]:hover { color: theme('colors.orange.300'); }
-    :where(html.dark) [class~="text-orange-800"][class] { color: theme('colors.orange.200'); }
-    :where(html.dark) [class~="hover:text-orange-800"][class]:hover { color: theme('colors.orange.200'); }
-    :where(html.dark) [class~="text-orange-900"][class] { color: theme('colors.orange.100'); }
-    :where(html.dark) [class~="hover:text-orange-900"][class]:hover { color: theme('colors.orange.100'); }
-    :where(html.dark) [class~="border-orange-100"][class] { border-color: theme('colors.orange.500 / 20%'); }
-    :where(html.dark) [class~="border-orange-200"][class] { border-color: theme('colors.orange.500 / 30%'); }
-    :where(html.dark) [class~="hover:border-orange-200"][class]:hover { border-color: theme('colors.orange.500 / 30%'); }
-    :where(html.dark) [class~="border-orange-300"][class] { border-color: theme('colors.orange.500 / 45%'); }
-    :where(html.dark) [class~="hover:border-orange-300"][class]:hover { border-color: theme('colors.orange.500 / 45%'); }
-    :where(html.dark) [class~="from-orange-50"][class] { --tw-gradient-from: theme('colors.orange.500 / 12%') var(--tw-gradient-from-position); --tw-gradient-to: theme('colors.orange.500 / 0%') var(--tw-gradient-to-position); --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to); }
-    :where(html.dark) [class~="to-orange-50"][class] { --tw-gradient-to: theme('colors.orange.500 / 12%') var(--tw-gradient-to-position); }
-    :where(html.dark) [class~="from-orange-100"][class] { --tw-gradient-from: theme('colors.orange.500 / 18%') var(--tw-gradient-from-position); --tw-gradient-to: theme('colors.orange.500 / 0%') var(--tw-gradient-to-position); --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to); }
-    :where(html.dark) [class~="to-orange-100"][class] { --tw-gradient-to: theme('colors.orange.500 / 18%') var(--tw-gradient-to-position); }
-    :where(html.dark) [class~="bg-amber-50"][class] { background-color: theme('colors.amber.500 / 12%'); }
-    :where(html.dark) [class~="hover:bg-amber-50"][class]:hover { background-color: theme('colors.amber.500 / 12%'); }
-    :where(html.dark) [class~="bg-amber-100"][class] { background-color: theme('colors.amber.500 / 18%'); }
-    :where(html.dark) [class~="hover:bg-amber-100"][class]:hover { background-color: theme('colors.amber.500 / 18%'); }
-    :where(html.dark) [class~="bg-amber-200"][class] { background-color: theme('colors.amber.500 / 28%'); }
-    :where(html.dark) [class~="text-amber-700"][class] { color: theme('colors.amber.300'); }
-    :where(html.dark) [class~="hover:text-amber-700"][class]:hover { color: theme('colors.amber.300'); }
-    :where(html.dark) [class~="text-amber-800"][class] { color: theme('colors.amber.200'); }
-    :where(html.dark) [class~="hover:text-amber-800"][class]:hover { color: theme('colors.amber.200'); }
-    :where(html.dark) [class~="text-amber-900"][class] { color: theme('colors.amber.100'); }
-    :where(html.dark) [class~="hover:text-amber-900"][class]:hover { color: theme('colors.amber.100'); }
-    :where(html.dark) [class~="border-amber-100"][class] { border-color: theme('colors.amber.500 / 20%'); }
-    :where(html.dark) [class~="border-amber-200"][class] { border-color: theme('colors.amber.500 / 30%'); }
-    :where(html.dark) [class~="hover:border-amber-200"][class]:hover { border-color: theme('colors.amber.500 / 30%'); }
-    :where(html.dark) [class~="border-amber-300"][class] { border-color: theme('colors.amber.500 / 45%'); }
-    :where(html.dark) [class~="hover:border-amber-300"][class]:hover { border-color: theme('colors.amber.500 / 45%'); }
-    :where(html.dark) [class~="from-amber-50"][class] { --tw-gradient-from: theme('colors.amber.500 / 12%') var(--tw-gradient-from-position); --tw-gradient-to: theme('colors.amber.500 / 0%') var(--tw-gradient-to-position); --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to); }
-    :where(html.dark) [class~="to-amber-50"][class] { --tw-gradient-to: theme('colors.amber.500 / 12%') var(--tw-gradient-to-position); }
-    :where(html.dark) [class~="from-amber-100"][class] { --tw-gradient-from: theme('colors.amber.500 / 18%') var(--tw-gradient-from-position); --tw-gradient-to: theme('colors.amber.500 / 0%') var(--tw-gradient-to-position); --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to); }
-    :where(html.dark) [class~="to-amber-100"][class] { --tw-gradient-to: theme('colors.amber.500 / 18%') var(--tw-gradient-to-position); }
-    :where(html.dark) [class~="bg-yellow-50"][class] { background-color: theme('colors.yellow.500 / 12%'); }
-    :where(html.dark) [class~="hover:bg-yellow-50"][class]:hover { background-color: theme('colors.yellow.500 / 12%'); }
-    :where(html.dark) [class~="bg-yellow-100"][class] { background-color: theme('colors.yellow.500 / 18%'); }
-    :where(html.dark) [class~="hover:bg-yellow-100"][class]:hover { background-color: theme('colors.yellow.500 / 18%'); }
-    :where(html.dark) [class~="bg-yellow-200"][class] { background-color: theme('colors.yellow.500 / 28%'); }
-    :where(html.dark) [class~="text-yellow-700"][class] { color: theme('colors.yellow.300'); }
-    :where(html.dark) [class~="hover:text-yellow-700"][class]:hover { color: theme('colors.yellow.300'); }
-    :where(html.dark) [class~="text-yellow-800"][class] { color: theme('colors.yellow.200'); }
-    :where(html.dark) [class~="hover:text-yellow-800"][class]:hover { color: theme('colors.yellow.200'); }
-    :where(html.dark) [class~="text-yellow-900"][class] { color: theme('colors.yellow.100'); }
-    :where(html.dark) [class~="hover:text-yellow-900"][class]:hover { color: theme('colors.yellow.100'); }
-    :where(html.dark) [class~="border-yellow-100"][class] { border-color: theme('colors.yellow.500 / 20%'); }
-    :where(html.dark) [class~="border-yellow-200"][class] { border-color: theme('colors.yellow.500 / 30%'); }
-    :where(html.dark) [class~="hover:border-yellow-200"][class]:hover { border-color: theme('colors.yellow.500 / 30%'); }
-    :where(html.dark) [class~="border-yellow-300"][class] { border-color: theme('colors.yellow.500 / 45%'); }
-    :where(html.dark) [class~="hover:border-yellow-300"][class]:hover { border-color: theme('colors.yellow.500 / 45%'); }
-    :where(html.dark) [class~="from-yellow-50"][class] { --tw-gradient-from: theme('colors.yellow.500 / 12%') var(--tw-gradient-from-position); --tw-gradient-to: theme('colors.yellow.500 / 0%') var(--tw-gradient-to-position); --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to); }
-    :where(html.dark) [class~="to-yellow-50"][class] { --tw-gradient-to: theme('colors.yellow.500 / 12%') var(--tw-gradient-to-position); }
-    :where(html.dark) [class~="from-yellow-100"][class] { --tw-gradient-from: theme('colors.yellow.500 / 18%') var(--tw-gradient-from-position); --tw-gradient-to: theme('colors.yellow.500 / 0%') var(--tw-gradient-to-position); --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to); }
-    :where(html.dark) [class~="to-yellow-100"][class] { --tw-gradient-to: theme('colors.yellow.500 / 18%') var(--tw-gradient-to-position); }
-    :where(html.dark) [class~="bg-lime-50"][class] { background-color: theme('colors.lime.500 / 12%'); }
-    :where(html.dark) [class~="hover:bg-lime-50"][class]:hover { background-color: theme('colors.lime.500 / 12%'); }
-    :where(html.dark) [class~="bg-lime-100"][class] { background-color: theme('colors.lime.500 / 18%'); }
-    :where(html.dark) [class~="hover:bg-lime-100"][class]:hover { background-color: theme('colors.lime.500 / 18%'); }
-    :where(html.dark) [class~="bg-lime-200"][class] { background-color: theme('colors.lime.500 / 28%'); }
-    :where(html.dark) [class~="text-lime-700"][class] { color: theme('colors.lime.300'); }
-    :where(html.dark) [class~="hover:text-lime-700"][class]:hover { color: theme('colors.lime.300'); }
-    :where(html.dark) [class~="text-lime-800"][class] { color: theme('colors.lime.200'); }
-    :where(html.dark) [class~="hover:text-lime-800"][class]:hover { color: theme('colors.lime.200'); }
-    :where(html.dark) [class~="text-lime-900"][class] { color: theme('colors.lime.100'); }
-    :where(html.dark) [class~="hover:text-lime-900"][class]:hover { color: theme('colors.lime.100'); }
-    :where(html.dark) [class~="border-lime-100"][class] { border-color: theme('colors.lime.500 / 20%'); }
-    :where(html.dark) [class~="border-lime-200"][class] { border-color: theme('colors.lime.500 / 30%'); }
-    :where(html.dark) [class~="hover:border-lime-200"][class]:hover { border-color: theme('colors.lime.500 / 30%'); }
-    :where(html.dark) [class~="border-lime-300"][class] { border-color: theme('colors.lime.500 / 45%'); }
-    :where(html.dark) [class~="hover:border-lime-300"][class]:hover { border-color: theme('colors.lime.500 / 45%'); }
-    :where(html.dark) [class~="from-lime-50"][class] { --tw-gradient-from: theme('colors.lime.500 / 12%') var(--tw-gradient-from-position); --tw-gradient-to: theme('colors.lime.500 / 0%') var(--tw-gradient-to-position); --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to); }
-    :where(html.dark) [class~="to-lime-50"][class] { --tw-gradient-to: theme('colors.lime.500 / 12%') var(--tw-gradient-to-position); }
-    :where(html.dark) [class~="from-lime-100"][class] { --tw-gradient-from: theme('colors.lime.500 / 18%') var(--tw-gradient-from-position); --tw-gradient-to: theme('colors.lime.500 / 0%') var(--tw-gradient-to-position); --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to); }
-    :where(html.dark) [class~="to-lime-100"][class] { --tw-gradient-to: theme('colors.lime.500 / 18%') var(--tw-gradient-to-position); }
-    :where(html.dark) [class~="bg-green-50"][class] { background-color: theme('colors.green.500 / 12%'); }
-    :where(html.dark) [class~="hover:bg-green-50"][class]:hover { background-color: theme('colors.green.500 / 12%'); }
-    :where(html.dark) [class~="bg-green-100"][class] { background-color: theme('colors.green.500 / 18%'); }
-    :where(html.dark) [class~="hover:bg-green-100"][class]:hover { background-color: theme('colors.green.500 / 18%'); }
-    :where(html.dark) [class~="bg-green-200"][class] { background-color: theme('colors.green.500 / 28%'); }
-    :where(html.dark) [class~="text-green-700"][class] { color: theme('colors.green.300'); }
-    :where(html.dark) [class~="hover:text-green-700"][class]:hover { color: theme('colors.green.300'); }
-    :where(html.dark) [class~="text-green-800"][class] { color: theme('colors.green.200'); }
-    :where(html.dark) [class~="hover:text-green-800"][class]:hover { color: theme('colors.green.200'); }
-    :where(html.dark) [class~="text-green-900"][class] { color: theme('colors.green.100'); }
-    :where(html.dark) [class~="hover:text-green-900"][class]:hover { color: theme('colors.green.100'); }
-    :where(html.dark) [class~="border-green-100"][class] { border-color: theme('colors.green.500 / 20%'); }
-    :where(html.dark) [class~="border-green-200"][class] { border-color: theme('colors.green.500 / 30%'); }
-    :where(html.dark) [class~="hover:border-green-200"][class]:hover { border-color: theme('colors.green.500 / 30%'); }
-    :where(html.dark) [class~="border-green-300"][class] { border-color: theme('colors.green.500 / 45%'); }
-    :where(html.dark) [class~="hover:border-green-300"][class]:hover { border-color: theme('colors.green.500 / 45%'); }
-    :where(html.dark) [class~="from-green-50"][class] { --tw-gradient-from: theme('colors.green.500 / 12%') var(--tw-gradient-from-position); --tw-gradient-to: theme('colors.green.500 / 0%') var(--tw-gradient-to-position); --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to); }
-    :where(html.dark) [class~="to-green-50"][class] { --tw-gradient-to: theme('colors.green.500 / 12%') var(--tw-gradient-to-position); }
-    :where(html.dark) [class~="from-green-100"][class] { --tw-gradient-from: theme('colors.green.500 / 18%') var(--tw-gradient-from-position); --tw-gradient-to: theme('colors.green.500 / 0%') var(--tw-gradient-to-position); --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to); }
-    :where(html.dark) [class~="to-green-100"][class] { --tw-gradient-to: theme('colors.green.500 / 18%') var(--tw-gradient-to-position); }
-    :where(html.dark) [class~="bg-emerald-50"][class] { background-color: theme('colors.emerald.500 / 12%'); }
-    :where(html.dark) [class~="hover:bg-emerald-50"][class]:hover { background-color: theme('colors.emerald.500 / 12%'); }
-    :where(html.dark) [class~="bg-emerald-100"][class] { background-color: theme('colors.emerald.500 / 18%'); }
-    :where(html.dark) [class~="hover:bg-emerald-100"][class]:hover { background-color: theme('colors.emerald.500 / 18%'); }
-    :where(html.dark) [class~="bg-emerald-200"][class] { background-color: theme('colors.emerald.500 / 28%'); }
-    :where(html.dark) [class~="text-emerald-700"][class] { color: theme('colors.emerald.300'); }
-    :where(html.dark) [class~="hover:text-emerald-700"][class]:hover { color: theme('colors.emerald.300'); }
-    :where(html.dark) [class~="text-emerald-800"][class] { color: theme('colors.emerald.200'); }
-    :where(html.dark) [class~="hover:text-emerald-800"][class]:hover { color: theme('colors.emerald.200'); }
-    :where(html.dark) [class~="text-emerald-900"][class] { color: theme('colors.emerald.100'); }
-    :where(html.dark) [class~="hover:text-emerald-900"][class]:hover { color: theme('colors.emerald.100'); }
-    :where(html.dark) [class~="border-emerald-100"][class] { border-color: theme('colors.emerald.500 / 20%'); }
-    :where(html.dark) [class~="border-emerald-200"][class] { border-color: theme('colors.emerald.500 / 30%'); }
-    :where(html.dark) [class~="hover:border-emerald-200"][class]:hover { border-color: theme('colors.emerald.500 / 30%'); }
-    :where(html.dark) [class~="border-emerald-300"][class] { border-color: theme('colors.emerald.500 / 45%'); }
-    :where(html.dark) [class~="hover:border-emerald-300"][class]:hover { border-color: theme('colors.emerald.500 / 45%'); }
-    :where(html.dark) [class~="from-emerald-50"][class] { --tw-gradient-from: theme('colors.emerald.500 / 12%') var(--tw-gradient-from-position); --tw-gradient-to: theme('colors.emerald.500 / 0%') var(--tw-gradient-to-position); --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to); }
-    :where(html.dark) [class~="to-emerald-50"][class] { --tw-gradient-to: theme('colors.emerald.500 / 12%') var(--tw-gradient-to-position); }
-    :where(html.dark) [class~="from-emerald-100"][class] { --tw-gradient-from: theme('colors.emerald.500 / 18%') var(--tw-gradient-from-position); --tw-gradient-to: theme('colors.emerald.500 / 0%') var(--tw-gradient-to-position); --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to); }
-    :where(html.dark) [class~="to-emerald-100"][class] { --tw-gradient-to: theme('colors.emerald.500 / 18%') var(--tw-gradient-to-position); }
-    :where(html.dark) [class~="bg-teal-50"][class] { background-color: theme('colors.teal.500 / 12%'); }
-    :where(html.dark) [class~="hover:bg-teal-50"][class]:hover { background-color: theme('colors.teal.500 / 12%'); }
-    :where(html.dark) [class~="bg-teal-100"][class] { background-color: theme('colors.teal.500 / 18%'); }
-    :where(html.dark) [class~="hover:bg-teal-100"][class]:hover { background-color: theme('colors.teal.500 / 18%'); }
-    :where(html.dark) [class~="bg-teal-200"][class] { background-color: theme('colors.teal.500 / 28%'); }
-    :where(html.dark) [class~="text-teal-700"][class] { color: theme('colors.teal.300'); }
-    :where(html.dark) [class~="hover:text-teal-700"][class]:hover { color: theme('colors.teal.300'); }
-    :where(html.dark) [class~="text-teal-800"][class] { color: theme('colors.teal.200'); }
-    :where(html.dark) [class~="hover:text-teal-800"][class]:hover { color: theme('colors.teal.200'); }
-    :where(html.dark) [class~="text-teal-900"][class] { color: theme('colors.teal.100'); }
-    :where(html.dark) [class~="hover:text-teal-900"][class]:hover { color: theme('colors.teal.100'); }
-    :where(html.dark) [class~="border-teal-100"][class] { border-color: theme('colors.teal.500 / 20%'); }
-    :where(html.dark) [class~="border-teal-200"][class] { border-color: theme('colors.teal.500 / 30%'); }
-    :where(html.dark) [class~="hover:border-teal-200"][class]:hover { border-color: theme('colors.teal.500 / 30%'); }
-    :where(html.dark) [class~="border-teal-300"][class] { border-color: theme('colors.teal.500 / 45%'); }
-    :where(html.dark) [class~="hover:border-teal-300"][class]:hover { border-color: theme('colors.teal.500 / 45%'); }
-    :where(html.dark) [class~="from-teal-50"][class] { --tw-gradient-from: theme('colors.teal.500 / 12%') var(--tw-gradient-from-position); --tw-gradient-to: theme('colors.teal.500 / 0%') var(--tw-gradient-to-position); --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to); }
-    :where(html.dark) [class~="to-teal-50"][class] { --tw-gradient-to: theme('colors.teal.500 / 12%') var(--tw-gradient-to-position); }
-    :where(html.dark) [class~="from-teal-100"][class] { --tw-gradient-from: theme('colors.teal.500 / 18%') var(--tw-gradient-from-position); --tw-gradient-to: theme('colors.teal.500 / 0%') var(--tw-gradient-to-position); --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to); }
-    :where(html.dark) [class~="to-teal-100"][class] { --tw-gradient-to: theme('colors.teal.500 / 18%') var(--tw-gradient-to-position); }
-    :where(html.dark) [class~="bg-cyan-50"][class] { background-color: theme('colors.cyan.500 / 12%'); }
-    :where(html.dark) [class~="hover:bg-cyan-50"][class]:hover { background-color: theme('colors.cyan.500 / 12%'); }
-    :where(html.dark) [class~="bg-cyan-100"][class] { background-color: theme('colors.cyan.500 / 18%'); }
-    :where(html.dark) [class~="hover:bg-cyan-100"][class]:hover { background-color: theme('colors.cyan.500 / 18%'); }
-    :where(html.dark) [class~="bg-cyan-200"][class] { background-color: theme('colors.cyan.500 / 28%'); }
-    :where(html.dark) [class~="text-cyan-700"][class] { color: theme('colors.cyan.300'); }
-    :where(html.dark) [class~="hover:text-cyan-700"][class]:hover { color: theme('colors.cyan.300'); }
-    :where(html.dark) [class~="text-cyan-800"][class] { color: theme('colors.cyan.200'); }
-    :where(html.dark) [class~="hover:text-cyan-800"][class]:hover { color: theme('colors.cyan.200'); }
-    :where(html.dark) [class~="text-cyan-900"][class] { color: theme('colors.cyan.100'); }
-    :where(html.dark) [class~="hover:text-cyan-900"][class]:hover { color: theme('colors.cyan.100'); }
-    :where(html.dark) [class~="border-cyan-100"][class] { border-color: theme('colors.cyan.500 / 20%'); }
-    :where(html.dark) [class~="border-cyan-200"][class] { border-color: theme('colors.cyan.500 / 30%'); }
-    :where(html.dark) [class~="hover:border-cyan-200"][class]:hover { border-color: theme('colors.cyan.500 / 30%'); }
-    :where(html.dark) [class~="border-cyan-300"][class] { border-color: theme('colors.cyan.500 / 45%'); }
-    :where(html.dark) [class~="hover:border-cyan-300"][class]:hover { border-color: theme('colors.cyan.500 / 45%'); }
-    :where(html.dark) [class~="from-cyan-50"][class] { --tw-gradient-from: theme('colors.cyan.500 / 12%') var(--tw-gradient-from-position); --tw-gradient-to: theme('colors.cyan.500 / 0%') var(--tw-gradient-to-position); --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to); }
-    :where(html.dark) [class~="to-cyan-50"][class] { --tw-gradient-to: theme('colors.cyan.500 / 12%') var(--tw-gradient-to-position); }
-    :where(html.dark) [class~="from-cyan-100"][class] { --tw-gradient-from: theme('colors.cyan.500 / 18%') var(--tw-gradient-from-position); --tw-gradient-to: theme('colors.cyan.500 / 0%') var(--tw-gradient-to-position); --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to); }
-    :where(html.dark) [class~="to-cyan-100"][class] { --tw-gradient-to: theme('colors.cyan.500 / 18%') var(--tw-gradient-to-position); }
-    :where(html.dark) [class~="bg-sky-50"][class] { background-color: theme('colors.sky.500 / 12%'); }
-    :where(html.dark) [class~="hover:bg-sky-50"][class]:hover { background-color: theme('colors.sky.500 / 12%'); }
-    :where(html.dark) [class~="bg-sky-100"][class] { background-color: theme('colors.sky.500 / 18%'); }
-    :where(html.dark) [class~="hover:bg-sky-100"][class]:hover { background-color: theme('colors.sky.500 / 18%'); }
-    :where(html.dark) [class~="bg-sky-200"][class] { background-color: theme('colors.sky.500 / 28%'); }
-    :where(html.dark) [class~="text-sky-700"][class] { color: theme('colors.sky.300'); }
-    :where(html.dark) [class~="hover:text-sky-700"][class]:hover { color: theme('colors.sky.300'); }
-    :where(html.dark) [class~="text-sky-800"][class] { color: theme('colors.sky.200'); }
-    :where(html.dark) [class~="hover:text-sky-800"][class]:hover { color: theme('colors.sky.200'); }
-    :where(html.dark) [class~="text-sky-900"][class] { color: theme('colors.sky.100'); }
-    :where(html.dark) [class~="hover:text-sky-900"][class]:hover { color: theme('colors.sky.100'); }
-    :where(html.dark) [class~="border-sky-100"][class] { border-color: theme('colors.sky.500 / 20%'); }
-    :where(html.dark) [class~="border-sky-200"][class] { border-color: theme('colors.sky.500 / 30%'); }
-    :where(html.dark) [class~="hover:border-sky-200"][class]:hover { border-color: theme('colors.sky.500 / 30%'); }
-    :where(html.dark) [class~="border-sky-300"][class] { border-color: theme('colors.sky.500 / 45%'); }
-    :where(html.dark) [class~="hover:border-sky-300"][class]:hover { border-color: theme('colors.sky.500 / 45%'); }
-    :where(html.dark) [class~="from-sky-50"][class] { --tw-gradient-from: theme('colors.sky.500 / 12%') var(--tw-gradient-from-position); --tw-gradient-to: theme('colors.sky.500 / 0%') var(--tw-gradient-to-position); --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to); }
-    :where(html.dark) [class~="to-sky-50"][class] { --tw-gradient-to: theme('colors.sky.500 / 12%') var(--tw-gradient-to-position); }
-    :where(html.dark) [class~="from-sky-100"][class] { --tw-gradient-from: theme('colors.sky.500 / 18%') var(--tw-gradient-from-position); --tw-gradient-to: theme('colors.sky.500 / 0%') var(--tw-gradient-to-position); --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to); }
-    :where(html.dark) [class~="to-sky-100"][class] { --tw-gradient-to: theme('colors.sky.500 / 18%') var(--tw-gradient-to-position); }
-    :where(html.dark) [class~="bg-blue-50"][class] { background-color: theme('colors.blue.500 / 12%'); }
-    :where(html.dark) [class~="hover:bg-blue-50"][class]:hover { background-color: theme('colors.blue.500 / 12%'); }
-    :where(html.dark) [class~="bg-blue-100"][class] { background-color: theme('colors.blue.500 / 18%'); }
-    :where(html.dark) [class~="hover:bg-blue-100"][class]:hover { background-color: theme('colors.blue.500 / 18%'); }
-    :where(html.dark) [class~="bg-blue-200"][class] { background-color: theme('colors.blue.500 / 28%'); }
-    :where(html.dark) [class~="text-blue-700"][class] { color: theme('colors.blue.300'); }
-    :where(html.dark) [class~="hover:text-blue-700"][class]:hover { color: theme('colors.blue.300'); }
-    :where(html.dark) [class~="text-blue-800"][class] { color: theme('colors.blue.200'); }
-    :where(html.dark) [class~="hover:text-blue-800"][class]:hover { color: theme('colors.blue.200'); }
-    :where(html.dark) [class~="text-blue-900"][class] { color: theme('colors.blue.100'); }
-    :where(html.dark) [class~="hover:text-blue-900"][class]:hover { color: theme('colors.blue.100'); }
-    :where(html.dark) [class~="border-blue-100"][class] { border-color: theme('colors.blue.500 / 20%'); }
-    :where(html.dark) [class~="border-blue-200"][class] { border-color: theme('colors.blue.500 / 30%'); }
-    :where(html.dark) [class~="hover:border-blue-200"][class]:hover { border-color: theme('colors.blue.500 / 30%'); }
-    :where(html.dark) [class~="border-blue-300"][class] { border-color: theme('colors.blue.500 / 45%'); }
-    :where(html.dark) [class~="hover:border-blue-300"][class]:hover { border-color: theme('colors.blue.500 / 45%'); }
-    :where(html.dark) [class~="from-blue-50"][class] { --tw-gradient-from: theme('colors.blue.500 / 12%') var(--tw-gradient-from-position); --tw-gradient-to: theme('colors.blue.500 / 0%') var(--tw-gradient-to-position); --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to); }
-    :where(html.dark) [class~="to-blue-50"][class] { --tw-gradient-to: theme('colors.blue.500 / 12%') var(--tw-gradient-to-position); }
-    :where(html.dark) [class~="from-blue-100"][class] { --tw-gradient-from: theme('colors.blue.500 / 18%') var(--tw-gradient-from-position); --tw-gradient-to: theme('colors.blue.500 / 0%') var(--tw-gradient-to-position); --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to); }
-    :where(html.dark) [class~="to-blue-100"][class] { --tw-gradient-to: theme('colors.blue.500 / 18%') var(--tw-gradient-to-position); }
-    :where(html.dark) [class~="bg-indigo-50"][class] { background-color: theme('colors.indigo.500 / 12%'); }
-    :where(html.dark) [class~="hover:bg-indigo-50"][class]:hover { background-color: theme('colors.indigo.500 / 12%'); }
-    :where(html.dark) [class~="bg-indigo-100"][class] { background-color: theme('colors.indigo.500 / 18%'); }
-    :where(html.dark) [class~="hover:bg-indigo-100"][class]:hover { background-color: theme('colors.indigo.500 / 18%'); }
-    :where(html.dark) [class~="bg-indigo-200"][class] { background-color: theme('colors.indigo.500 / 28%'); }
-    :where(html.dark) [class~="text-indigo-700"][class] { color: theme('colors.indigo.300'); }
-    :where(html.dark) [class~="hover:text-indigo-700"][class]:hover { color: theme('colors.indigo.300'); }
-    :where(html.dark) [class~="text-indigo-800"][class] { color: theme('colors.indigo.200'); }
-    :where(html.dark) [class~="hover:text-indigo-800"][class]:hover { color: theme('colors.indigo.200'); }
-    :where(html.dark) [class~="text-indigo-900"][class] { color: theme('colors.indigo.100'); }
-    :where(html.dark) [class~="hover:text-indigo-900"][class]:hover { color: theme('colors.indigo.100'); }
-    :where(html.dark) [class~="border-indigo-100"][class] { border-color: theme('colors.indigo.500 / 20%'); }
-    :where(html.dark) [class~="border-indigo-200"][class] { border-color: theme('colors.indigo.500 / 30%'); }
-    :where(html.dark) [class~="hover:border-indigo-200"][class]:hover { border-color: theme('colors.indigo.500 / 30%'); }
-    :where(html.dark) [class~="border-indigo-300"][class] { border-color: theme('colors.indigo.500 / 45%'); }
-    :where(html.dark) [class~="hover:border-indigo-300"][class]:hover { border-color: theme('colors.indigo.500 / 45%'); }
-    :where(html.dark) [class~="from-indigo-50"][class] { --tw-gradient-from: theme('colors.indigo.500 / 12%') var(--tw-gradient-from-position); --tw-gradient-to: theme('colors.indigo.500 / 0%') var(--tw-gradient-to-position); --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to); }
-    :where(html.dark) [class~="to-indigo-50"][class] { --tw-gradient-to: theme('colors.indigo.500 / 12%') var(--tw-gradient-to-position); }
-    :where(html.dark) [class~="from-indigo-100"][class] { --tw-gradient-from: theme('colors.indigo.500 / 18%') var(--tw-gradient-from-position); --tw-gradient-to: theme('colors.indigo.500 / 0%') var(--tw-gradient-to-position); --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to); }
-    :where(html.dark) [class~="to-indigo-100"][class] { --tw-gradient-to: theme('colors.indigo.500 / 18%') var(--tw-gradient-to-position); }
-    :where(html.dark) [class~="bg-violet-50"][class] { background-color: theme('colors.violet.500 / 12%'); }
-    :where(html.dark) [class~="hover:bg-violet-50"][class]:hover { background-color: theme('colors.violet.500 / 12%'); }
-    :where(html.dark) [class~="bg-violet-100"][class] { background-color: theme('colors.violet.500 / 18%'); }
-    :where(html.dark) [class~="hover:bg-violet-100"][class]:hover { background-color: theme('colors.violet.500 / 18%'); }
-    :where(html.dark) [class~="bg-violet-200"][class] { background-color: theme('colors.violet.500 / 28%'); }
-    :where(html.dark) [class~="text-violet-700"][class] { color: theme('colors.violet.300'); }
-    :where(html.dark) [class~="hover:text-violet-700"][class]:hover { color: theme('colors.violet.300'); }
-    :where(html.dark) [class~="text-violet-800"][class] { color: theme('colors.violet.200'); }
-    :where(html.dark) [class~="hover:text-violet-800"][class]:hover { color: theme('colors.violet.200'); }
-    :where(html.dark) [class~="text-violet-900"][class] { color: theme('colors.violet.100'); }
-    :where(html.dark) [class~="hover:text-violet-900"][class]:hover { color: theme('colors.violet.100'); }
-    :where(html.dark) [class~="border-violet-100"][class] { border-color: theme('colors.violet.500 / 20%'); }
-    :where(html.dark) [class~="border-violet-200"][class] { border-color: theme('colors.violet.500 / 30%'); }
-    :where(html.dark) [class~="hover:border-violet-200"][class]:hover { border-color: theme('colors.violet.500 / 30%'); }
-    :where(html.dark) [class~="border-violet-300"][class] { border-color: theme('colors.violet.500 / 45%'); }
-    :where(html.dark) [class~="hover:border-violet-300"][class]:hover { border-color: theme('colors.violet.500 / 45%'); }
-    :where(html.dark) [class~="from-violet-50"][class] { --tw-gradient-from: theme('colors.violet.500 / 12%') var(--tw-gradient-from-position); --tw-gradient-to: theme('colors.violet.500 / 0%') var(--tw-gradient-to-position); --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to); }
-    :where(html.dark) [class~="to-violet-50"][class] { --tw-gradient-to: theme('colors.violet.500 / 12%') var(--tw-gradient-to-position); }
-    :where(html.dark) [class~="from-violet-100"][class] { --tw-gradient-from: theme('colors.violet.500 / 18%') var(--tw-gradient-from-position); --tw-gradient-to: theme('colors.violet.500 / 0%') var(--tw-gradient-to-position); --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to); }
-    :where(html.dark) [class~="to-violet-100"][class] { --tw-gradient-to: theme('colors.violet.500 / 18%') var(--tw-gradient-to-position); }
-    :where(html.dark) [class~="bg-purple-50"][class] { background-color: theme('colors.purple.500 / 12%'); }
-    :where(html.dark) [class~="hover:bg-purple-50"][class]:hover { background-color: theme('colors.purple.500 / 12%'); }
-    :where(html.dark) [class~="bg-purple-100"][class] { background-color: theme('colors.purple.500 / 18%'); }
-    :where(html.dark) [class~="hover:bg-purple-100"][class]:hover { background-color: theme('colors.purple.500 / 18%'); }
-    :where(html.dark) [class~="bg-purple-200"][class] { background-color: theme('colors.purple.500 / 28%'); }
-    :where(html.dark) [class~="text-purple-700"][class] { color: theme('colors.purple.300'); }
-    :where(html.dark) [class~="hover:text-purple-700"][class]:hover { color: theme('colors.purple.300'); }
-    :where(html.dark) [class~="text-purple-800"][class] { color: theme('colors.purple.200'); }
-    :where(html.dark) [class~="hover:text-purple-800"][class]:hover { color: theme('colors.purple.200'); }
-    :where(html.dark) [class~="text-purple-900"][class] { color: theme('colors.purple.100'); }
-    :where(html.dark) [class~="hover:text-purple-900"][class]:hover { color: theme('colors.purple.100'); }
-    :where(html.dark) [class~="border-purple-100"][class] { border-color: theme('colors.purple.500 / 20%'); }
-    :where(html.dark) [class~="border-purple-200"][class] { border-color: theme('colors.purple.500 / 30%'); }
-    :where(html.dark) [class~="hover:border-purple-200"][class]:hover { border-color: theme('colors.purple.500 / 30%'); }
-    :where(html.dark) [class~="border-purple-300"][class] { border-color: theme('colors.purple.500 / 45%'); }
-    :where(html.dark) [class~="hover:border-purple-300"][class]:hover { border-color: theme('colors.purple.500 / 45%'); }
-    :where(html.dark) [class~="from-purple-50"][class] { --tw-gradient-from: theme('colors.purple.500 / 12%') var(--tw-gradient-from-position); --tw-gradient-to: theme('colors.purple.500 / 0%') var(--tw-gradient-to-position); --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to); }
-    :where(html.dark) [class~="to-purple-50"][class] { --tw-gradient-to: theme('colors.purple.500 / 12%') var(--tw-gradient-to-position); }
-    :where(html.dark) [class~="from-purple-100"][class] { --tw-gradient-from: theme('colors.purple.500 / 18%') var(--tw-gradient-from-position); --tw-gradient-to: theme('colors.purple.500 / 0%') var(--tw-gradient-to-position); --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to); }
-    :where(html.dark) [class~="to-purple-100"][class] { --tw-gradient-to: theme('colors.purple.500 / 18%') var(--tw-gradient-to-position); }
-    :where(html.dark) [class~="bg-fuchsia-50"][class] { background-color: theme('colors.fuchsia.500 / 12%'); }
-    :where(html.dark) [class~="hover:bg-fuchsia-50"][class]:hover { background-color: theme('colors.fuchsia.500 / 12%'); }
-    :where(html.dark) [class~="bg-fuchsia-100"][class] { background-color: theme('colors.fuchsia.500 / 18%'); }
-    :where(html.dark) [class~="hover:bg-fuchsia-100"][class]:hover { background-color: theme('colors.fuchsia.500 / 18%'); }
-    :where(html.dark) [class~="bg-fuchsia-200"][class] { background-color: theme('colors.fuchsia.500 / 28%'); }
-    :where(html.dark) [class~="text-fuchsia-700"][class] { color: theme('colors.fuchsia.300'); }
-    :where(html.dark) [class~="hover:text-fuchsia-700"][class]:hover { color: theme('colors.fuchsia.300'); }
-    :where(html.dark) [class~="text-fuchsia-800"][class] { color: theme('colors.fuchsia.200'); }
-    :where(html.dark) [class~="hover:text-fuchsia-800"][class]:hover { color: theme('colors.fuchsia.200'); }
-    :where(html.dark) [class~="text-fuchsia-900"][class] { color: theme('colors.fuchsia.100'); }
-    :where(html.dark) [class~="hover:text-fuchsia-900"][class]:hover { color: theme('colors.fuchsia.100'); }
-    :where(html.dark) [class~="border-fuchsia-100"][class] { border-color: theme('colors.fuchsia.500 / 20%'); }
-    :where(html.dark) [class~="border-fuchsia-200"][class] { border-color: theme('colors.fuchsia.500 / 30%'); }
-    :where(html.dark) [class~="hover:border-fuchsia-200"][class]:hover { border-color: theme('colors.fuchsia.500 / 30%'); }
-    :where(html.dark) [class~="border-fuchsia-300"][class] { border-color: theme('colors.fuchsia.500 / 45%'); }
-    :where(html.dark) [class~="hover:border-fuchsia-300"][class]:hover { border-color: theme('colors.fuchsia.500 / 45%'); }
-    :where(html.dark) [class~="from-fuchsia-50"][class] { --tw-gradient-from: theme('colors.fuchsia.500 / 12%') var(--tw-gradient-from-position); --tw-gradient-to: theme('colors.fuchsia.500 / 0%') var(--tw-gradient-to-position); --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to); }
-    :where(html.dark) [class~="to-fuchsia-50"][class] { --tw-gradient-to: theme('colors.fuchsia.500 / 12%') var(--tw-gradient-to-position); }
-    :where(html.dark) [class~="from-fuchsia-100"][class] { --tw-gradient-from: theme('colors.fuchsia.500 / 18%') var(--tw-gradient-from-position); --tw-gradient-to: theme('colors.fuchsia.500 / 0%') var(--tw-gradient-to-position); --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to); }
-    :where(html.dark) [class~="to-fuchsia-100"][class] { --tw-gradient-to: theme('colors.fuchsia.500 / 18%') var(--tw-gradient-to-position); }
-    :where(html.dark) [class~="bg-pink-50"][class] { background-color: theme('colors.pink.500 / 12%'); }
-    :where(html.dark) [class~="hover:bg-pink-50"][class]:hover { background-color: theme('colors.pink.500 / 12%'); }
-    :where(html.dark) [class~="bg-pink-100"][class] { background-color: theme('colors.pink.500 / 18%'); }
-    :where(html.dark) [class~="hover:bg-pink-100"][class]:hover { background-color: theme('colors.pink.500 / 18%'); }
-    :where(html.dark) [class~="bg-pink-200"][class] { background-color: theme('colors.pink.500 / 28%'); }
-    :where(html.dark) [class~="text-pink-700"][class] { color: theme('colors.pink.300'); }
-    :where(html.dark) [class~="hover:text-pink-700"][class]:hover { color: theme('colors.pink.300'); }
-    :where(html.dark) [class~="text-pink-800"][class] { color: theme('colors.pink.200'); }
-    :where(html.dark) [class~="hover:text-pink-800"][class]:hover { color: theme('colors.pink.200'); }
-    :where(html.dark) [class~="text-pink-900"][class] { color: theme('colors.pink.100'); }
-    :where(html.dark) [class~="hover:text-pink-900"][class]:hover { color: theme('colors.pink.100'); }
-    :where(html.dark) [class~="border-pink-100"][class] { border-color: theme('colors.pink.500 / 20%'); }
-    :where(html.dark) [class~="border-pink-200"][class] { border-color: theme('colors.pink.500 / 30%'); }
-    :where(html.dark) [class~="hover:border-pink-200"][class]:hover { border-color: theme('colors.pink.500 / 30%'); }
-    :where(html.dark) [class~="border-pink-300"][class] { border-color: theme('colors.pink.500 / 45%'); }
-    :where(html.dark) [class~="hover:border-pink-300"][class]:hover { border-color: theme('colors.pink.500 / 45%'); }
-    :where(html.dark) [class~="from-pink-50"][class] { --tw-gradient-from: theme('colors.pink.500 / 12%') var(--tw-gradient-from-position); --tw-gradient-to: theme('colors.pink.500 / 0%') var(--tw-gradient-to-position); --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to); }
-    :where(html.dark) [class~="to-pink-50"][class] { --tw-gradient-to: theme('colors.pink.500 / 12%') var(--tw-gradient-to-position); }
-    :where(html.dark) [class~="from-pink-100"][class] { --tw-gradient-from: theme('colors.pink.500 / 18%') var(--tw-gradient-from-position); --tw-gradient-to: theme('colors.pink.500 / 0%') var(--tw-gradient-to-position); --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to); }
-    :where(html.dark) [class~="to-pink-100"][class] { --tw-gradient-to: theme('colors.pink.500 / 18%') var(--tw-gradient-to-position); }
-    :where(html.dark) [class~="bg-rose-50"][class] { background-color: theme('colors.rose.500 / 12%'); }
-    :where(html.dark) [class~="hover:bg-rose-50"][class]:hover { background-color: theme('colors.rose.500 / 12%'); }
-    :where(html.dark) [class~="bg-rose-100"][class] { background-color: theme('colors.rose.500 / 18%'); }
-    :where(html.dark) [class~="hover:bg-rose-100"][class]:hover { background-color: theme('colors.rose.500 / 18%'); }
-    :where(html.dark) [class~="bg-rose-200"][class] { background-color: theme('colors.rose.500 / 28%'); }
-    :where(html.dark) [class~="text-rose-700"][class] { color: theme('colors.rose.300'); }
-    :where(html.dark) [class~="hover:text-rose-700"][class]:hover { color: theme('colors.rose.300'); }
-    :where(html.dark) [class~="text-rose-800"][class] { color: theme('colors.rose.200'); }
-    :where(html.dark) [class~="hover:text-rose-800"][class]:hover { color: theme('colors.rose.200'); }
-    :where(html.dark) [class~="text-rose-900"][class] { color: theme('colors.rose.100'); }
-    :where(html.dark) [class~="hover:text-rose-900"][class]:hover { color: theme('colors.rose.100'); }
-    :where(html.dark) [class~="border-rose-100"][class] { border-color: theme('colors.rose.500 / 20%'); }
-    :where(html.dark) [class~="border-rose-200"][class] { border-color: theme('colors.rose.500 / 30%'); }
-    :where(html.dark) [class~="hover:border-rose-200"][class]:hover { border-color: theme('colors.rose.500 / 30%'); }
-    :where(html.dark) [class~="border-rose-300"][class] { border-color: theme('colors.rose.500 / 45%'); }
-    :where(html.dark) [class~="hover:border-rose-300"][class]:hover { border-color: theme('colors.rose.500 / 45%'); }
-    :where(html.dark) [class~="from-rose-50"][class] { --tw-gradient-from: theme('colors.rose.500 / 12%') var(--tw-gradient-from-position); --tw-gradient-to: theme('colors.rose.500 / 0%') var(--tw-gradient-to-position); --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to); }
-    :where(html.dark) [class~="to-rose-50"][class] { --tw-gradient-to: theme('colors.rose.500 / 12%') var(--tw-gradient-to-position); }
-    :where(html.dark) [class~="from-rose-100"][class] { --tw-gradient-from: theme('colors.rose.500 / 18%') var(--tw-gradient-from-position); --tw-gradient-to: theme('colors.rose.500 / 0%') var(--tw-gradient-to-position); --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to); }
-    :where(html.dark) [class~="to-rose-100"][class] { --tw-gradient-to: theme('colors.rose.500 / 18%') var(--tw-gradient-to-position); }
 
     /* Plain form fields almost never carry an explicit bg-white class — text
        inputs/selects/textareas just inherit the browser's own white default,
@@ -481,6 +140,18 @@
     html.dark textarea::placeholder {
         color: theme('colors.gray.500');
     }
+}
+
+/*
+ * Below-the-fold blocks (homepage product sections, reviews, brands, footer): the browser
+ * skips their style/layout/paint until they're about to scroll into view. Lighthouse on
+ * mobile measured ~2.6 s of Style & Layout on the homepage, nearly all of it for content
+ * no one could see yet. contain-intrinsic-size reserves a placeholder height (then
+ * remembers the real one, `auto`) so the scrollbar doesn't jump.
+ */
+.cv-auto {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 700px;
 }
 
 /*
@@ -876,3 +547,359 @@ html.dark .admin-nav-group[data-has-active="1"] .admin-nav-group__title { color:
         color: rgb(156 163 175);
     }
 }
+
+/*
+ * Colored tints in dark mode — every palette's pale info/success/warning boxes, badges and
+ * selected-card highlights (bg-*-50/100/200, border-*-100..300) become a translucent wash of
+ * that color, and their dark text (text-*-700..900) the matching light shade, so they still
+ * read as "blue box" / "green badge" on a dark page instead of glaring light patches.
+ *
+ * Deliberately outside @layer and written as plain class selectors:
+ *  - Class selectors: Chrome only tests a rule against elements that actually carry that
+ *    class. The earlier [class~="…"] attribute form was tested against every element on the
+ *    page, in light mode too — measured ~400 ms of extra mobile Style & Layout on the homepage.
+ *  - :where(html.dark) adds no specificity and `body` adds one type selector: (0,1,1) beats the
+ *    plain utility it replaces (.bg-blue-50, 0,1,0) no matter where the minifier places either
+ *    rule, while an element's own hand-placed dark: utility (.dark:x:is(.dark *), 0,2,0) still
+ *    beats it. Same one-step margin for the :hover rules vs hover: and dark:hover: utilities.
+ */
+:where(html.dark) body .bg-red-50 { background-color: theme('colors.red.500 / 12%'); }
+:where(html.dark) body .hover\:bg-red-50:hover { background-color: theme('colors.red.500 / 12%'); }
+:where(html.dark) body .bg-red-100 { background-color: theme('colors.red.500 / 18%'); }
+:where(html.dark) body .hover\:bg-red-100:hover { background-color: theme('colors.red.500 / 18%'); }
+:where(html.dark) body .bg-red-200 { background-color: theme('colors.red.500 / 28%'); }
+:where(html.dark) body .text-red-700 { color: theme('colors.red.300'); }
+:where(html.dark) body .hover\:text-red-700:hover { color: theme('colors.red.300'); }
+:where(html.dark) body .text-red-800 { color: theme('colors.red.200'); }
+:where(html.dark) body .hover\:text-red-800:hover { color: theme('colors.red.200'); }
+:where(html.dark) body .text-red-900 { color: theme('colors.red.100'); }
+:where(html.dark) body .hover\:text-red-900:hover { color: theme('colors.red.100'); }
+:where(html.dark) body .border-red-100 { border-color: theme('colors.red.500 / 20%'); }
+:where(html.dark) body .border-red-200 { border-color: theme('colors.red.500 / 30%'); }
+:where(html.dark) body .hover\:border-red-200:hover { border-color: theme('colors.red.500 / 30%'); }
+:where(html.dark) body .border-red-300 { border-color: theme('colors.red.500 / 45%'); }
+:where(html.dark) body .hover\:border-red-300:hover { border-color: theme('colors.red.500 / 45%'); }
+:where(html.dark) body .from-red-50 { --tw-gradient-from: theme('colors.red.500 / 12%') var(--tw-gradient-from-position); --tw-gradient-to: theme('colors.red.500 / 0%') var(--tw-gradient-to-position); --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to); }
+:where(html.dark) body .to-red-50 { --tw-gradient-to: theme('colors.red.500 / 12%') var(--tw-gradient-to-position); }
+:where(html.dark) body .from-red-100 { --tw-gradient-from: theme('colors.red.500 / 18%') var(--tw-gradient-from-position); --tw-gradient-to: theme('colors.red.500 / 0%') var(--tw-gradient-to-position); --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to); }
+:where(html.dark) body .to-red-100 { --tw-gradient-to: theme('colors.red.500 / 18%') var(--tw-gradient-to-position); }
+:where(html.dark) body .bg-orange-50 { background-color: theme('colors.orange.500 / 12%'); }
+:where(html.dark) body .hover\:bg-orange-50:hover { background-color: theme('colors.orange.500 / 12%'); }
+:where(html.dark) body .bg-orange-100 { background-color: theme('colors.orange.500 / 18%'); }
+:where(html.dark) body .hover\:bg-orange-100:hover { background-color: theme('colors.orange.500 / 18%'); }
+:where(html.dark) body .bg-orange-200 { background-color: theme('colors.orange.500 / 28%'); }
+:where(html.dark) body .text-orange-700 { color: theme('colors.orange.300'); }
+:where(html.dark) body .hover\:text-orange-700:hover { color: theme('colors.orange.300'); }
+:where(html.dark) body .text-orange-800 { color: theme('colors.orange.200'); }
+:where(html.dark) body .hover\:text-orange-800:hover { color: theme('colors.orange.200'); }
+:where(html.dark) body .text-orange-900 { color: theme('colors.orange.100'); }
+:where(html.dark) body .hover\:text-orange-900:hover { color: theme('colors.orange.100'); }
+:where(html.dark) body .border-orange-100 { border-color: theme('colors.orange.500 / 20%'); }
+:where(html.dark) body .border-orange-200 { border-color: theme('colors.orange.500 / 30%'); }
+:where(html.dark) body .hover\:border-orange-200:hover { border-color: theme('colors.orange.500 / 30%'); }
+:where(html.dark) body .border-orange-300 { border-color: theme('colors.orange.500 / 45%'); }
+:where(html.dark) body .hover\:border-orange-300:hover { border-color: theme('colors.orange.500 / 45%'); }
+:where(html.dark) body .from-orange-50 { --tw-gradient-from: theme('colors.orange.500 / 12%') var(--tw-gradient-from-position); --tw-gradient-to: theme('colors.orange.500 / 0%') var(--tw-gradient-to-position); --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to); }
+:where(html.dark) body .to-orange-50 { --tw-gradient-to: theme('colors.orange.500 / 12%') var(--tw-gradient-to-position); }
+:where(html.dark) body .from-orange-100 { --tw-gradient-from: theme('colors.orange.500 / 18%') var(--tw-gradient-from-position); --tw-gradient-to: theme('colors.orange.500 / 0%') var(--tw-gradient-to-position); --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to); }
+:where(html.dark) body .to-orange-100 { --tw-gradient-to: theme('colors.orange.500 / 18%') var(--tw-gradient-to-position); }
+:where(html.dark) body .bg-amber-50 { background-color: theme('colors.amber.500 / 12%'); }
+:where(html.dark) body .hover\:bg-amber-50:hover { background-color: theme('colors.amber.500 / 12%'); }
+:where(html.dark) body .bg-amber-100 { background-color: theme('colors.amber.500 / 18%'); }
+:where(html.dark) body .hover\:bg-amber-100:hover { background-color: theme('colors.amber.500 / 18%'); }
+:where(html.dark) body .bg-amber-200 { background-color: theme('colors.amber.500 / 28%'); }
+:where(html.dark) body .text-amber-700 { color: theme('colors.amber.300'); }
+:where(html.dark) body .hover\:text-amber-700:hover { color: theme('colors.amber.300'); }
+:where(html.dark) body .text-amber-800 { color: theme('colors.amber.200'); }
+:where(html.dark) body .hover\:text-amber-800:hover { color: theme('colors.amber.200'); }
+:where(html.dark) body .text-amber-900 { color: theme('colors.amber.100'); }
+:where(html.dark) body .hover\:text-amber-900:hover { color: theme('colors.amber.100'); }
+:where(html.dark) body .border-amber-100 { border-color: theme('colors.amber.500 / 20%'); }
+:where(html.dark) body .border-amber-200 { border-color: theme('colors.amber.500 / 30%'); }
+:where(html.dark) body .hover\:border-amber-200:hover { border-color: theme('colors.amber.500 / 30%'); }
+:where(html.dark) body .border-amber-300 { border-color: theme('colors.amber.500 / 45%'); }
+:where(html.dark) body .hover\:border-amber-300:hover { border-color: theme('colors.amber.500 / 45%'); }
+:where(html.dark) body .from-amber-50 { --tw-gradient-from: theme('colors.amber.500 / 12%') var(--tw-gradient-from-position); --tw-gradient-to: theme('colors.amber.500 / 0%') var(--tw-gradient-to-position); --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to); }
+:where(html.dark) body .to-amber-50 { --tw-gradient-to: theme('colors.amber.500 / 12%') var(--tw-gradient-to-position); }
+:where(html.dark) body .from-amber-100 { --tw-gradient-from: theme('colors.amber.500 / 18%') var(--tw-gradient-from-position); --tw-gradient-to: theme('colors.amber.500 / 0%') var(--tw-gradient-to-position); --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to); }
+:where(html.dark) body .to-amber-100 { --tw-gradient-to: theme('colors.amber.500 / 18%') var(--tw-gradient-to-position); }
+:where(html.dark) body .bg-yellow-50 { background-color: theme('colors.yellow.500 / 12%'); }
+:where(html.dark) body .hover\:bg-yellow-50:hover { background-color: theme('colors.yellow.500 / 12%'); }
+:where(html.dark) body .bg-yellow-100 { background-color: theme('colors.yellow.500 / 18%'); }
+:where(html.dark) body .hover\:bg-yellow-100:hover { background-color: theme('colors.yellow.500 / 18%'); }
+:where(html.dark) body .bg-yellow-200 { background-color: theme('colors.yellow.500 / 28%'); }
+:where(html.dark) body .text-yellow-700 { color: theme('colors.yellow.300'); }
+:where(html.dark) body .hover\:text-yellow-700:hover { color: theme('colors.yellow.300'); }
+:where(html.dark) body .text-yellow-800 { color: theme('colors.yellow.200'); }
+:where(html.dark) body .hover\:text-yellow-800:hover { color: theme('colors.yellow.200'); }
+:where(html.dark) body .text-yellow-900 { color: theme('colors.yellow.100'); }
+:where(html.dark) body .hover\:text-yellow-900:hover { color: theme('colors.yellow.100'); }
+:where(html.dark) body .border-yellow-100 { border-color: theme('colors.yellow.500 / 20%'); }
+:where(html.dark) body .border-yellow-200 { border-color: theme('colors.yellow.500 / 30%'); }
+:where(html.dark) body .hover\:border-yellow-200:hover { border-color: theme('colors.yellow.500 / 30%'); }
+:where(html.dark) body .border-yellow-300 { border-color: theme('colors.yellow.500 / 45%'); }
+:where(html.dark) body .hover\:border-yellow-300:hover { border-color: theme('colors.yellow.500 / 45%'); }
+:where(html.dark) body .from-yellow-50 { --tw-gradient-from: theme('colors.yellow.500 / 12%') var(--tw-gradient-from-position); --tw-gradient-to: theme('colors.yellow.500 / 0%') var(--tw-gradient-to-position); --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to); }
+:where(html.dark) body .to-yellow-50 { --tw-gradient-to: theme('colors.yellow.500 / 12%') var(--tw-gradient-to-position); }
+:where(html.dark) body .from-yellow-100 { --tw-gradient-from: theme('colors.yellow.500 / 18%') var(--tw-gradient-from-position); --tw-gradient-to: theme('colors.yellow.500 / 0%') var(--tw-gradient-to-position); --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to); }
+:where(html.dark) body .to-yellow-100 { --tw-gradient-to: theme('colors.yellow.500 / 18%') var(--tw-gradient-to-position); }
+:where(html.dark) body .bg-lime-50 { background-color: theme('colors.lime.500 / 12%'); }
+:where(html.dark) body .hover\:bg-lime-50:hover { background-color: theme('colors.lime.500 / 12%'); }
+:where(html.dark) body .bg-lime-100 { background-color: theme('colors.lime.500 / 18%'); }
+:where(html.dark) body .hover\:bg-lime-100:hover { background-color: theme('colors.lime.500 / 18%'); }
+:where(html.dark) body .bg-lime-200 { background-color: theme('colors.lime.500 / 28%'); }
+:where(html.dark) body .text-lime-700 { color: theme('colors.lime.300'); }
+:where(html.dark) body .hover\:text-lime-700:hover { color: theme('colors.lime.300'); }
+:where(html.dark) body .text-lime-800 { color: theme('colors.lime.200'); }
+:where(html.dark) body .hover\:text-lime-800:hover { color: theme('colors.lime.200'); }
+:where(html.dark) body .text-lime-900 { color: theme('colors.lime.100'); }
+:where(html.dark) body .hover\:text-lime-900:hover { color: theme('colors.lime.100'); }
+:where(html.dark) body .border-lime-100 { border-color: theme('colors.lime.500 / 20%'); }
+:where(html.dark) body .border-lime-200 { border-color: theme('colors.lime.500 / 30%'); }
+:where(html.dark) body .hover\:border-lime-200:hover { border-color: theme('colors.lime.500 / 30%'); }
+:where(html.dark) body .border-lime-300 { border-color: theme('colors.lime.500 / 45%'); }
+:where(html.dark) body .hover\:border-lime-300:hover { border-color: theme('colors.lime.500 / 45%'); }
+:where(html.dark) body .from-lime-50 { --tw-gradient-from: theme('colors.lime.500 / 12%') var(--tw-gradient-from-position); --tw-gradient-to: theme('colors.lime.500 / 0%') var(--tw-gradient-to-position); --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to); }
+:where(html.dark) body .to-lime-50 { --tw-gradient-to: theme('colors.lime.500 / 12%') var(--tw-gradient-to-position); }
+:where(html.dark) body .from-lime-100 { --tw-gradient-from: theme('colors.lime.500 / 18%') var(--tw-gradient-from-position); --tw-gradient-to: theme('colors.lime.500 / 0%') var(--tw-gradient-to-position); --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to); }
+:where(html.dark) body .to-lime-100 { --tw-gradient-to: theme('colors.lime.500 / 18%') var(--tw-gradient-to-position); }
+:where(html.dark) body .bg-green-50 { background-color: theme('colors.green.500 / 12%'); }
+:where(html.dark) body .hover\:bg-green-50:hover { background-color: theme('colors.green.500 / 12%'); }
+:where(html.dark) body .bg-green-100 { background-color: theme('colors.green.500 / 18%'); }
+:where(html.dark) body .hover\:bg-green-100:hover { background-color: theme('colors.green.500 / 18%'); }
+:where(html.dark) body .bg-green-200 { background-color: theme('colors.green.500 / 28%'); }
+:where(html.dark) body .text-green-700 { color: theme('colors.green.300'); }
+:where(html.dark) body .hover\:text-green-700:hover { color: theme('colors.green.300'); }
+:where(html.dark) body .text-green-800 { color: theme('colors.green.200'); }
+:where(html.dark) body .hover\:text-green-800:hover { color: theme('colors.green.200'); }
+:where(html.dark) body .text-green-900 { color: theme('colors.green.100'); }
+:where(html.dark) body .hover\:text-green-900:hover { color: theme('colors.green.100'); }
+:where(html.dark) body .border-green-100 { border-color: theme('colors.green.500 / 20%'); }
+:where(html.dark) body .border-green-200 { border-color: theme('colors.green.500 / 30%'); }
+:where(html.dark) body .hover\:border-green-200:hover { border-color: theme('colors.green.500 / 30%'); }
+:where(html.dark) body .border-green-300 { border-color: theme('colors.green.500 / 45%'); }
+:where(html.dark) body .hover\:border-green-300:hover { border-color: theme('colors.green.500 / 45%'); }
+:where(html.dark) body .from-green-50 { --tw-gradient-from: theme('colors.green.500 / 12%') var(--tw-gradient-from-position); --tw-gradient-to: theme('colors.green.500 / 0%') var(--tw-gradient-to-position); --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to); }
+:where(html.dark) body .to-green-50 { --tw-gradient-to: theme('colors.green.500 / 12%') var(--tw-gradient-to-position); }
+:where(html.dark) body .from-green-100 { --tw-gradient-from: theme('colors.green.500 / 18%') var(--tw-gradient-from-position); --tw-gradient-to: theme('colors.green.500 / 0%') var(--tw-gradient-to-position); --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to); }
+:where(html.dark) body .to-green-100 { --tw-gradient-to: theme('colors.green.500 / 18%') var(--tw-gradient-to-position); }
+:where(html.dark) body .bg-emerald-50 { background-color: theme('colors.emerald.500 / 12%'); }
+:where(html.dark) body .hover\:bg-emerald-50:hover { background-color: theme('colors.emerald.500 / 12%'); }
+:where(html.dark) body .bg-emerald-100 { background-color: theme('colors.emerald.500 / 18%'); }
+:where(html.dark) body .hover\:bg-emerald-100:hover { background-color: theme('colors.emerald.500 / 18%'); }
+:where(html.dark) body .bg-emerald-200 { background-color: theme('colors.emerald.500 / 28%'); }
+:where(html.dark) body .text-emerald-700 { color: theme('colors.emerald.300'); }
+:where(html.dark) body .hover\:text-emerald-700:hover { color: theme('colors.emerald.300'); }
+:where(html.dark) body .text-emerald-800 { color: theme('colors.emerald.200'); }
+:where(html.dark) body .hover\:text-emerald-800:hover { color: theme('colors.emerald.200'); }
+:where(html.dark) body .text-emerald-900 { color: theme('colors.emerald.100'); }
+:where(html.dark) body .hover\:text-emerald-900:hover { color: theme('colors.emerald.100'); }
+:where(html.dark) body .border-emerald-100 { border-color: theme('colors.emerald.500 / 20%'); }
+:where(html.dark) body .border-emerald-200 { border-color: theme('colors.emerald.500 / 30%'); }
+:where(html.dark) body .hover\:border-emerald-200:hover { border-color: theme('colors.emerald.500 / 30%'); }
+:where(html.dark) body .border-emerald-300 { border-color: theme('colors.emerald.500 / 45%'); }
+:where(html.dark) body .hover\:border-emerald-300:hover { border-color: theme('colors.emerald.500 / 45%'); }
+:where(html.dark) body .from-emerald-50 { --tw-gradient-from: theme('colors.emerald.500 / 12%') var(--tw-gradient-from-position); --tw-gradient-to: theme('colors.emerald.500 / 0%') var(--tw-gradient-to-position); --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to); }
+:where(html.dark) body .to-emerald-50 { --tw-gradient-to: theme('colors.emerald.500 / 12%') var(--tw-gradient-to-position); }
+:where(html.dark) body .from-emerald-100 { --tw-gradient-from: theme('colors.emerald.500 / 18%') var(--tw-gradient-from-position); --tw-gradient-to: theme('colors.emerald.500 / 0%') var(--tw-gradient-to-position); --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to); }
+:where(html.dark) body .to-emerald-100 { --tw-gradient-to: theme('colors.emerald.500 / 18%') var(--tw-gradient-to-position); }
+:where(html.dark) body .bg-teal-50 { background-color: theme('colors.teal.500 / 12%'); }
+:where(html.dark) body .hover\:bg-teal-50:hover { background-color: theme('colors.teal.500 / 12%'); }
+:where(html.dark) body .bg-teal-100 { background-color: theme('colors.teal.500 / 18%'); }
+:where(html.dark) body .hover\:bg-teal-100:hover { background-color: theme('colors.teal.500 / 18%'); }
+:where(html.dark) body .bg-teal-200 { background-color: theme('colors.teal.500 / 28%'); }
+:where(html.dark) body .text-teal-700 { color: theme('colors.teal.300'); }
+:where(html.dark) body .hover\:text-teal-700:hover { color: theme('colors.teal.300'); }
+:where(html.dark) body .text-teal-800 { color: theme('colors.teal.200'); }
+:where(html.dark) body .hover\:text-teal-800:hover { color: theme('colors.teal.200'); }
+:where(html.dark) body .text-teal-900 { color: theme('colors.teal.100'); }
+:where(html.dark) body .hover\:text-teal-900:hover { color: theme('colors.teal.100'); }
+:where(html.dark) body .border-teal-100 { border-color: theme('colors.teal.500 / 20%'); }
+:where(html.dark) body .border-teal-200 { border-color: theme('colors.teal.500 / 30%'); }
+:where(html.dark) body .hover\:border-teal-200:hover { border-color: theme('colors.teal.500 / 30%'); }
+:where(html.dark) body .border-teal-300 { border-color: theme('colors.teal.500 / 45%'); }
+:where(html.dark) body .hover\:border-teal-300:hover { border-color: theme('colors.teal.500 / 45%'); }
+:where(html.dark) body .from-teal-50 { --tw-gradient-from: theme('colors.teal.500 / 12%') var(--tw-gradient-from-position); --tw-gradient-to: theme('colors.teal.500 / 0%') var(--tw-gradient-to-position); --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to); }
+:where(html.dark) body .to-teal-50 { --tw-gradient-to: theme('colors.teal.500 / 12%') var(--tw-gradient-to-position); }
+:where(html.dark) body .from-teal-100 { --tw-gradient-from: theme('colors.teal.500 / 18%') var(--tw-gradient-from-position); --tw-gradient-to: theme('colors.teal.500 / 0%') var(--tw-gradient-to-position); --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to); }
+:where(html.dark) body .to-teal-100 { --tw-gradient-to: theme('colors.teal.500 / 18%') var(--tw-gradient-to-position); }
+:where(html.dark) body .bg-cyan-50 { background-color: theme('colors.cyan.500 / 12%'); }
+:where(html.dark) body .hover\:bg-cyan-50:hover { background-color: theme('colors.cyan.500 / 12%'); }
+:where(html.dark) body .bg-cyan-100 { background-color: theme('colors.cyan.500 / 18%'); }
+:where(html.dark) body .hover\:bg-cyan-100:hover { background-color: theme('colors.cyan.500 / 18%'); }
+:where(html.dark) body .bg-cyan-200 { background-color: theme('colors.cyan.500 / 28%'); }
+:where(html.dark) body .text-cyan-700 { color: theme('colors.cyan.300'); }
+:where(html.dark) body .hover\:text-cyan-700:hover { color: theme('colors.cyan.300'); }
+:where(html.dark) body .text-cyan-800 { color: theme('colors.cyan.200'); }
+:where(html.dark) body .hover\:text-cyan-800:hover { color: theme('colors.cyan.200'); }
+:where(html.dark) body .text-cyan-900 { color: theme('colors.cyan.100'); }
+:where(html.dark) body .hover\:text-cyan-900:hover { color: theme('colors.cyan.100'); }
+:where(html.dark) body .border-cyan-100 { border-color: theme('colors.cyan.500 / 20%'); }
+:where(html.dark) body .border-cyan-200 { border-color: theme('colors.cyan.500 / 30%'); }
+:where(html.dark) body .hover\:border-cyan-200:hover { border-color: theme('colors.cyan.500 / 30%'); }
+:where(html.dark) body .border-cyan-300 { border-color: theme('colors.cyan.500 / 45%'); }
+:where(html.dark) body .hover\:border-cyan-300:hover { border-color: theme('colors.cyan.500 / 45%'); }
+:where(html.dark) body .from-cyan-50 { --tw-gradient-from: theme('colors.cyan.500 / 12%') var(--tw-gradient-from-position); --tw-gradient-to: theme('colors.cyan.500 / 0%') var(--tw-gradient-to-position); --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to); }
+:where(html.dark) body .to-cyan-50 { --tw-gradient-to: theme('colors.cyan.500 / 12%') var(--tw-gradient-to-position); }
+:where(html.dark) body .from-cyan-100 { --tw-gradient-from: theme('colors.cyan.500 / 18%') var(--tw-gradient-from-position); --tw-gradient-to: theme('colors.cyan.500 / 0%') var(--tw-gradient-to-position); --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to); }
+:where(html.dark) body .to-cyan-100 { --tw-gradient-to: theme('colors.cyan.500 / 18%') var(--tw-gradient-to-position); }
+:where(html.dark) body .bg-sky-50 { background-color: theme('colors.sky.500 / 12%'); }
+:where(html.dark) body .hover\:bg-sky-50:hover { background-color: theme('colors.sky.500 / 12%'); }
+:where(html.dark) body .bg-sky-100 { background-color: theme('colors.sky.500 / 18%'); }
+:where(html.dark) body .hover\:bg-sky-100:hover { background-color: theme('colors.sky.500 / 18%'); }
+:where(html.dark) body .bg-sky-200 { background-color: theme('colors.sky.500 / 28%'); }
+:where(html.dark) body .text-sky-700 { color: theme('colors.sky.300'); }
+:where(html.dark) body .hover\:text-sky-700:hover { color: theme('colors.sky.300'); }
+:where(html.dark) body .text-sky-800 { color: theme('colors.sky.200'); }
+:where(html.dark) body .hover\:text-sky-800:hover { color: theme('colors.sky.200'); }
+:where(html.dark) body .text-sky-900 { color: theme('colors.sky.100'); }
+:where(html.dark) body .hover\:text-sky-900:hover { color: theme('colors.sky.100'); }
+:where(html.dark) body .border-sky-100 { border-color: theme('colors.sky.500 / 20%'); }
+:where(html.dark) body .border-sky-200 { border-color: theme('colors.sky.500 / 30%'); }
+:where(html.dark) body .hover\:border-sky-200:hover { border-color: theme('colors.sky.500 / 30%'); }
+:where(html.dark) body .border-sky-300 { border-color: theme('colors.sky.500 / 45%'); }
+:where(html.dark) body .hover\:border-sky-300:hover { border-color: theme('colors.sky.500 / 45%'); }
+:where(html.dark) body .from-sky-50 { --tw-gradient-from: theme('colors.sky.500 / 12%') var(--tw-gradient-from-position); --tw-gradient-to: theme('colors.sky.500 / 0%') var(--tw-gradient-to-position); --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to); }
+:where(html.dark) body .to-sky-50 { --tw-gradient-to: theme('colors.sky.500 / 12%') var(--tw-gradient-to-position); }
+:where(html.dark) body .from-sky-100 { --tw-gradient-from: theme('colors.sky.500 / 18%') var(--tw-gradient-from-position); --tw-gradient-to: theme('colors.sky.500 / 0%') var(--tw-gradient-to-position); --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to); }
+:where(html.dark) body .to-sky-100 { --tw-gradient-to: theme('colors.sky.500 / 18%') var(--tw-gradient-to-position); }
+:where(html.dark) body .bg-blue-50 { background-color: theme('colors.blue.500 / 12%'); }
+:where(html.dark) body .hover\:bg-blue-50:hover { background-color: theme('colors.blue.500 / 12%'); }
+:where(html.dark) body .bg-blue-100 { background-color: theme('colors.blue.500 / 18%'); }
+:where(html.dark) body .hover\:bg-blue-100:hover { background-color: theme('colors.blue.500 / 18%'); }
+:where(html.dark) body .bg-blue-200 { background-color: theme('colors.blue.500 / 28%'); }
+:where(html.dark) body .text-blue-700 { color: theme('colors.blue.300'); }
+:where(html.dark) body .hover\:text-blue-700:hover { color: theme('colors.blue.300'); }
+:where(html.dark) body .text-blue-800 { color: theme('colors.blue.200'); }
+:where(html.dark) body .hover\:text-blue-800:hover { color: theme('colors.blue.200'); }
+:where(html.dark) body .text-blue-900 { color: theme('colors.blue.100'); }
+:where(html.dark) body .hover\:text-blue-900:hover { color: theme('colors.blue.100'); }
+:where(html.dark) body .border-blue-100 { border-color: theme('colors.blue.500 / 20%'); }
+:where(html.dark) body .border-blue-200 { border-color: theme('colors.blue.500 / 30%'); }
+:where(html.dark) body .hover\:border-blue-200:hover { border-color: theme('colors.blue.500 / 30%'); }
+:where(html.dark) body .border-blue-300 { border-color: theme('colors.blue.500 / 45%'); }
+:where(html.dark) body .hover\:border-blue-300:hover { border-color: theme('colors.blue.500 / 45%'); }
+:where(html.dark) body .from-blue-50 { --tw-gradient-from: theme('colors.blue.500 / 12%') var(--tw-gradient-from-position); --tw-gradient-to: theme('colors.blue.500 / 0%') var(--tw-gradient-to-position); --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to); }
+:where(html.dark) body .to-blue-50 { --tw-gradient-to: theme('colors.blue.500 / 12%') var(--tw-gradient-to-position); }
+:where(html.dark) body .from-blue-100 { --tw-gradient-from: theme('colors.blue.500 / 18%') var(--tw-gradient-from-position); --tw-gradient-to: theme('colors.blue.500 / 0%') var(--tw-gradient-to-position); --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to); }
+:where(html.dark) body .to-blue-100 { --tw-gradient-to: theme('colors.blue.500 / 18%') var(--tw-gradient-to-position); }
+:where(html.dark) body .bg-indigo-50 { background-color: theme('colors.indigo.500 / 12%'); }
+:where(html.dark) body .hover\:bg-indigo-50:hover { background-color: theme('colors.indigo.500 / 12%'); }
+:where(html.dark) body .bg-indigo-100 { background-color: theme('colors.indigo.500 / 18%'); }
+:where(html.dark) body .hover\:bg-indigo-100:hover { background-color: theme('colors.indigo.500 / 18%'); }
+:where(html.dark) body .bg-indigo-200 { background-color: theme('colors.indigo.500 / 28%'); }
+:where(html.dark) body .text-indigo-700 { color: theme('colors.indigo.300'); }
+:where(html.dark) body .hover\:text-indigo-700:hover { color: theme('colors.indigo.300'); }
+:where(html.dark) body .text-indigo-800 { color: theme('colors.indigo.200'); }
+:where(html.dark) body .hover\:text-indigo-800:hover { color: theme('colors.indigo.200'); }
+:where(html.dark) body .text-indigo-900 { color: theme('colors.indigo.100'); }
+:where(html.dark) body .hover\:text-indigo-900:hover { color: theme('colors.indigo.100'); }
+:where(html.dark) body .border-indigo-100 { border-color: theme('colors.indigo.500 / 20%'); }
+:where(html.dark) body .border-indigo-200 { border-color: theme('colors.indigo.500 / 30%'); }
+:where(html.dark) body .hover\:border-indigo-200:hover { border-color: theme('colors.indigo.500 / 30%'); }
+:where(html.dark) body .border-indigo-300 { border-color: theme('colors.indigo.500 / 45%'); }
+:where(html.dark) body .hover\:border-indigo-300:hover { border-color: theme('colors.indigo.500 / 45%'); }
+:where(html.dark) body .from-indigo-50 { --tw-gradient-from: theme('colors.indigo.500 / 12%') var(--tw-gradient-from-position); --tw-gradient-to: theme('colors.indigo.500 / 0%') var(--tw-gradient-to-position); --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to); }
+:where(html.dark) body .to-indigo-50 { --tw-gradient-to: theme('colors.indigo.500 / 12%') var(--tw-gradient-to-position); }
+:where(html.dark) body .from-indigo-100 { --tw-gradient-from: theme('colors.indigo.500 / 18%') var(--tw-gradient-from-position); --tw-gradient-to: theme('colors.indigo.500 / 0%') var(--tw-gradient-to-position); --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to); }
+:where(html.dark) body .to-indigo-100 { --tw-gradient-to: theme('colors.indigo.500 / 18%') var(--tw-gradient-to-position); }
+:where(html.dark) body .bg-violet-50 { background-color: theme('colors.violet.500 / 12%'); }
+:where(html.dark) body .hover\:bg-violet-50:hover { background-color: theme('colors.violet.500 / 12%'); }
+:where(html.dark) body .bg-violet-100 { background-color: theme('colors.violet.500 / 18%'); }
+:where(html.dark) body .hover\:bg-violet-100:hover { background-color: theme('colors.violet.500 / 18%'); }
+:where(html.dark) body .bg-violet-200 { background-color: theme('colors.violet.500 / 28%'); }
+:where(html.dark) body .text-violet-700 { color: theme('colors.violet.300'); }
+:where(html.dark) body .hover\:text-violet-700:hover { color: theme('colors.violet.300'); }
+:where(html.dark) body .text-violet-800 { color: theme('colors.violet.200'); }
+:where(html.dark) body .hover\:text-violet-800:hover { color: theme('colors.violet.200'); }
+:where(html.dark) body .text-violet-900 { color: theme('colors.violet.100'); }
+:where(html.dark) body .hover\:text-violet-900:hover { color: theme('colors.violet.100'); }
+:where(html.dark) body .border-violet-100 { border-color: theme('colors.violet.500 / 20%'); }
+:where(html.dark) body .border-violet-200 { border-color: theme('colors.violet.500 / 30%'); }
+:where(html.dark) body .hover\:border-violet-200:hover { border-color: theme('colors.violet.500 / 30%'); }
+:where(html.dark) body .border-violet-300 { border-color: theme('colors.violet.500 / 45%'); }
+:where(html.dark) body .hover\:border-violet-300:hover { border-color: theme('colors.violet.500 / 45%'); }
+:where(html.dark) body .from-violet-50 { --tw-gradient-from: theme('colors.violet.500 / 12%') var(--tw-gradient-from-position); --tw-gradient-to: theme('colors.violet.500 / 0%') var(--tw-gradient-to-position); --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to); }
+:where(html.dark) body .to-violet-50 { --tw-gradient-to: theme('colors.violet.500 / 12%') var(--tw-gradient-to-position); }
+:where(html.dark) body .from-violet-100 { --tw-gradient-from: theme('colors.violet.500 / 18%') var(--tw-gradient-from-position); --tw-gradient-to: theme('colors.violet.500 / 0%') var(--tw-gradient-to-position); --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to); }
+:where(html.dark) body .to-violet-100 { --tw-gradient-to: theme('colors.violet.500 / 18%') var(--tw-gradient-to-position); }
+:where(html.dark) body .bg-purple-50 { background-color: theme('colors.purple.500 / 12%'); }
+:where(html.dark) body .hover\:bg-purple-50:hover { background-color: theme('colors.purple.500 / 12%'); }
+:where(html.dark) body .bg-purple-100 { background-color: theme('colors.purple.500 / 18%'); }
+:where(html.dark) body .hover\:bg-purple-100:hover { background-color: theme('colors.purple.500 / 18%'); }
+:where(html.dark) body .bg-purple-200 { background-color: theme('colors.purple.500 / 28%'); }
+:where(html.dark) body .text-purple-700 { color: theme('colors.purple.300'); }
+:where(html.dark) body .hover\:text-purple-700:hover { color: theme('colors.purple.300'); }
+:where(html.dark) body .text-purple-800 { color: theme('colors.purple.200'); }
+:where(html.dark) body .hover\:text-purple-800:hover { color: theme('colors.purple.200'); }
+:where(html.dark) body .text-purple-900 { color: theme('colors.purple.100'); }
+:where(html.dark) body .hover\:text-purple-900:hover { color: theme('colors.purple.100'); }
+:where(html.dark) body .border-purple-100 { border-color: theme('colors.purple.500 / 20%'); }
+:where(html.dark) body .border-purple-200 { border-color: theme('colors.purple.500 / 30%'); }
+:where(html.dark) body .hover\:border-purple-200:hover { border-color: theme('colors.purple.500 / 30%'); }
+:where(html.dark) body .border-purple-300 { border-color: theme('colors.purple.500 / 45%'); }
+:where(html.dark) body .hover\:border-purple-300:hover { border-color: theme('colors.purple.500 / 45%'); }
+:where(html.dark) body .from-purple-50 { --tw-gradient-from: theme('colors.purple.500 / 12%') var(--tw-gradient-from-position); --tw-gradient-to: theme('colors.purple.500 / 0%') var(--tw-gradient-to-position); --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to); }
+:where(html.dark) body .to-purple-50 { --tw-gradient-to: theme('colors.purple.500 / 12%') var(--tw-gradient-to-position); }
+:where(html.dark) body .from-purple-100 { --tw-gradient-from: theme('colors.purple.500 / 18%') var(--tw-gradient-from-position); --tw-gradient-to: theme('colors.purple.500 / 0%') var(--tw-gradient-to-position); --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to); }
+:where(html.dark) body .to-purple-100 { --tw-gradient-to: theme('colors.purple.500 / 18%') var(--tw-gradient-to-position); }
+:where(html.dark) body .bg-fuchsia-50 { background-color: theme('colors.fuchsia.500 / 12%'); }
+:where(html.dark) body .hover\:bg-fuchsia-50:hover { background-color: theme('colors.fuchsia.500 / 12%'); }
+:where(html.dark) body .bg-fuchsia-100 { background-color: theme('colors.fuchsia.500 / 18%'); }
+:where(html.dark) body .hover\:bg-fuchsia-100:hover { background-color: theme('colors.fuchsia.500 / 18%'); }
+:where(html.dark) body .bg-fuchsia-200 { background-color: theme('colors.fuchsia.500 / 28%'); }
+:where(html.dark) body .text-fuchsia-700 { color: theme('colors.fuchsia.300'); }
+:where(html.dark) body .hover\:text-fuchsia-700:hover { color: theme('colors.fuchsia.300'); }
+:where(html.dark) body .text-fuchsia-800 { color: theme('colors.fuchsia.200'); }
+:where(html.dark) body .hover\:text-fuchsia-800:hover { color: theme('colors.fuchsia.200'); }
+:where(html.dark) body .text-fuchsia-900 { color: theme('colors.fuchsia.100'); }
+:where(html.dark) body .hover\:text-fuchsia-900:hover { color: theme('colors.fuchsia.100'); }
+:where(html.dark) body .border-fuchsia-100 { border-color: theme('colors.fuchsia.500 / 20%'); }
+:where(html.dark) body .border-fuchsia-200 { border-color: theme('colors.fuchsia.500 / 30%'); }
+:where(html.dark) body .hover\:border-fuchsia-200:hover { border-color: theme('colors.fuchsia.500 / 30%'); }
+:where(html.dark) body .border-fuchsia-300 { border-color: theme('colors.fuchsia.500 / 45%'); }
+:where(html.dark) body .hover\:border-fuchsia-300:hover { border-color: theme('colors.fuchsia.500 / 45%'); }
+:where(html.dark) body .from-fuchsia-50 { --tw-gradient-from: theme('colors.fuchsia.500 / 12%') var(--tw-gradient-from-position); --tw-gradient-to: theme('colors.fuchsia.500 / 0%') var(--tw-gradient-to-position); --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to); }
+:where(html.dark) body .to-fuchsia-50 { --tw-gradient-to: theme('colors.fuchsia.500 / 12%') var(--tw-gradient-to-position); }
+:where(html.dark) body .from-fuchsia-100 { --tw-gradient-from: theme('colors.fuchsia.500 / 18%') var(--tw-gradient-from-position); --tw-gradient-to: theme('colors.fuchsia.500 / 0%') var(--tw-gradient-to-position); --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to); }
+:where(html.dark) body .to-fuchsia-100 { --tw-gradient-to: theme('colors.fuchsia.500 / 18%') var(--tw-gradient-to-position); }
+:where(html.dark) body .bg-pink-50 { background-color: theme('colors.pink.500 / 12%'); }
+:where(html.dark) body .hover\:bg-pink-50:hover { background-color: theme('colors.pink.500 / 12%'); }
+:where(html.dark) body .bg-pink-100 { background-color: theme('colors.pink.500 / 18%'); }
+:where(html.dark) body .hover\:bg-pink-100:hover { background-color: theme('colors.pink.500 / 18%'); }
+:where(html.dark) body .bg-pink-200 { background-color: theme('colors.pink.500 / 28%'); }
+:where(html.dark) body .text-pink-700 { color: theme('colors.pink.300'); }
+:where(html.dark) body .hover\:text-pink-700:hover { color: theme('colors.pink.300'); }
+:where(html.dark) body .text-pink-800 { color: theme('colors.pink.200'); }
+:where(html.dark) body .hover\:text-pink-800:hover { color: theme('colors.pink.200'); }
+:where(html.dark) body .text-pink-900 { color: theme('colors.pink.100'); }
+:where(html.dark) body .hover\:text-pink-900:hover { color: theme('colors.pink.100'); }
+:where(html.dark) body .border-pink-100 { border-color: theme('colors.pink.500 / 20%'); }
+:where(html.dark) body .border-pink-200 { border-color: theme('colors.pink.500 / 30%'); }
+:where(html.dark) body .hover\:border-pink-200:hover { border-color: theme('colors.pink.500 / 30%'); }
+:where(html.dark) body .border-pink-300 { border-color: theme('colors.pink.500 / 45%'); }
+:where(html.dark) body .hover\:border-pink-300:hover { border-color: theme('colors.pink.500 / 45%'); }
+:where(html.dark) body .from-pink-50 { --tw-gradient-from: theme('colors.pink.500 / 12%') var(--tw-gradient-from-position); --tw-gradient-to: theme('colors.pink.500 / 0%') var(--tw-gradient-to-position); --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to); }
+:where(html.dark) body .to-pink-50 { --tw-gradient-to: theme('colors.pink.500 / 12%') var(--tw-gradient-to-position); }
+:where(html.dark) body .from-pink-100 { --tw-gradient-from: theme('colors.pink.500 / 18%') var(--tw-gradient-from-position); --tw-gradient-to: theme('colors.pink.500 / 0%') var(--tw-gradient-to-position); --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to); }
+:where(html.dark) body .to-pink-100 { --tw-gradient-to: theme('colors.pink.500 / 18%') var(--tw-gradient-to-position); }
+:where(html.dark) body .bg-rose-50 { background-color: theme('colors.rose.500 / 12%'); }
+:where(html.dark) body .hover\:bg-rose-50:hover { background-color: theme('colors.rose.500 / 12%'); }
+:where(html.dark) body .bg-rose-100 { background-color: theme('colors.rose.500 / 18%'); }
+:where(html.dark) body .hover\:bg-rose-100:hover { background-color: theme('colors.rose.500 / 18%'); }
+:where(html.dark) body .bg-rose-200 { background-color: theme('colors.rose.500 / 28%'); }
+:where(html.dark) body .text-rose-700 { color: theme('colors.rose.300'); }
+:where(html.dark) body .hover\:text-rose-700:hover { color: theme('colors.rose.300'); }
+:where(html.dark) body .text-rose-800 { color: theme('colors.rose.200'); }
+:where(html.dark) body .hover\:text-rose-800:hover { color: theme('colors.rose.200'); }
+:where(html.dark) body .text-rose-900 { color: theme('colors.rose.100'); }
+:where(html.dark) body .hover\:text-rose-900:hover { color: theme('colors.rose.100'); }
+:where(html.dark) body .border-rose-100 { border-color: theme('colors.rose.500 / 20%'); }
+:where(html.dark) body .border-rose-200 { border-color: theme('colors.rose.500 / 30%'); }
+:where(html.dark) body .hover\:border-rose-200:hover { border-color: theme('colors.rose.500 / 30%'); }
+:where(html.dark) body .border-rose-300 { border-color: theme('colors.rose.500 / 45%'); }
+:where(html.dark) body .hover\:border-rose-300:hover { border-color: theme('colors.rose.500 / 45%'); }
+:where(html.dark) body .from-rose-50 { --tw-gradient-from: theme('colors.rose.500 / 12%') var(--tw-gradient-from-position); --tw-gradient-to: theme('colors.rose.500 / 0%') var(--tw-gradient-to-position); --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to); }
+:where(html.dark) body .to-rose-50 { --tw-gradient-to: theme('colors.rose.500 / 12%') var(--tw-gradient-to-position); }
+:where(html.dark) body .from-rose-100 { --tw-gradient-from: theme('colors.rose.500 / 18%') var(--tw-gradient-from-position); --tw-gradient-to: theme('colors.rose.500 / 0%') var(--tw-gradient-to-position); --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to); }
+:where(html.dark) body .to-rose-100 { --tw-gradient-to: theme('colors.rose.500 / 18%') var(--tw-gradient-to-position); }
