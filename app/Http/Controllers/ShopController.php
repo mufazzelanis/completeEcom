@@ -134,9 +134,19 @@ class ShopController extends Controller
             return redirect()->away($category->redirect_url, 301);
         }
 
+        // A parent category (e.g. "Women's Shop") usually has no products of its own — they're
+        // all filed under its subcategories — so its page used to come up completely empty
+        // (and sat in the sitemap as a thin page). Include every descendant's products too.
+        $ids = collect([$category->id]);
+        $frontier = $ids;
+        while ($frontier->isNotEmpty()) {
+            $frontier = Category::active()->whereIn('parent_id', $frontier)->whereNotIn('id', $ids)->pluck('id');
+            $ids = $ids->merge($frontier);
+        }
+
         return $this->listing(fn ($q) => $q
-            ->where('category_id', $category->id)
-            ->orWhere('subcategory_id', $category->id), compact('category'));
+            ->whereIn('category_id', $ids)
+            ->orWhereIn('subcategory_id', $ids), compact('category'));
     }
 
     /**
