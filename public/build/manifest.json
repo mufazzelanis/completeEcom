@@ -1,6 +1,16 @@
 {
+  "node_modules/flatpickr/dist/esm/index.js": {
+    "file": "assets/esm-DObTXHMn.js",
+    "name": "esm",
+    "src": "node_modules/flatpickr/dist/esm/index.js",
+    "isDynamicEntry": true
+  },
+  "node_modules/flatpickr/dist/flatpickr.min.css": {
+    "file": "assets/flatpickr-CveviJq_.css",
+    "src": "node_modules/flatpickr/dist/flatpickr.min.css"
+  },
   "resources/css/app.css": {
-    "file": "assets/app-BcmgAgo2.css",
+    "file": "assets/app-DC-fQiJ3.css",
     "name": "app",
     "names": [
       "app.css"
@@ -9,12 +19,12 @@
     "isEntry": true
   },
   "resources/js/app.js": {
-    "file": "assets/app-DoSuFer7.js",
+    "file": "assets/app-CbO3lAcz.js",
     "name": "app",
     "src": "resources/js/app.js",
     "isEntry": true,
-    "css": [
-      "assets/app-CveviJq_.css"
+    "dynamicImports": [
+      "node_modules/flatpickr/dist/esm/index.js"
     ]
   }
 }

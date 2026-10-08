@@ -71,6 +71,10 @@
     ExpiresActive On
     ExpiresByType text/css "access plus 1 year"
     ExpiresByType application/javascript "access plus 1 year"
+    # LiteSpeed serves .js as text/javascript (the current standard MIME type), so the line
+    # above alone never matched — every built JS bundle went out with no cache lifetime.
+    ExpiresByType text/javascript "access plus 1 year"
+    ExpiresByType application/x-javascript "access plus 1 year"
     ExpiresByType font/woff2 "access plus 1 year"
     ExpiresByType font/woff "access plus 1 year"
     ExpiresByType image/jpeg "access plus 1 month"

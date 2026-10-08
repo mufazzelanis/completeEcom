@@ -39,7 +39,7 @@
              crop. Contain always shows the whole product, centered, same card size either way. --}}
         <div class="relative overflow-hidden bg-gray-50 aspect-square p-3">
             @if($product->image)
-                <img src="{{ Storage::url($product->image) }}" alt="{{ $product->name }}" loading="lazy" decoding="async"
+                <img src="{{ image_thumb($product->image, 400) }}" alt="{{ $product->name }}" width="400" height="400" loading="lazy" decoding="async"
                     class="w-full h-full object-contain group-hover:scale-110 transition-transform duration-500">
             @else
                 <div class="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200">

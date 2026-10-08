@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\BlogPost;
+use App\Models\Brand;
 use App\Models\Category;
 use App\Models\Page;
 use App\Models\Product;
@@ -28,6 +29,15 @@ class SitemapController extends Controller
                 'lastmod' => $category->updated_at->toAtomString(),
                 'changefreq' => 'weekly',
                 'priority' => '0.8',
+            ];
+        }
+
+        foreach (Brand::where('is_active', true)->whereHas('products', fn ($q) => $q->active())->get() as $brand) {
+            $urls[] = [
+                'loc' => route('shop.brand', $brand),
+                'lastmod' => $brand->updated_at->toAtomString(),
+                'changefreq' => 'weekly',
+                'priority' => '0.7',
             ];
         }
 

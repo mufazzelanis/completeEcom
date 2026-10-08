@@ -13,6 +13,19 @@ class ShopController extends Controller
 {
     public function index(Request $request)
     {
+        // A bare ?category=<one slug> or ?brand=<slug> (nothing else but ?page) duplicates
+        // that category/brand's own page — 301 there so old links and Google consolidate
+        // onto the one indexable URL.
+        $filters = collect($request->except('page'))->filter(fn ($v) => $v !== null && $v !== '');
+        if ($filters->keys()->all() === ['category'] && !str_contains($filters['category'], ',')
+            && ($cat = Category::active()->where('slug', $filters['category'])->first())) {
+            return redirect()->route('shop.category', array_filter([$cat, 'page' => $request->page]), 301);
+        }
+        if ($filters->keys()->all() === ['brand']
+            && ($brandModel = Brand::where('is_active', true)->where('slug', $filters['brand'])->first())) {
+            return redirect()->route('shop.brand', array_filter([$brandModel, 'page' => $request->page]), 301);
+        }
+
         // 'reviews' is needed by every product-card partial for its star rating
         // (avg) and count — without it, each card lazy-loads its own reviews query,
         // turning a 12-24-product listing page into 12-24+ extra DB round-trips.
@@ -121,11 +134,27 @@ class ShopController extends Controller
             return redirect()->away($category->redirect_url, 301);
         }
 
+        return $this->listing(fn ($q) => $q
+            ->where('category_id', $category->id)
+            ->orWhere('subcategory_id', $category->id), compact('category'));
+    }
+
+    /**
+     * Dedicated, indexable brand landing page (/brand/{slug}) — "<brand> price in
+     * Bangladesh" style searches need a real URL with its own title/H1/description,
+     * which a ?brand= filter on /shop can't give them.
+     */
+    public function brand(Brand $brand)
+    {
+        abort_unless($brand->is_active, 404);
+
+        return $this->listing(fn ($q) => $q->where('brand_id', $brand->id), ['currentBrand' => $brand]);
+    }
+
+    private function listing(\Closure $scope, array $context)
+    {
         $products = Product::with(['category', 'brand', 'activeFlashSaleProduct', 'reviews'])
-            ->where(fn($q) => $q
-                ->where('category_id', $category->id)
-                ->orWhere('subcategory_id', $category->id)
-            )
+            ->where($scope)
             ->active()
             ->orderBy('sort_order')
             ->latest()
@@ -141,6 +170,6 @@ class ShopController extends Controller
         $brands     = Brand::where('is_active', true)->orderBy('name')->get(['id', 'name', 'slug']);
         $tags       = Tag::orderBy('name')->get(['id', 'name', 'slug']);
 
-        return view('shop.index', compact('products', 'categories', 'brands', 'tags', 'category'));
+        return view('shop.index', compact('products', 'categories', 'brands', 'tags') + $context);
     }
 }

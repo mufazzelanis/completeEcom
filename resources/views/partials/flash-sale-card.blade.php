@@ -11,7 +11,7 @@
          cropping it to fill the square. --}}
     <div class="relative overflow-hidden bg-gray-50 rounded-lg aspect-square mb-2 p-2.5">
         @if($fsp->product->image)
-            <img src="{{ Storage::url($fsp->product->image) }}" alt="{{ $fsp->product->name }}" loading="lazy" decoding="async"
+            <img src="{{ image_thumb($fsp->product->image, 400) }}" width="400" height="400" alt="{{ $fsp->product->name }}" loading="lazy" decoding="async"
                 class="w-full h-full object-contain group-hover:scale-110 transition-transform duration-400">
         @else
             <div class="w-full h-full flex items-center justify-center">

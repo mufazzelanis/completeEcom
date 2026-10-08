@@ -105,6 +105,10 @@ Route::get('/search/suggest', [SearchController::class, 'suggest'])->name('searc
 
 // SEO: sitemap + robots.txt (public/robots.txt removed so this route is actually reached)
 Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemap');
+// Only reached when the thumb file doesn't exist yet (otherwise the web server serves it
+// statically) — see ImageThumbController.
+Route::get('/storage/thumbs/{width}/{path}', [\App\Http\Controllers\ImageThumbController::class, 'show'])
+    ->where(['width' => '[0-9]+', 'path' => '.*'])->name('image.thumb');
 Route::get('/robots.txt', [SitemapController::class, 'robots'])->name('robots');
 // AdSense wants this at the domain root listing which ad networks may sell its inventory —
 // 404s until a Publisher ID is saved, same as robots.txt needing public/robots.txt removed.
@@ -161,10 +165,12 @@ Route::get('/sync', function (\Illuminate\Http\Request $request) {
 
 // Frontend Routes
 Route::get('/', [HomeController::class, 'index'])->name('home');
+Route::get('/home-sections/{section}/products', [HomeController::class, 'sectionProducts'])->name('home.section-products');
 Route::get('/shop', [ShopController::class, 'index'])->name('shop.index');
 Route::get('/categories', [ShopController::class, 'categories'])->name('categories.index');
 Route::get('/brands', [ShopController::class, 'brands'])->name('brands.index');
 Route::get('/shop/category/{category}', [ShopController::class, 'category'])->name('shop.category');
+Route::get('/brand/{brand:slug}', [ShopController::class, 'brand'])->name('shop.brand');
 Route::get('/products/{product}', [ProductController::class, 'show'])->name('products.show');
 Route::post('/products/{product}/review', [ProductController::class, 'storeReview'])->middleware(['auth', 'throttle:5,1'])->name('products.review');
 

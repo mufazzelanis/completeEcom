@@ -652,7 +652,7 @@ $navCategories = \App\Models\Category::with(['children' => fn($q) => $q->active(
                                        class="group flex items-center gap-3 px-2.5 py-2.5 rounded-lg hover:bg-orange-50 dark:hover:bg-orange-500/10 transition-colors duration-150">
                                         <span class="flex-shrink-0 w-9 h-9 rounded-lg bg-gradient-to-br from-orange-100 to-amber-50 dark:from-orange-500/20 dark:to-amber-500/10 flex items-center justify-center overflow-hidden group-hover:scale-105 transition-transform duration-200">
                                             @if($child->image)
-                                                <img src="{{ Storage::url($child->image) }}" alt="" class="w-full h-full object-cover">
+                                                <img src="{{ image_thumb($child->image, 96) }}" alt="" loading="lazy" decoding="async" class="w-full h-full object-cover">
                                             @else
                                                 <svg class="w-4 h-4 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><circle cx="7" cy="7" r="1.4" fill="currentColor" stroke="none"/></svg>
                                             @endif

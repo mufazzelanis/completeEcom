@@ -9,6 +9,7 @@ use App\Models\FlashSale;
 use App\Models\HomeSection;
 use App\Models\Product;
 use App\Models\Review;
+use Illuminate\Http\Request;
 
 class HomeController extends Controller
 {
@@ -101,5 +102,27 @@ class HomeController extends Controller
             'flashSaleProducts',
             'testimonials',
         ));
+    }
+
+    /**
+     * "See More" on a homepage section: the next batch of that section's product cards as
+     * HTML. The homepage used to render every section's full 40-product batch up front and
+     * just hide the overflow — ~280 cards / 1.7 MB of HTML for a first view showing a few
+     * dozen — so the overflow is now fetched only when someone actually asks for it.
+     */
+    public function sectionProducts(Request $request, HomeSection $section)
+    {
+        abort_unless($section->is_active, 404);
+
+        $offset = max(0, $request->integer('offset'));
+        $count = min(24, max(1, $request->integer('count', 8)));
+        $all = $section->getProducts();
+        $products = $all->slice($offset, $count);
+
+        return response()->json([
+            'html' => $products->map(fn ($product) => view('partials.product-card', ['product' => $product])->render())->implode(''),
+            'next' => $offset + $products->count(),
+            'hasMore' => $offset + $products->count() < $all->count(),
+        ]);
     }
 }

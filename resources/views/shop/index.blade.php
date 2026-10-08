@@ -1,9 +1,31 @@
 @extends('layouts.app')
 @php
-    $shopSeoTitle = isset($category) ? ($category->meta_title ?: $category->name) : 'Shop';
-    $shopSeoDesc  = isset($category) ? ($category->meta_description ?: $category->description) : null;
-    $shopSeoImage = isset($category) ? ($category->og_image ? Storage::url($category->og_image) : ($category->image ? Storage::url($category->image) : null)) : null;
-    $shopCanonical = isset($category) ? ($category->canonical_url ?: route('shop.category', $category)) : route('shop.index');
+    $siteName = setting('site_name', 'ShopVista');
+    // Fallback title/description formulas for category & brand pages with no SEO fields
+    // filled in — a bare "FOREIGN FOODS" title and the site-wide tagline as description
+    // give Google nothing to rank or show. Admin-entered meta_title/description still win.
+    $shopHeading = isset($category) ? Str::title(Str::lower($category->name)) : (isset($currentBrand) ? $currentBrand->name : 'Shop');
+    $shopIntro   = isset($category) ? $category->description : (isset($currentBrand) ? $currentBrand->description : null);
+    $shopIntroText = trim(Str::limit(preg_replace('/\s+/', ' ', strip_tags((string) $shopIntro)), 155, '…'));
+    $shopFallbackDesc = isset($currentBrand)
+        ? "Buy original {$currentBrand->name} products online in Bangladesh at {$siteName}. Best price, cash on delivery and fast delivery across Bangladesh."
+        : "Shop {$shopHeading} online in Bangladesh at {$siteName}. Original products, best price, cash on delivery and fast delivery across Bangladesh.";
+    $shopSeoTitle = isset($category)
+        ? ($category->meta_title ?: "{$shopHeading} Price in Bangladesh – Buy Online | {$siteName}")
+        : (isset($currentBrand) ? "{$currentBrand->name} Products Price in Bangladesh | {$siteName}" : 'Shop');
+    $shopSeoDesc  = isset($category)
+        ? ($category->meta_description ?: ($shopIntroText ?: $shopFallbackDesc))
+        : (isset($currentBrand) ? ($shopIntroText ?: $shopFallbackDesc) : null);
+    $shopSeoImage = isset($category) ? ($category->og_image ? Storage::url($category->og_image) : ($category->image ? Storage::url($category->image) : null))
+        : (isset($currentBrand) && $currentBrand->logo ? Storage::url($currentBrand->logo) : null);
+    $shopCanonical = isset($category) ? ($category->canonical_url ?: route('shop.category', $category))
+        : (isset($currentBrand) ? route('shop.brand', $currentBrand) : route('shop.index'));
+    // Paginated pages get their own canonical (Google's guidance: don't point page 2 at page 1).
+    if (!isset($category) || !$category->canonical_url) {
+        if (request()->integer('page') > 1 && (isset($category) || isset($currentBrand))) {
+            $shopCanonical .= '?page=' . request()->integer('page');
+        }
+    }
 
     // Same robots_meta + override-checkbox pattern as products/show.blade.php —
     // only applies when viewing a single category page (the plain /shop listing
@@ -27,7 +49,7 @@
 @if(isset($shopRobots))@section('robots', $shopRobots)@endif
 
 @push('meta')
-@if(isset($category))
+@if(isset($category) || isset($currentBrand))
 <script type="application/ld+json">
 {!! json_encode([
     '@@context' => 'https://schema.org',
@@ -49,8 +71,21 @@
             <a href="{{ route('shop.index') }}" class="hover:text-orange-700">Shop</a>
             <span>/</span>
             <span class="text-gray-900 font-medium">{{ $category->name }}</span>
+        @elseif(isset($currentBrand))
+            <a href="{{ route('brands.index') }}" class="hover:text-orange-700">Brands</a>
+            <span>/</span>
+            <span class="text-gray-900 font-medium">{{ $currentBrand->name }}</span>
         @else
             <span class="text-gray-900 font-medium">Shop</span>
+        @endif
+    </div>
+
+    {{-- Every listing page gets a real H1 (Google reads it as the page's topic), plus the
+         admin-written category/brand description as indexable intro copy. --}}
+    <div class="mb-6">
+        <h1 class="text-2xl md:text-3xl font-bold text-gray-900">{{ $shopHeading }}</h1>
+        @if($shopIntro)
+            <div class="prose prose-sm prose-gray dark:prose-invert max-w-none text-gray-600 mt-2">{!! nl2br(e(strip_tags($shopIntro))) !!}</div>
         @endif
     </div>
 

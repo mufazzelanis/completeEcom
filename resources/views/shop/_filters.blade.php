@@ -64,13 +64,13 @@
         </button>
         <div x-show="expanded" class="space-y-1.5 max-h-40 overflow-y-auto pr-1">
             <label class="flex items-center gap-2 cursor-pointer py-0.5">
-                <input type="radio" name="brand" value="" {{ !request('brand') ? 'checked' : '' }} class="text-orange-500">
+                <input type="radio" name="brand" value="" {{ !(request('brand') ?? ($currentBrand->slug ?? null)) ? 'checked' : '' }} class="text-orange-500">
                 <span class="text-sm text-gray-600">All Brands</span>
             </label>
             @foreach($brands as $brand)
                 <label class="flex items-center gap-2 cursor-pointer py-0.5">
                     <input type="radio" name="brand" value="{{ $brand->slug }}"
-                        {{ request('brand') === $brand->slug ? 'checked' : '' }} class="text-orange-500">
+                        {{ (request('brand') ?? ($currentBrand->slug ?? null)) === $brand->slug ? 'checked' : '' }} class="text-orange-500">
                     <span class="text-sm text-gray-600">{{ $brand->name }}</span>
                 </label>
             @endforeach

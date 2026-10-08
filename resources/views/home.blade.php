@@ -1,5 +1,9 @@
 @extends('layouts.app')
-@section('title', 'Home - ' . setting('site_name', 'ShopVista'))
+{{-- Homepage title/H1 come from Settings → SEO → Default Meta Title (the layout already uses
+     it as the site-wide fallback) — a hardcoded "Home - <site>" told Google nothing about
+     what the store sells. --}}
+@php $homeHeading = setting('seo_meta_title') ?: setting('site_name', 'ShopVista') . ' – Online Shopping in Bangladesh'; @endphp
+@section('title', $homeHeading)
 
 @push('meta')
 {{-- Organization + WebSite structured data — homepage-only signals for Google's
@@ -37,6 +41,9 @@
 @endpush
 
 @section('content')
+{{-- The page's single H1 — visually the hero banner carries the message, so this stays
+     screen-reader/crawler-only rather than adding a heading bar above the carousel. --}}
+<h1 class="sr-only">{{ $homeHeading }}</h1>
 
 {{-- ═══════════ HERO BANNER CAROUSEL ═══════════ --}}
 {{-- The h-56 fixed mobile height (previous commit) made the hero bigger but forced
@@ -349,7 +356,7 @@
                             <div class="w-full h-full rounded-full bg-white dark:bg-gray-900 p-[3px]">
                                 <div class="w-full h-full rounded-full overflow-hidden bg-gradient-to-br from-orange-50 to-orange-100 dark:from-gray-800 dark:to-gray-700 flex items-center justify-center">
                                     @if($category->image)
-                                        <img src="{{ Storage::url($category->image) }}" alt="{{ $category->name }}" loading="lazy" decoding="async" class="w-full h-full object-cover">
+                                        <img src="{{ image_thumb($category->image, 200) }}" alt="{{ $category->name }}" width="200" height="200" loading="lazy" decoding="async" class="w-full h-full object-cover">
                                     @else
                                         {{-- A generic tag icon (not two-letter initials) reads as an
                                              intentional, uniform icon set — initials look like a raw
@@ -379,7 +386,7 @@
         @foreach($promoBanners as $banner)
             @if($banner->image)
             <a href="{{ $banner->button_link ?: '#' }}" class="relative rounded-xl overflow-hidden group block aspect-[2/1]">
-                <img src="{{ Storage::url($banner->image) }}" alt="{{ $banner->title }}" loading="lazy" decoding="async" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+                <img src="{{ image_thumb($banner->image, 800) }}" alt="{{ $banner->title }}" loading="lazy" decoding="async" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
                 <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
                 <div class="absolute bottom-0 left-0 p-4">
                     <h3 class="text-white font-bold text-sm md:text-base">{{ $banner->title }}</h3>
@@ -399,7 +406,31 @@
          shown, staged in batches of $step (2 desktop rows' worth) per click instead of all at
          once — a long section used to dump its entire remaining batch on the first click, which
          read as an abrupt wall of products rather than a smooth, inviting "there's more" browse. --}}
-    <div class="relative overflow-hidden mx-3 md:mx-0 mt-3 md:mt-4 rounded-2xl md:rounded-none shadow-sm md:shadow-none {{ $sec->theme === 'sale' ? 'bg-gradient-to-r from-red-500 to-orange-500' : 'bg-white dark:bg-gray-900' }}" x-data="{ expanded: false, revealedExtra: 0 }">
+    {{-- Only the first product_limit cards are rendered; the overflow (up to the section's
+         fetched batch) is pulled from home.section-products a batch at a time on "See More",
+         instead of shipping every hidden card in the initial HTML. --}}
+    <div class="relative overflow-hidden mx-3 md:mx-0 mt-3 md:mt-4 rounded-2xl md:rounded-none shadow-sm md:shadow-none {{ $sec->theme === 'sale' ? 'bg-gradient-to-r from-red-500 to-orange-500' : 'bg-white dark:bg-gray-900' }}"
+         x-data="{
+            expanded: false, loading: false,
+            next: {{ min($sec->product_limit, count($entry['products'])) }},
+            hasMore: {{ count($entry['products']) > $sec->product_limit ? 'true' : 'false' }},
+            async loadMore(count) {
+                this.expanded = true;
+                if (this.loading || !this.hasMore) return;
+                this.loading = true;
+                try {
+                    const res = await fetch('{{ route('home.section-products', $sec) }}?offset=' + this.next + '&count=' + count, { headers: { 'Accept': 'application/json' } });
+                    const data = await res.json();
+                    this.$refs.grid.insertAdjacentHTML('beforeend', data.html);
+                    this.next = data.next;
+                    this.hasMore = data.hasMore;
+                } catch (e) {
+                    this.hasMore = false;
+                } finally {
+                    this.loading = false;
+                }
+            },
+         }">
         {{-- Same quiet corner-glow treatment as the trust banner — breaks up the run of
              flat white section cards down the page without competing with the products. --}}
         @if($sec->theme !== 'sale')
@@ -430,7 +461,6 @@
                 // trade-off for one shared counter rather than tracking per-breakpoint reveal
                 // state, and still "staged in batches," never the old single all-at-once dump.
                 $step = $sec->columns * 2;
-                $overflowCount = max(0, count($entry['products']) - $sec->product_limit);
 
                 // Admin-chosen colors (Admin > Home Sections > edit > "See More" Button Color)
                 // override the hardcoded theme classes below only when both gradient stops are
@@ -441,21 +471,14 @@
                     ? 'hover:shadow-lg hover:shadow-black/10'
                     : ($sec->theme === 'sale' ? 'bg-white text-orange-600 hover:bg-gray-100' : 'bg-gradient-to-r from-orange-500 to-red-500 text-white hover:shadow-lg hover:shadow-orange-500/30');
             @endphp
-            <div class="grid {{ $sec->getGridColsClass() }} gap-3 reveal-group">
-                @foreach($entry['products'] as $i => $product)
+            <div class="grid {{ $sec->getGridColsClass() }} gap-3 reveal-group" x-ref="grid">
+                @foreach($entry['products']->take($sec->product_limit) as $i => $product)
                     @if($i < $mobileCap)
                         @include('partials.product-card', ['product' => $product])
-                    @elseif($i < $sec->product_limit)
-                        {{-- Within the admin's chosen limit, so always shown on desktop;
-                             on mobile it waits behind "More" alongside the true overflow. --}}
-                        <div x-show="expanded" x-cloak class="sm:!block"
-                             x-transition:enter="transition ease-out duration-400" x-transition:enter-start="opacity-0 translate-y-3" x-transition:enter-end="opacity-100 translate-y-0">
-                            @include('partials.product-card', ['product' => $product])
-                        </div>
                     @else
-                        {{-- This item's 1-indexed position within the overflow tier — shown once
-                             revealedExtra (bumped by $step per click) reaches it. --}}
-                        <div x-show="revealedExtra >= {{ $i - $sec->product_limit + 1 }}" x-cloak
+                        {{-- Within the admin's chosen limit, so always shown on desktop;
+                             on mobile it waits behind "More" alongside the overflow. --}}
+                        <div x-show="expanded" x-cloak class="sm:!block"
                              x-transition:enter="transition ease-out duration-400" x-transition:enter-start="opacity-0 translate-y-3" x-transition:enter-end="opacity-100 translate-y-0">
                             @include('partials.product-card', ['product' => $product])
                         </div>
@@ -469,8 +492,8 @@
                  mobile row cap (nothing held back on desktop), the button itself is
                  mobile-only — there'd be nothing left for it to reveal at sm+. --}}
             @if($totalCount > $sec->product_limit)
-            <div class="text-center mt-6" x-show="revealedExtra < {{ $overflowCount }}">
-                <button type="button" @click="expanded = true; revealedExtra = Math.min(revealedExtra + {{ $step }}, {{ $overflowCount }})"
+            <div class="text-center mt-6" x-show="hasMore || !expanded">
+                <button type="button" @click="loadMore({{ $step }})" :disabled="loading" :class="loading && 'opacity-60 cursor-wait'"
                    @if($seeMoreStyle) style="{{ $seeMoreStyle }}" @endif
                    class="group inline-flex items-center gap-2 {{ $seeMoreColorClasses }} px-10 py-2.5 rounded-full font-bold text-sm transition-all duration-300 shadow-md hover:-translate-y-0.5">
                     {{ $sec->getSeeMoreLabelText() }}
@@ -559,10 +582,10 @@ $reviewThemes = [
                      against the retrofit's near-black card — see resources/css/app.css's
                      "Site-wide dark mode retrofit" comment, which calls out exactly this kind of
                      spot as the one to carve out with its own selector. --}}
-                <a href="{{ route('shop.index') }}?brand={{ $brand->slug }}"
+                <a href="{{ route('shop.brand', $brand) }}"
                    class="flex-shrink-0 w-32 h-20 bg-gray-50 dark:bg-white border border-gray-100 dark:border-gray-200 rounded-xl flex items-center justify-center hover:border-orange-300 hover:shadow-md dark:hover:shadow-black/30 transition-all duration-200 group">
                     @if($brand->logo)
-                        <img src="{{ Storage::url($brand->logo) }}" alt="{{ $brand->name }}" loading="lazy" decoding="async" class="max-w-[80%] max-h-[60%] object-contain group-hover:scale-105 transition">
+                        <img src="{{ image_thumb($brand->logo, 200) }}" alt="{{ $brand->name }}" loading="lazy" decoding="async" class="max-w-[80%] max-h-[60%] object-contain group-hover:scale-105 transition">
                     @else
                         <span class="text-gray-500 dark:text-gray-500 font-bold text-sm group-hover:text-orange-700 transition">{{ $brand->name }}</span>
                     @endif

@@ -64,6 +64,28 @@ if (!function_exists('setting_file_url')) {
     }
 }
 
+if (!function_exists('image_thumb')) {
+    /**
+     * URL of a resized WebP copy of a public-disk image, at least $width px wide (rounded up
+     * to one of ImageThumbController::WIDTHS). Generated on first request, then served as
+     * a static file — see ImageThumbController. SVG/GIF and external URLs pass through as-is.
+     */
+    function image_thumb(?string $path, int $width): ?string
+    {
+        if (!$path) {
+            return null;
+        }
+        if (str_starts_with($path, 'http') || !preg_match('/\.(jpe?g|png|webp)$/i', $path)) {
+            return str_starts_with($path, 'http') ? $path : \Illuminate\Support\Facades\Storage::url($path);
+        }
+
+        $widths = \App\Http\Controllers\ImageThumbController::WIDTHS;
+        $size = collect($widths)->first(fn ($w) => $w >= $width) ?? end($widths);
+
+        return \Illuminate\Support\Facades\Storage::disk('public')->url("thumbs/{$size}/{$path}.webp");
+    }
+}
+
 if (!function_exists('normalize_digits')) {
     /**
      * Convert Bangla numerals (০-৯) to English digits (0-9), so a customer typing

@@ -1,7 +1,24 @@
 @extends('layouts.app')
 @php
-    $seoTitle = $product->meta_title ?: $product->name;
-    $seoDesc  = $product->meta_description ?: $product->short_description;
+    // An admin-entered meta title/description that's just the category's (or the product's
+    // own) name is a data-entry slip, not real SEO copy — many products were saved with
+    // "Baby's Skin Care" as their title. Treat those as empty and use the formulas below.
+    $siteName = setting('site_name', 'ShopVista');
+    $placeholderTexts = collect([$product->name, $product->category?->name, $product->subcategory?->name])
+        ->filter()->map(fn ($t) => Str::lower(str_replace(['’', "'"], '', trim($t))));
+    $isPlaceholder = fn ($text) => blank($text) || $placeholderTexts->contains(Str::lower(str_replace(['’', "'"], '', trim(strip_tags($text)))));
+    $plainShortDesc = trim(preg_replace('/\s+/', ' ', strip_tags((string) $product->short_description)));
+
+    $seoTitle = $isPlaceholder($product->meta_title)
+        ? "{$product->name} Price in Bangladesh | {$siteName}"
+        : $product->meta_title;
+    $seoDesc = match (true) {
+        !$isPlaceholder($product->meta_description) => $product->meta_description,
+        !$isPlaceholder($plainShortDesc) => Str::limit($plainShortDesc, 155, '…'),
+        default => "Buy original {$product->name} at " . setting('currency_symbol', '৳') . number_format((float) ($product->sale_price ?? $product->price))
+            . " in Bangladesh from {$siteName}. Cash on delivery & fast delivery"
+            . ((int) setting('return_days', '7') > 0 ? ', ' . (int) setting('return_days', '7') . '-day return.' : '.'),
+    };
     $ogImage  = $product->og_image ?: ($product->image ? Storage::url($product->image) : null);
     $canonicalUrl = $product->canonical_url ?: route('products.show', $product);
 
@@ -82,7 +99,7 @@
 {!! json_encode(array_filter([
     '@@context' => 'https://schema.org',
     '@type' => $product->schema_type ?: 'Product',
-    'name' => $seoTitle,
+    'name' => $product->name,
     'description' => $seoDesc,
     'image' => $ogImage ? [$ogImage] : [],
     'sku' => $product->sku,

@@ -260,6 +260,12 @@ class HomeSection extends Model
         };
 
         $slugs = $this->selectedCategories()->pluck('slug');
+        // A section scoped to one category links to that category's own page — the real,
+        // indexable URL — instead of a /shop?category=… filter duplicate of it, so homepage
+        // link equity flows to the category page Google should rank.
+        if ($slugs->count() === 1) {
+            return route('shop.category', $slugs->first());
+        }
         if ($slugs->isNotEmpty()) {
             // ShopController accepts a comma-separated list of slugs for ?category=,
             // so this works whether the section is scoped to one category or several.

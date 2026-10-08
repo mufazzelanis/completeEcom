@@ -1,5 +1,13 @@
-import flatpickr from 'flatpickr';
-import 'flatpickr/dist/flatpickr.min.css';
+// Flatpickr (+ its CSS) is loaded on demand — only once a page actually has a date field —
+// instead of shipping ~60 KB of calendar code/CSS on every storefront page, almost none of
+// which have one. Vite splits the dynamic import into its own chunk.
+let flatpickrPromise = null;
+function loadFlatpickr() {
+    return flatpickrPromise ??= Promise.all([
+        import('flatpickr'),
+        import('flatpickr/dist/flatpickr.min.css'),
+    ]).then(([mod]) => mod.default);
+}
 
 /**
  * Site-wide date/datetime picker upgrade.
@@ -39,7 +47,7 @@ function enhance(input) {
     const max = input.max || undefined;
     input.type = 'text';
 
-    flatpickr(input, {
+    loadFlatpickr().then((flatpickr) => flatpickr(input, {
         dateFormat: isDateTime ? 'Y-m-d\\TH:i' : 'Y-m-d',
         altInput: true,
         altFormat: isDateTime ? 'M j, Y — h:i K' : 'M j, Y',
@@ -79,7 +87,7 @@ function enhance(input) {
             footer.append(clearBtn, todayBtn);
             instance.calendarContainer.appendChild(footer);
         },
-    });
+    }));
 }
 
 function enhanceAll(root = document) {
