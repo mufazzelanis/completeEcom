@@ -23,6 +23,37 @@
     ];
     $schemaAvailability = $availabilityMap[$product->schema_availability]
         ?? ($product->stock > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock');
+
+    // Merchant listings (Google Shopping) shipping/return info, read from the same
+    // Shipping and Orders settings checkout uses so the schema never drifts from them.
+    // Rate is the cheapest zone (Inside Dhaka) — Google treats it as the "from" price.
+    $schemaShippingRate = \App\Services\ShippingCalculator::calculate(0, \App\Services\ShippingCalculator::ZONE_DHAKA);
+    preg_match_all('/\d+/', setting('delivery_days', '3-7'), $deliveryDayNums);
+    $deliveryDayNums = array_map('intval', $deliveryDayNums[0]) ?: [3, 7];
+    $schemaShipping = [
+        '@type' => 'OfferShippingDetails',
+        'shippingRate' => ['@type' => 'MonetaryAmount', 'value' => (string) $schemaShippingRate, 'currency' => setting('currency_code', 'BDT')],
+        'shippingDestination' => ['@type' => 'DefinedRegion', 'addressCountry' => 'BD'],
+        'deliveryTime' => [
+            '@type' => 'ShippingDeliveryTime',
+            'handlingTime' => ['@type' => 'QuantitativeValue', 'minValue' => 0, 'maxValue' => 1, 'unitCode' => 'DAY'],
+            'transitTime' => ['@type' => 'QuantitativeValue', 'minValue' => min($deliveryDayNums), 'maxValue' => max($deliveryDayNums), 'unitCode' => 'DAY'],
+        ],
+    ];
+    $returnDays = (int) setting('return_days', '7');
+    $schemaReturnPolicy = $returnDays > 0 ? [
+        '@type' => 'MerchantReturnPolicy',
+        'applicableCountry' => 'BD',
+        'returnPolicyCategory' => 'https://schema.org/MerchantReturnFiniteReturnWindow',
+        'merchantReturnDays' => $returnDays,
+        'returnMethod' => 'https://schema.org/ReturnByMail',
+        // The return policy page doesn't promise free return shipping, so don't claim it.
+        'returnFees' => 'https://schema.org/ReturnFeesCustomerResponsibility',
+    ] : [
+        '@type' => 'MerchantReturnPolicy',
+        'applicableCountry' => 'BD',
+        'returnPolicyCategory' => 'https://schema.org/MerchantReturnNotPermitted',
+    ];
 @endphp
 @section('title', $seoTitle)
 @if($seoDesc)@section('meta_description', $seoDesc)@endif
@@ -67,6 +98,8 @@
         'priceValidUntil' => $product->price_valid_until?->format('Y-m-d'),
         'itemCondition' => 'https://schema.org/' . ($product->schema_condition ?: 'NewCondition'),
         'availability' => $schemaAvailability,
+        'shippingDetails' => $schemaShipping,
+        'hasMerchantReturnPolicy' => $schemaReturnPolicy,
     ]),
     'aggregateRating' => $product->reviews->count() > 0 ? [
         '@type' => 'AggregateRating',
