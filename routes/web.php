@@ -105,6 +105,8 @@ Route::get('/search/suggest', [SearchController::class, 'suggest'])->name('searc
 
 // SEO: sitemap + robots.txt (public/robots.txt removed so this route is actually reached)
 Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemap');
+// Google Merchant Center product feed (scheduled daily fetch) — see GoogleFeedController.
+Route::get('/google-feed.xml', [\App\Http\Controllers\GoogleFeedController::class, 'index'])->name('google-feed');
 // Only reached when the thumb file doesn't exist yet (otherwise the web server serves it
 // statically) — see ImageThumbController.
 Route::get('/storage/thumbs/{width}/{path}', [\App\Http\Controllers\ImageThumbController::class, 'show'])
