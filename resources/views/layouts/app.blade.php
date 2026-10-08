@@ -13,7 +13,18 @@ $textColor      = setting('text_color', '#1f2937');
 $brandShades    = $primaryColor !== '#ea580c' ? brand_color_shades($primaryColor) : null;
 $secondaryShades = $secondaryColor !== '#ec4899' ? brand_color_shades($secondaryColor) : null;
 $accentShades   = $accentColor !== '#dc2626' ? brand_color_shades($accentColor) : null;
-$textColorChanged = $textColor !== '#1f2937';
+// The text color lands on white cards, so a pale pick (e.g. #f3f4e6) would make every
+// heading/body line invisible — only honor it when it keeps WCAG AA contrast (4.5:1) on white.
+$textColorReadable = (function ($hex) {
+    if (!preg_match('/^#?([0-9a-f]{6})$/i', $hex, $m)) return false;
+    $lum = 0;
+    foreach ([0.2126, 0.7152, 0.0722] as $i => $w) {
+        $c = hexdec(substr($m[1], $i * 2, 2)) / 255;
+        $lum += $w * ($c <= 0.03928 ? $c / 12.92 : (($c + 0.055) / 1.055) ** 2.4);
+    }
+    return 1.05 / ($lum + 0.05) >= 4.5;
+})($textColor);
+$textColorChanged = $textColor !== '#1f2937' && $textColorReadable;
 $gaId         = setting('google_analytics_id', '');
 $gtmId        = setting('google_tag_manager_id', '');
 $adsConversionId = setting('google_ads_conversion_id', '');
@@ -254,7 +265,9 @@ $pageTwitterImage = trim($__env->yieldContent('twitter_image', $pageOgImage));
         @endforeach
         @endif
         @if($textColorChanged)
-        .text-gray-800 { color: {{ $textColor }} !important; }
+        {{-- Light mode only: a dark text color chosen for white cards would vanish on the
+             dark-mode surfaces, which keep app.css's own light-gray text instead. --}}
+        html:not(.dark) .text-gray-800 { color: {{ $textColor }} !important; }
         @endif
     </style>
     @endif

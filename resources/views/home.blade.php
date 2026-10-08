@@ -13,7 +13,7 @@
 @endphp
 <script type="application/ld+json">
 {!! json_encode(array_filter([
-    '@context' => 'https://schema.org',
+    '@@context' => 'https://schema.org',
     '@type' => 'Organization',
     'name' => setting('site_name', 'ShopVista'),
     'url' => route('home'),
@@ -23,7 +23,7 @@
 </script>
 <script type="application/ld+json">
 {!! json_encode([
-    '@context' => 'https://schema.org',
+    '@@context' => 'https://schema.org',
     '@type' => 'WebSite',
     'name' => setting('site_name', 'ShopVista'),
     'url' => route('home'),

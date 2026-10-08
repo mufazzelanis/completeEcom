@@ -122,6 +122,13 @@ $logos = [
                 <input type="text" x-model="text"
                        class="flex-1 border rounded px-2 py-1.5 text-xs text-gray-600 font-mono bg-gray-50">
             </div>
+            {{-- Mirrors the layout's 4.5:1-on-white check — a color failing it is ignored on the storefront. --}}
+            <p x-show="(() => { const m = /^#?([0-9a-f]{6})$/i.exec(text); if (!m) return false;
+                    const l = [0, 2, 4].map(i => { const c = parseInt(m[1].substr(i, 2), 16) / 255; return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4; });
+                    return 1.05 / (0.2126 * l[0] + 0.7152 * l[1] + 0.0722 * l[2] + 0.05) < 4.5; })()"
+               x-cloak class="mt-1.5 text-xs text-red-600">
+                This color is too light to read on white backgrounds, so the storefront will keep the default text color. Pick a darker shade.
+            </p>
         </div>
     </div>
 

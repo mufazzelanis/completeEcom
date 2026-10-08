@@ -141,6 +141,19 @@
 }
 
 /*
+ * Rich text pasted into product descriptions / blog posts / pages from other
+ * sites carries inline `background-color: rgb(255,255,255); color: rgb(36,36,36)`
+ * on every span — in dark mode that's dark text on white patches scattered over
+ * a dark page. Only `!important` beats an inline style, so in dark mode those
+ * inline colors are dropped and the prose's own (prose-invert) colors take over.
+ * Attribute selectors, not classes — see the dark-mode note above.
+ */
+html.dark [class~="prose"] [style*="color"] {
+    color: inherit !important;
+    background-color: transparent !important;
+}
+
+/*
  * ── Custom date/datetime picker (flatpickr) theme ────────────────────────────
  * Every `<input type="date">`/`type="datetime-local">` is upgraded in JS
  * (resources/js/datepicker.js) to a flatpickr instance — this is the visual

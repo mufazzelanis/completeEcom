@@ -8,7 +8,7 @@
      any ad-network review of the site. --}}
 <script type="application/ld+json">
 {!! json_encode([
-    '@context' => 'https://schema.org',
+    '@@context' => 'https://schema.org',
     '@type' => 'Blog',
     'name' => setting('site_name', 'ShopVista') . ' Blog',
     'url' => route('blog.index'),
