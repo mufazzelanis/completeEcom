@@ -10,36 +10,70 @@ use App\Models\HomeSection;
 use App\Models\Product;
 use App\Models\Review;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 
 class HomeController extends Controller
 {
+    /**
+     * Bumped (see AppServiceProvider) whenever a model the homepage shows is saved or deleted,
+     * which orphans every cached homepage block at once — admin edits show up immediately,
+     * and the TTL below only bounds staleness from changes that bypass model events.
+     */
+    public const CACHE_VERSION_KEY = 'home_cache_version';
+    // 5 min: edits invalidate instantly anyway (see AppServiceProvider), so this only bounds
+    // time-based changes no save event announces — a banner reaching its starts_at/ends_at —
+    // and raw DB edits. Shorter would mostly just mean more cold renders on a low-traffic site.
+    private const CACHE_TTL = 300; // seconds
+
+    private ?int $cacheVersion = null;
+
+    private function remember(string $key, \Closure $callback)
+    {
+        $version = $this->cacheVersion ??= Cache::get(self::CACHE_VERSION_KEY, 1);
+
+        return Cache::remember("home:{$version}:{$key}", self::CACHE_TTL, $callback);
+    }
+
     public function index()
     {
-        $categories = Category::where('is_active', true)
+        // Everything on the homepage that's the same for every visitor is cached (short TTL,
+        // plus version-bump invalidation on edits) — the page ran ~20 queries per visit for
+        // data that changes a few times a day. Per-visitor parts (personalized section, flash
+        // sale countdown) stay live.
+        $categories = $this->remember('categories', fn () => Category::where('is_active', true)
             ->withCount('products')
             ->whereNull('parent_id')
             ->orderBy('sort_order')
             ->take(12)
-            ->get();
+            ->get());
 
-        $subcategories = Category::where('is_active', true)
+        $subcategories = $this->remember('subcategories', fn () => Category::where('is_active', true)
             ->whereNotNull('parent_id')
             ->withCount('products')
             ->orderBy('sort_order')
             ->take(20)
-            ->get();
+            ->get());
 
         // Homepage product sections (Featured, Top Selling, New Arrivals, On Sale, and any
         // custom sections) are admin-managed via Admin → Homepage Sections, each with its
-        // own product source, optional category filter, and display limit.
-        $homeSections = HomeSection::with('category')
+        // own product source, optional category filter, and display limit. Only product_limit
+        // + 1 products are kept per section — the +1 just tells the view "See More" has
+        // something to load; the overflow itself comes from sectionProducts() on demand.
+        $sharedSections = $this->remember('sections', fn () => HomeSection::with('category')
             ->where('is_active', true)
             ->orderBy('sort_order')
             ->get()
-            ->map(fn ($section) => [
+            ->map(fn ($section) => $section->source_type === 'personalized' ? ['section' => $section] : [
                 'section' => $section,
-                'products' => $section->getProducts(),
+                'products' => $section->getProducts()->take($section->product_limit + 1)->values(),
                 'totalCount' => $section->getTotalAvailableCount(),
+            ]));
+
+        $homeSections = $sharedSections
+            ->map(fn ($entry) => isset($entry['products']) ? $entry : [
+                'section' => $entry['section'],
+                'products' => $entry['section']->getProducts(),
+                'totalCount' => $entry['section']->getTotalAvailableCount(),
             ])
             ->filter(fn ($entry) => $entry['products']->isNotEmpty())
             ->values();
@@ -49,37 +83,37 @@ class HomeController extends Controller
         $newArrivalsEntry = $homeSections->first(fn ($entry) => $entry['section']->source_type === 'new_arrivals');
         $justForYou = collect();
         if ($newArrivalsEntry) {
-            $justForYou = Product::with('category', 'brand', 'reviews', 'activeFlashSaleProduct')
+            $justForYou = $this->remember('just_for_you', fn () => Product::with('category', 'brand', 'reviews', 'activeFlashSaleProduct')
                 ->active()
                 ->latest()
                 ->skip($newArrivalsEntry['section']->product_limit)
                 ->take(10)
-                ->get();
+                ->get());
         }
 
-        $banners = Banner::active()
+        $banners = $this->remember('banners', fn () => Banner::active()
             ->position('hero')
             ->orderBy('sort_order')
-            ->get();
+            ->get());
 
-        $promoBanners = Banner::active()
+        $promoBanners = $this->remember('promo_banners', fn () => Banner::active()
             ->position('top')
             ->orderBy('sort_order')
             ->take(4)
-            ->get();
+            ->get());
 
-        $brands = Brand::where('is_active', true)
+        $brands = $this->remember('brands', fn () => Brand::where('is_active', true)
             ->withCount('products')
             ->orderBy('sort_order')
             ->take(20)
-            ->get();
+            ->get());
 
-        $testimonials = Review::with('user', 'product')
+        $testimonials = $this->remember('testimonials', fn () => Review::with('user', 'product')
             ->where('is_approved', true)
             ->whereHas('user')
             ->latest()
             ->take(15)
-            ->get();
+            ->get());
 
         $flashSale = FlashSale::current();
         $flashSaleProducts = collect();

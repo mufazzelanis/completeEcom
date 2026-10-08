@@ -36,6 +36,32 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Any change to something the homepage caches orphans all of its cached blocks at once
+        // (HomeController reads keys under this version) — so admin edits, new reviews, stock
+        // changes on product save, etc. appear on the next page view, not after the TTL.
+        $bumpHomeCache = fn () => \Illuminate\Support\Facades\Cache::forever(
+            \App\Http\Controllers\HomeController::CACHE_VERSION_KEY,
+            (int) \Illuminate\Support\Facades\Cache::get(\App\Http\Controllers\HomeController::CACHE_VERSION_KEY, 1) + 1,
+        );
+        foreach ([
+            \App\Models\Category::class, \App\Models\Brand::class,
+            \App\Models\Banner::class, \App\Models\HomeSection::class, \App\Models\Review::class,
+        ] as $model) {
+            $model::saved($bumpHomeCache);
+            $model::deleted($bumpHomeCache);
+        }
+        // $product->decrement('stock') (orders, stock adjustments, returns) fires only
+        // `updated`, not `saved` — catch it too so stock shows correctly right away. But not
+        // the views counter, which every product page visit increments; bumping on that would
+        // wipe the homepage cache on every visit and make it useless.
+        \App\Models\Product::created($bumpHomeCache);
+        \App\Models\Product::deleted($bumpHomeCache);
+        \App\Models\Product::updated(function ($product) use ($bumpHomeCache) {
+            if (array_diff(array_keys($product->getChanges()), ['views', 'updated_at'])) {
+                $bumpHomeCache();
+            }
+        });
+
         Password::defaults(function () {
             $rule = Password::min(10)->mixedCase()->numbers()->symbols();
 

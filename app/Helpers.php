@@ -64,6 +64,28 @@ if (!function_exists('setting_file_url')) {
     }
 }
 
+if (!function_exists('visitor_product_ids')) {
+    /**
+     * Product IDs in the current visitor's wishlist or cart ($type = 'wishlist' | 'cart'), as
+     * an id => true map, fetched once per request. Every product card needs "is this one
+     * wishlisted / in the cart?" — asked per card, that was 2 queries × every card on the
+     * page (84 on the homepage alone).
+     */
+    function visitor_product_ids(string $type): array
+    {
+        static $memo = [];
+        $owner = auth()->check() ? ['user_id', auth()->id()] : ['session_id', session()->getId()];
+        $key = $type . ':' . implode(':', $owner);
+
+        return $memo[$key] ??= ($type === 'cart' ? \App\Models\Cart::query() : \App\Models\Wishlist::query())
+            ->where($owner[0], $owner[1])
+            ->pluck('product_id')
+            ->flip()
+            ->map(fn () => true)
+            ->all();
+    }
+}
+
 if (!function_exists('image_thumb')) {
     /**
      * URL of a resized WebP copy of a public-disk image, at least $width px wide (rounded up

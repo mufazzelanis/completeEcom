@@ -131,6 +131,20 @@ return [
     |
     */
 
-    'serializable_classes' => false,
+    // Narrow allow-list (not `true`) for HomeController's cached homepage blocks — Eloquent
+    // collections of exactly these models and nothing else. Anything outside the list still
+    // unserializes as an inert __PHP_Incomplete_Class, keeping the gadget-chain protection.
+    'serializable_classes' => [
+        Illuminate\Support\Collection::class,
+        Illuminate\Database\Eloquent\Collection::class,
+        App\Models\Banner::class,
+        App\Models\Brand::class,
+        App\Models\Category::class,
+        App\Models\FlashSaleProduct::class,
+        App\Models\HomeSection::class,
+        App\Models\Product::class,
+        App\Models\Review::class,
+        App\Models\User::class,
+    ],
 
 ];

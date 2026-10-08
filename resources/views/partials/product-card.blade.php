@@ -5,12 +5,8 @@
     $discountPct = $hasDiscount ? round((($product->price - $effectivePrice) / $product->price) * 100) : 0;
     $rating = $product->reviews->avg('rating') ?? 0;
     $reviewCount = $product->reviews->count();
-    $isWishlisted = auth()->check()
-        ? \App\Models\Wishlist::where('user_id', auth()->id())->where('product_id', $product->id)->exists()
-        : \App\Models\Wishlist::where('session_id', session()->getId())->where('product_id', $product->id)->exists();
-    $isInCart = auth()->check()
-        ? \App\Models\Cart::where('user_id', auth()->id())->where('product_id', $product->id)->exists()
-        : \App\Models\Cart::where('session_id', session()->getId())->where('product_id', $product->id)->exists();
+    $isWishlisted = isset(visitor_product_ids('wishlist')[$product->id]);
+    $isInCart = isset(visitor_product_ids('cart')[$product->id]);
     // Only shown when there's no discount/flash badge already in that corner — a genuine,
     // data-backed freshness signal (real created_at, not a fabricated "trending" label)
     // rather than clutter competing with the price badge for the same spot.
