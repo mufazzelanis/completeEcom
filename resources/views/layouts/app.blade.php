@@ -1276,13 +1276,16 @@ $navCategories = \App\Models\Category::with(['children' => fn($q) => $q->active(
 
 @include('partials.storefront.bottom-nav')
 
-{{-- Back to Top — nudged up on mobile (bottom-24 instead of bottom-6) so it floats above
-     the app-style bottom nav bar instead of overlapping it. --}}
+{{-- Back to Top — mirrors the "Chat with us" FAB on the opposite corner (both float at
+     bottom-20 on mobile, bottom-6 on desktop, same circle size) so the two read as one
+     consistent pair of floating buttons instead of two unrelated widgets sitting at
+     different heights. Was bottom-24 here vs. bottom-20 on the chat trigger — a 16px
+     mismatch nobody had reason to notice until they were compared side by side. --}}
 <div x-data="{ show: false }" @scroll.window="show = window.scrollY > 400"
      x-show="show" x-cloak x-transition
-     class="fixed bottom-24 right-6 md:bottom-6 z-40">
-    <button onclick="window.scrollTo({top:0,behavior:'smooth'})" aria-label="Back to top" class="w-11 h-11 bg-orange-500 text-white rounded-full shadow-lg hover:bg-orange-600 transition flex items-center justify-center">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 15l7-7 7 7"/></svg>
+     class="fixed bottom-20 right-3 md:right-4 md:bottom-6 z-40">
+    <button onclick="window.scrollTo({top:0,behavior:'smooth'})" aria-label="Back to top" class="w-12 h-12 md:w-14 md:h-14 bg-orange-500 text-white rounded-full shadow-xl hover:shadow-2xl hover:-translate-y-0.5 active:scale-95 tap-spring hover:bg-orange-600 transition-all duration-300 flex items-center justify-center">
+        <svg class="w-5 h-5 md:w-6 md:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 15l7-7 7 7"/></svg>
     </button>
 </div>
 
