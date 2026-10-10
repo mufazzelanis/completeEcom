@@ -26,13 +26,15 @@
     {{-- Blog — always visible (no hidden/md: restriction) so it shows in this exact icon
          row on both mobile and desktop, not just buried inside the mobile drawer menu or
          the desktop-only category bar. Same ping-ring-over-solid-dot "live" badge used for
-         the other Blogs entries, positioned like a notification-count badge would be. --}}
+         the other Blogs entries, positioned like a notification-count badge would be.
+         w-10 h-10 fixed box (not just p-2 padding) so this, Search and Cart all land on an
+         identical touch-target size regardless of each icon's own viewBox/stroke-width. --}}
     <a href="{{ setting('nav_blog_url') ?: route('blog.index') }}" aria-label="Blog"
-        class="relative p-2 rounded-full text-gray-600 dark:text-gray-300 hover:text-orange-700 hover:bg-gray-100 dark:hover:bg-gray-800 active:scale-90 tap-spring transition-all duration-200">
+        class="relative w-10 h-10 flex items-center justify-center rounded-full text-gray-600 dark:text-gray-300 hover:text-orange-700 hover:bg-gray-100 dark:hover:bg-gray-800 active:scale-90 tap-spring transition-all duration-200">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 20H7a2 2 0 01-2-2V4a2 2 0 012-2h7l5 5v11a2 2 0 01-2 2z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 2v5h5M9 13h6m-6 4h4"/></svg>
-        <span class="absolute top-1 right-1 flex h-2 w-2">
+        <span class="absolute top-1.5 right-1.5 flex h-2 w-2">
             <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-            <span class="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+            <span class="relative inline-flex rounded-full h-2 w-2 bg-red-500 ring-2 ring-white dark:ring-gray-900"></span>
         </span>
     </a>
 
@@ -40,20 +42,24 @@
          instead of just navigating to the shop page, so tapping this actually lets you
          type a search rather than dropping you on an unfiltered product listing. --}}
     <button type="button" @click="mobileOpen = true; $nextTick(() => $refs.mobileSearchInput.focus())"
-        class="md:hidden p-2 rounded-full text-gray-600 dark:text-gray-300 hover:text-orange-700 hover:bg-gray-100 dark:hover:bg-gray-800 active:scale-90 tap-spring transition-all duration-200" aria-label="Search">
+        class="md:hidden w-10 h-10 flex items-center justify-center rounded-full text-gray-600 dark:text-gray-300 hover:text-orange-700 hover:bg-gray-100 dark:hover:bg-gray-800 active:scale-90 tap-spring transition-all duration-200" aria-label="Search">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
     </button>
 
-    {{-- Cart --}}
-    <a href="{{ route('cart.index') }}" aria-label="Cart" class="relative p-2 rounded-full text-gray-600 dark:text-gray-300 hover:text-orange-700 hover:bg-gray-100 dark:hover:bg-gray-800 active:scale-90 tap-spring transition-all duration-200 group">
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+    {{-- Cart — the one action in this row that leads straight to a sale, so it's the only
+         icon with a permanent (not just hover) tinted background: it should read as "the
+         important button" at a glance, the way a FAB or primary CTA would, without actually
+         being styled as a FAB that would clash with everything else in this compact row. --}}
+    <a href="{{ route('cart.index') }}" aria-label="Cart"
+        class="relative w-10 h-10 flex items-center justify-center rounded-full text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-500/10 hover:bg-orange-100 dark:hover:bg-orange-500/20 active:scale-90 tap-spring transition-all duration-200 group">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
         @php
             $cartCount = auth()->check()
                 ? \App\Models\Cart::where('user_id', auth()->id())->sum('quantity')
                 : \App\Models\Cart::where('session_id', session()->getId())->sum('quantity');
         @endphp
         <span id="header-cart-count"
-              class="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-[10px] rounded-full min-w-[18px] h-[18px] flex items-center justify-center font-bold pulse-badge {{ $cartCount > 0 ? '' : 'hidden' }}">{{ $cartCount }}</span>
+              class="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] rounded-full min-w-[18px] h-[18px] flex items-center justify-center font-bold ring-2 ring-white dark:ring-gray-900 pulse-badge {{ $cartCount > 0 ? '' : 'hidden' }}">{{ $cartCount }}</span>
     </a>
 
     {{-- Wishlist --}}
@@ -115,9 +121,15 @@
         <a href="{{ route('register') }}" class="hidden md:block bg-orange-500 text-white px-4 py-1.5 rounded text-sm font-medium hover:bg-orange-600 transition">{{ t('header.signup', 'Sign Up', [], 'header') }}</a>
     @endauth
 
-    {{-- Mobile Menu Toggle --}}
-    <button @click="mobileOpen = !mobileOpen" class="md:hidden p-2 rounded-full text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 active:scale-90 tap-spring transition-all duration-200" aria-label="Toggle menu">
-        <svg x-show="!mobileOpen" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
-        <svg x-show="mobileOpen" x-cloak class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+    {{-- Mobile Menu Toggle — the one solid-filled icon in the row on purpose: every other
+         action here (theme, blog, search, cart) is a secondary/optional action, but this is
+         the primary way into the rest of the site on mobile (categories, account, everything
+         the desktop nav bar shows), so it reads as the row's anchor/endpoint rather than one
+         more outline icon in the lineup. Swaps to the X shape in place rather than a second
+         button, so there's one consistent tap target whether opening or closing. --}}
+    <button @click="mobileOpen = !mobileOpen"
+        class="md:hidden ml-0.5 w-10 h-10 flex items-center justify-center rounded-full bg-gray-900 dark:bg-white text-white dark:text-gray-900 hover:bg-gray-800 dark:hover:bg-gray-100 active:scale-90 tap-spring transition-all duration-200 shadow-sm" aria-label="Toggle menu">
+        <svg x-show="!mobileOpen" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+        <svg x-show="mobileOpen" x-cloak class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
     </button>
 </div>

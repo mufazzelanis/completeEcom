@@ -717,6 +717,11 @@ $navCategories = \App\Models\Category::with(['children' => fn($q) => $q->active(
     </div>
     @endif
 
+    {{-- Thin branded edge along the header's bottom — on mobile (where there's no orange
+         category bar to give the header a colored edge of its own) this is the only hint of
+         brand color the header carries, so the frosted/white bar doesn't read as a plain,
+         off-the-shelf nav strip. Pure decoration, not a focus target. --}}
+    <div class="h-[2px] bg-gradient-to-r from-orange-400 via-red-400 to-orange-400 opacity-70" aria-hidden="true"></div>
 </header>
 
 @include('partials.storefront.mobile-scroll-search')
