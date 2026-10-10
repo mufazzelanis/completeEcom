@@ -61,7 +61,16 @@
                     @else
                         <svg class="w-5 h-5 {{ $item['active'] ? 'text-orange-600 dark:text-orange-400' : 'text-gray-500 dark:text-gray-400' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="{{ $item['active'] ? '2.5' : '2' }}" d="{{ $item['icon'] }}"/></svg>
                     @endif
-                    @if(!empty($item['badge']) && $item['badge'] > 0)
+                    @if($item['label'] === 'Cart')
+                        {{-- Always rendered (not just when > 0) and toggled via the 'hidden'
+                             class instead — same pattern as the header's own #header-cart-count
+                             badge, and for the same reason: now that the header's cart icon is
+                             desktop-only (mobile relies on this tab as its one cart indicator),
+                             the quick-add-to-cart AJAX handler in app.blade.php needs a
+                             permanent element here to update live, not one that only exists in
+                             the DOM when the page happened to load with items already in it. --}}
+                        <span id="bottom-nav-cart-count" class="absolute -top-1 -right-1 bg-red-500 text-white text-[9px] rounded-full min-w-[16px] h-[16px] px-0.5 flex items-center justify-center font-bold {{ ($item['badge'] ?? 0) > 0 ? '' : 'hidden' }}">{{ ($item['badge'] ?? 0) > 99 ? '99+' : ($item['badge'] ?? 0) }}</span>
+                    @elseif(!empty($item['badge']) && $item['badge'] > 0)
                         <span class="absolute -top-1 -right-1 bg-red-500 text-white text-[9px] rounded-full min-w-[16px] h-[16px] px-0.5 flex items-center justify-center font-bold">{{ $item['badge'] > 99 ? '99+' : $item['badge'] }}</span>
                     @endif
                 </span>

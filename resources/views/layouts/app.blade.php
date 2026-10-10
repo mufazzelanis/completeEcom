@@ -1439,14 +1439,18 @@ async function toggleCartItem(productId, btn) {
                 showToast(name ? `Added "${name}" to cart!` : 'Added to cart!');
             }
 
-            const badge = document.getElementById('header-cart-count');
-            if (badge) {
-                badge.textContent = data.cart_count;
+            // Header's badge (desktop only now) and the bottom tab bar's (mobile's only
+            // visible cart indicator) both need the same live update — see
+            // partials/storefront/header-actions.blade.php and bottom-nav.blade.php.
+            ['header-cart-count', 'bottom-nav-cart-count'].forEach((id) => {
+                const badge = document.getElementById(id);
+                if (!badge) return;
+                badge.textContent = data.cart_count > 99 ? '99+' : data.cart_count;
                 badge.classList.toggle('hidden', data.cart_count <= 0);
                 badge.classList.remove('pulse-badge');
                 void badge.offsetWidth; // restart the CSS animation
                 badge.classList.add('pulse-badge');
-            }
+            });
         } else {
             alert(data.message || 'Could not update your cart.');
         }

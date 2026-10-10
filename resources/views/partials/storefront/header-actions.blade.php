@@ -46,12 +46,15 @@
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
     </button>
 
-    {{-- Cart — the one action in this row that leads straight to a sale, so it's the only
-         icon with a permanent (not just hover) tinted background: it should read as "the
-         important button" at a glance, the way a FAB or primary CTA would, without actually
-         being styled as a FAB that would clash with everything else in this compact row. --}}
+    {{-- Cart — desktop only. Mobile already has a Cart tab (with its own live badge) in the
+         bottom app-style tab bar (bottom-nav.blade.php), which is the thumb-reachable,
+         always-on-screen place to find it on a phone; duplicating it up here too just gave
+         mobile two cart icons on screen at once for no reason. Desktop has no bottom bar, so
+         it keeps this as its only cart entry point. The one action in this row that leads
+         straight to a sale, so on desktop it's the only icon with a permanent (not just
+         hover) tinted background — reads as "the important button" at a glance. --}}
     <a href="{{ route('cart.index') }}" aria-label="Cart"
-        class="relative w-10 h-10 flex items-center justify-center rounded-full text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-500/10 hover:bg-orange-100 dark:hover:bg-orange-500/20 active:scale-90 tap-spring transition-all duration-200 group">
+        class="relative hidden md:flex w-10 h-10 items-center justify-center rounded-full text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-500/10 hover:bg-orange-100 dark:hover:bg-orange-500/20 active:scale-90 tap-spring transition-all duration-200 group">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
         @php
             $cartCount = auth()->check()
