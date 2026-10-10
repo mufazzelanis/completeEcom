@@ -123,6 +123,17 @@
         'ratingValue' => round($product->average_rating, 1),
         'reviewCount' => $product->reviews->count(),
     ] : null,
+    // Search Console's Product snippets report flags "missing field 'review'" even
+    // when aggregateRating is present — Google wants the individual reviews too, not
+    // just the rollup. Only emitted alongside aggregateRating (i.e. never fabricated),
+    // same condition as above.
+    'review' => $product->reviews->count() > 0 ? $product->reviews->map(fn ($review) => [
+        '@type' => 'Review',
+        'reviewRating' => ['@type' => 'Rating', 'ratingValue' => $review->rating],
+        'author' => ['@type' => 'Person', 'name' => $review->user->name],
+        'reviewBody' => $review->comment,
+        'datePublished' => $review->created_at->format('Y-m-d'),
+    ])->all() : null,
 ], fn ($v) => $v !== null && $v !== ''), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}
 </script>
 
