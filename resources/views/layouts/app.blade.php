@@ -1133,7 +1133,13 @@ $navCategories = \App\Models\Category::with(['children' => fn($q) => $q->active(
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
                             </span>
                             <input type="email" name="email" value="{{ old('email') }}" placeholder="{{ t('footer.email_placeholder', 'Enter your email', [], 'footer') }}" aria-label="{{ t('footer.email_placeholder', 'Enter your email', [], 'footer') }}" required :disabled="sending" class="flex-1 md:w-72 min-w-0 px-4 sm:px-3 py-2.5 bg-transparent text-white border-0 focus:outline-none focus:ring-0 text-sm placeholder-gray-500 disabled:opacity-60">
-                            <button type="submit" :disabled="sending" class="btn-glow flex-shrink-0 bg-gradient-to-r from-orange-500 to-red-500 text-white px-6 py-2.5 rounded-full font-semibold text-sm hover:shadow-lg hover:shadow-orange-900/40 hover:-translate-y-0.5 active:translate-y-0 transition-all whitespace-nowrap disabled:opacity-70 disabled:cursor-not-allowed disabled:translate-y-0">
+                            {{-- Settings → Footer → "Subscribe" Button Color — was a hardcoded
+                                 gradient, the one button on the page the brand-color override
+                                 system couldn't reach (it only intercepts plain bg-{hue}-{step}
+                                 classes, not gradient from-*/to-* stops). --}}
+                            <button type="submit" :disabled="sending"
+                                style="background-image: linear-gradient(to right, {{ setting('newsletter_button_color', '#f97316') }}, {{ setting('newsletter_button_hover_color', '#ef4444') }}); color: {{ setting('newsletter_button_text_color', '#ffffff') }};"
+                                class="btn-glow flex-shrink-0 bg-[length:200%_auto] hover:bg-right px-6 py-2.5 rounded-full font-semibold text-sm hover:shadow-lg hover:shadow-orange-900/40 hover:-translate-y-0.5 active:translate-y-0 transition-all whitespace-nowrap disabled:opacity-70 disabled:cursor-not-allowed disabled:translate-y-0">
                                 <span x-show="!sending">{{ t('footer.subscribe', 'Subscribe', [], 'footer') }}</span>
                                 <span x-show="sending" x-cloak>…</span>
                             </button>

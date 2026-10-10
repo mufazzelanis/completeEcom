@@ -38,6 +38,54 @@
         <input type="text" name="newsletter_subtext" value="{{ setting('newsletter_subtext', 'Get the latest deals and updates.') }}"
                class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-orange-500">
     </div>
+
+    <div class="border-t pt-4"
+         x-data="{
+            from: '{{ setting('newsletter_button_color', '#f97316') }}',
+            to: '{{ setting('newsletter_button_hover_color', '#ef4444') }}',
+            textColor: '{{ setting('newsletter_button_text_color', '#ffffff') }}',
+         }">
+        <h3 class="text-sm font-semibold text-gray-800 mb-1">"Subscribe" Button Color</h3>
+        <p class="text-xs text-gray-400 mb-3">The pill-shaped button next to the email field above, in the footer. Leave untouched and it keeps today's orange-to-red look.</p>
+        <div class="grid grid-cols-2 lg:grid-cols-3 gap-4">
+            <div>
+                <label class="block text-xs font-medium text-gray-700 mb-1">Gradient Start</label>
+                <div class="flex items-center gap-1.5">
+                    <input type="color" name="newsletter_button_color" x-model="from" class="h-9 w-10 flex-shrink-0 rounded border cursor-pointer">
+                    <input type="text" x-model="from" class="w-0 flex-1 border rounded px-2 py-1.5 text-xs text-gray-600 font-mono bg-gray-50">
+                </div>
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-gray-700 mb-1">Gradient End</label>
+                <div class="flex items-center gap-1.5">
+                    <input type="color" name="newsletter_button_hover_color" x-model="to" class="h-9 w-10 flex-shrink-0 rounded border cursor-pointer">
+                    <input type="text" x-model="to" class="w-0 flex-1 border rounded px-2 py-1.5 text-xs text-gray-600 font-mono bg-gray-50">
+                </div>
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-gray-700 mb-1">Text Color</label>
+                <div class="flex items-center gap-1.5">
+                    <input type="color" name="newsletter_button_text_color" x-model="textColor" class="h-9 w-10 flex-shrink-0 rounded border cursor-pointer">
+                    <input type="text" x-model="textColor" class="w-0 flex-1 border rounded px-2 py-1.5 text-xs text-gray-600 font-mono bg-gray-50">
+                </div>
+            </div>
+        </div>
+
+        {{-- Live preview — the footer is dark, so the preview card is too, otherwise a
+             pale gradient pick would look fine here and invisible-on-dark on the real page. --}}
+        <div class="mt-4 bg-gray-900 border border-gray-700 rounded-xl p-4 flex items-center gap-3 flex-wrap">
+            <span class="text-xs text-gray-400">Preview:</span>
+            <button type="button" tabindex="-1"
+                class="bg-[length:200%_auto] hover:bg-right px-6 py-2.5 rounded-full font-semibold text-sm shadow-lg transition-all duration-500"
+                :style="{ backgroundImage: `linear-gradient(to right, ${from}, ${to})`, color: textColor }">
+                Subscribe
+            </button>
+            <button type="button" @click="from = '#f97316'; to = '#ef4444'; textColor = '#ffffff';"
+                class="ml-auto text-xs text-gray-400 hover:text-orange-500 underline">
+                Reset to default
+            </button>
+        </div>
+    </div>
 </div>
 
 <div class="bg-white rounded-xl shadow-sm border p-6 space-y-4">
