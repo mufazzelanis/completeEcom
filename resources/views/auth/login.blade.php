@@ -45,4 +45,15 @@
             </x-primary-button>
         </div>
     </form>
+
+    {{-- Guests landing here from a page that requires auth (bottom nav's Orders/Inbox
+         tabs, "My Account", etc.) had no way to create an account without first finding
+         their own way to /register — this was the only auth page with no link to the
+         other one. --}}
+    <p class="mt-6 text-center text-sm text-gray-500 dark:text-gray-400">
+        {{ __("Don't have an account?") }}
+        <a href="{{ route('register') }}" class="font-semibold text-orange-600 hover:text-orange-700 dark:text-orange-400 dark:hover:text-orange-300">
+            {{ __('Sign up') }}
+        </a>
+    </p>
 </x-guest-layout>
