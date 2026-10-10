@@ -131,7 +131,13 @@
             },
         },
         callbacks: {
-            onChange: function (contents) { hidden.value = contents; },
+            onChange: function (contents) {
+                hidden.value = contents;
+                // A plain DOM textarea isn't Alpine-reactive on its own — pages that want to
+                // react to this editor's content live (e.g. a completeness checklist) listen
+                // for this instead of polling the hidden field.
+                $el.dispatchEvent(new CustomEvent('editor-change', { bubbles: true, detail: { id: {{ Js::from($editorId) }}, text: contents.replace(/<[^>]*>/g, '').trim() } }));
+            },
             onImageUpload: function (files) {
                 for (let i = 0; i < files.length; i++) {
                     const fd = new FormData();

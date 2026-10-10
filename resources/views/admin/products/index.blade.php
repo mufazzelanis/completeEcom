@@ -375,6 +375,10 @@
                                 </form>
                             @endif
                             <a href="{{ route('admin.products.edit', $product->id) }}" @if($isManualReorder) draggable="false" @endif class="text-indigo-600 hover:text-indigo-800 text-sm font-medium">Edit</a>
+                            <form action="{{ route('admin.products.duplicate', $product->id) }}" method="POST">
+                                @csrf
+                                <button type="submit" class="text-gray-500 hover:text-gray-700 text-sm font-medium" title="Create a copy to start a new variant from">Duplicate</button>
+                            </form>
                             <form action="{{ route('admin.products.destroy', $product->id) }}" method="POST" onsubmit="return uiConfirm(event, 'Delete this product?')">
                                 @csrf @method('DELETE')
                                 <button type="submit" class="text-red-500 hover:text-red-700 text-sm font-medium">Delete</button>

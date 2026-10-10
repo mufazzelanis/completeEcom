@@ -368,6 +368,42 @@ class ProductController extends Controller
     }
 
     /**
+     * "Quick entry" for this catalog's actual pattern: many products are near-identical
+     * variants of each other (same item, different size/ml — see the CeraVe/Aveeno/Boots
+     * lines), so starting a new one from an existing listing beats retyping everything.
+     * Copies the core fields, specs, FAQs, image and gallery; deliberately leaves out
+     * variant colors/sizes/combinations and bundle items (the two product types this
+     * catalog doesn't actually use for its near-duplicate items) to keep this predictable.
+     * Starts inactive so it never goes live unedited — the admin lands straight on its
+     * Edit page to adjust name/price/images before publishing.
+     */
+    public function duplicate(Product $product)
+    {
+        $copy = $product->replicate(['slug', 'sku', 'views', 'approval_status', 'rejection_reason']);
+        $copy->name = $product->name . ' (Copy)';
+        $copy->slug = $this->uniqueSlug(Str::slug($copy->name));
+        $copy->sku = null;
+        $copy->views = 0;
+        $copy->is_active = false;
+        $copy->approval_status = 'approved';
+        $copy->save();
+
+        foreach ($product->specs as $spec) {
+            $copy->specs()->create(['spec_key' => $spec->spec_key, 'spec_value' => $spec->spec_value, 'sort_order' => $spec->sort_order]);
+        }
+        foreach ($product->faqs as $faq) {
+            $copy->faqs()->create(['question' => $faq->question, 'answer' => $faq->answer, 'sort_order' => $faq->sort_order]);
+        }
+        foreach ($product->images as $image) {
+            $copy->images()->create(['image' => $image->image, 'sort_order' => $image->sort_order]);
+        }
+        $copy->tags()->sync($product->tags->pluck('id'));
+
+        return redirect()->route('admin.products.edit', $copy)
+            ->with('success', 'Duplicated as "' . $copy->name . '" — review and publish when ready.');
+    }
+
+    /**
      * One request for every "select several rows, do X" action on the product list —
      * status/featured toggles are a single UPDATE across the whole id set (no per-row
      * Eloquent event to preserve here, same as the single-product update() calls
