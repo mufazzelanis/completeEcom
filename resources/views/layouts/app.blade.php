@@ -578,10 +578,15 @@ $navCategories = \App\Models\Category::with(['children' => fn($q) => $q->active(
      fixed descendants); as a sibling of <header> rather than nested inside it, the
      drawer isn't affected by that at all. --}}
 <header class="{{ $stickyHeader ? 'bg-white/75 dark:bg-gray-900/75 backdrop-blur-xl backdrop-saturate-150 sticky top-0' : 'bg-white dark:bg-gray-900' }} shadow-sm z-50 transition-colors">
-    {{-- pt-2/pb-2 on mobile only (zeroed again at md:) is the gap that lets the capsule
-         below actually read as floating, rather than filling the strip edge-to-edge — the
-         translucent/blurred header background behind it is what shows through that gap. --}}
-    <div class="max-w-[1200px] mx-auto px-4 pt-2 pb-2 md:pt-0 md:pb-0">
+    {{-- pt-2 on mobile only (zeroed again at md:) is the gap that lets the capsule below
+         read as floating off the top, rather than filling the strip edge-to-edge — the
+         translucent/blurred header background shows through that gap. No matching pb-2: a
+         gap at the BOTTOM too left a sliver where the header's own blurred backdrop sat
+         between the capsule and whatever's first on the page — fine over plain white, but
+         visibly off wherever the page opens on a colored section (a hero banner's red/orange
+         bleeding faintly through the blur right under the capsule, reading as a stray line).
+         Flush at the bottom avoids that regardless of what color the page starts with. --}}
+    <div class="max-w-[1200px] mx-auto px-4 pt-2 md:pt-0">
         {{-- Floating capsule on mobile: a near-opaque rounded card with its own warm-tinted
              shadow, sitting on top of the translucent blurred header strip above — one layer
              floating on another, rather than everything living flush in a single flat bar.
