@@ -160,12 +160,19 @@
                 </div>
             @endif
 
-            {{-- Navigation Arrows --}}
+            {{-- Navigation Arrows — desktop only now (hidden md:flex, was unconditional).
+                 Mobile already has real swipe support (@touchstart/@touchend above) plus the
+                 dot indicators below, so a persistent arrow button added nothing there except
+                 a circle sitting right in the content column's vertical center — on a short
+                 16:5-ratio banner, that center line runs straight through wherever the
+                 title/button text happens to land, so the button text and the arrow icon
+                 were overlapping (reported: "Shop Now" reading as "op Now", its "Sh" covered
+                 by the arrow). Desktop has no touch gestures, so it keeps the clickable arrows. --}}
             @if($banners->count() > 1)
-            <button @click="current = (current - 1 + total) % total" class="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 md:w-9 md:h-9 bg-white/10 hover:bg-white/25 text-white rounded-full flex items-center justify-center transition backdrop-blur-md ring-1 ring-white/30" aria-label="Previous">
+            <button @click="current = (current - 1 + total) % total" class="hidden md:flex absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 bg-white/10 hover:bg-white/25 text-white rounded-full items-center justify-center transition backdrop-blur-md ring-1 ring-white/30" aria-label="Previous">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
             </button>
-            <button @click="current = (current + 1) % total" class="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 md:w-9 md:h-9 bg-white/10 hover:bg-white/25 text-white rounded-full flex items-center justify-center transition backdrop-blur-md ring-1 ring-white/30" aria-label="Next">
+            <button @click="current = (current + 1) % total" class="hidden md:flex absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 bg-white/10 hover:bg-white/25 text-white rounded-full items-center justify-center transition backdrop-blur-md ring-1 ring-white/30" aria-label="Next">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
             </button>
             <div class="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
