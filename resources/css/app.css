@@ -2,6 +2,20 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Defensive safety net, not a fix for any specific component: a site built up over many
+   separate pieces (sliders, horizontal-scroll pill rows, flex layouts each sized
+   independently) only needs ONE of them to overflow its container by a few pixels — a
+   scrollbar-width miscalculation, a sub-pixel rounding error, anything — for the whole
+   <body> to pick up horizontal scrollability, which then lets a visitor's next scroll or
+   swipe shift the ENTIRE page sideways and clip content on every section at once (reported:
+   header, hero banner and product grid all left-clipped together, which is what a page-wide
+   horizontal scroll looks like, not a bug in any one of those sections specifically).
+   100vw on body/html would reintroduce the same problem via the viewport-vs-scrollbar
+   width mismatch this is meant to prevent, so this relies on the browser's own intrinsic
+   block width instead — overflow-x: hidden as the backstop that makes any such overflow
+   invisible rather than scrollable, wherever it originates. */
+html, body { overflow-x: hidden; }
+
 /* Global (not layouts/app.blade.php's own inline copy, which layouts/admin.blade.php never
    loads) — needed by the admin panel's mobile pill-nav strips (reports/_nav, settings/
    layout) so their horizontal scroll doesn't show a raw OS scrollbar under the pills. */

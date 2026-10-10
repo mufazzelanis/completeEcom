@@ -586,14 +586,18 @@ $navCategories = \App\Models\Category::with(['children' => fn($q) => $q->active(
          visibly off wherever the page opens on a colored section (a hero banner's red/orange
          bleeding faintly through the blur right under the capsule, reading as a stray line).
          Flush at the bottom avoids that regardless of what color the page starts with. --}}
-    <div class="max-w-[1200px] mx-auto px-4 pt-2 md:pt-0">
+    {{-- px-2 (was px-4) on mobile — this outer inset plus the capsule's own inner padding
+         below stack together, and on the narrowest common phone widths (320-375px) the
+         combined total left too little room for the logo + full action-icon row; see
+         header-logo.blade.php for the matching logo-size reduction. --}}
+    <div class="max-w-[1200px] mx-auto px-2 md:px-4 pt-2 md:pt-0">
         {{-- Floating capsule on mobile: a near-opaque rounded card with its own warm-tinted
              shadow, sitting on top of the translucent blurred header strip above — one layer
              floating on another, rather than everything living flush in a single flat bar.
              `md:contents` makes this div generate no box at all from md: up, so desktop's
              layout (and every class on the row inside) is completely untouched — this is
              purely a mobile presentation wrapper, not a structural change. --}}
-        <div class="md:contents rounded-2xl md:rounded-none bg-white/95 dark:bg-gray-900/95 md:bg-transparent shadow-[0_4px_20px_-2px_rgba(249,115,22,0.18)] dark:shadow-[0_4px_20px_-2px_rgba(0,0,0,0.5)] md:shadow-none ring-1 ring-orange-100/70 dark:ring-gray-800/80 md:ring-0 px-3 md:px-0 transition-colors">
+        <div class="md:contents rounded-2xl md:rounded-none bg-white/95 dark:bg-gray-900/95 md:bg-transparent shadow-[0_4px_20px_-2px_rgba(249,115,22,0.18)] dark:shadow-[0_4px_20px_-2px_rgba(0,0,0,0.5)] md:shadow-none ring-1 ring-orange-100/70 dark:ring-gray-800/80 md:ring-0 px-2 md:px-0 transition-colors">
         @if($headerLayout === 'centered')
             {{-- Centered layout: logo on its own row, search + actions below --}}
             <div class="flex flex-col items-center py-3 gap-2">
@@ -604,8 +608,10 @@ $navCategories = \App\Models\Category::with(['children' => fn($q) => $q->active(
                 </div>
             </div>
         @else
-            {{-- Default / minimal layout: single row --}}
-            <div class="flex items-center justify-between h-16 md:h-20 gap-4">
+            {{-- Default / minimal layout: single row. gap-2 (was gap-4) on mobile — every
+                 pixel here was part of the same narrow-phone overflow this section's other
+                 edits address. --}}
+            <div class="flex items-center justify-between h-16 md:h-20 gap-2 md:gap-4">
                 @include('partials.storefront.header-logo')
                 @if($headerLayout !== 'minimal')
                     @include('partials.storefront.header-search')
