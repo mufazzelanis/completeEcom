@@ -174,10 +174,54 @@
     function autofillProductSeo() {
         const name = document.getElementById('product-name-input')?.value || '';
         const shortDesc = document.querySelector('[name="short_description"]')?.value || '';
-        const metaTitle = document.querySelector('[name="meta_title"]');
-        const metaDesc = document.querySelector('[name="meta_description"]');
-        if (metaTitle && !metaTitle.value.trim() && name) metaTitle.value = name;
-        if (metaDesc && !metaDesc.value.trim() && shortDesc) metaDesc.value = shortDesc;
+        const descriptionHtml = document.querySelector('[name="description"]')?.value || '';
+        const plainDescription = descriptionHtml.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+
+        const fill = (selector, value) => {
+            const el = document.querySelector(selector);
+            if (el && !el.value.trim() && value) { el.value = value; return true; }
+            return false;
+        };
+
+        let count = 0;
+        if (fill('[name="meta_title"]', name)) count++;
+        if (fill('[name="meta_description"]', shortDesc)) count++;
+        if (fill('[name="og_title"]', name)) count++;
+        if (fill('[name="og_description"]', shortDesc)) count++;
+        if (fill('[name="twitter_title"]', name)) count++;
+        if (fill('[name="twitter_description"]', shortDesc)) count++;
+        if (fill('[name="image_alt"]', name)) count++;
+        if (fill('[name="image_title"]', name)) count++;
+        if (fill('[name="ai_summary"]', shortDesc)) count++;
+        if (fill('[name="ai_overview"]', plainDescription)) count++;
+
+        // Everything below needs the form's reactive Alpine state (main image preview,
+        // brand selection, tag list) — read directly via Alpine's public $data() API
+        // rather than duplicating that state here.
+        const form = document.getElementById('product-form');
+        const data = window.Alpine ? Alpine.$data(form) : null;
+        if (data) {
+            let imageUrl = '';
+            if (data.preview && !data.preview.startsWith('data:') && !data.preview.startsWith('blob:')) {
+                imageUrl = data.preview.startsWith('http') ? data.preview : window.location.origin + data.preview;
+            }
+            if (fill('[name="og_image"]', imageUrl)) count++;
+            if (fill('[name="twitter_image"]', imageUrl)) count++;
+            if (fill('[name="focus_keyword"]', data.brandName || name.split(' ').slice(0, 3).join(' '))) count++;
+
+            // Tags: select any existing tag whose name appears in the product name or
+            // brand — a plain substring match, not a guess, so it never adds a tag the
+            // name doesn't actually mention.
+            const haystack = (name + ' ' + (data.brandName || '')).toLowerCase();
+            data.allTags.forEach((tag) => {
+                if (haystack.includes(tag.name.toLowerCase()) && !data.selectedTags.find((t) => t.id === tag.id)) {
+                    data.selectedTags.push(tag);
+                    count++;
+                }
+            });
+        }
+
+        if (window.productFormToast) productFormToast(true, count > 0 ? `Auto-filled ${count} field(s) — review before saving.` : 'Nothing to fill — fields are already set or there\'s not enough info yet.');
     }
     document.addEventListener('keydown', function (e) {
         if ((e.ctrlKey || e.metaKey) && e.key === 's') {

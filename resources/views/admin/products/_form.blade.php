@@ -635,17 +635,21 @@
     </div>
 </div>
 
-{{-- Quick entry: one click fills Meta Title/Description from Name/Short Description below,
-     if they're still empty — skips re-typing the same thing twice for admins who don't need
-     custom SEO copy. Plain JS (not Alpine) since the SEO fields partial has its own,
-     separate x-data scope — this only needs to run once, on click. --}}
+{{-- Quick entry: one click derives Meta Title/Description, OG/Twitter title+description+image,
+     image alt/title text, AI summary/overview, a focus keyword, and matching tags — all from
+     the Name/Short Description/Full Description/Image/Brand already entered above, and only
+     into fields that are still empty. Nothing here is guessed (no GTIN/MPN/category/age-group
+     invented from nothing); it only ever reuses text the admin already wrote. Plain JS (not
+     Alpine) since the SEO fields partial has its own, separate x-data scope, and Tags' Alpine
+     state is reached via Alpine.$data() rather than duplicating it here — see
+     autofillProductSeo() in this page's own @push('scripts'). --}}
 <div class="flex items-center gap-2 -mb-2 mt-6">
     <button type="button" onclick="autofillProductSeo()"
         class="text-xs font-medium text-emerald-600 hover:text-emerald-800 bg-emerald-50 hover:bg-emerald-100 px-3 py-1.5 rounded-lg transition inline-flex items-center gap-1.5">
         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-        Quick-fill SEO from product info
+        Auto-fill SEO, social, image text, AI summary &amp; tags
     </button>
-    <span class="text-xs text-gray-400">Only fills empty Meta Title / Meta Description fields below</span>
+    <span class="text-xs text-gray-400">Only fills fields that are still empty — Tags above included</span>
 </div>
 
 @include('admin.products._seo_fields', isset($product) ? [] : ['product' => null])
