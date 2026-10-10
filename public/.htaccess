@@ -5,6 +5,15 @@
 
     RewriteEngine On
 
+    # Canonicalize to the non-www host — without this, www.mitavin.com and mitavin.com
+    # both served the same pages with no redirect between them, so Google (and every
+    # inbound link using either form) saw two separate copies of the entire site, which
+    # is exactly the kind of duplicate-content signal that confuses indexing/HTTPS
+    # evaluation. %1 is whatever follows "www." (the bare host), captured by the group
+    # in the condition below.
+    RewriteCond %{HTTP_HOST} ^www\.(.+)$ [NC]
+    RewriteRule ^ https://%1%{REQUEST_URI} [L,R=301]
+
     # Handle Authorization Header
     RewriteCond %{HTTP:Authorization} .
     RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
