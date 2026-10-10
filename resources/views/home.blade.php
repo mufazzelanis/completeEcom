@@ -46,15 +46,17 @@
 <h1 class="sr-only">{{ $homeHeading }}</h1>
 
 {{-- ═══════════ HERO BANNER CAROUSEL ═══════════ --}}
-{{-- The h-56 fixed mobile height (previous commit) made the hero bigger but forced
-     object-cover to blow the image up ~2x to fill a box far taller than its native
-     16:5 ratio, cropping/zooming it badly — exactly what was just reported. Back to
-     one single aspect-[16/5] everywhere (zero crop, matches what admins are told to
-     upload at) so the image is never distorted; "bigger" instead comes from going
-     edge-to-edge on mobile only, which stays rounded (corners are still visible
-     against the page background even flush to the screen edge) while keeping the
-     exact same crop-free ratio as desktop. --}}
-<div class="relative max-w-[1200px] mx-auto px-0 sm:px-4 pt-0 sm:pt-4">
+{{-- aspect-[16/5] is load-bearing, not a style choice — admins are told to upload at
+     1920×600, and a previous attempt to make mobile's hero taller via a fixed h-56
+     forced object-cover to blow the image up ~2x to fill a box far taller than its
+     native ratio, cropping/zooming it badly. That ratio has to stay fixed at every
+     breakpoint, so "more compact on mobile" can only come from narrowing the box
+     itself — aspect-ratio then shrinks the height to match automatically, with zero
+     crop risk either way. px-3 (was px-0, edge-to-edge) does that: a visible inset
+     from the screen edge, which incidentally also means the shadow is now visible on
+     every side instead of just top/bottom, and reads as a floating card rather than a
+     bar — the same treatment the mobile header capsule already uses. --}}
+<div class="relative max-w-[1200px] mx-auto px-3 sm:px-4 pt-2 sm:pt-4">
     {{-- Soft ambient glow behind the hero card — purely decorative depth, clipped by the
          page's own overflow so it never creates a horizontal scrollbar. --}}
     <div class="pointer-events-none absolute -top-4 left-1/2 -translate-x-1/2 w-[90%] h-[80%] bg-gradient-to-r from-orange-300/30 via-pink-300/20 to-indigo-300/30 blur-3xl rounded-full"></div>
