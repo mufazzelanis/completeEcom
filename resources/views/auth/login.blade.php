@@ -9,6 +9,8 @@
         </div>
     @endif
 
+    @include('auth.partials.social-buttons')
+
     <form method="POST" action="{{ route('login') }}">
         @csrf
 

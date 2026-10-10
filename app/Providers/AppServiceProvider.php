@@ -88,6 +88,13 @@ class AppServiceProvider extends ServiceProvider
         Event::listen(Login::class, RecordLoginActivityListener::class);
         Event::listen(Logout::class, RecordLogoutActivityListener::class);
 
+        // Google and Facebook are built into Socialite itself; LinkedIn isn't (LinkedIn
+        // retired the old API Socialite's core driver used), so socialiteproviders/linkedin
+        // registers itself as a driver via this event instead — see Auth\SocialAuthController.
+        Event::listen(function (\SocialiteProviders\Manager\SocialiteWasCalled $event) {
+            $event->extendSocialite('linkedin', \SocialiteProviders\LinkedIn\Provider::class);
+        });
+
         $this->applyMailSettings();
     }
 

@@ -4,6 +4,12 @@
         // the Sell card and, if validation fails, keep the choice via old() like any other field.
         $accountType = old('account_type', request()->query('intent') === 'vendor' ? 'vendor' : 'customer');
     @endphp
+
+    {{-- Creates a plain Shop account — someone who wants to Sell still fills in the form
+         below (business docs/NID can't come from an OAuth profile), so this only covers
+         the common case, not every path register.blade.php supports. --}}
+    @include('auth.partials.social-buttons')
+
     <form method="POST" action="{{ route('register') }}" enctype="multipart/form-data"
           x-data="{ accountType: '{{ $accountType }}', docType: '{{ old('document_type', 'nid') }}' }">
         @csrf

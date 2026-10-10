@@ -8,6 +8,7 @@ use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\RegisteredUserController;
+use App\Http\Controllers\Auth\SocialAuthController;
 use App\Http\Controllers\Auth\TwoFactorChallengeController;
 use App\Http\Controllers\Auth\VerifyEmailController;
 use Illuminate\Support\Facades\Route;
@@ -24,6 +25,18 @@ Route::middleware('guest')->group(function () {
 
     Route::post('login', [AuthenticatedSessionController::class, 'store'])
         ->name('login.post');
+
+    // {provider} is constrained to the three known drivers, not a generic Socialite
+    // passthrough — a controller-level abort() backs this up too, but failing at the
+    // route level keeps an unknown provider name out of the controller entirely.
+    Route::get('auth/{provider}/redirect', [SocialAuthController::class, 'redirect'])
+        ->whereIn('provider', ['google', 'facebook', 'linkedin'])
+        ->name('social.redirect');
+
+    Route::get('auth/{provider}/callback', [SocialAuthController::class, 'callback'])
+        ->whereIn('provider', ['google', 'facebook', 'linkedin'])
+        ->middleware('throttle:20,1')
+        ->name('social.callback');
 
     Route::get('two-factor-challenge', [TwoFactorChallengeController::class, 'create'])
         ->name('two-factor.challenge');

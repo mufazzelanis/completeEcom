@@ -35,4 +35,29 @@ return [
         ],
     ],
 
+    // Social login (Auth\SocialAuthController) — each provider's redirect URI defaults to
+    // this app's own /auth/{provider}/callback route, but stays overridable via env since
+    // that's also the exact value that has to be registered, byte-for-byte, in that
+    // provider's own developer console (Google Cloud Console / Facebook for Developers /
+    // LinkedIn Developer Portal) — a mismatch there is the #1 cause of OAuth setup failing.
+    'google' => [
+        'client_id' => env('GOOGLE_CLIENT_ID'),
+        'client_secret' => env('GOOGLE_CLIENT_SECRET'),
+        'redirect' => env('GOOGLE_REDIRECT_URI', env('APP_URL').'/auth/google/callback'),
+    ],
+
+    'facebook' => [
+        'client_id' => env('FACEBOOK_CLIENT_ID'),
+        'client_secret' => env('FACEBOOK_CLIENT_SECRET'),
+        'redirect' => env('FACEBOOK_REDIRECT_URI', env('APP_URL').'/auth/facebook/callback'),
+    ],
+
+    // Driver name is plain 'linkedin' (not 'linkedin-openid') — that's just the Packagist
+    // package name; see SocialAuthController/AppServiceProvider for how it's registered.
+    'linkedin' => [
+        'client_id' => env('LINKEDIN_CLIENT_ID'),
+        'client_secret' => env('LINKEDIN_CLIENT_SECRET'),
+        'redirect' => env('LINKEDIN_REDIRECT_URI', env('APP_URL').'/auth/linkedin/callback'),
+    ],
+
 ];
