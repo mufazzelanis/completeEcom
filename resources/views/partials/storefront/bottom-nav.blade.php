@@ -33,6 +33,20 @@
         ? \App\Models\UserNotification::where('user_id', auth()->id())->where('is_read', false)->count()
         : 0;
 
+    // Same admin-configurable colors as the Buy Now/Order Now button (partials/product-
+    // card.blade.php) — not a hardcoded Tailwind gradient, since those aren't covered by the
+    // storefront's brand-color override system (which only intercepts plain bg-orange-*/
+    // text-orange-* classes, not gradient-stop utilities). Reusing this setting rather than
+    // a new one keeps this FAB and the Buy Now button visually consistent as the two most
+    // prominent "take an action" buttons on the storefront.
+    $bnCartGradient = sprintf(
+        'linear-gradient(to bottom right, %s, %s, %s)',
+        setting('order_button_color_from', '#ec4899'),
+        setting('order_button_color_via', '#d946ef'),
+        setting('order_button_color_to', '#fb923c'),
+    );
+    $bnCartTextColor = setting('order_button_text_color', '#ffffff');
+
     // Left pair (Home, Orders) and right pair (Inbox, Account/Login) — Cart renders
     // separately, straight into the grid's center column, so it can look nothing like its
     // siblings without fighting a @foreach built around them all looking the same.
@@ -85,8 +99,11 @@
              it. Always the gradient/white-icon treatment regardless of active state — this is
              the one tab meant to stand out at a glance on every page, not just when selected. --}}
         <a href="{{ route('cart.index') }}" aria-label="Cart" class="relative flex flex-col items-center justify-center -mt-7 active:scale-90 tap-spring transition-transform duration-200">
-            <span class="relative flex items-center justify-center w-14 h-14 rounded-full bg-gradient-to-br from-orange-500 to-red-500 shadow-lg shadow-orange-500/40 ring-[5px] ring-white/75 dark:ring-gray-900/75">
-                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+            {{-- Neutral shadow (not tinted orange) — the gradient itself is whatever the
+                 admin picked, which won't always be orange, and a hardcoded orange glow
+                 would clash under a custom brand color. --}}
+            <span class="relative flex items-center justify-center w-14 h-14 rounded-full shadow-lg shadow-black/25 dark:shadow-black/50 ring-[5px] ring-white/75 dark:ring-gray-900/75" style="background-image: {{ $bnCartGradient }};">
+                <svg class="w-6 h-6" style="color: {{ $bnCartTextColor }};" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
                 {{-- Always rendered (not just when > 0) and toggled via the 'hidden' class —
                      the quick-add-to-cart AJAX handler in app.blade.php needs a permanent
                      element here to update live, not one that only exists in the DOM when the
