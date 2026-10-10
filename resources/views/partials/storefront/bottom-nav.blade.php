@@ -33,19 +33,19 @@
         ? \App\Models\UserNotification::where('user_id', auth()->id())->where('is_read', false)->count()
         : 0;
 
-    // Same admin-configurable colors as the Buy Now/Order Now button (partials/product-
-    // card.blade.php) — not a hardcoded Tailwind gradient, since those aren't covered by the
-    // storefront's brand-color override system (which only intercepts plain bg-orange-*/
-    // text-orange-* classes, not gradient-stop utilities). Reusing this setting rather than
-    // a new one keeps this FAB and the Buy Now button visually consistent as the two most
-    // prominent "take an action" buttons on the storefront.
+    // Same admin-configurable color as the product card's "Add to Cart" circle (Settings →
+    // General → Quick "Add to Cart" Button Color) — not a hardcoded Tailwind gradient, since
+    // that isn't covered by the storefront's brand-color override system (which only
+    // intercepts plain bg-orange-*/text-orange-* classes, not gradient-stop utilities). This
+    // used to follow the separate Buy Now gradient instead, which is why changing the new
+    // Add to Cart color left this FAB looking untouched — it's a cart icon, so it reads as
+    // "the cart color" to an admin, not "the buy-now color".
     $bnCartGradient = sprintf(
-        'linear-gradient(to bottom right, %s, %s, %s)',
-        setting('order_button_color_from', '#ec4899'),
-        setting('order_button_color_via', '#d946ef'),
-        setting('order_button_color_to', '#fb923c'),
+        'linear-gradient(to bottom right, %s, %s)',
+        setting('add_to_cart_button_color', '#f97316'),
+        setting('add_to_cart_button_hover_color', '#ea580c'),
     );
-    $bnCartTextColor = setting('order_button_text_color', '#ffffff');
+    $bnCartTextColor = setting('add_to_cart_button_text_color', '#ffffff');
 
     // Left pair (Home, Orders) and right pair (Inbox, Account/Login) — Cart renders
     // separately, straight into the grid's center column, so it can look nothing like its

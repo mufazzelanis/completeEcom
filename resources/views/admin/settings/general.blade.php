@@ -194,7 +194,7 @@
             textColor: '{{ setting('add_to_cart_button_text_color', '#ffffff') }}',
          }">
         <h3 class="text-sm font-semibold text-gray-800 mb-1">Quick "Add to Cart" Button Color</h3>
-        <p class="text-xs text-gray-400 mb-3">The small round button on the top-right corner of each product card (and the outlined "Add to Cart" button on the product page) — kept separate from the "Buy Now" color above since the two now live side by side on every card. Leave untouched and it keeps today's orange look.</p>
+        <p class="text-xs text-gray-400 mb-3">The small round button on the top-right corner of each product card, the outlined "Add to Cart" button on the product page, and the round Cart button in the mobile bottom nav bar — kept separate from the "Buy Now" color above since the two now live side by side on every card. Leave untouched and it keeps today's orange look.</p>
         <div class="grid grid-cols-2 lg:grid-cols-3 gap-4">
             <div>
                 <label class="block text-xs font-medium text-gray-700 mb-1">Button Color</label>
