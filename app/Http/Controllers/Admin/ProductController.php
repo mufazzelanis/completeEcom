@@ -16,10 +16,12 @@ use App\Models\ProductSpec;
 use App\Models\Tag;
 use App\Models\Vendor;
 use App\Services\Notifications\NotificationDispatcher;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class ProductController extends Controller
 {
@@ -187,9 +189,30 @@ class ProductController extends Controller
         ));
     }
 
+    /**
+     * $request->validate() on its own only renders as JSON on failure when Laravel's
+     * own expectsJson() heuristic agrees — which in practice didn't trigger reliably for
+     * the product form's plain fetch() (Accept: application/json, no X-Requested-With),
+     * falling back to its normal redirect()->back() behavior instead. Explicit here
+     * removes that guesswork: wantsJson() (just the Accept header) decides, not a mix of
+     * signals. Returns the 422 JSON response to return early with, or null to continue.
+     */
+    private function validateProduct(Request $request, array $rules): ?JsonResponse
+    {
+        try {
+            $request->validate($rules);
+            return null;
+        } catch (ValidationException $e) {
+            if ($request->wantsJson()) {
+                return response()->json(['message' => $e->getMessage(), 'errors' => $e->errors()], 422);
+            }
+            throw $e;
+        }
+    }
+
     public function store(Request $request)
     {
-        $request->validate([
+        if ($response = $this->validateProduct($request, [
             'name'          => 'required|string|max:255',
             'type'          => 'required|in:simple,variable,bundle,digital',
             'category_id'   => 'required|exists:categories,id',
@@ -203,7 +226,9 @@ class ProductController extends Controller
             // A digital product with no file has nothing to deliver — require it
             // up front rather than letting it silently publish empty.
             'download_file' => $request->input('type') === 'digital' ? 'required|file|max:102400' : 'nullable|file|max:102400',
-        ]);
+        ])) {
+            return $response;
+        }
 
         $data = $request->only([
             'type', 'name', 'category_id', 'short_description', 'description',
@@ -256,6 +281,16 @@ class ProductController extends Controller
         $this->syncSpecs($product, $request->input('specs', []));
         $this->syncBundleItems($product, $request->input('bundle_items', []));
 
+        // The product form submits via fetch (see admin/products/_form.blade.php) to avoid
+        // the full-page-reload feel of a normal redirect — flash the message too, so it's
+        // there as usual once the browser's own Turbo.visit(redirect) below lands on the
+        // index (a plain history replace, like the update() branch does, would leave this
+        // page showing stale "Create" fields for a product that already exists).
+        if ($request->wantsJson()) {
+            session()->flash('success', 'Product created successfully.');
+            return response()->json(['message' => 'Product created successfully.', 'redirect' => route('admin.products.index')]);
+        }
+
         return redirect()->route('admin.products.index')->with('success', 'Product created successfully.');
     }
 
@@ -284,7 +319,7 @@ class ProductController extends Controller
 
     public function update(Request $request, Product $product)
     {
-        $request->validate([
+        if ($response = $this->validateProduct($request, [
             'name'        => 'required|string|max:255',
             'type'        => 'required|in:simple,variable,bundle,digital',
             'category_id' => 'required|exists:categories,id',
@@ -299,7 +334,9 @@ class ProductController extends Controller
             // fields shouldn't force a re-upload.
             'download_file' => ($request->input('type') === 'digital' && ! $product->download_file)
                 ? 'required|file|max:102400' : 'nullable|file|max:102400',
-        ]);
+        ])) {
+            return $response;
+        }
 
         $data = $request->only([
             'type', 'name', 'category_id', 'short_description', 'description',
@@ -357,6 +394,14 @@ class ProductController extends Controller
         $this->syncFaqs($product, $request->input('faqs', []));
         $this->syncSpecs($product, $request->input('specs', []));
         $this->syncBundleItems($product, $request->input('bundle_items', []));
+
+        // Stays on the same page (see admin/products/_form.blade.php) — no redirect is
+        // actually followed, just a toast; "redirect" here is only the fresh edit URL in
+        // case the slug changed (the name was edited), so the browser's address bar can be
+        // silently kept correct via history.replaceState without a real navigation.
+        if ($request->wantsJson()) {
+            return response()->json(['message' => 'Product updated successfully.', 'redirect' => route('admin.products.edit', $product)]);
+        }
 
         return redirect()->route('admin.products.edit', $product)->with('success', 'Product updated successfully.');
     }

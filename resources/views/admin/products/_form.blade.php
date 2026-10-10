@@ -14,6 +14,125 @@
     .form-card { animation: formCardIn .35s ease-out backwards; }
 </style>
 @endpush
+@push('scripts')
+<script>
+    // Save/Update without a full page reload (or the Turbo-visit body-swap, which
+    // reruns every animation and resets scroll even though it's not a literal browser
+    // reload) — intercepts the submit, posts via fetch, and either stays exactly where
+    // it is (update: just a toast, URL silently kept in sync with any slug change) or
+    // moves on smoothly (create: nothing meaningful to stay on, so Turbo.visit to the
+    // index once the product actually exists). DOMContentLoaded because Turbo re-swaps
+    // <body> on every visit to this page — app.js re-dispatches that event on every
+    // turbo:load too, so this (same as the Settings page's own AJAX-save script) rebinds
+    // correctly each time without a special turbo:load listener of its own.
+    document.addEventListener('DOMContentLoaded', () => {
+        const form = document.getElementById('product-form');
+        const submitBtn = document.getElementById('product-submit-btn');
+        if (!form || !submitBtn) return;
+        const originalLabel = submitBtn.innerHTML;
+        const isUpdate = !!form.querySelector('input[name="_method"][value="PUT"]');
+        const knownErrorFields = ['name', 'sku', 'image', 'price', 'category_id'];
+
+        function clearErrors() {
+            knownErrorFields.forEach((f) => {
+                const el = document.getElementById('error-' + f);
+                if (el) { el.textContent = ''; el.classList.add('hidden'); }
+            });
+            document.getElementById('ajax-error-summary')?.classList.add('hidden');
+        }
+
+        function showErrors(errors) {
+            const leftover = [];
+            Object.entries(errors).forEach(([field, messages]) => {
+                const msg = Array.isArray(messages) ? messages[0] : messages;
+                const el = knownErrorFields.includes(field) ? document.getElementById('error-' + field) : null;
+                if (el) { el.textContent = msg; el.classList.remove('hidden'); }
+                else leftover.push(msg);
+            });
+            const summary = document.getElementById('ajax-error-summary');
+            if (summary && leftover.length > 0) {
+                summary.innerHTML = '<ul class="list-disc list-inside space-y-1">' + leftover.map((m) => `<li>${m}</li>`).join('') + '</ul>';
+                summary.classList.remove('hidden');
+                summary.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            } else {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+        }
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            // Same checks the form's own x-on:submit already does — read directly via
+            // Alpine's public $data() API rather than relying on listener-order between
+            // that directive and this handler, so this works regardless of which attaches
+            // first.
+            const data = window.Alpine ? Alpine.$data(form) : null;
+            if (data) {
+                if (data.productType === 'variable' && data.combinations.length === 0) {
+                    alert('Add at least one color or size for this variable product.');
+                    return;
+                }
+                if (data.productType === 'bundle' && data.bundleItems.length === 0) {
+                    alert('Add at least one item to this bundle.');
+                    return;
+                }
+            }
+
+            clearErrors();
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = `
+                <svg class="animate-spin -ml-1 mr-1.5 h-4 w-4 inline" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                </svg>${isUpdate ? 'Updating…' : 'Creating…'}`;
+
+            try {
+                const res = await fetch(form.action, {
+                    method: 'POST',
+                    body: new FormData(form),
+                    headers: { 'Accept': 'application/json' },
+                });
+
+                if (res.status === 422) {
+                    const body = await res.json();
+                    showErrors(body.errors || {});
+                    productFormToast(false, 'Please fix the errors below.');
+                    return;
+                }
+                if (!res.ok) {
+                    productFormToast(false, 'Something went wrong — please try again.');
+                    return;
+                }
+
+                const result = await res.json();
+                if (isUpdate) {
+                    productFormToast(true, result.message || 'Saved successfully.');
+                    if (result.redirect) window.history.replaceState(null, '', result.redirect);
+                } else if (result.redirect && window.Turbo) {
+                    window.Turbo.visit(result.redirect);
+                } else {
+                    productFormToast(true, result.message || 'Saved successfully.');
+                }
+            } catch (err) {
+                productFormToast(false, 'Network error — please try again.');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalLabel;
+            }
+        });
+    });
+
+    function productFormToast(success, message) {
+        document.getElementById('product-form-toast')?.remove();
+        const toast = document.createElement('div');
+        toast.id = 'product-form-toast';
+        toast.className = `fixed top-20 right-5 z-[100] px-4 py-3 rounded-xl text-sm font-medium shadow-lg flex items-center gap-2 text-white ${success ? 'bg-green-600' : 'bg-red-600'}`;
+        toast.textContent = message;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 3500);
+    }
+</script>
+@endpush
 @endonce
 @csrf
 @if(isset($product))@method('PUT')@endif
@@ -57,7 +176,7 @@
                     <label class="block text-sm font-medium text-gray-700 mb-1">Product Name *</label>
                     <input type="text" name="name" id="product-name-input" x-model="name"
                         class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-shadow @error('name') border-red-400 @enderror">
-                    @error('name')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
+                    <p id="error-name" class="text-red-500 text-xs mt-1 {{ $errors->has('name') ? '' : 'hidden' }}">{{ $errors->first('name') }}</p>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">SKU</label>
@@ -69,7 +188,7 @@
                             Generate
                         </button>
                     </div>
-                    @error('sku')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
+                    <p id="error-sku" class="text-red-500 text-xs mt-1 {{ $errors->has('sku') ? '' : 'hidden' }}">{{ $errors->first('sku') }}</p>
                 </div>
                 <div>
                     <div class="flex items-center justify-between mb-1">
@@ -120,7 +239,7 @@
                 </div>
                 <input type="file" name="image" x-ref="mainImageInput" accept="image/*" class="hidden" @change="onFiles($event.target.files)">
                 @if(isset($product))<p class="text-xs text-gray-400 mt-1">Drop a new image to replace the current one, or click the × to clear the preview.</p>@endif
-                @error('image')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
+                <p id="error-image" class="text-red-500 text-xs mt-1 {{ $errors->has('image') ? '' : 'hidden' }}">{{ $errors->first('image') }}</p>
             </div>
 
             {{-- Existing gallery: drag to reorder, click × to mark for deletion --}}
@@ -402,7 +521,7 @@
                     </label>
                     <input type="number" name="price" x-model="price" step="0.01" min="0"
                         class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 @error('price') border-red-400 @enderror">
-                    @error('price')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
+                    <p id="error-price" class="text-red-500 text-xs mt-1 {{ $errors->has('price') ? '' : 'hidden' }}">{{ $errors->first('price') }}</p>
                 </div>
                 <div x-show="productType !== 'bundle'">
                     <label class="block text-sm font-medium text-gray-700 mb-1">Sale Price (৳)</label>
@@ -455,7 +574,7 @@
                         <option value="{{ $cat->id }}">{{ $cat->name }}</option>
                         @endforeach
                     </select>
-                    @error('category_id')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
+                    <p id="error-category_id" class="text-red-500 text-xs mt-1 {{ $errors->has('category_id') ? '' : 'hidden' }}">{{ $errors->first('category_id') }}</p>
                 </div>
                 <div x-show="subcategories.length > 0" x-cloak>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Subcategory</label>
@@ -508,7 +627,7 @@
         {{-- Sticky so it stays reachable while scrolling a long form — the single most
              common action on this page, now never more than a glance away. --}}
         <div class="sticky bottom-4 z-10 space-y-2">
-            <button type="submit" class="w-full bg-indigo-600 text-white py-3 rounded-xl font-semibold hover:bg-indigo-700 active:scale-[0.99] transition shadow-lg shadow-indigo-600/20">
+            <button type="submit" id="product-submit-btn" class="w-full bg-indigo-600 text-white py-3 rounded-xl font-semibold hover:bg-indigo-700 active:scale-[0.99] transition shadow-lg shadow-indigo-600/20">
                 {{ isset($product) ? 'Update Product' : 'Create Product' }}
             </button>
             <p class="text-center text-xs text-gray-400">Tip: press <kbd class="px-1 py-0.5 bg-gray-100 border border-gray-200 rounded text-[10px] font-mono">Ctrl</kbd> + <kbd class="px-1 py-0.5 bg-gray-100 border border-gray-200 rounded text-[10px] font-mono">S</kbd> to save</p>

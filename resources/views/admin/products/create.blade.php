@@ -15,6 +15,10 @@
         </ul>
     </div>
     @endif
+    {{-- Populated client-side for a validation error returned by the AJAX submit (see
+         _form.blade.php) — covers any field that isn't one of the few with its own
+         inline error-<fieldname> spot next to the input itself. --}}
+    <div id="ajax-error-summary" class="hidden bg-red-50 border border-red-200 rounded-xl p-4 mb-6 text-sm text-red-600"></div>
 
     @php $oldSelectedTags = $allTags->whereIn('id', array_map('intval', old('tag_ids', [])))->values(); @endphp
     <form action="{{ route('admin.products.store') }}" method="POST" enctype="multipart/form-data" id="product-form"

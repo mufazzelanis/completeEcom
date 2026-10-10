@@ -13,6 +13,7 @@
         <ul class="list-disc list-inside space-y-1">@foreach($errors->all() as $e)<li class="text-sm text-red-600">{{ $e }}</li>@endforeach</ul>
     </div>
     @endif
+    <div id="ajax-error-summary" class="hidden bg-red-50 border border-red-200 rounded-xl p-4 mb-6 text-sm text-red-600"></div>
 
     <form action="{{ route('admin.products.update', $product) }}" method="POST" enctype="multipart/form-data" id="product-form"
         x-data="{
