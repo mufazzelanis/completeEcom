@@ -578,7 +578,17 @@ $navCategories = \App\Models\Category::with(['children' => fn($q) => $q->active(
      fixed descendants); as a sibling of <header> rather than nested inside it, the
      drawer isn't affected by that at all. --}}
 <header class="{{ $stickyHeader ? 'bg-white/75 dark:bg-gray-900/75 backdrop-blur-xl backdrop-saturate-150 sticky top-0' : 'bg-white dark:bg-gray-900' }} shadow-sm z-50 transition-colors">
-    <div class="max-w-[1200px] mx-auto px-4">
+    {{-- pt-2/pb-2 on mobile only (zeroed again at md:) is the gap that lets the capsule
+         below actually read as floating, rather than filling the strip edge-to-edge — the
+         translucent/blurred header background behind it is what shows through that gap. --}}
+    <div class="max-w-[1200px] mx-auto px-4 pt-2 pb-2 md:pt-0 md:pb-0">
+        {{-- Floating capsule on mobile: a near-opaque rounded card with its own warm-tinted
+             shadow, sitting on top of the translucent blurred header strip above — one layer
+             floating on another, rather than everything living flush in a single flat bar.
+             `md:contents` makes this div generate no box at all from md: up, so desktop's
+             layout (and every class on the row inside) is completely untouched — this is
+             purely a mobile presentation wrapper, not a structural change. --}}
+        <div class="md:contents rounded-2xl md:rounded-none bg-white/95 dark:bg-gray-900/95 md:bg-transparent shadow-[0_4px_20px_-2px_rgba(249,115,22,0.18)] dark:shadow-[0_4px_20px_-2px_rgba(0,0,0,0.5)] md:shadow-none ring-1 ring-orange-100/70 dark:ring-gray-800/80 md:ring-0 px-3 md:px-0 transition-colors">
         @if($headerLayout === 'centered')
             {{-- Centered layout: logo on its own row, search + actions below --}}
             <div class="flex flex-col items-center py-3 gap-2">
@@ -598,6 +608,7 @@ $navCategories = \App\Models\Category::with(['children' => fn($q) => $q->active(
                 @include('partials.storefront.header-actions')
             </div>
         @endif
+        </div>
     </div>
 
     {{-- Category Navigation Bar --}}
@@ -717,11 +728,12 @@ $navCategories = \App\Models\Category::with(['children' => fn($q) => $q->active(
     </div>
     @endif
 
-    {{-- Thin branded edge along the header's bottom — on mobile (where there's no orange
-         category bar to give the header a colored edge of its own) this is the only hint of
-         brand color the header carries, so the frosted/white bar doesn't read as a plain,
-         off-the-shelf nav strip. Pure decoration, not a focus target. --}}
-    <div class="h-[2px] bg-gradient-to-r from-orange-400 via-red-400 to-orange-400 opacity-70" aria-hidden="true"></div>
+    {{-- Thin branded edge along the header's bottom — desktop only now. Mobile's floating
+         capsule (above) carries its own warm shadow/ring, so this full-width line underneath
+         a capsule that no longer spans the full width would read as a second, disconnected
+         accent rather than reinforcing the first. Still earns its place under the orange
+         category bar on desktop. Pure decoration, not a focus target. --}}
+    <div class="hidden md:block h-[2px] bg-gradient-to-r from-orange-400 via-red-400 to-orange-400 opacity-70" aria-hidden="true"></div>
 </header>
 
 @include('partials.storefront.mobile-scroll-search')
