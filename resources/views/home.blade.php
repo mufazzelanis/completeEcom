@@ -103,15 +103,14 @@
                             $btnText = $banner->text_color ?: '#1f2937';
                         @endphp
                         <a href="{{ $banner->button_link ?: '#' }}" class="block w-full h-full">
-                            {{-- object-cover was cropping whatever the admin's actual upload ratio
-                                 didn't match 1920×600 exactly — reported as the banner's right side
-                                 (where the product bottles sat) getting sliced off. object-contain
-                                 never crops, but on its own it'd letterbox with bare gray bars when
-                                 the ratio doesn't match, so a blurred, scaled copy of the same image
-                                 fills the frame behind it — the real image then sits centered on top
-                                 at its full, uncropped extent, whatever ratio it was uploaded at. --}}
-                            <img src="{{ Storage::url($banner->image) }}" alt="" aria-hidden="true"
-                                class="absolute inset-0 w-full h-full object-cover scale-110 blur-2xl opacity-50">
+                            {{-- Banner uploads are now server-side cropped to exactly 1920×600 at
+                                 upload time (BannerController::storeBannerImage, for position=hero)
+                                 instead of being left at whatever ratio the admin's original file
+                                 was — that mismatch is what made object-cover crop unpredictably in
+                                 the browser (reported: the photo's right edge getting sliced off).
+                                 With the stored file already matching this box exactly, object-cover
+                                 here never has anything to crop; it's just a safety net for any
+                                 banner saved before this change, until it's re-uploaded. --}}
                             {{-- Every slide is in the DOM at once (x-show just toggles visibility,
                                  not presence) — without hints, the browser fetches all of them
                                  immediately and the actual LCP image (slide 0, the only one visible
@@ -122,7 +121,7 @@
                                 srcset="{{ image_thumb($banner->image, 800) }} 800w, {{ image_thumb($banner->image, 1200) }} 1200w, {{ Storage::url($banner->image) }} 1920w"
                                 sizes="(max-width: 1200px) 100vw, 1200px" width="1920" height="600"
                                 alt="{{ $banner->title ?: $banner->subtitle ?: setting('site_name', 'Banner') }}"
-                                class="relative w-full h-full object-contain transition-transform duration-[6000ms] ease-linear"
+                                class="w-full h-full object-cover object-center transition-transform duration-[6000ms] ease-linear"
                                 :class="current === {{ $i }} ? 'scale-110' : 'scale-100'"
                                 @if($i === 0) fetchpriority="high" @else loading="lazy" @endif>
                             @if($hasOverlayText)

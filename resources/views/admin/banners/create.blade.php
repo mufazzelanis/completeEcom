@@ -80,17 +80,16 @@
                 <div class="col-span-2">
                     <label class="block text-sm font-medium text-gray-700 mb-1">Image</label>
                     <input type="file" name="image" accept="image/*" class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm">
-                    {{-- The exact ratio here MUST match the display container's aspect-[...]
-                         class (home.blade.php's hero slider and promo-tile grid) — mismatched
-                         ratios are what causes object-cover to crop the image on the live site
-                         (e.g. an image with a taller ratio than "hero" getting its top/bottom
-                         cut off there). Upload at exactly this ratio, ideally 2x for retina
-                         screens, and nothing will ever be cropped regardless of device. --}}
+                    {{-- hero/top are each cropped server-side to the exact size named here
+                         (BannerController::storeBannerImage) — an upload at a different ratio
+                         no longer gets cropped unpredictably by the browser at display time;
+                         it's center-cropped once at upload instead, so what the admin sees in
+                         the "current image" preview after saving is exactly what ships. --}}
                     <p class="text-xs text-gray-500 mt-1" x-show="position === 'hero'" x-cloak>
-                        Recommended: <strong>1920×600px</strong> (16:5 ratio) — this fills the full-width slider at the top of the homepage on every screen size, phone included.
+                        Shown at <strong>1920×600px</strong> (16:5 ratio) — this fills the full-width slider at the top of the homepage on every screen size, phone included. Any image you upload is automatically cropped to this size, centered on the original.
                     </p>
                     <p class="text-xs text-gray-500 mt-1" x-show="position === 'top'" x-cloak>
-                        Recommended: <strong>1200×600px</strong> (2:1 ratio) — this is one of the small promo tiles below Categories on the homepage.
+                        Shown at <strong>1200×600px</strong> (2:1 ratio) — this is one of the small promo tiles below Categories on the homepage. Any image you upload is automatically cropped to this size, centered on the original.
                     </p>
                     <p class="text-xs text-gray-500 mt-1" x-show="!['hero','top'].includes(position)" x-cloak>
                         A wide, landscape-orientation image works best here.

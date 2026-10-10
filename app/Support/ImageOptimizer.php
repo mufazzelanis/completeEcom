@@ -47,6 +47,28 @@ class ImageOptimizer
     }
 
     /**
+     * Like store(), but instead of just capping the longest side, forces the output to an exact
+     * canvas (center-cropped, scaling up a too-small source if needed) — for slots like the hero
+     * banner whose frontend container is a fixed aspect ratio. Uploads that don't already match
+     * that ratio used to get cropped unpredictably by the browser's object-fit at display time
+     * (reported as the right edge of the photo getting sliced off); doing the crop once here,
+     * at upload time, means every stored banner image is already exactly the display size, so
+     * the frontend never has to crop or letterbox it at all.
+     */
+    public static function storeCropped(UploadedFile $file, string $directory, string $disk, int $targetWidth, int $targetHeight, int $quality = 82): string
+    {
+        $result = self::optimizeCropped($file->getRealPath(), $file->getMimeType(), $targetWidth, $targetHeight, $quality);
+
+        $extension = $result['extension'] ?? ($file->getClientOriginalExtension() ?: $file->extension());
+        $bytes = $result['bytes'] ?? file_get_contents($file->getRealPath());
+        $path = trim($directory, '/') . '/' . Str::random(40) . '.' . $extension;
+
+        Storage::disk($disk)->put($path, $bytes);
+
+        return $path;
+    }
+
+    /**
      * Returns ['bytes' => string, 'extension' => string], or null if the file isn't a format
      * GD can safely round-trip (falls back to storing the original untouched). Public so
      * `images:optimize` can re-run this against files that are already on disk, not just
@@ -62,20 +84,8 @@ class ImageOptimizer
         }
 
         try {
-            $image = match ($mime) {
-                'image/jpeg' => imagecreatefromjpeg($path),
-                'image/png'  => imagecreatefrompng($path),
-                'image/webp' => function_exists('imagecreatefromwebp') ? imagecreatefromwebp($path) : null,
-                default      => null, // gif (animation-unsafe), svg, avif, etc. — leave untouched
-            };
-
+            $image = self::decode($path, $mime);
             if (! $image) {
-                // A recognized mime whose GD decoder still returned false is an actual
-                // failure (corrupt file, unsupported PNG color mode, etc.) worth surfacing —
-                // as opposed to a format we intentionally never attempt (gif, svg, ...).
-                if (in_array($mime, ['image/jpeg', 'image/png', 'image/webp'], true)) {
-                    self::$lastError = "GD couldn't decode this {$mime} file";
-                }
                 return null;
             }
 
@@ -86,70 +96,149 @@ class ImageOptimizer
             if ($scale < 1) {
                 $newWidth = max(1, (int) round($width * $scale));
                 $newHeight = max(1, (int) round($height * $scale));
-                $resized = imagecreatetruecolor($newWidth, $newHeight);
-
-                // Preserve transparency while resizing instead of flattening it to black —
-                // whether the output actually keeps it depends on the PNG-vs-JPEG decision below.
-                imagealphablending($resized, false);
-                imagesavealpha($resized, true);
-                $transparent = imagecolorallocatealpha($resized, 0, 0, 0, 127);
-                imagefilledrectangle($resized, 0, 0, $newWidth, $newHeight, $transparent);
-
-                imagecopyresampled($resized, $image, 0, 0, 0, 0, $newWidth, $newHeight, $width, $height);
-                imagedestroy($image);
-                $image = $resized;
+                $image = self::resample($image, $width, $height, $newWidth, $newHeight);
                 $width = $newWidth;
                 $height = $newHeight;
             }
 
-            // WebP beats both JPEG and PNG for basically any content — photos *and* the
-            // transparency PNG was carrying — so it's always the preferred output when GD
-            // can encode it (near-universal browser support today; every mainstream browser
-            // has supported it for years). Only fall back to the old JPEG/PNG choice on a GD
-            // build without WebP encoding, where a non-transparent PNG still becomes a JPEG
-            // (PNG is a poor format for photographic content — lossless can't touch what
-            // lossy JPEG/WebP does with gradients/photos) and a transparent one stays PNG.
-            if (function_exists('imagewebp')) {
-                $outputMime = 'image/webp';
-                imagesavealpha($image, true);
-            } elseif ($mime === 'image/png' && ! self::hasTransparency($image, $width, $height)) {
-                $outputMime = 'image/jpeg';
-                $flattened = imagecreatetruecolor($width, $height);
-                imagefill($flattened, 0, 0, imagecolorallocate($flattened, 255, 255, 255));
-                imagecopy($flattened, $image, 0, 0, 0, 0, $width, $height);
-                imagedestroy($image);
-                $image = $flattened;
-            } else {
-                $outputMime = $mime;
-            }
-
-            ob_start();
-            match ($outputMime) {
-                'image/jpeg' => imagejpeg($image, null, $quality),
-                'image/png'  => imagepng($image, null, 9), // lossless either way — always max compression
-                'image/webp' => imagewebp($image, null, $quality),
-            };
-            $bytes = ob_get_clean();
-
-            imagedestroy($image);
-
-            if ($bytes === false || $bytes === '') {
-                return null;
-            }
-
-            return [
-                'bytes' => $bytes,
-                'extension' => match ($outputMime) {
-                    'image/jpeg' => 'jpg',
-                    'image/png'  => 'png',
-                    'image/webp' => 'webp',
-                },
-            ];
+            return self::encode($image, $mime, $quality, $width, $height);
         } catch (\Throwable $e) {
             self::$lastError = $e->getMessage();
             Log::warning('ImageOptimizer: falling back to unprocessed upload — ' . $e->getMessage());
             return null;
         }
+    }
+
+    /**
+     * Same decode→encode pipeline as optimize(), but instead of capping the longest side it
+     * forces an exact $targetWidth×$targetHeight canvas: scale (up if necessary) so the source
+     * fully covers that box, then crop the centered overflow — the server-side equivalent of
+     * CSS `object-fit: cover`, done once at upload time instead of on every page load.
+     */
+    public static function optimizeCropped(string $path, ?string $mime, int $targetWidth, int $targetHeight, int $quality): ?array
+    {
+        self::$lastError = null;
+
+        if (! extension_loaded('gd')) {
+            self::$lastError = 'the GD extension is not loaded';
+            return null;
+        }
+
+        try {
+            $image = self::decode($path, $mime);
+            if (! $image) {
+                return null;
+            }
+
+            $width = imagesx($image);
+            $height = imagesy($image);
+            $scale = max($targetWidth / $width, $targetHeight / $height);
+            $scaledWidth = max(1, (int) round($width * $scale));
+            $scaledHeight = max(1, (int) round($height * $scale));
+
+            $image = self::resample($image, $width, $height, $scaledWidth, $scaledHeight);
+
+            $cropX = (int) round(($scaledWidth - $targetWidth) / 2);
+            $cropY = (int) round(($scaledHeight - $targetHeight) / 2);
+
+            $cropped = imagecreatetruecolor($targetWidth, $targetHeight);
+            imagealphablending($cropped, false);
+            imagesavealpha($cropped, true);
+            $transparent = imagecolorallocatealpha($cropped, 0, 0, 0, 127);
+            imagefilledrectangle($cropped, 0, 0, $targetWidth, $targetHeight, $transparent);
+            imagecopy($cropped, $image, 0, 0, $cropX, $cropY, $targetWidth, $targetHeight);
+            imagedestroy($image);
+
+            return self::encode($cropped, $mime, $quality, $targetWidth, $targetHeight);
+        } catch (\Throwable $e) {
+            self::$lastError = $e->getMessage();
+            Log::warning('ImageOptimizer: falling back to unprocessed upload — ' . $e->getMessage());
+            return null;
+        }
+    }
+
+    /** @return resource|\GdImage|null */
+    private static function decode(string $path, ?string $mime)
+    {
+        $image = match ($mime) {
+            'image/jpeg' => imagecreatefromjpeg($path),
+            'image/png'  => imagecreatefrompng($path),
+            'image/webp' => function_exists('imagecreatefromwebp') ? imagecreatefromwebp($path) : null,
+            default      => null, // gif (animation-unsafe), svg, avif, etc. — leave untouched
+        };
+
+        if (! $image && in_array($mime, ['image/jpeg', 'image/png', 'image/webp'], true)) {
+            // A recognized mime whose GD decoder still returned false is an actual failure
+            // (corrupt file, unsupported PNG color mode, etc.) worth surfacing — as opposed
+            // to a format we intentionally never attempt (gif, svg, ...).
+            self::$lastError = "GD couldn't decode this {$mime} file";
+        }
+
+        return $image;
+    }
+
+    /** Resamples $image to $newWidth×$newHeight, preserving transparency, and frees the source. */
+    private static function resample($image, int $width, int $height, int $newWidth, int $newHeight)
+    {
+        $resized = imagecreatetruecolor($newWidth, $newHeight);
+
+        imagealphablending($resized, false);
+        imagesavealpha($resized, true);
+        $transparent = imagecolorallocatealpha($resized, 0, 0, 0, 127);
+        imagefilledrectangle($resized, 0, 0, $newWidth, $newHeight, $transparent);
+
+        imagecopyresampled($resized, $image, 0, 0, 0, 0, $newWidth, $newHeight, $width, $height);
+        imagedestroy($image);
+
+        return $resized;
+    }
+
+    /** Re-encodes $image (freeing it) to WebP/JPEG/PNG, returning ['bytes'=>, 'extension'=>] or null. */
+    private static function encode($image, ?string $mime, int $quality, int $width, int $height): ?array
+    {
+        // WebP beats both JPEG and PNG for basically any content — photos *and* the
+        // transparency PNG was carrying — so it's always the preferred output when GD
+        // can encode it (near-universal browser support today; every mainstream browser
+        // has supported it for years). Only fall back to the old JPEG/PNG choice on a GD
+        // build without WebP encoding, where a non-transparent PNG still becomes a JPEG
+        // (PNG is a poor format for photographic content — lossless can't touch what
+        // lossy JPEG/WebP does with gradients/photos) and a transparent one stays PNG.
+        if (function_exists('imagewebp')) {
+            $outputMime = 'image/webp';
+            imagesavealpha($image, true);
+        } elseif ($mime === 'image/png' && ! self::hasTransparency($image, $width, $height)) {
+            $outputMime = 'image/jpeg';
+            $flattened = imagecreatetruecolor($width, $height);
+            imagefill($flattened, 0, 0, imagecolorallocate($flattened, 255, 255, 255));
+            imagecopy($flattened, $image, 0, 0, 0, 0, $width, $height);
+            imagedestroy($image);
+            $image = $flattened;
+        } else {
+            $outputMime = $mime;
+        }
+
+        ob_start();
+        match ($outputMime) {
+            'image/jpeg' => imagejpeg($image, null, $quality),
+            'image/png'  => imagepng($image, null, 9), // lossless either way — always max compression
+            'image/webp' => imagewebp($image, null, $quality),
+        };
+        $bytes = ob_get_clean();
+
+        imagedestroy($image);
+
+        if ($bytes === false || $bytes === '') {
+            return null;
+        }
+
+        return [
+            'bytes' => $bytes,
+            'extension' => match ($outputMime) {
+                'image/jpeg' => 'jpg',
+                'image/png'  => 'png',
+                'image/webp' => 'webp',
+            },
+        ];
     }
 
     /**
