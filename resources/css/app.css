@@ -12,9 +12,15 @@
    horizontal scroll looks like, not a bug in any one of those sections specifically).
    100vw on body/html would reintroduce the same problem via the viewport-vs-scrollbar
    width mismatch this is meant to prevent, so this relies on the browser's own intrinsic
-   block width instead — overflow-x: hidden as the backstop that makes any such overflow
-   invisible rather than scrollable, wherever it originates. */
-html, body { overflow-x: hidden; }
+   block width instead.
+
+   `clip`, not `hidden`: overflow-x: hidden on an ancestor (even just <body>) is a classic,
+   well-documented way to silently break position: sticky on every descendant — confirmed
+   here the hard way, it took the storefront header's own Sticky Header setting down with it
+   the moment this rule shipped. `overflow: clip` clips the same overflow without
+   establishing a new scroll container the way `hidden`/`auto`/`scroll` do, which is
+   specifically what position: sticky needs intact up the ancestor chain to keep working. */
+html, body { overflow-x: clip; }
 
 /* Global (not layouts/app.blade.php's own inline copy, which layouts/admin.blade.php never
    loads) — needed by the admin panel's mobile pill-nav strips (reports/_nav, settings/
