@@ -6,9 +6,13 @@
     $fieldName = $name ?? 'content';
 @endphp
 
+{{-- jQuery + Summernote's own JS/CSS load unconditionally from both admin/seller layouts'
+     <head> (see layouts/admin.blade.php) — NOT pushed from here. A <script src> pushed into
+     the body races Turbo Drive: it re-fetches on every Turbo visit, and the x-init below
+     (which calls editor.summernote() the instant Alpine mounts this component) could run
+     before that fresh fetch finished, leaving the editor silently uninitialized. --}}
 @once
     @push('styles')
-        <link href="https://cdn.jsdelivr.net/npm/summernote@0.8.20/dist/summernote-lite.min.css" rel="stylesheet">
         <style>
             .rich-editor .note-editor.note-frame { border-color: rgb(229 231 235); border-radius: 0.75rem; }
             .rich-editor .note-toolbar { border-radius: 0.75rem 0.75rem 0 0; background: rgb(249 250 251); }
@@ -37,10 +41,6 @@
             .rich-editor .note-dropdown-item h6 { font-size: 0.75rem; font-weight: 600; color: rgb(107 114 128); }
             .rich-editor .note-dropdown-item blockquote, .rich-editor .note-dropdown-item pre { font-size: 0.8125rem; font-weight: 400; font-style: italic; color: rgb(107 114 128); }
         </style>
-    @endpush
-    @push('scripts')
-        <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
-        <script src="https://cdn.jsdelivr.net/npm/summernote@0.8.20/dist/summernote-lite.min.js"></script>
     @endpush
 @endonce
 

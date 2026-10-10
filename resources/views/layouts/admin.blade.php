@@ -42,6 +42,16 @@
          evaluates it correctly in order, and recognizes the identical src on every
          later admin page instead of re-fetching it. --}}
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    {{-- Same reasoning, same fix, for the Summernote rich-text editor (partials/rich-editor)
+         used across Products/Pages/Blog/Landing Pages: jQuery+Summernote used to be pushed
+         from the partial itself via @push('scripts'), which lands in the BODY — a fresh
+         <script src> there on every Turbo visit, racing the x-init that calls
+         editor.summernote() the moment Alpine mounts. Loading them here instead means
+         Turbo's head-merging recognizes the identical src and never re-fetches it, so by
+         the time any page's rich editor mounts, both are already loaded and ready. --}}
+    <link href="https://cdn.jsdelivr.net/npm/summernote@0.8.20/dist/summernote-lite.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/summernote@0.8.20/dist/summernote-lite.min.js"></script>
     {{-- theme/adminSidebar stores are registered once, unconditionally, in app.js itself —
          not here behind an alpine:init listener. Alpine.start() (and the one-time
          alpine:init event it fires) only ever runs once per Turbo session, on whichever

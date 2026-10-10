@@ -36,6 +36,11 @@ $sellerNavItems = [
          can beat a same-script-tag inline chart-init call that assumes it's already
          loaded (see the matching comment in layouts/admin.blade.php). --}}
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    {{-- Same reasoning as Chart.js above, for Summernote (partials/rich-editor, used by the
+         seller product form) — see the matching comment in layouts/admin.blade.php. --}}
+    <link href="https://cdn.jsdelivr.net/npm/summernote@0.8.20/dist/summernote-lite.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/summernote@0.8.20/dist/summernote-lite.min.js"></script>
     <style>[x-cloak]{display:none!important}</style>
     @stack('styles')
 </head>
