@@ -175,14 +175,21 @@
             <button @click="current = (current + 1) % total" class="hidden md:flex absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 bg-white/10 hover:bg-white/25 text-white rounded-full items-center justify-center transition backdrop-blur-md ring-1 ring-white/30" aria-label="Next">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
             </button>
-            <div class="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
-                @foreach($banners as $i => $banner)
-                <button @click="current = {{ $i }}" class="h-1.5 rounded-full transition-all duration-300" aria-label="Go to slide {{ $i + 1 }}"
-                        :class="current === {{ $i }} ? 'bg-white w-7' : 'bg-white/50 w-1.5 hover:bg-white/75'"></button>
-                @endforeach
-            </div>
             @endif
         </div>
+
+        {{-- Dots now live below the card, Arogga-style, instead of floating on top of the
+             image — an overlaid row risked covering a banner's own text/button at short
+             aspect ratios (the same overlap class of bug the arrows just had), and it also
+             reads cleaner against a plain background than against a photo. --}}
+        @if($banners->count() > 1)
+        <div class="flex items-center justify-center gap-1.5 mt-2.5">
+            @foreach($banners as $i => $banner)
+            <button @click="current = {{ $i }}" class="h-1.5 rounded-full transition-all duration-300" aria-label="Go to slide {{ $i + 1 }}"
+                    :class="current === {{ $i }} ? 'bg-gray-800 dark:bg-gray-200 w-6' : 'bg-gray-300 dark:bg-gray-600 w-1.5 hover:bg-gray-400 dark:hover:bg-gray-500'"></button>
+            @endforeach
+        </div>
+        @endif
     </div>
 </div>
 
