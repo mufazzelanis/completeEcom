@@ -2,24 +2,14 @@
 $seo = $product ?? null;
 $pvd = $seo?->price_valid_until?->format('Y-m-d') ?? '';
 
-// PHP-side audit checks (for Audit tab)
+// Seed values for the Alpine component below, which computes the live SEO score/checklist
+// itself (mirrors ProductController::computeSeoScore()) — see the x-data block.
 $mt  = old('meta_title',    $seo?->meta_title    ?? '');
 $md  = old('meta_description', $seo?->meta_description ?? '');
 $fk  = old('focus_keyword', $seo?->focus_keyword ?? '');
 $ogi = old('og_image',      $seo?->og_image      ?? '');
 $alt = old('image_alt',     $seo?->image_alt     ?? '');
 $des = old('description',   $seo?->description   ?? '');
-$savedScore = $seo?->seo_score ?? 0;
-
-$auditChecks = [
-    ['ok' => strlen($mt) >= 30 && strlen($mt) <= 70,  'msg' => strlen($mt) > 0 ? 'Meta title: '.strlen($mt).' chars (30–70 recommended)' : 'Missing meta title'],
-    ['ok' => strlen($md) >= 100 && strlen($md) <= 160,'msg' => strlen($md) > 0 ? 'Meta description: '.strlen($md).' chars (100–160 recommended)' : 'Missing meta description'],
-    ['ok' => $fk !== '',  'msg' => $fk !== '' ? 'Focus keyword set' : 'No focus keyword set'],
-    ['ok' => $ogi !== '', 'msg' => $ogi !== '' ? 'Social sharing (OG) image set' : 'Missing OG / social sharing image'],
-    ['ok' => $alt !== '', 'msg' => $alt !== '' ? 'Main image alt text set' : 'Missing image alt text'],
-    ['ok' => strlen($des) > 200, 'msg' => strlen($des) > 200 ? 'Good product description (200+ chars)' : (strlen($des) > 0 ? 'Description could be longer (200+ chars recommended)' : 'Missing product description')],
-    ['ok' => $fk !== '' && $mt !== '' && str_contains(strtolower($mt), strtolower($fk)), 'msg' => ($fk !== '' && $mt !== '' && str_contains(strtolower($mt), strtolower($fk))) ? 'Focus keyword found in meta title' : ($fk !== '' ? 'Focus keyword not in meta title' : 'Set a focus keyword first')],
-];
 @endphp
 
 <div class="mt-6"
@@ -33,8 +23,49 @@ $auditChecks = [
         addBenefit()    { this.aiBenefits.push(''); },
         removeBenefit(i){ this.aiBenefits.splice(i,1); },
         addUseCase()    { this.aiUseCases.push(''); },
-        removeUseCase(i){ this.aiUseCases.splice(i,1); }
-    }">
+        removeUseCase(i){ this.aiUseCases.splice(i,1); },
+
+        // Live mirror of ProductController::computeSeoScore() — the Audit tab used to only
+        // show the score/checklist from the last save, which looked broken once fields (or
+        // the autofill button) could change without a full page reload. These seven fields
+        // are the only inputs that score depends on, so lifting just these five into x-model
+        // (description's length comes from the rich editor's own change event instead) keeps
+        // this in sync with every other tab's plain, unbound inputs.
+        metaTitle: {{ Js::from($mt) }},
+        metaDescription: {{ Js::from($md) }},
+        focusKeyword: {{ Js::from($fk) }},
+        ogImage: {{ Js::from($ogi) }},
+        imageAlt: {{ Js::from($alt) }},
+        descLength: {{ (int) strlen(trim(strip_tags($des))) }},
+        get liveScore() {
+            const mt = this.metaTitle.trim(), md = this.metaDescription.trim(), fk = this.focusKeyword.trim(),
+                  ogi = this.ogImage.trim(), alt = this.imageAlt.trim(), desLen = this.descLength;
+            let score = 0;
+            if (mt.length >= 30 && mt.length <= 70) score += 20; else if (mt) score += 5;
+            if (md.length >= 100 && md.length <= 160) score += 20; else if (md) score += 5;
+            if (fk) score += 15;
+            if (ogi) score += 10;
+            if (alt) score += 10;
+            if (desLen > 200) score += 15; else if (desLen > 0) score += 5;
+            if (fk && mt && mt.toLowerCase().includes(fk.toLowerCase())) score += 10;
+            return Math.min(score, 100);
+        },
+        get liveChecks() {
+            const mt = this.metaTitle.trim(), md = this.metaDescription.trim(), fk = this.focusKeyword.trim(),
+                  ogi = this.ogImage.trim(), alt = this.imageAlt.trim(), desLen = this.descLength;
+            const fkInTitle = !!(fk && mt && mt.toLowerCase().includes(fk.toLowerCase()));
+            return [
+                { ok: mt.length >= 30 && mt.length <= 70, msg: mt ? `Meta title: ${mt.length} chars (30–70 recommended)` : 'Missing meta title' },
+                { ok: md.length >= 100 && md.length <= 160, msg: md ? `Meta description: ${md.length} chars (100–160 recommended)` : 'Missing meta description' },
+                { ok: !!fk, msg: fk ? 'Focus keyword set' : 'No focus keyword set' },
+                { ok: !!ogi, msg: ogi ? 'Social sharing (OG) image set' : 'Missing OG / social sharing image' },
+                { ok: !!alt, msg: alt ? 'Main image alt text set' : 'Missing image alt text' },
+                { ok: desLen > 200, msg: desLen > 200 ? 'Good product description (200+ chars)' : (desLen > 0 ? 'Description could be longer (200+ chars recommended)' : 'Missing product description') },
+                { ok: fkInTitle, msg: fkInTitle ? 'Focus keyword found in meta title' : (fk ? 'Focus keyword not in meta title' : 'Set a focus keyword first') },
+            ];
+        }
+    }"
+    @editor-change.window="if ($event.detail.id === 'description') descLength = $event.detail.text.length">
     <div class="bg-white rounded-2xl shadow-sm overflow-hidden">
 
         {{-- Header --}}
@@ -48,15 +79,13 @@ $auditChecks = [
                 <h3 class="font-semibold text-gray-800">Product SEO</h3>
                 <p class="text-xs text-gray-500">Optimize for search engines, social sharing, and AI overviews</p>
             </div>
-            @if($seo)
             <div class="flex items-center gap-2 text-sm">
                 <span class="text-gray-500">SEO Score:</span>
-                <span class="font-bold px-2 py-0.5 rounded-lg text-sm
-                    {{ $savedScore >= 70 ? 'bg-emerald-100 text-emerald-700' : ($savedScore >= 40 ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-600') }}">
-                    {{ $savedScore }}/100
+                <span class="font-bold px-2 py-0.5 rounded-lg text-sm"
+                    :class="liveScore >= 70 ? 'bg-emerald-100 text-emerald-700' : (liveScore >= 40 ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-600')">
+                    <span x-text="liveScore"></span>/100
                 </span>
             </div>
-            @endif
         </div>
 
         {{-- Sub-tab nav --}}
@@ -91,7 +120,7 @@ $auditChecks = [
                             Meta Title
                             <span class="text-xs text-gray-400 font-normal ml-1">30–70 chars recommended</span>
                         </label>
-                        <input type="text" name="meta_title" value="{{ old('meta_title', $seo?->meta_title ?? '') }}" maxlength="100"
+                        <input type="text" name="meta_title" x-model="metaTitle" maxlength="100"
                             class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
                     </div>
                     <div class="md:col-span-2">
@@ -99,12 +128,12 @@ $auditChecks = [
                             Meta Description
                             <span class="text-xs text-gray-400 font-normal ml-1">100–160 chars recommended</span>
                         </label>
-                        <textarea name="meta_description" rows="3" maxlength="300"
-                            class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-none">{{ old('meta_description', $seo?->meta_description ?? '') }}</textarea>
+                        <textarea name="meta_description" rows="3" maxlength="300" x-model="metaDescription"
+                            class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-none"></textarea>
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Focus Keyword</label>
-                        <input type="text" name="focus_keyword" value="{{ old('focus_keyword', $seo?->focus_keyword ?? '') }}"
+                        <input type="text" name="focus_keyword" x-model="focusKeyword"
                             placeholder="e.g. wireless headphones"
                             class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
                     </div>
@@ -178,7 +207,7 @@ $auditChecks = [
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">OG Image URL <span class="text-xs text-gray-400 font-normal">1200×630 px</span></label>
-                        <input type="url" name="og_image" value="{{ old('og_image', $seo?->og_image ?? '') }}"
+                        <input type="url" name="og_image" x-model="ogImage"
                             placeholder="https://..."
                             class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
                     </div>
@@ -363,7 +392,7 @@ $auditChecks = [
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Main Image Alt Text</label>
-                        <input type="text" name="image_alt" value="{{ old('image_alt', $seo?->image_alt ?? '') }}"
+                        <input type="text" name="image_alt" x-model="imageAlt"
                             placeholder="Descriptive alt text for the main product image"
                             class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
                     </div>
@@ -485,51 +514,43 @@ $auditChecks = [
             {{-- ── SEO Audit ────────────────────────────────────────────── --}}
             <div x-show="seoTab==='audit'" x-cloak>
                 <div class="space-y-5">
-                    {{-- Score ring --}}
+                    {{-- Score ring — live, computed from the fields above as you type (mirrors
+                         ProductController::computeSeoScore() exactly), not just the value from
+                         the last save. Matters now that saving no longer reloads the page
+                         (see _form.blade.php's AJAX submit) — a static, save-time-only score
+                         would otherwise look frozen/broken after every edit. --}}
                     <div class="flex items-center gap-5 bg-gray-50 rounded-xl p-5">
                         <div class="relative w-24 h-24 flex-shrink-0">
                             <svg class="w-24 h-24 -rotate-90" viewBox="0 0 36 36">
                                 <circle cx="18" cy="18" r="15.9155" fill="none" stroke="#e5e7eb" stroke-width="3"/>
                                 <circle cx="18" cy="18" r="15.9155" fill="none"
-                                    stroke="{{ $savedScore >= 70 ? '#10b981' : ($savedScore >= 40 ? '#f59e0b' : '#ef4444') }}"
+                                    :stroke="liveScore >= 70 ? '#10b981' : (liveScore >= 40 ? '#f59e0b' : '#ef4444')"
                                     stroke-width="3"
-                                    stroke-dasharray="{{ $savedScore }} {{ 100 - $savedScore }}"
-                                    stroke-linecap="round"/>
+                                    :stroke-dasharray="`${liveScore} ${100 - liveScore}`"
+                                    stroke-linecap="round" class="transition-all duration-300"/>
                             </svg>
                             <div class="absolute inset-0 flex items-center justify-center">
-                                <span class="text-2xl font-bold {{ $savedScore >= 70 ? 'text-emerald-600' : ($savedScore >= 40 ? 'text-amber-500' : 'text-red-500') }}">
-                                    {{ $savedScore }}
-                                </span>
+                                <span class="text-2xl font-bold" :class="liveScore >= 70 ? 'text-emerald-600' : (liveScore >= 40 ? 'text-amber-500' : 'text-red-500')" x-text="liveScore"></span>
                             </div>
                         </div>
                         <div>
-                            <p class="text-lg font-semibold text-gray-800">
-                                @if($savedScore >= 70) Good — well optimized!
-                                @elseif($savedScore >= 40) Needs improvement
-                                @else Poor — significant SEO issues found
-                                @endif
-                            </p>
-                            <p class="text-sm text-gray-500 mt-1">Score updates when you save the product. Fill in the SEO fields above to improve your score.</p>
-                            @if(!$seo)
-                            <p class="text-xs text-amber-600 mt-1">Score will be calculated after the product is saved for the first time.</p>
-                            @endif
+                            <p class="text-lg font-semibold text-gray-800" x-text="liveScore >= 70 ? 'Good — well optimized!' : (liveScore >= 40 ? 'Needs improvement' : 'Poor — significant SEO issues found')"></p>
+                            <p class="text-sm text-gray-500 mt-1">Updates live as you fill in the fields above — save the product to keep it.</p>
                         </div>
                     </div>
                     {{-- Checks --}}
                     <div>
                         <h4 class="text-sm font-semibold text-gray-700 mb-3">SEO Checklist</h4>
                         <div class="space-y-2">
-                            @foreach($auditChecks as $check)
-                            <div class="flex items-start gap-3 rounded-xl px-4 py-3 {{ $check['ok'] ? 'bg-emerald-50 border border-emerald-100' : 'bg-gray-50 border border-gray-100' }}">
-                                <svg class="w-4 h-4 mt-0.5 flex-shrink-0 {{ $check['ok'] ? 'text-emerald-500' : 'text-gray-400' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="{{ $check['ok'] ? 'M5 13l4 4L19 7' : 'M12 12m0 0' }}"/>
-                                    @if(!$check['ok'])
-                                    <circle cx="12" cy="12" r="3" fill="currentColor"/>
-                                    @endif
-                                </svg>
-                                <span class="text-sm {{ $check['ok'] ? 'text-emerald-700' : 'text-gray-600' }}">{{ $check['msg'] }}</span>
-                            </div>
-                            @endforeach
+                            <template x-for="check in liveChecks" :key="check.msg">
+                                <div class="flex items-start gap-3 rounded-xl px-4 py-3" :class="check.ok ? 'bg-emerald-50 border border-emerald-100' : 'bg-gray-50 border border-gray-100'">
+                                    <svg class="w-4 h-4 mt-0.5 flex-shrink-0" :class="check.ok ? 'text-emerald-500' : 'text-gray-400'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path x-show="check.ok" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                        <circle x-show="!check.ok" cx="12" cy="12" r="3" fill="currentColor"/>
+                                    </svg>
+                                    <span class="text-sm" :class="check.ok ? 'text-emerald-700' : 'text-gray-600'" x-text="check.msg"></span>
+                                </div>
+                            </template>
                         </div>
                     </div>
                     {{-- Tips --}}
