@@ -79,13 +79,19 @@
             this.current = dx < 0 ? (this.current + 1) % this.total : (this.current - 1 + this.total) % this.total;
         }
     }" @touchstart.passive="onTouchStart($event)" @touchend.passive="onTouchEnd($event)">
-        {{-- One fixed 16:5 ratio at every breakpoint — matches the 1920×600 size admins
-             are told to upload at (admin.banners.create/edit), so the image is always
-             shown at its native crop, never stretched/zoomed to fill a mismatched box. --}}
-        {{-- min-h is a floor, not a second ratio — 360px and up stays exactly 16:5; only
-             below that (sub-iPhone-SE widths) does it stop shrinking, which would
-             otherwise clip the subtitle/headline/button stack. --}}
-        <div class="relative rounded-2xl overflow-hidden bg-gray-200 aspect-[16/5] min-h-[112px] sm:min-h-0 shadow-lg sm:shadow-xl shadow-orange-900/5">
+        {{-- One fixed 16:5 ratio at EVERY breakpoint, no exceptions — matches the 1920×600
+             canvas banners are now server-side cropped to exactly (BannerController::
+             storeBannerImage), so the box and the image are always the same ratio and
+             object-cover never has anything to crop. There used to be a `min-h-[112px]`
+             floor here meant to stop the text overlay clipping on the narrowest phones —
+             but that floor kicked in for content-box widths under 360px, which is most
+             phones (360/375/390 viewport width, minus the px-3 gutters, almost all land
+             under that), silently un-matching the box from the image on exactly the
+             devices most people actually use — reported as the hero image still looking
+             cropped on mobile even after the server-side crop fix. Dropped entirely; the
+             overlay's own spacing (tightened below) now carries the narrow-screen case
+             instead of a competing height rule. --}}
+        <div class="relative rounded-2xl overflow-hidden bg-gray-200 aspect-[16/5] shadow-lg sm:shadow-xl shadow-orange-900/5">
             @if($banners->count() > 0)
                 @foreach($banners as $i => $banner)
                 <div x-show="current === {{ $i }}"
@@ -129,11 +135,15 @@
                             @endif
                             <div class="absolute inset-0 flex items-center px-6 md:px-14">
                                 <div class="animate-fade-in-up max-w-lg">
+                                    {{-- Margins trimmed (mb-3→mb-1.5, mb-2→mb-1) now that the box
+                                         can be as short as ~90px on the narrowest phones (no more
+                                         min-h floor forcing extra height) — the content itself needs
+                                         to fit that, not just avoid being visually cramped. --}}
                                     @if($banner->subtitle)
-                                        <span class="inline-block bg-white/15 backdrop-blur-sm border border-white/25 text-white/90 text-[11px] md:text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full mb-3">{{ $banner->subtitle }}</span>
+                                        <span class="inline-block bg-white/15 backdrop-blur-sm border border-white/25 text-white/90 text-[11px] md:text-xs font-semibold uppercase tracking-wider px-3 py-1 rounded-full mb-1.5 md:mb-3">{{ $banner->subtitle }}</span>
                                     @endif
                                     @if($banner->title)
-                                        <h2 class="text-white text-2xl md:text-4xl font-extrabold mb-2 leading-tight [text-wrap:balance]">{{ $banner->title }}</h2>
+                                        <h2 class="text-white text-xl md:text-4xl font-extrabold mb-1 md:mb-2 leading-tight [text-wrap:balance]">{{ $banner->title }}</h2>
                                     @endif
                                     @if($banner->description)<p class="text-white/80 text-sm mb-4 hidden md:block max-w-md">{{ $banner->description }}</p>@endif
                                     @if($banner->button_text)
