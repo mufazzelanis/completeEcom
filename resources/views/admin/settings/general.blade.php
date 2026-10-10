@@ -186,6 +186,54 @@
             </button>
         </div>
     </div>
+
+    <div class="border-t pt-4"
+         x-data="{
+            base: '{{ setting('add_to_cart_button_color', '#f97316') }}',
+            hover: '{{ setting('add_to_cart_button_hover_color', '#ea580c') }}',
+            textColor: '{{ setting('add_to_cart_button_text_color', '#ffffff') }}',
+         }">
+        <h3 class="text-sm font-semibold text-gray-800 mb-1">Quick "Add to Cart" Button Color</h3>
+        <p class="text-xs text-gray-400 mb-3">The small round button on the top-right corner of each product card (and the outlined "Add to Cart" button on the product page) — kept separate from the "Buy Now" color above since the two now live side by side on every card. Leave untouched and it keeps today's orange look.</p>
+        <div class="grid grid-cols-2 lg:grid-cols-3 gap-4">
+            <div>
+                <label class="block text-xs font-medium text-gray-700 mb-1">Button Color</label>
+                <div class="flex items-center gap-1.5">
+                    <input type="color" name="add_to_cart_button_color" x-model="base" class="h-9 w-10 flex-shrink-0 rounded border cursor-pointer">
+                    <input type="text" x-model="base" class="w-0 flex-1 border rounded px-2 py-1.5 text-xs text-gray-600 font-mono bg-gray-50">
+                </div>
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-gray-700 mb-1">Hover Color</label>
+                <div class="flex items-center gap-1.5">
+                    <input type="color" name="add_to_cart_button_hover_color" x-model="hover" class="h-9 w-10 flex-shrink-0 rounded border cursor-pointer">
+                    <input type="text" x-model="hover" class="w-0 flex-1 border rounded px-2 py-1.5 text-xs text-gray-600 font-mono bg-gray-50">
+                </div>
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-gray-700 mb-1">Icon / Text Color</label>
+                <div class="flex items-center gap-1.5">
+                    <input type="color" name="add_to_cart_button_text_color" x-model="textColor" class="h-9 w-10 flex-shrink-0 rounded border cursor-pointer">
+                    <input type="text" x-model="textColor" class="w-0 flex-1 border rounded px-2 py-1.5 text-xs text-gray-600 font-mono bg-gray-50">
+                </div>
+            </div>
+        </div>
+
+        {{-- Live preview — same circular button + hover-shift trick as the real one
+             (resources/views/partials/product-card.blade.php). --}}
+        <div class="mt-4 bg-gray-50 border rounded-xl p-4 flex items-center gap-3 flex-wrap">
+            <span class="text-xs text-gray-400">Preview:</span>
+            <button type="button" tabindex="-1"
+                class="w-10 h-10 bg-[length:200%_auto] hover:bg-right rounded-full shadow-lg ring-4 ring-white flex items-center justify-center transition-all duration-500"
+                :style="{ backgroundImage: `linear-gradient(to right, ${base}, ${hover})`, color: textColor }">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+            </button>
+            <button type="button" @click="base = '#f97316'; hover = '#ea580c'; textColor = '#ffffff';"
+                class="ml-auto text-xs text-gray-400 hover:text-orange-600 underline">
+                Reset to default
+            </button>
+        </div>
+    </div>
 </div>
 
 <div class="flex justify-end">

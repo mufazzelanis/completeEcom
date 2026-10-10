@@ -25,6 +25,18 @@
         setting('order_button_color_to', '#fb923c'),
     );
     $orderButtonTextColor = setting('order_button_text_color', '#ffffff');
+
+    // Quick "Add to Cart" circle's own color (Settings → General → Quick "Add to Cart"
+    // Button Color) — deliberately separate from the Buy Now gradient above, since an
+    // admin may want the two side-by-side buttons on a card to read as visually
+    // distinct actions. Defaults match the original hardcoded bg-orange-500/
+    // hover:bg-orange-600 exactly, so an untouched install looks identical.
+    $addToCartGradient = sprintf(
+        'linear-gradient(to right, %s, %s)',
+        setting('add_to_cart_button_color', '#f97316'),
+        setting('add_to_cart_button_hover_color', '#ea580c'),
+    );
+    $addToCartTextColor = setting('add_to_cart_button_text_color', '#ffffff');
 @endphp
 <div class="h-full flex flex-col bg-white rounded-xl shadow-sm hover:shadow-xl hover:shadow-gray-200/60 transition-all duration-300 group overflow-hidden ring-1 ring-gray-100 hover:ring-orange-200 hover:-translate-y-1 relative">
     <a href="{{ route('products.show', $product->slug) }}" class="block relative">
@@ -116,7 +128,8 @@
                 data-icon-added='{!! $checkIconSvg !!}'
                 data-label-default="{{ $addToCartText }}"
                 data-label-added="Added"
-                class="quick-add-btn pointer-events-auto {{ $quickAddStyle === 'text' ? 'pl-2.5 pr-3.5 h-10' : 'w-10 h-10' }} rounded-full shadow-lg ring-4 ring-white bg-orange-500 text-white hover:bg-orange-600 flex items-center justify-center gap-1 transition active:scale-90"
+                style="background-image: {{ $addToCartGradient }}; color: {{ $addToCartTextColor }};"
+                class="quick-add-btn pointer-events-auto {{ $quickAddStyle === 'text' ? 'pl-2.5 pr-3.5 h-10' : 'w-10 h-10' }} rounded-full shadow-lg ring-4 ring-white bg-[length:200%_auto] hover:bg-right flex items-center justify-center gap-1 transition-all duration-500 active:scale-90"
                 title="{{ $isInCart ? 'Remove from Cart' : $addToCartText }}"
                 aria-label="{{ $isInCart ? 'Remove from cart' : $addToCartText }} — {{ $product->name }}">
                 <span class="quick-add-icon">{!! $isInCart ? $checkIconSvg : $cartIconSvg !!}</span>
