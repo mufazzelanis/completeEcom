@@ -93,7 +93,7 @@
     </div>
     @endauth
 
-    <form action="{{ route('checkout.store') }}" method="POST"
+    <form id="checkout-form" action="{{ route('checkout.store') }}" method="POST"
         data-show-loader data-loader-message="Placing your order&hellip;"
         x-data="{
             cs: '{!! html_entity_decode(setting('currency_symbol', '৳')) !!}',
@@ -478,8 +478,11 @@
                         </div>
                     </div>
 
+                    {{-- Desktop only now — mobile gets a bar fixed to the bottom of the
+                         screen instead (below), so a mobile shopper never has to scroll
+                         back down to this card after filling in the form above it. --}}
                     <button type="submit"
-                        class="w-full mt-6 bg-orange-500 text-white py-3 rounded-xl font-bold hover:bg-orange-600 active:bg-orange-700 transition flex items-center justify-center space-x-2">
+                        class="hidden lg:flex w-full mt-6 bg-orange-500 text-white py-3 rounded-xl font-bold hover:bg-orange-600 active:bg-orange-700 transition items-center justify-center space-x-2">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                         </svg>
@@ -492,7 +495,36 @@
                 </div>
             </div>
         </div>
+
+        {{-- Mobile sticky "Place Order" bar — teleported to <body> (same reason every
+             other fixed-position overlay in this app is: an ancestor with a transform/
+             backdrop-filter would otherwise become its containing block instead of the
+             viewport) but still reads this <form>'s own Alpine scope (cs/total), since
+             teleporting moves the DOM node, not the component's data binding. The button
+             itself is associated by form="checkout-form" rather than nesting inside
+             <form>, since after teleporting it's no longer a descendant of it in the DOM.
+             Sits at bottom-20 — same clearance partials.storefront.bottom-nav's other
+             floating siblings (Chat/Back-to-top) already use to stay above that bar. --}}
+        <template x-teleport="body">
+            <div class="lg:hidden fixed inset-x-0 bottom-20 z-40 px-3">
+                <div class="max-w-md mx-auto bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl backdrop-saturate-150 rounded-2xl shadow-2xl shadow-black/15 dark:shadow-black/40 ring-1 ring-black/5 dark:ring-white/10 pl-4 pr-2 py-2 flex items-center gap-3">
+                    <div class="flex-1 min-w-0">
+                        <p class="text-[11px] text-gray-400 dark:text-gray-500 leading-none">Total</p>
+                        <p class="text-base font-extrabold text-gray-900 dark:text-white leading-tight truncate" x-text="cs + total.toLocaleString('en-US', {minimumFractionDigits:0, maximumFractionDigits:0})">{{ setting('currency_symbol', '৳') }}{{ number_format($base) }}</p>
+                    </div>
+                    <button type="submit" form="checkout-form"
+                        class="flex-shrink-0 bg-orange-500 text-white pl-5 pr-4 py-3 rounded-xl font-bold hover:bg-orange-600 active:bg-orange-700 active:scale-95 transition-all shadow-lg shadow-orange-600/20 flex items-center gap-1.5">
+                        <span>Place Order</span>
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
+                    </button>
+                </div>
+            </div>
+        </template>
     </form>
+
+    {{-- Mobile only: room at the bottom so the last card in the form (Order Summary)
+         never sits hidden behind the fixed bar above, or behind the bottom nav below it. --}}
+    <div class="lg:hidden h-24" aria-hidden="true"></div>
 </div>
 
 <script>
