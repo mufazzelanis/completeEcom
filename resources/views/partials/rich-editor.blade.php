@@ -101,8 +101,18 @@
          own magic property for the current component's scope, so use that instead. --}}
     const alpineData = $data;
     editor.summernote({
-        height: 220,
+        height: {{ (int) ($height ?? 220) }},
         placeholder: {{ Js::from($placeholder ?? 'Write here…') }},
+        @if(!empty($calloutStyles))
+        {{-- Landing pages: the usual blocks plus three ready-made callout boxes (.lp-callout
+             in app.css) — set a key promise apart without touching codeview. --}}
+        styleTags: [
+            'p', 'h2', 'h3', 'h4', 'blockquote',
+            { title: 'Highlight box', tag: 'div', className: 'lp-callout', value: 'div' },
+            { title: 'Success box', tag: 'div', className: 'lp-callout lp-callout-success', value: 'div' },
+            { title: 'Warning box', tag: 'div', className: 'lp-callout lp-callout-warning', value: 'div' },
+        ],
+        @endif
         toolbar: [
             ['style', ['style']],
             ['font', ['bold', 'italic', 'underline', 'strikethrough', 'clear']],
@@ -155,6 +165,13 @@
         },
     });
     editor.summernote('code', hidden.value);
+    @if(!empty($contentClass))
+    {{-- WYSIWYG: style the editing area with the same class the public page renders this
+         content in (e.g. .lp-content for landing pages), so the editor shows exactly what
+         customers will see. $contentStyle carries CSS variables such as the brand color. --}}
+    editor.next('.note-editor').find('.note-editable').addClass({{ Js::from($contentClass) }})
+        .attr('style', {{ Js::from($contentStyle ?? '') }});
+    @endif
     $el.closest('form')?.addEventListener('submit', () => { hidden.value = editor.summernote('code'); });
 ">
     <div x-ref="{{ $editorId }}Editor"></div>

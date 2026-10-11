@@ -3,8 +3,11 @@
     // funnel (usually landed on from an ad click) and should have none of the storefront's
     // distractions: no nav menu, no cart, no "browse other products" links pulling the
     // visitor away before they order. Just logo, the page itself, and an order button.
+    // Admin live preview (Admin\LandingPageController::preview) renders this same layout
+    // from unsaved form data — no tracking, no real order submission, no navigating away.
+    $isPreview = $isPreview ?? false;
     $siteName = setting('site_name', 'ShopVista');
-    $logoUrl  = $landingPage->header_logo ? \Illuminate\Support\Facades\Storage::url($landingPage->header_logo) : setting_file_url('site_logo');
+    $logoUrl  =$landingPage->header_logo ? \Illuminate\Support\Facades\Storage::url($landingPage->header_logo) : setting_file_url('site_logo');
     $faviconUrl = $landingPage->favicon ? \Illuminate\Support\Facades\Storage::url($landingPage->favicon) : setting_file_url('favicon');
     $primaryColor = $landingPage->brand_color ?: setting('primary_color', '#ea580c');
     $primaryColorDark = hex_shade($primaryColor, -0.22);
@@ -52,7 +55,7 @@
     {{-- Pixel Tracking — base install + PageView/ViewContent, mirroring layouts/app.blade.php's
          site-wide setup. InitiateCheckout fires on order-form submit and Purchase on the
          thank-you state — see show.blade.php. --}}
-    @if($gaId || $adsConversionId)
+    @if(!$isPreview && ($gaId || $adsConversionId))
     <script async src="https://www.googletagmanager.com/gtag/js?id={{ $gaId ?: $adsConversionId }}"></script>
     <script>
         window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());
@@ -60,7 +63,7 @@
         @if($adsConversionId)gtag('config','{{ $adsConversionId }}');@endif
     </script>
     @endif
-    @if($fbPixelOn)
+    @if(!$isPreview && $fbPixelOn)
     <script>
         !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');
         fbq('init', {!! Js::from($fbPixelId) !!});
@@ -68,7 +71,7 @@
     </script>
     <noscript><img height="1" width="1" style="display:none" src="https://www.facebook.com/tr?id={{ $fbPixelId }}&ev=PageView&noscript=1" alt=""></noscript>
     @endif
-    @if(!session('order_success'))
+    @if(!$isPreview && !session('order_success'))
     <script>
     (function () {
         var product = @json($trackProduct);
@@ -86,6 +89,31 @@
             });
         }
     })();
+    </script>
+    @endif
+    @if($isPreview)
+    {{-- The preview re-renders on every edit: one-shot entrance/scroll-reveal animations
+         would replay each time and make the page flicker while typing, so they start in
+         their final state here. Looping effects (glow, float, pulse) keep running. --}}
+    <style>
+        .reveal, .reveal-group > *, .lp-fade-up { opacity: 1 !important; transform: none !important; transition: none !important; animation: none !important; }
+    </style>
+    <script>
+    // Inside the admin's preview iframe: in-page anchors (#order-form) still scroll, but
+    // forms never submit and links never navigate the frame away from the preview.
+    document.addEventListener('submit', function (e) {
+        e.preventDefault(); e.stopImmediatePropagation();
+        window.parent.postMessage({ type: 'lp-preview-notice', text: 'Preview — orders are not submitted.' }, '*'); // harmless notice text only
+    }, true);
+    document.addEventListener('click', function (e) {
+        var a = e.target.closest('a[href]');
+        if (!a) return;
+        var href = a.getAttribute('href') || '';
+        e.preventDefault(); e.stopImmediatePropagation();
+        var hash = href.indexOf('#') !== -1 ? href.slice(href.indexOf('#')) : '';
+        var el = hash.length > 1 && document.querySelector(hash);
+        if (el) el.scrollIntoView({ behavior: 'smooth' });
+    }, true);
     </script>
     @endif
 </head>

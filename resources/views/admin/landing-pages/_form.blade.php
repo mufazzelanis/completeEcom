@@ -23,6 +23,8 @@
     };
 @endphp
 
+@include('admin.landing-pages._preview')
+
 <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
     <div class="col-span-2 space-y-5">
         {{-- Basic Info --}}
@@ -227,8 +229,25 @@
         {{-- Content --}}
         <div class="bg-white rounded-2xl shadow-sm p-6 space-y-2">
             <h3 class="font-medium text-gray-800 mb-3">Page Content</h3>
-            <p class="text-xs text-gray-400 -mt-2 mb-3">Free-form description shown right after the trust badges — features, story, whatever else sells this product.</p>
-            @include('partials.rich-editor', ['name' => 'content', 'value' => old('content', $lp->content ?? ''), 'id' => 'lpcontent', 'placeholder' => 'Write/design the landing page content…'])
+            <p class="text-xs text-gray-400 -mt-2">Free-form description shown right after the trust badges — features, story, whatever else sells this product.</p>
+            {{-- What you see in this editor is exactly what customers see: it uses the same
+                 .lp-content design as the live page (brand color included). --}}
+            <div class="text-xs text-gray-500 bg-indigo-50/60 border border-indigo-100 rounded-xl px-3 py-2.5 mb-3 leading-relaxed">
+                <span class="font-semibold text-indigo-700">Design tips:</span>
+                <span class="font-semibold">Style ▾</span> → Heading 2/3 for section titles, <span class="font-semibold">Quote</span> for a doctor's/customer's words, and
+                <span class="font-semibold">Highlight / Success / Warning box</span> to make a key point stand out ·
+                bulleted lists show as ✓ check rows, numbered lists as steps · use one blank line between paragraphs, not several.
+            </div>
+            @include('partials.rich-editor', [
+                'name' => 'content',
+                'value' => old('content', $lp->content ?? ''),
+                'id' => 'lpcontent',
+                'placeholder' => 'Write/design the landing page content…',
+                'height' => 420,
+                'contentClass' => 'lp-content',
+                'contentStyle' => '--lp-primary: ' . (old('brand_color', $lp->brand_color ?? null) ?: setting('primary_color', '#ea580c')) . ';',
+                'calloutStyles' => true,
+            ])
         </div>
 
         {{-- How It Works --}}

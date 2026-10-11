@@ -367,14 +367,17 @@
     </div>
     @endif
 
-    {{-- Admin's free-form content — sits on a soft brand-tinted card rather than bare on the
-         page background, so a long, heavily-bolded pitch (the common case here) reads as a
-         designed "info panel" instead of a plain wall of text floating on white. --}}
+    {{-- Admin's free-form content. Styled by .lp-content (resources/css/app.css) — the SAME
+         class the admin's editor applies to its editing area (admin/landing-pages/_form), so
+         what's designed there is exactly what customers see here: no Tailwind `prose` layer
+         re-sizing headings, recoloring bold text or adding its own spacing in between. --}}
     @if($landingPage->content)
         <div class="px-4 py-6 reveal">
-            <div class="prose prose-sm max-w-none leading-relaxed prose-headings:font-extrabold prose-a:text-orange-600 prose-strong:text-gray-900 rounded-2xl border border-gray-100 shadow-md p-5"
-                 style="background: linear-gradient(160deg, {{ $primary }}0d, {{ $primary }}03);">
-                {!! $landingPage->content !!}
+            <div class="relative bg-white rounded-3xl shadow-[0_12px_40px_-16px_rgba(0,0,0,0.18)] ring-1 ring-gray-100 overflow-hidden">
+                <div class="h-1.5" style="background: linear-gradient(90deg, {{ $primary }}, {{ $primaryDark }}, {{ $primary }}55);"></div>
+                <div class="lp-content px-5 py-6" style="--lp-primary: {{ $primary }};">
+                    {!! $landingPage->content !!}
+                </div>
             </div>
         </div>
     @endif

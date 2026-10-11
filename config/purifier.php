@@ -45,7 +45,10 @@ return [
             // .blog-promo-link/-frame/-img/-badge markup that the frontend's .prose CSS
             // depends on to render — without it here, Purifier silently strips every class
             // attribute on save and the promo image renders as a plain unstyled picture.
-            'HTML.Allowed'             => 'h1,h2,h3,h4,h5,h6,p[style],div[style],br,hr,'
+            // div[class] for the landing page editor's Highlight/Success/Warning boxes
+            // (.lp-callout* in app.css, offered in its Style dropdown) — admin-only content,
+            // and a class attribute can't run script.
+            'HTML.Allowed'             => 'h1,h2,h3,h4,h5,h6,p[style],div[style|class],br,hr,'
                 . 'b,strong,i,em,u,s,strike,sub,sup,span[style|class],'
                 . 'a[href|title|target|rel|class],ul,ol,li,blockquote,pre,code,'
                 . 'img[src|alt|width|height|style|class],'

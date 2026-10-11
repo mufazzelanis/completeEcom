@@ -569,6 +569,101 @@ html.dark .admin-nav-group[data-has-active="1"] .admin-nav-group__title { color:
 }
 
 /*
+ * ── Landing page rich content (.lp-content) ─────────────────────────────────
+ * One stylesheet for BOTH the admin's Summernote editing area (admin/landing-pages/_form,
+ * contentClass) and the customer-facing page (landing/show) — so the editor is a true
+ * WYSIWYG: headings, lists, quotes and callout boxes look identical in both places. Every
+ * element gets an explicit style here (Tailwind's preflight strips list bullets and heading
+ * sizes), driven by one variable, --lp-primary, set to the page's brand color. Inline
+ * styles the admin applies in the editor (text color, highlight, font size) still win.
+ */
+.lp-content {
+    --lp-primary: #ea580c;
+    --lp-tint: color-mix(in srgb, var(--lp-primary) 8%, #fff);
+    --lp-tint-strong: color-mix(in srgb, var(--lp-primary) 16%, #fff);
+    color: #374151;
+    font-size: 1rem;
+    line-height: 1.85;
+    overflow-wrap: anywhere;
+}
+.lp-content > :first-child { margin-top: 0 !important; }
+.lp-content > :last-child { margin-bottom: 0 !important; }
+.lp-content p { margin: 0 0 .9em; }
+/* Summernote leaves a <p><br></p> for every blank line the admin presses Enter on — at a
+   full line each, a few of those read as big accidental holes between paragraphs. */
+.lp-content p:empty,
+.lp-content p:has(> br:only-child) { margin: 0; line-height: .9; }
+.lp-content strong, .lp-content b { font-weight: 700; color: #111827; }
+.lp-content em, .lp-content i { font-style: italic; }
+.lp-content u { text-decoration-color: var(--lp-primary); text-decoration-thickness: 2px; text-underline-offset: 3px; }
+.lp-content a { color: var(--lp-primary); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
+
+.lp-content h1, .lp-content h2 {
+    margin: 1.5em 0 .7em; padding-left: .8rem;
+    border-left: 4px solid var(--lp-primary);
+    font-size: 1.35rem; line-height: 1.35; font-weight: 800; color: #111827;
+}
+.lp-content h1 { font-size: 1.5rem; }
+.lp-content h3 { margin: 1.3em 0 .55em; font-size: 1.15rem; line-height: 1.4; font-weight: 800; color: var(--lp-primary); }
+.lp-content h4, .lp-content h5, .lp-content h6 { margin: 1.1em 0 .45em; font-size: 1.02rem; line-height: 1.45; font-weight: 700; color: #111827; }
+
+/* Bulleted list → tinted rows with a brand-colored check badge; numbered list → numbered
+   steps. Far more scannable on a phone than plain bullets in a long sales pitch. */
+.lp-content ul, .lp-content ol { margin: .8em 0 1.1em; padding: 0; list-style: none; display: grid; gap: .55rem; }
+.lp-content li { position: relative; padding: .6rem .85rem .6rem 2.55rem; border-radius: .9rem; background: var(--lp-tint); line-height: 1.6; }
+.lp-content li > p { margin: 0; }
+.lp-content ul > li::before {
+    content: ''; position: absolute; left: .8rem; top: .78rem; width: 1.15rem; height: 1.15rem; border-radius: 9999px;
+    background: var(--lp-primary) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='white'%3E%3Cpath fill-rule='evenodd' d='M16.7 5.3a1 1 0 010 1.4l-8 8a1 1 0 01-1.4 0l-4-4a1 1 0 111.4-1.4L8 12.58l7.3-7.3a1 1 0 011.4 0z' clip-rule='evenodd'/%3E%3C/svg%3E") center / 72% no-repeat;
+}
+.lp-content ol { counter-reset: lp-step; }
+.lp-content ol > li { counter-increment: lp-step; }
+.lp-content ol > li::before {
+    content: counter(lp-step); position: absolute; left: .7rem; top: .68rem; width: 1.4rem; height: 1.4rem; border-radius: 9999px;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--lp-primary); color: #fff; font-size: .75rem; font-weight: 800; line-height: 1;
+}
+.lp-content li ul, .lp-content li ol { margin: .5em 0 0; }
+
+.lp-content blockquote {
+    position: relative; margin: 1.3em 0; padding: 1.1rem 1.1rem 1.1rem 3rem;
+    border-radius: 1.1rem; background: var(--lp-tint); border: 1px solid var(--lp-tint-strong);
+    color: #1f2937; font-weight: 500; font-style: italic;
+}
+.lp-content blockquote::before {
+    content: '\201C'; position: absolute; left: .85rem; top: .1rem;
+    font-size: 2.6rem; line-height: 1; font-style: normal; font-weight: 800; color: var(--lp-primary); opacity: .55;
+}
+.lp-content blockquote p:last-child { margin-bottom: 0; }
+
+.lp-content img { display: block; max-width: 100%; height: auto; margin: 1.1em auto; border-radius: 1rem; box-shadow: 0 14px 30px -14px rgba(0,0,0,.3); }
+.lp-content a img { box-shadow: 0 14px 30px -14px rgba(0,0,0,.35); }
+.lp-content iframe, .lp-content video { display: block; width: 100%; aspect-ratio: 16 / 9; height: auto; margin: 1.1em 0; border: 0; border-radius: 1rem; }
+.lp-content hr { margin: 1.6em 0; border: 0; height: 2px; background: linear-gradient(90deg, transparent, var(--lp-primary), transparent); opacity: .45; }
+
+.lp-content table { width: 100%; margin: 1.1em 0; border-collapse: separate; border-spacing: 0; overflow: hidden; border: 1px solid #e5e7eb; border-radius: .9rem; font-size: .92rem; line-height: 1.5; }
+.lp-content th, .lp-content td { padding: .6rem .75rem; border-bottom: 1px solid #f3f4f6; text-align: left; vertical-align: top; }
+.lp-content tr:last-child td { border-bottom: 0; }
+.lp-content th { background: var(--lp-tint-strong); color: #111827; font-weight: 700; }
+.lp-content tr:nth-child(even) td { background: #fafafa; }
+
+/* Callout boxes — offered as extra entries in the editor's "Style" dropdown for landing
+   pages (Highlight / Success / Warning box), so a key promise or offer can be set apart
+   without any HTML. */
+.lp-content .lp-callout {
+    margin: 1.2em 0; padding: 1rem 1.1rem; border-radius: 1.1rem;
+    background: linear-gradient(135deg, var(--lp-tint-strong), var(--lp-tint));
+    border: 1px solid color-mix(in srgb, var(--lp-primary) 28%, #fff);
+    color: #1f2937; font-weight: 600;
+}
+.lp-content .lp-callout-success { background: linear-gradient(135deg, #dcfce7, #f0fdf4); border-color: #bbf7d0; color: #14532d; }
+.lp-content .lp-callout-warning { background: linear-gradient(135deg, #fef3c7, #fffbeb); border-color: #fde68a; color: #78350f; }
+
+/* In the admin editor the page is always shown as the customer sees it (white), even when
+   the admin panel itself is in dark mode. */
+.note-editable.lp-content { background: #fff !important; padding: 1.25rem 1.4rem !important; }
+
+/*
  * Colored tints in dark mode — every palette's pale info/success/warning boxes, badges and
  * selected-card highlights (bg-*-50/100/200, border-*-100..300) become a translucent wash of
  * that color, and their dark text (text-*-700..900) the matching light shade, so they still

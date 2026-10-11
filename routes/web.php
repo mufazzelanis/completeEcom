@@ -655,6 +655,9 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     // catch-all route at the very end of this file)
     Route::get('landing-pages-report', [AdminLandingPageController::class, 'report'])->name('landing-pages.report');
     Route::get('landing-pages-orders', [AdminLandingPageController::class, 'orders'])->name('landing-pages.orders');
+    // Live preview of the create/edit form's unsaved state (see LandingPageController::preview)
+    Route::post('landing-pages-preview', [AdminLandingPageController::class, 'preview'])->name('landing-pages.preview');
+    Route::post('landing-pages-preview/upload', [AdminLandingPageController::class, 'previewUpload'])->name('landing-pages.preview-upload');
     Route::resource('landing-pages', AdminLandingPageController::class)->except(['show']);
     Route::patch('landing-pages/{landingPage}/toggle', [AdminLandingPageController::class, 'toggle'])->name('landing-pages.toggle');
 

@@ -156,6 +156,72 @@ class LandingPageController extends Controller
         return view('admin.landing-pages.orders', compact('orders', 'pages'));
     }
 
+    private const PREVIEW_DIR = 'lp-preview';
+
+    /**
+     * Live preview (admin/landing-pages/_form.blade.php's phone-frame panel): renders the
+     * real public template (landing.show) from the form's current, unsaved state — exactly
+     * the same data shaping as store()/update() (scalarData, normalizeFields,
+     * normalizeSections), so what the admin sees is what Save produces. Nothing is persisted
+     * and no file is moved or deleted; newly picked images arrive as temp paths from
+     * previewUpload(). $isPreview tells the template to skip pixels/view counting and to
+     * block the order form and outbound links.
+     */
+    public function preview(Request $request)
+    {
+        $base = $request->filled('_preview_id') ? LandingPage::find($request->integer('_preview_id')) : null;
+
+        $data = $this->scalarData($request);
+        $data['order_form_fields'] = $this->normalizeFields($request);
+        $data = array_merge($data, $this->normalizeSections($request, true));
+
+        foreach (['hero_image', 'header_logo', 'favicon', 'og_image'] as $field) {
+            if ($temp = $this->previewTempPath($request->input("_pv_{$field}"))) {
+                $data[$field] = $temp;
+            }
+        }
+        foreach (['testimonial_images', 'certificates'] as $field) {
+            $kept = array_values(array_diff($base?->{$field} ?? [], $request->input('remove_' . $field, [])));
+            $new = array_values(array_filter(array_map(fn ($p) => $this->previewTempPath($p), $request->input("_pv_{$field}", []))));
+            $data[$field] = array_merge($kept, $new);
+        }
+
+        $landingPage = $base ? $base->replicate() : new LandingPage();
+        $landingPage->forceFill($data);
+        $landingPage->slug = $base?->slug ?: (Str::slug((string) ($request->slug ?: $request->title)) ?: 'preview');
+        $landingPage->setRelation('product', $landingPage->product_id ? Product::find($landingPage->product_id) : null);
+
+        return view('landing.show', ['landingPage' => $landingPage, 'isPreview' => true]);
+    }
+
+    /**
+     * Stores one image picked in the form somewhere the preview can show it, before the page
+     * is ever saved — the preview requests then carry just this short path instead of
+     * re-uploading the file on every keystroke. Old temp files are swept here too.
+     */
+    public function previewUpload(Request $request)
+    {
+        $request->validate(['image' => 'required|image|max:4096']);
+
+        $disk = Storage::disk('public');
+        foreach ($disk->files(self::PREVIEW_DIR) as $old) {
+            if ($disk->lastModified($old) < now()->subHours(6)->getTimestamp()) {
+                $disk->delete($old);
+            }
+        }
+
+        $path = ImageOptimizer::store($request->file('image'), self::PREVIEW_DIR, 'public', 1600);
+
+        return response()->json(['path' => $path, 'url' => Storage::url($path)]);
+    }
+
+    /** Only paths previewUpload() itself produced are honoured — never an arbitrary file. */
+    private function previewTempPath(?string $path): ?string
+    {
+        return $path && str_starts_with($path, self::PREVIEW_DIR . '/') && !str_contains($path, '..')
+            && Storage::disk('public')->exists($path) ? $path : null;
+    }
+
     private function validated(Request $request, ?int $exceptId = null): array
     {
         // Trimmed before validation (not just after, in the normalization loop below) — a
@@ -228,6 +294,16 @@ class LandingPageController extends Controller
             'wf_image.*'               => 'nullable|image|max:512',
         ]);
 
+        return $this->scalarData($request);
+    }
+
+    /**
+     * Every plain (non-repeater, non-upload) column, normalized the same way for a real save
+     * and for preview() — split out of validated() so the live preview renders exactly what
+     * Save would store, without validation bouncing a half-typed form.
+     */
+    private function scalarData(Request $request): array
+    {
         $data = $request->only([
             'title', 'product_id', 'hero_heading', 'hero_subheading', 'content',
             'price_override', 'order_button_text', 'thank_you_heading',
@@ -279,12 +355,12 @@ class LandingPageController extends Controller
      * name="x[]" inputs naturally produces, no nested-array JS needed. Rows where the first
      * ("primary") column is blank are dropped rather than saved as empty entries.
      */
-    private function normalizeSections(Request $request): array
+    private function normalizeSections(Request $request, bool $preview = false): array
     {
         return [
-            'trust_badges'    => $this->normalizeRepeaterWithImage($request, ['icon' => 'tb_icon', 'text' => 'tb_text'], 'text', 'tb'),
-            'benefits'        => $this->normalizeRepeaterWithImage($request, ['icon' => 'benefit_icon', 'title' => 'benefit_title', 'description' => 'benefit_desc'], 'title', 'benefit'),
-            'who_for'         => $this->normalizeRepeaterWithImage($request, ['icon' => 'wf_icon', 'text' => 'wf_text'], 'text', 'wf'),
+            'trust_badges'    => $this->normalizeRepeaterWithImage($request, ['icon' => 'tb_icon', 'text' => 'tb_text'], 'text', 'tb', $preview),
+            'benefits'        => $this->normalizeRepeaterWithImage($request, ['icon' => 'benefit_icon', 'title' => 'benefit_title', 'description' => 'benefit_desc'], 'title', 'benefit', $preview),
+            'who_for'         => $this->normalizeRepeaterWithImage($request, ['icon' => 'wf_icon', 'text' => 'wf_text'], 'text', 'wf', $preview),
             'testimonial_videos' => $this->normalizeRepeater($request, ['video_url' => 'tv_url', 'name' => 'tv_name'], 'video_url'),
             'faqs'            => $this->normalizeRepeater($request, ['question' => 'faq_q', 'answer' => 'faq_a'], 'question'),
             'pricing_items'   => $this->normalizeRepeater($request, ['label' => 'price_label', 'price' => 'price_amount'], 'label'),
@@ -323,7 +399,7 @@ class LandingPageController extends Controller
      * clears it back to text/emoji-only; a row dropped from the form entirely (blank
      * primary field) has its stored image file deleted rather than left orphaned on disk.
      */
-    private function normalizeRepeaterWithImage(Request $request, array $fields, string $primaryKey, string $prefix): array
+    private function normalizeRepeaterWithImage(Request $request, array $fields, string $primaryKey, string $prefix, bool $preview = false): array
     {
         $columns = [];
         foreach ($fields as $outKey => $inputName) {
@@ -332,6 +408,28 @@ class LandingPageController extends Controller
         $existing = $request->input($prefix . '_existing_image', []);
         $removes  = $request->input($prefix . '_remove_image', []);
         $files    = $request->file($prefix . '_image', []);
+
+        // Preview: same row logic, but nothing on disk is touched — a removed icon is just
+        // left out, and a newly picked one comes in as an already-uploaded temp path
+        // (previewUpload()) aligned by row index, not as a file.
+        if ($preview) {
+            $tempPaths = $request->input('_pv_' . $prefix . '_image', []);
+            $rows = [];
+            foreach ($columns[$primaryKey] ?? [] as $i => $primaryValue) {
+                if (trim((string) $primaryValue) === '') {
+                    continue;
+                }
+                $row = [];
+                foreach ($columns as $outKey => $values) {
+                    $row[$outKey] = trim((string) ($values[$i] ?? ''));
+                }
+                $image = ($removes[$i] ?? '0') === '1' ? null : ($existing[$i] ?? null);
+                $row['image'] = $this->previewTempPath($tempPaths[$i] ?? null) ?? ($image ?: null);
+                $rows[] = $row;
+            }
+
+            return $rows;
+        }
 
         $rows = [];
         $kept = [];
