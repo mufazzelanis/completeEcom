@@ -662,7 +662,11 @@
             </div>
             @endif
 
-            <form action="{{ route('landing.order', $landingPage) }}" method="POST" class="space-y-4">
+            {{-- sending: one tap only — the button locks and shows progress the moment the order is
+                 sent, so a slow mobile connection can't turn an impatient second tap into a
+                 duplicate order (the server also de-duplicates, see LandingPageController). --}}
+            <form action="{{ route('landing.order', $landingPage) }}" method="POST" class="space-y-4"
+                x-data="{ sending: false }" @pageshow.window="sending = false" @submit="if (sending) { $event.preventDefault(); return; } sending = true">
                 @csrf
                 <div>
                     <label class="flex items-center gap-1.5 text-base font-bold text-gray-900 mb-1.5">
@@ -788,9 +792,13 @@
                 </div>
                 @endif
 
-                <button type="submit"
-                    class="lp-cta w-full text-white font-extrabold py-4 rounded-xl text-lg transition-transform active:scale-[0.99]">
-                    {{ $landingPage->order_button_text }}
+                <button type="submit" :disabled="sending" :aria-busy="sending"
+                    class="lp-cta w-full text-white font-extrabold py-4 rounded-xl text-lg transition-transform active:scale-[0.99] disabled:opacity-80 disabled:cursor-wait">
+                    <span x-show="!sending">{{ $landingPage->order_button_text }}</span>
+                    <span x-show="sending" x-cloak class="inline-flex items-center justify-center gap-2">
+                        <svg class="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path></svg>
+                        অর্ডার প্রসেস হচ্ছে…
+                    </span>
                 </button>
                 <p class="text-xs text-center text-gray-400">💵 ক্যাশ অন ডেলিভারি — পণ্য হাতে পেয়ে মূল্য পরিশোধ করুন।</p>
             </form>

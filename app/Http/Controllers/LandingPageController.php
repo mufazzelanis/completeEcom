@@ -63,10 +63,29 @@ class LandingPageController extends Controller
         $validated = $request->validate($rules);
 
         $quantity = max(1, (int) ($validated['quantity'] ?? 1));
+        $phone = \App\Support\PhoneValidator::normalize($validated['phone']) ?? $validated['phone'];
+
+        // Double-submit guard: a second tap on a slow mobile connection (or a refresh that
+        // re-POSTs) used to create a duplicate order. The same phone ordering the same
+        // quantity from the same page within 3 minutes is that same order — show its
+        // thank-you page again instead of placing another one.
+        $duplicate = Order::where('landing_page_id', $landingPage->id)
+            ->where('shipping_phone', $phone)
+            ->where('created_at', '>=', now()->subMinutes(3))
+            ->whereHas('items', fn ($q) => $q->where('quantity', $quantity))
+            ->latest()
+            ->first();
+        if ($duplicate) {
+            return redirect()->route('landing.show', $landingPage)->with([
+                'order_success'       => $duplicate->order_number,
+                'order_success_value' => (float) $duplicate->total,
+            ]);
+        }
 
         // Same stock check the regular storefront checkout does (CheckoutController) —
         // without it, a landing page under a burst of ad traffic could decrement a
         // product's stock into the negative with no warning to the customer at all.
+        // Re-checked under a row lock inside the transaction below as well.
         if ($landingPage->product_id && $landingPage->product && $quantity > $landingPage->product->available_stock) {
             return back()->withInput()->withErrors(['quantity' => 'Sorry, only ' . max(0, $landingPage->product->available_stock) . ' left in stock.']);
         }
@@ -87,12 +106,29 @@ class LandingPageController extends Controller
         // `shipping` column, which is what actually drives the total. Underscore-prefixed key
         // (rather than plain 'delivery_zone') so it can never collide with an admin-defined
         // custom field slugging to that same key (e.g. one literally labeled "Delivery Zone").
-        $customData = $request->input('custom', []);
+        // Only the fields this page's form actually defines (and validated above) — never
+        // whatever extra custom[...] keys a crafted request might add.
+        $customData = [];
+        foreach ($landingPage->order_form_fields ?? [] as $field) {
+            $value = $validated['custom'][$field['key']] ?? null;
+            if ($value !== null && $value !== '') {
+                $customData[$field['key']] = $value;
+            }
+        }
         if ($zone) {
             $customData = ['_delivery_zone' => $zone['label']] + $customData;
         }
 
-        $order = DB::transaction(function () use ($landingPage, $validated, $quantity, $unitPrice, $subtotal, $shippingCharge, $total, $customData) {
+        $order = DB::transaction(function () use ($landingPage, $validated, $quantity, $unitPrice, $subtotal, $shippingCharge, $total, $customData, $phone) {
+            // Row lock + re-check: two orders arriving at the same moment can both pass the
+            // pre-check above against the same last unit; only one may take it.
+            if ($landingPage->product_id) {
+                $product = \App\Models\Product::whereKey($landingPage->product_id)->lockForUpdate()->first();
+                if ($product && $quantity > $product->available_stock) {
+                    return null;
+                }
+            }
+
             $order = Order::create([
                 'landing_page_id'   => $landingPage->id,
                 'order_number'      => Order::generateOrderNumber(),
@@ -107,7 +143,7 @@ class LandingPageController extends Controller
                 'payment_method'    => 'cod',
                 'payment_status'    => 'pending',
                 'shipping_name'     => $validated['name'],
-                'shipping_phone'    => \App\Support\PhoneValidator::normalize($validated['phone']) ?? $validated['phone'],
+                'shipping_phone'    => $phone,
                 'shipping_address'  => $validated['address'] ?? null,
                 'landing_page_data' => $customData,
             ]);
@@ -127,6 +163,10 @@ class LandingPageController extends Controller
 
             return $order;
         });
+
+        if (!$order) {
+            return back()->withInput()->withErrors(['quantity' => 'Sorry, this product just went out of stock.']);
+        }
 
         ActivityLogger::log(
             'order.place',
