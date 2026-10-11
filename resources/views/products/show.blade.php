@@ -462,11 +462,14 @@
                             @csrf
                             <input type="hidden" name="product_id" value="{{ $product->id }}">
                             <input type="hidden" name="variant_combination_id" :value="selectedCombo ? selectedCombo.id : ''">
-                            <div class="flex items-center border border-gray-200 rounded-xl overflow-hidden">
-                                <button type="button" @click="qty = Math.max(1, qty - 1)" class="px-4 py-3 text-gray-500 hover:bg-gray-100 text-lg font-bold">-</button>
+                            {{-- self-start — the parent form is flex-col on mobile with items-stretch,
+                                 so without this the stepper stretched to the full card width,
+                                 spreading "-"/"1"/"+" apart with a huge empty gap between them. --}}
+                            <div class="self-start inline-flex items-center bg-gray-50 border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+                                <button type="button" @click="qty = Math.max(1, qty - 1)" class="w-11 h-11 flex items-center justify-center text-gray-500 hover:bg-gray-100 hover:text-gray-700 active:scale-90 transition-all text-lg font-bold">−</button>
                                 <input type="number" name="quantity" x-model.number="qty" min="1" :max="selectedCombo ? selectedCombo.stock : 1"
-                                    class="w-16 text-center py-3 border-0 focus:outline-none text-sm font-semibold">
-                                <button type="button" @click="qty = Math.min(selectedCombo ? selectedCombo.stock : 1, qty + 1)" class="px-4 py-3 text-gray-500 hover:bg-gray-100 text-lg font-bold">+</button>
+                                    class="w-12 text-center bg-transparent border-0 focus:outline-none focus:ring-0 text-sm font-bold text-gray-900">
+                                <button type="button" @click="qty = Math.min(selectedCombo ? selectedCombo.stock : 1, qty + 1)" class="w-11 h-11 flex items-center justify-center text-gray-500 hover:bg-gray-100 hover:text-gray-700 active:scale-90 transition-all text-lg font-bold">+</button>
                             </div>
                             <div class="flex-1 flex gap-3">
                                 <button type="submit" formaction="{{ route('cart.add') }}" :disabled="!selectedCombo"
@@ -492,11 +495,14 @@
                         <form action="{{ route('cart.add') }}" method="POST" data-show-loader class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 mb-6">
                             @csrf
                             <input type="hidden" name="product_id" value="{{ $product->id }}">
-                            <div class="flex items-center border border-gray-200 rounded-xl overflow-hidden">
-                                <button type="button" onclick="updateQty(-1)" class="px-4 py-3 text-gray-500 hover:bg-gray-100 text-lg font-bold">-</button>
+                            {{-- self-start — the parent form is flex-col on mobile with items-stretch,
+                                 so without this the stepper stretched to the full card width,
+                                 spreading "-"/"1"/"+" apart with a huge empty gap between them. --}}
+                            <div class="self-start inline-flex items-center bg-gray-50 border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+                                <button type="button" onclick="updateQty(-1)" class="w-11 h-11 flex items-center justify-center text-gray-500 hover:bg-gray-100 hover:text-gray-700 active:scale-90 transition-all text-lg font-bold">−</button>
                                 <input type="number" name="quantity" id="qty" value="1" min="1" max="{{ $product->available_stock }}"
-                                    class="w-16 text-center py-3 border-0 focus:outline-none text-sm font-semibold">
-                                <button type="button" onclick="updateQty(1)" class="px-4 py-3 text-gray-500 hover:bg-gray-100 text-lg font-bold">+</button>
+                                    class="w-12 text-center bg-transparent border-0 focus:outline-none focus:ring-0 text-sm font-bold text-gray-900">
+                                <button type="button" onclick="updateQty(1)" class="w-11 h-11 flex items-center justify-center text-gray-500 hover:bg-gray-100 hover:text-gray-700 active:scale-90 transition-all text-lg font-bold">+</button>
                             </div>
                             <div class="flex-1 flex gap-3">
                                 <button type="submit" formaction="{{ route('cart.add') }}"
