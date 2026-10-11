@@ -72,6 +72,37 @@
     </div>
 </div>
 
+<div class="bg-white rounded-xl shadow-sm border p-6 space-y-5">
+    <div class="pb-2 border-b">
+        <h2 class="text-base font-semibold text-gray-900">Social Login</h2>
+        <p class="text-xs text-gray-400 mt-1">Powers the "Continue with ..." buttons on the login/register pages (see Auth\SocialAuthController). A provider's button only appears once both its fields below are filled in. Values saved here take priority over GOOGLE_CLIENT_ID/etc. in <code class="bg-gray-100 px-1 rounded">.env</code>, so either works — this is just the option that doesn't need server (SSH) access.</p>
+    </div>
+
+    @foreach([
+        'google' => 'Google',
+        'facebook' => 'Facebook',
+        'linkedin' => 'LinkedIn',
+    ] as $provider => $label)
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 {{ !$loop->last ? 'pb-5 border-b border-gray-50' : '' }}">
+        <div class="md:col-span-2 text-xs text-gray-500">
+            {{ $label }} redirect URI (paste into its developer console, exactly):
+            <code class="bg-gray-100 px-1.5 py-0.5 rounded font-mono text-[11px] select-all">{{ url("/auth/{$provider}/callback") }}</code>
+        </div>
+        <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">{{ $label }} Client ID</label>
+            <input type="text" name="{{ $provider }}_client_id" value="{{ setting("{$provider}_client_id", '') }}"
+                   class="w-full border rounded-lg px-3 py-2 text-sm font-mono focus:ring-2 focus:ring-orange-500" autocomplete="off">
+        </div>
+        <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">{{ $label }} Client Secret</label>
+            <input type="password" name="{{ $provider }}_client_secret" value="{{ setting("{$provider}_client_secret", '') }}"
+                   class="w-full border rounded-lg px-3 py-2 text-sm font-mono focus:ring-2 focus:ring-orange-500"
+                   placeholder="{{ setting("{$provider}_client_secret") ? '••••••••' : '' }}" autocomplete="new-password">
+        </div>
+    </div>
+    @endforeach
+</div>
+
 <div class="flex justify-end">
     <button type="submit" class="px-6 py-2 bg-orange-600 text-white rounded-lg text-sm font-semibold hover:bg-orange-700 transition">Save API Settings</button>
 </div>

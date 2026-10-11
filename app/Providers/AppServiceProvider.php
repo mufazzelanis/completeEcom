@@ -96,6 +96,7 @@ class AppServiceProvider extends ServiceProvider
         });
 
         $this->applyMailSettings();
+        $this->applySocialLoginSettings();
     }
 
     /**
@@ -137,6 +138,33 @@ class AppServiceProvider extends ServiceProvider
         }
         if ($fromName = setting('mail_from_name')) {
             config(['mail.from.name' => $fromName]);
+        }
+    }
+
+    /**
+     * Settings → API & Integrations → "Social Login" saves into the settings table — same
+     * "DB value wins over .env when present" approach as applyMailSettings() above, so an
+     * admin without server access can fill these in from the panel instead of needing
+     * someone to edit .env for them. config/services.php's env() calls stay as the fallback
+     * default for anyone who still prefers setting it there.
+     */
+    protected function applySocialLoginSettings(): void
+    {
+        try {
+            if (!Schema::hasTable('settings')) {
+                return;
+            }
+        } catch (\Throwable $e) {
+            return;
+        }
+
+        foreach (['google', 'facebook', 'linkedin'] as $provider) {
+            if ($clientId = setting("{$provider}_client_id")) {
+                config(["services.{$provider}.client_id" => $clientId]);
+            }
+            if ($clientSecret = setting("{$provider}_client_secret")) {
+                config(["services.{$provider}.client_secret" => $clientSecret]);
+            }
         }
     }
 }
