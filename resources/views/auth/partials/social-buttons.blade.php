@@ -1,14 +1,16 @@
 {{-- Shared by auth/login.blade.php and auth/register.blade.php — a provider's button only
-     renders once its credentials are actually set (Settings has no UI for these yet; they're
-     set via .env, see config/services.php), same guard SocialAuthController itself enforces,
-     so there's never a button that 404s when clicked. Nothing renders at all until at least
-     one provider is configured, so an untouched install looks exactly like before. --}}
+     renders once it's both switched on (Settings -> API & Integrations -> Social Login —
+     lets an admin hide a provider without losing its saved credentials, e.g. while that
+     provider's own developer console is mid-setup) and has credentials set, same guard
+     SocialAuthController itself enforces, so there's never a button that 404s when clicked.
+     Nothing renders at all until at least one provider is on and configured, so an
+     untouched install looks exactly like before. --}}
 @php
     $socialProviders = collect([
         'google' => ['label' => 'Google', 'configured' => filled(config('services.google.client_id'))],
         'facebook' => ['label' => 'Facebook', 'configured' => filled(config('services.facebook.client_id'))],
         'linkedin' => ['label' => 'LinkedIn', 'configured' => filled(config('services.linkedin.client_id'))],
-    ])->filter(fn ($p) => $p['configured']);
+    ])->filter(fn ($p, $provider) => $p['configured'] && setting("{$provider}_login_enabled", '1') == '1');
 @endphp
 @if($socialProviders->isNotEmpty())
 @php

@@ -129,6 +129,10 @@ class SocialAuthController extends Controller
      */
     private function providerConfigured(string $provider): bool
     {
+        if (setting("{$provider}_login_enabled", '1') !== '1') {
+            return false;
+        }
+
         return filled(config("services.{$provider}.client_id")) && filled(config("services.{$provider}.client_secret"));
     }
 }

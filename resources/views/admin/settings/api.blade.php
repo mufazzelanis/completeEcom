@@ -75,7 +75,7 @@
 <div class="bg-white rounded-xl shadow-sm border p-6 space-y-5">
     <div class="pb-2 border-b">
         <h2 class="text-base font-semibold text-gray-900">Social Login</h2>
-        <p class="text-xs text-gray-400 mt-1">Powers the "Continue with ..." buttons on the login/register pages (see Auth\SocialAuthController). A provider's button only appears once both its fields below are filled in. Values saved here take priority over GOOGLE_CLIENT_ID/etc. in <code class="bg-gray-100 px-1 rounded">.env</code>, so either works — this is just the option that doesn't need server (SSH) access.</p>
+        <p class="text-xs text-gray-400 mt-1">Powers the "Continue with ..." buttons on the login/register pages (see Auth\SocialAuthController). A provider's button only appears once it's switched on below AND both its fields are filled in. Values saved here take priority over GOOGLE_CLIENT_ID/etc. in <code class="bg-gray-100 px-1 rounded">.env</code>, so either works — this is just the option that doesn't need server (SSH) access.</p>
     </div>
 
     @foreach([
@@ -84,10 +84,21 @@
         'linkedin' => 'LinkedIn',
     ] as $provider => $label)
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 {{ !$loop->last ? 'pb-5 border-b border-gray-50' : '' }}">
-        <div class="md:col-span-2 text-xs text-gray-500">
-            {{ $label }} redirect URI (paste into its developer console, exactly):
-            <code class="bg-gray-100 px-1.5 py-0.5 rounded font-mono text-[11px] select-all">{{ url("/auth/{$provider}/callback") }}</code>
+        <div class="md:col-span-2 flex items-center justify-between gap-3">
+            <label class="flex items-center gap-2 cursor-pointer">
+                <input type="hidden" name="{{ $provider }}_login_enabled" value="0">
+                <input type="checkbox" name="{{ $provider }}_login_enabled" value="1" class="rounded text-orange-600"
+                       @checked(setting("{$provider}_login_enabled", '1') == '1')>
+                <span class="text-sm font-medium text-gray-700">{{ $label }} login enabled</span>
+            </label>
+            <span class="text-xs text-gray-500">
+                Redirect URI: <code class="bg-gray-100 px-1.5 py-0.5 rounded font-mono text-[11px] select-all">{{ url("/auth/{$provider}/callback") }}</code>
+            </span>
         </div>
+        {{-- Switching this off (e.g. while a provider's own developer console is mid-setup
+             or temporarily broken, like a fresh app stuck in Facebook's review/propagation
+             delay) hides its button immediately without losing the saved Client ID/Secret —
+             flip it back on the moment the provider's side is sorted, no re-entering needed. --}}
         <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">{{ $label }} Client ID</label>
             <input type="text" name="{{ $provider }}_client_id" value="{{ setting("{$provider}_client_id", '') }}"
