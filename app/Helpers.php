@@ -451,3 +451,100 @@ if (!function_exists('brand_color_shades')) {
         return $shades;
     }
 }
+
+if (!function_exists('brand_palette_css')) {
+    /**
+     * The `:root { --brand-500: r g b; … }` block that re-themes the whole UI from the admin's
+     * colors. tailwind.config.js defines the orange / pink / red palettes as these variables
+     * (Primary → orange, Secondary → pink, Accent → red), so EVERY utility built from them
+     * follows the brand — bg/text/border/ring but also gradients (from-/via-/to-), shadows,
+     * opacity variants (bg-orange-500/10), hover/focus/group states and dark mode — with no
+     * per-class overrides to keep in sync. app.css holds Tailwind's own values as defaults, so
+     * a color left at its default (or null) simply isn't emitted.
+     */
+    function brand_palette_css(?string $primary, ?string $secondary = null, ?string $accent = null): string
+    {
+        $vars = '';
+        foreach (['brand' => [$primary, '#ea580c'], 'secondary' => [$secondary, '#ec4899'], 'accent' => [$accent, '#dc2626']] as $name => [$hex, $default]) {
+            if (!$hex || !preg_match('/^#[0-9a-fA-F]{6}$/', $hex) || strcasecmp($hex, $default) === 0) {
+                continue;
+            }
+            $shades = brand_color_shades($hex);
+            [$h, $s] = hex_to_hsl($hex);
+            $shades['950'] = hsl_to_hex($h, $s, 15);
+            foreach ($shades as $step => $shadeHex) {
+                $vars .= "--{$name}-{$step}:" . implode(' ', array_map('hexdec', str_split(ltrim($shadeHex, '#'), 2))) . ';';
+            }
+        }
+
+        return $vars === '' ? '' : ":root{{$vars}}";
+    }
+}
+
+if (!function_exists('custom_text_color')) {
+    /**
+     * Settings → Branding → Text Color, or null when it's the default or unreadable. It lands
+     * on white cards, so a pale pick (e.g. #f3f4e6) would make every heading/body line invisible
+     * — only honored when it keeps WCAG AA contrast (4.5:1) on white. Applied in light mode only.
+     */
+    function custom_text_color(): ?string
+    {
+        $hex = setting('text_color', '#1f2937');
+        if (!preg_match('/^#?([0-9a-f]{6})$/i', (string) $hex, $m) || strcasecmp($hex, '#1f2937') === 0) {
+            return null;
+        }
+        $lum = 0;
+        foreach ([0.2126, 0.7152, 0.0722] as $i => $w) {
+            $c = hexdec(substr($m[1], $i * 2, 2)) / 255;
+            $lum += $w * ($c <= 0.03928 ? $c / 12.92 : (($c + 0.055) / 1.055) ** 2.4);
+        }
+
+        return 1.05 / ($lum + 0.05) >= 4.5 ? $hex : null;
+    }
+}
+
+if (!function_exists('brand_button_defaults')) {
+    /**
+     * Admin-customizable storefront button colors: key => [old hardcoded default, value
+     * derived from the brand]. See brand_button_color().
+     */
+    function brand_button_defaults(): array
+    {
+        $primary = setting('primary_color', '#ea580c') ?: '#ea580c';
+        $secondary = setting('secondary_color', '#ec4899') ?: '#ec4899';
+
+        return [
+            'add_to_cart_button_color'       => ['#f97316', $primary],
+            'add_to_cart_button_hover_color' => ['#ea580c', hex_shade($primary, -0.15)],
+            'order_button_color_from'        => ['#ec4899', $primary],
+            'order_button_color_via'         => ['#d946ef', $secondary],
+            'order_button_color_to'          => ['#fb923c', hex_shade($primary, 0.3)],
+            'newsletter_button_color'        => ['#f97316', $primary],
+            'newsletter_button_hover_color'  => ['#ef4444', hex_shade($primary, -0.15)],
+        ];
+    }
+}
+
+if (!function_exists('brand_button_is_custom')) {
+    /** Whether the admin actually picked their own color for $key (vs. unset / old default). */
+    function brand_button_is_custom(string $key): bool
+    {
+        $value = setting($key);
+        $legacy = brand_button_defaults()[$key][0];
+
+        return (bool) $value && strcasecmp($value, $legacy) !== 0;
+    }
+}
+
+if (!function_exists('brand_button_color')) {
+    /**
+     * Effective color of an admin-customizable storefront button setting. Unset, or still at
+     * its old hardcoded orange/pink/red default (saved untouched with the rest of a settings
+     * form), means "follow the brand" — so changing Settings → Branding re-colors these
+     * buttons too, while a color the admin actually picked is kept as-is.
+     */
+    function brand_button_color(string $key): string
+    {
+        return brand_button_is_custom($key) ? setting($key) : brand_button_defaults()[$key][1];
+    }
+}

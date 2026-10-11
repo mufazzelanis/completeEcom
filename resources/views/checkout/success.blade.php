@@ -124,7 +124,7 @@
         const container = document.getElementById('confetti-container');
         if (!container) return;
 
-        const colors = ['#f97316', '#ec4899', '#6366f1', '#22c55e', '#eab308', '#06b6d4'];
+        const colors = [@json(setting('primary_color', '#ea580c')), @json(setting('secondary_color', '#ec4899')), @json(hex_shade(setting('primary_color', '#ea580c'), 0.35)), '#22c55e', '#eab308', '#06b6d4']; // brand first
         const total = window.innerWidth < 640 ? 60 : 110;
 
         for (let i = 0; i < total; i++) {

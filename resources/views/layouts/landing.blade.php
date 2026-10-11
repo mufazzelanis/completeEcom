@@ -51,6 +51,9 @@
     <meta property="og:url" content="{{ url()->current() }}">
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    {{-- Brand palette (orange/pink/red Tailwind colors = CSS variables): this page's own brand
+         color when set, else the site's — so ring/border/text-orange-* etc. match the page. --}}
+    <style>{!! brand_palette_css($primaryColor, setting('secondary_color'), setting('accent_color')) !!}</style>
 
     {{-- Pixel Tracking — base install + PageView/ViewContent, mirroring layouts/app.blade.php's
          site-wide setup. InitiateCheckout fires on order-form submit and Purchase on the

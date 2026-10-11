@@ -7,24 +7,9 @@ $faviconUrl   = setting_file_url('favicon');
 $primaryColor   = setting('primary_color', '#ea580c');
 $secondaryColor = setting('secondary_color', '#ec4899');
 $accentColor    = setting('accent_color', '#dc2626');
-$textColor      = setting('text_color', '#1f2937');
-// Only generate an override ramp when the admin actually picked a different brand color —
-// keeps the default look pixel-identical to the hand-tuned Tailwind palette.
-$brandShades    = $primaryColor !== '#ea580c' ? brand_color_shades($primaryColor) : null;
-$secondaryShades = $secondaryColor !== '#ec4899' ? brand_color_shades($secondaryColor) : null;
-$accentShades   = $accentColor !== '#dc2626' ? brand_color_shades($accentColor) : null;
-// The text color lands on white cards, so a pale pick (e.g. #f3f4e6) would make every
-// heading/body line invisible — only honor it when it keeps WCAG AA contrast (4.5:1) on white.
-$textColorReadable = (function ($hex) {
-    if (!preg_match('/^#?([0-9a-f]{6})$/i', $hex, $m)) return false;
-    $lum = 0;
-    foreach ([0.2126, 0.7152, 0.0722] as $i => $w) {
-        $c = hexdec(substr($m[1], $i * 2, 2)) / 255;
-        $lum += $w * ($c <= 0.03928 ? $c / 12.92 : (($c + 0.055) / 1.055) ** 2.4);
-    }
-    return 1.05 / ($lum + 0.05) >= 4.5;
-})($textColor);
-$textColorChanged = $textColor !== '#1f2937' && $textColorReadable;
+// Contrast-checked (see custom_text_color()) — null when default or too pale to read.
+$textColor       = custom_text_color();
+$textColorChanged = $textColor !== null;
 $gaId         = setting('google_analytics_id', '');
 $gtmId        = setting('google_tag_manager_id', '');
 $adsConversionId = setting('google_ads_conversion_id', '');
@@ -218,57 +203,18 @@ $pageTwitterImage = trim($__env->yieldContent('twitter_image', $pageOgImage));
         })();
     </script>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
-    @if($brandShades || $secondaryShades || $accentShades || $textColorChanged)
-    {{-- Brand Colors (Settings → Branding): the storefront's palette is hardcoded as literal
-         Tailwind classes throughout, so re-theming it means overriding those generated utility
-         classes directly with the admin's chosen colors. Primary→orange, Secondary→pink,
-         Accent→red (each admin field's own default hex is that exact Tailwind shade), and
-         Text→gray-800 (the default body/heading text color). --}}
+    {{-- Brand Colors (Settings → Branding): the orange / pink / red Tailwind palettes are CSS
+         variables (tailwind.config.js), so this one :root block re-themes every button, badge,
+         gradient, shadow, hover and dark-mode tint built from them — Primary → orange,
+         Secondary → pink, Accent → red. Text → gray-800 (light mode only, contrast-checked). --}}
+    @if($brandPaletteCss = brand_palette_css($primaryColor, $secondaryColor, $accentColor))
+    <style>{!! $brandPaletteCss !!}</style>
+    @endif
+    @if($textColorChanged)
     <style>
-        {{-- Pale steps (bg/border 50–300) and deep text steps (700–900) are tuned for white
-             cards, so they're light-mode only here; dark mode gets the same treatment app.css
-             gives every other hue — a translucent wash of the brand's 500 and its light text
-             shades — or the selected checkout card etc. stays a glaring light patch. --}}
-        @foreach(['orange' => $brandShades, 'pink' => $secondaryShades, 'red' => $accentShades] as $hue => $shades)
-        @if($shades)
-        @php
-            $rgb500 = implode(' ', array_map('hexdec', str_split(ltrim($shades['500'], '#'), 2)));
-            $darkBg = ['50' => "rgb($rgb500 / 12%)", '100' => "rgb($rgb500 / 18%)", '200' => "rgb($rgb500 / 28%)"];
-            $darkBorder = ['100' => "rgb($rgb500 / 20%)", '200' => "rgb($rgb500 / 30%)", '300' => "rgb($rgb500 / 45%)"];
-            $darkText = ['700' => $shades['300'], '800' => $shades['200'], '900' => $shades['100']];
-        @endphp
-        @foreach($shades as $step => $hex)
-        @php
-            $bgScope = isset($darkBg[$step]) ? 'html:not(.dark) ' : '';
-            $textScope = isset($darkText[$step]) ? 'html:not(.dark) ' : '';
-            $borderScope = isset($darkBorder[$step]) ? 'html:not(.dark) ' : '';
-        @endphp
-        {{ $bgScope }}.bg-{{ $hue }}-{{ $step }} { background-color: {{ $hex }} !important; }
-        {{ $textScope }}.text-{{ $hue }}-{{ $step }} { color: {{ $hex }} !important; }
-        {{ $borderScope }}.border-{{ $hue }}-{{ $step }} { border-color: {{ $hex }} !important; }
-        .ring-{{ $hue }}-{{ $step }} { --tw-ring-color: {{ $hex }} !important; }
-        {{ $bgScope }}.hover\:bg-{{ $hue }}-{{ $step }}:hover { background-color: {{ $hex }} !important; }
-        {{ $textScope }}.hover\:text-{{ $hue }}-{{ $step }}:hover { color: {{ $hex }} !important; }
-        {{ $borderScope }}.hover\:border-{{ $hue }}-{{ $step }}:hover { border-color: {{ $hex }} !important; }
-        .focus\:ring-{{ $hue }}-{{ $step }}:focus { --tw-ring-color: {{ $hex }} !important; }
-        {{ $borderScope }}.focus\:border-{{ $hue }}-{{ $step }}:focus { border-color: {{ $hex }} !important; }
-        @endforeach
-        @foreach($darkBg as $step => $val)
-        html.dark .bg-{{ $hue }}-{{ $step }}, html.dark .hover\:bg-{{ $hue }}-{{ $step }}:hover { background-color: {{ $val }} !important; }
-        @endforeach
-        @foreach($darkText as $step => $val)
-        html.dark .text-{{ $hue }}-{{ $step }}, html.dark .hover\:text-{{ $hue }}-{{ $step }}:hover { color: {{ $val }} !important; }
-        @endforeach
-        @foreach($darkBorder as $step => $val)
-        html.dark .border-{{ $hue }}-{{ $step }}, html.dark .hover\:border-{{ $hue }}-{{ $step }}:hover { border-color: {{ $val }} !important; }
-        @endforeach
-        @endif
-        @endforeach
-        @if($textColorChanged)
         {{-- Light mode only: a dark text color chosen for white cards would vanish on the
              dark-mode surfaces, which keep app.css's own light-gray text instead. --}}
         html:not(.dark) .text-gray-800 { color: {{ $textColor }} !important; }
-        @endif
     </style>
     @endif
     @if(!$isSystemFont || $radiusScale || $shadowScale || $containerScale || $buttonRadiusValue)
@@ -408,7 +354,7 @@ $pageTwitterImage = trim($__env->yieldContent('twitter_image', $pageOgImage));
         .category-ring { overflow: hidden; isolation: isolate; }
         .category-ring::before {
             content: ''; position: absolute; inset: 0; z-index: -1;
-            background: conic-gradient(#fb923c, #fb7185, #ec4899, #fb923c);
+            background: conic-gradient(rgb(var(--brand-400)), rgb(var(--secondary-400)), rgb(var(--secondary-500)), rgb(var(--brand-400)));
             animation: categoryRingSpin 4s linear infinite;
             will-change: transform;
         }
@@ -1228,7 +1174,7 @@ $navCategories = \App\Models\Category::with(['children' => fn($q) => $q->active(
                                  system couldn't reach (it only intercepts plain bg-{hue}-{step}
                                  classes, not gradient from-*/to-* stops). --}}
                             <button type="submit" :disabled="sending"
-                                style="background-image: linear-gradient(to right, {{ setting('newsletter_button_color', '#f97316') }}, {{ setting('newsletter_button_hover_color', '#ef4444') }}); color: {{ setting('newsletter_button_text_color', '#ffffff') }};"
+                                style="background-image: linear-gradient(to right, {{ brand_button_color('newsletter_button_color') }}, {{ brand_button_color('newsletter_button_hover_color') }}); color: {{ setting('newsletter_button_text_color', '#ffffff') }};"
                                 class="btn-glow flex-shrink-0 bg-[length:200%_auto] hover:bg-right px-6 py-2.5 rounded-full font-semibold text-sm hover:shadow-lg hover:shadow-orange-900/40 hover:-translate-y-0.5 active:translate-y-0 transition-all whitespace-nowrap disabled:opacity-70 disabled:cursor-not-allowed disabled:translate-y-0">
                                 <span x-show="!sending">{{ t('footer.subscribe', 'Subscribe', [], 'footer') }}</span>
                                 <span x-show="sending" x-cloak>…</span>

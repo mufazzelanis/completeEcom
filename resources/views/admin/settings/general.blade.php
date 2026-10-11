@@ -107,9 +107,14 @@
 {{-- Storefront Buttons --}}
 <div class="bg-white rounded-xl shadow-sm border p-6 space-y-5"
      x-data="{
-        from: '{{ setting('order_button_color_from', '#ec4899') }}',
-        via: '{{ setting('order_button_color_via', '#d946ef') }}',
-        to: '{{ setting('order_button_color_to', '#fb923c') }}',
+        {{-- follow: no custom color saved → the button tracks Settings → Branding (see
+             brand_button_color()); unticking lets the admin pick their own. --}}
+        follow: {{ collect(['order_button_color_from', 'order_button_color_via', 'order_button_color_to'])->contains(fn ($k) => brand_button_is_custom($k)) ? 'false' : 'true' }},
+        brand: {{ Js::from(collect(brand_button_defaults())->only(['order_button_color_from', 'order_button_color_via', 'order_button_color_to'])->map(fn ($v) => $v[1])) }},
+        applyBrand() { this.from = this.brand.order_button_color_from; this.via = this.brand.order_button_color_via; this.to = this.brand.order_button_color_to; },
+        from: '{{ brand_button_color('order_button_color_from') }}',
+        via: '{{ brand_button_color('order_button_color_via') }}',
+        to: '{{ brand_button_color('order_button_color_to') }}',
         textColor: '{{ setting('order_button_text_color', '#ffffff') }}',
      }">
     <h2 class="text-base font-semibold text-gray-900 pb-2 border-b">Storefront Buttons</h2>
@@ -138,27 +143,32 @@
 
     <div class="border-t pt-4">
         <h3 class="text-sm font-semibold text-gray-800 mb-1">"Buy Now" / "Order Now" Button Color</h3>
-        <p class="text-xs text-gray-400 mb-3">The pill-shaped gradient button on every product card (and "Select Options" for products with size/color variants). Pick any RGB color for each stop — leave them untouched and the button keeps today's exact pink-to-orange look.</p>
+        <p class="text-xs text-gray-400 mb-3">The pill-shaped gradient button on every product card (and "Select Options" for products with size/color variants). By default it follows your brand colors (Settings → Branding) and updates whenever you change them — untick to pick your own.</p>
+        <label class="flex items-center gap-2 mb-3 cursor-pointer select-none">
+            <input type="checkbox" x-model="follow" @change="if (follow) applyBrand()" class="rounded text-indigo-600">
+            <span class="text-sm text-gray-700">Follow brand color <span class="text-xs text-gray-400">— uses shades of your Primary & Secondary color</span></span>
+        </label>
+        <input type="hidden" name="order_button_follow_brand" :value="follow ? '1' : '0'">
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
             <div>
                 <label class="block text-xs font-medium text-gray-700 mb-1">Gradient Start</label>
                 <div class="flex items-center gap-1.5">
-                    <input type="color" name="order_button_color_from" x-model="from" class="h-9 w-10 flex-shrink-0 rounded border cursor-pointer">
-                    <input type="text" x-model="from" class="w-0 flex-1 border rounded px-2 py-1.5 text-xs text-gray-600 font-mono bg-gray-50">
+                    <input type="color" name="order_button_color_from" x-model="from" :disabled="follow" class="h-9 w-10 flex-shrink-0 rounded border cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
+                    <input type="text" x-model="from" :disabled="follow" class="w-0 flex-1 border rounded px-2 py-1.5 text-xs text-gray-600 font-mono bg-gray-50 disabled:opacity-50">
                 </div>
             </div>
             <div>
                 <label class="block text-xs font-medium text-gray-700 mb-1">Gradient Middle</label>
                 <div class="flex items-center gap-1.5">
-                    <input type="color" name="order_button_color_via" x-model="via" class="h-9 w-10 flex-shrink-0 rounded border cursor-pointer">
-                    <input type="text" x-model="via" class="w-0 flex-1 border rounded px-2 py-1.5 text-xs text-gray-600 font-mono bg-gray-50">
+                    <input type="color" name="order_button_color_via" x-model="via" :disabled="follow" class="h-9 w-10 flex-shrink-0 rounded border cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
+                    <input type="text" x-model="via" :disabled="follow" class="w-0 flex-1 border rounded px-2 py-1.5 text-xs text-gray-600 font-mono bg-gray-50 disabled:opacity-50">
                 </div>
             </div>
             <div>
                 <label class="block text-xs font-medium text-gray-700 mb-1">Gradient End</label>
                 <div class="flex items-center gap-1.5">
-                    <input type="color" name="order_button_color_to" x-model="to" class="h-9 w-10 flex-shrink-0 rounded border cursor-pointer">
-                    <input type="text" x-model="to" class="w-0 flex-1 border rounded px-2 py-1.5 text-xs text-gray-600 font-mono bg-gray-50">
+                    <input type="color" name="order_button_color_to" x-model="to" :disabled="follow" class="h-9 w-10 flex-shrink-0 rounded border cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
+                    <input type="text" x-model="to" :disabled="follow" class="w-0 flex-1 border rounded px-2 py-1.5 text-xs text-gray-600 font-mono bg-gray-50 disabled:opacity-50">
                 </div>
             </div>
             <div>
@@ -180,7 +190,7 @@
                 <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z"/></svg>
                 <span x-text="@js(setting('buy_now_button_text', 'Buy Now'))"></span>
             </button>
-            <button type="button" @click="from = '#ec4899'; via = '#d946ef'; to = '#fb923c'; textColor = '#ffffff';"
+            <button type="button" @click="follow = true; applyBrand(); textColor = '#ffffff';"
                 class="ml-auto text-xs text-gray-400 hover:text-orange-600 underline">
                 Reset to default
             </button>
@@ -189,25 +199,33 @@
 
     <div class="border-t pt-4"
          x-data="{
-            base: '{{ setting('add_to_cart_button_color', '#f97316') }}',
-            hover: '{{ setting('add_to_cart_button_hover_color', '#ea580c') }}',
+            follow: {{ brand_button_is_custom('add_to_cart_button_color') || brand_button_is_custom('add_to_cart_button_hover_color') ? 'false' : 'true' }},
+            brand: {{ Js::from(collect(brand_button_defaults())->only(['add_to_cart_button_color', 'add_to_cart_button_hover_color'])->map(fn ($v) => $v[1])) }},
+            applyBrand() { this.base = this.brand.add_to_cart_button_color; this.hover = this.brand.add_to_cart_button_hover_color; },
+            base: '{{ brand_button_color('add_to_cart_button_color') }}',
+            hover: '{{ brand_button_color('add_to_cart_button_hover_color') }}',
             textColor: '{{ setting('add_to_cart_button_text_color', '#ffffff') }}',
          }">
         <h3 class="text-sm font-semibold text-gray-800 mb-1">Quick "Add to Cart" Button Color</h3>
-        <p class="text-xs text-gray-400 mb-3">The small round button on the top-right corner of each product card, the outlined "Add to Cart" button on the product page, and the round Cart button in the mobile bottom nav bar — kept separate from the "Buy Now" color above since the two now live side by side on every card. Leave untouched and it keeps today's orange look.</p>
+        <p class="text-xs text-gray-400 mb-3">The small round button on the top-right corner of each product card, the outlined "Add to Cart" button on the product page, and the round Cart button in the mobile bottom nav bar — kept separate from the "Buy Now" color above since the two now live side by side on every card. By default it follows your Primary brand color — untick to pick your own.</p>
+        <label class="flex items-center gap-2 mb-3 cursor-pointer select-none">
+            <input type="checkbox" x-model="follow" @change="if (follow) applyBrand()" class="rounded text-indigo-600">
+            <span class="text-sm text-gray-700">Follow brand color <span class="text-xs text-gray-400">— uses your Primary color</span></span>
+        </label>
+        <input type="hidden" name="add_to_cart_follow_brand" :value="follow ? '1' : '0'">
         <div class="grid grid-cols-2 lg:grid-cols-3 gap-4">
             <div>
                 <label class="block text-xs font-medium text-gray-700 mb-1">Button Color</label>
                 <div class="flex items-center gap-1.5">
-                    <input type="color" name="add_to_cart_button_color" x-model="base" class="h-9 w-10 flex-shrink-0 rounded border cursor-pointer">
-                    <input type="text" x-model="base" class="w-0 flex-1 border rounded px-2 py-1.5 text-xs text-gray-600 font-mono bg-gray-50">
+                    <input type="color" name="add_to_cart_button_color" x-model="base" :disabled="follow" class="h-9 w-10 flex-shrink-0 rounded border cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
+                    <input type="text" x-model="base" :disabled="follow" class="w-0 flex-1 border rounded px-2 py-1.5 text-xs text-gray-600 font-mono bg-gray-50 disabled:opacity-50">
                 </div>
             </div>
             <div>
                 <label class="block text-xs font-medium text-gray-700 mb-1">Hover Color</label>
                 <div class="flex items-center gap-1.5">
-                    <input type="color" name="add_to_cart_button_hover_color" x-model="hover" class="h-9 w-10 flex-shrink-0 rounded border cursor-pointer">
-                    <input type="text" x-model="hover" class="w-0 flex-1 border rounded px-2 py-1.5 text-xs text-gray-600 font-mono bg-gray-50">
+                    <input type="color" name="add_to_cart_button_hover_color" x-model="hover" :disabled="follow" class="h-9 w-10 flex-shrink-0 rounded border cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
+                    <input type="text" x-model="hover" :disabled="follow" class="w-0 flex-1 border rounded px-2 py-1.5 text-xs text-gray-600 font-mono bg-gray-50 disabled:opacity-50">
                 </div>
             </div>
             <div>
@@ -228,7 +246,7 @@
                 :style="{ backgroundImage: `linear-gradient(to right, ${base}, ${hover})`, color: textColor }">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
             </button>
-            <button type="button" @click="base = '#f97316'; hover = '#ea580c'; textColor = '#ffffff';"
+            <button type="button" @click="follow = true; applyBrand(); textColor = '#ffffff';"
                 class="ml-auto text-xs text-gray-400 hover:text-orange-600 underline">
                 Reset to default
             </button>

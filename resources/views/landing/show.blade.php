@@ -186,7 +186,7 @@
             if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
             var container = document.getElementById('ty-confetti');
             if (!container) return;
-            var colors = ['#f97316', '#ec4899', '#6366f1', '#22c55e', '#eab308', '#06b6d4'];
+            var colors = [@json($primary), @json(hex_shade($primary, 0.35)), @json(setting('secondary_color', '#ec4899')), '#22c55e', '#eab308', '#06b6d4']; // brand first
             var total = window.innerWidth < 640 ? 50 : 90;
             for (var i = 0; i < total; i++) {
                 (function () {

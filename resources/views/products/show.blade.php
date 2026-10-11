@@ -453,7 +453,7 @@
                     // different shape (border + text, not a filled circle), so the base
                     // color drives the border/text instead, with a light auto-tinted hover
                     // background (hex_shade) standing in for Tailwind's old hover:bg-indigo-50.
-                    $addToCartColor = setting('add_to_cart_button_color', '#f97316');
+                    $addToCartColor = brand_button_color('add_to_cart_button_color');
                     $addToCartHoverBg = hex_shade($addToCartColor, 0.92);
                 @endphp
                 @if($product->isVariable())

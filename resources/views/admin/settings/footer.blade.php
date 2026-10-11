@@ -41,25 +41,33 @@
 
     <div class="border-t pt-4"
          x-data="{
-            from: '{{ setting('newsletter_button_color', '#f97316') }}',
-            to: '{{ setting('newsletter_button_hover_color', '#ef4444') }}',
+            follow: {{ brand_button_is_custom('newsletter_button_color') || brand_button_is_custom('newsletter_button_hover_color') ? 'false' : 'true' }},
+            brand: {{ Js::from(collect(brand_button_defaults())->only(['newsletter_button_color', 'newsletter_button_hover_color'])->map(fn ($v) => $v[1])) }},
+            applyBrand() { this.from = this.brand.newsletter_button_color; this.to = this.brand.newsletter_button_hover_color; },
+            from: '{{ brand_button_color('newsletter_button_color') }}',
+            to: '{{ brand_button_color('newsletter_button_hover_color') }}',
             textColor: '{{ setting('newsletter_button_text_color', '#ffffff') }}',
          }">
         <h3 class="text-sm font-semibold text-gray-800 mb-1">"Subscribe" Button Color</h3>
-        <p class="text-xs text-gray-400 mb-3">The pill-shaped button next to the email field above, in the footer. Leave untouched and it keeps today's orange-to-red look.</p>
+        <p class="text-xs text-gray-400 mb-3">The pill-shaped button next to the email field above, in the footer. By default it follows your Primary brand color — untick to pick your own.</p>
+        <label class="flex items-center gap-2 mb-3 cursor-pointer select-none">
+            <input type="checkbox" x-model="follow" @change="if (follow) applyBrand()" class="rounded text-indigo-600">
+            <span class="text-sm text-gray-700">Follow brand color <span class="text-xs text-gray-400">— uses your Primary color</span></span>
+        </label>
+        <input type="hidden" name="newsletter_button_follow_brand" :value="follow ? '1' : '0'">
         <div class="grid grid-cols-2 lg:grid-cols-3 gap-4">
             <div>
                 <label class="block text-xs font-medium text-gray-700 mb-1">Gradient Start</label>
                 <div class="flex items-center gap-1.5">
-                    <input type="color" name="newsletter_button_color" x-model="from" class="h-9 w-10 flex-shrink-0 rounded border cursor-pointer">
-                    <input type="text" x-model="from" class="w-0 flex-1 border rounded px-2 py-1.5 text-xs text-gray-600 font-mono bg-gray-50">
+                    <input type="color" name="newsletter_button_color" x-model="from" :disabled="follow" class="h-9 w-10 flex-shrink-0 rounded border cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
+                    <input type="text" x-model="from" :disabled="follow" class="w-0 flex-1 border rounded px-2 py-1.5 text-xs text-gray-600 font-mono bg-gray-50 disabled:opacity-50">
                 </div>
             </div>
             <div>
                 <label class="block text-xs font-medium text-gray-700 mb-1">Gradient End</label>
                 <div class="flex items-center gap-1.5">
-                    <input type="color" name="newsletter_button_hover_color" x-model="to" class="h-9 w-10 flex-shrink-0 rounded border cursor-pointer">
-                    <input type="text" x-model="to" class="w-0 flex-1 border rounded px-2 py-1.5 text-xs text-gray-600 font-mono bg-gray-50">
+                    <input type="color" name="newsletter_button_hover_color" x-model="to" :disabled="follow" class="h-9 w-10 flex-shrink-0 rounded border cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
+                    <input type="text" x-model="to" :disabled="follow" class="w-0 flex-1 border rounded px-2 py-1.5 text-xs text-gray-600 font-mono bg-gray-50 disabled:opacity-50">
                 </div>
             </div>
             <div>
@@ -80,7 +88,7 @@
                 :style="{ backgroundImage: `linear-gradient(to right, ${from}, ${to})`, color: textColor }">
                 Subscribe
             </button>
-            <button type="button" @click="from = '#f97316'; to = '#ef4444'; textColor = '#ffffff';"
+            <button type="button" @click="follow = true; applyBrand(); textColor = '#ffffff';"
                 class="ml-auto text-xs text-gray-400 hover:text-orange-500 underline">
                 Reset to default
             </button>

@@ -42,8 +42,8 @@
     // "the cart color" to an admin, not "the buy-now color".
     $bnCartGradient = sprintf(
         'linear-gradient(to bottom right, %s, %s)',
-        setting('add_to_cart_button_color', '#f97316'),
-        setting('add_to_cart_button_hover_color', '#ea580c'),
+        brand_button_color('add_to_cart_button_color'),
+        brand_button_color('add_to_cart_button_hover_color'),
     );
     $bnCartTextColor = setting('add_to_cart_button_text_color', '#ffffff');
 

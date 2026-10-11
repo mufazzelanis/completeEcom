@@ -13,11 +13,8 @@
     $primaryColor   = setting('primary_color', '#ea580c');
     $secondaryColor = setting('secondary_color', '#ec4899');
     $accentColor    = setting('accent_color', '#dc2626');
-    $textColor      = setting('text_color', '#1f2937');
-    $brandShades     = $primaryColor !== '#ea580c' ? brand_color_shades($primaryColor) : null;
-    $secondaryShades = $secondaryColor !== '#ec4899' ? brand_color_shades($secondaryColor) : null;
-    $accentShades    = $accentColor !== '#dc2626' ? brand_color_shades($accentColor) : null;
-    $textColorChanged = $textColor !== '#1f2937';
+    $textColor      = custom_text_color(); // contrast-checked, null when default/unreadable
+    $textColorChanged = $textColor !== null;
     // Always-resolved ramps (regardless of whether the admin customized the color) for
     // the panel gradient/CSS variables below — those aren't literal-class overrides,
     // so there's no "stay pixel-identical to the default Tailwind palette" constraint.
@@ -143,33 +140,11 @@
             --brand-accent: {{ $accentColor }};
             --brand-accent-dark: {{ $accentRamp['700'] }};
         }
-        @if($brandShades)
-        @foreach($brandShades as $step => $hex)
-        .bg-orange-{{ $step }} { background-color: {{ $hex }} !important; }
-        .text-orange-{{ $step }} { color: {{ $hex }} !important; }
-        .border-orange-{{ $step }} { border-color: {{ $hex }} !important; }
-        .ring-orange-{{ $step }} { --tw-ring-color: {{ $hex }} !important; }
-        .hover\:bg-orange-{{ $step }}:hover { background-color: {{ $hex }} !important; }
-        .hover\:text-orange-{{ $step }}:hover { color: {{ $hex }} !important; }
-        .hover\:border-orange-{{ $step }}:hover { border-color: {{ $hex }} !important; }
-        .focus\:ring-orange-{{ $step }}:focus { --tw-ring-color: {{ $hex }} !important; }
-        .focus\:border-orange-{{ $step }}:focus { border-color: {{ $hex }} !important; }
-        @endforeach
-        @endif
-        @if($secondaryShades)
-        @foreach($secondaryShades as $step => $hex)
-        .bg-pink-{{ $step }} { background-color: {{ $hex }} !important; }
-        .text-pink-{{ $step }} { color: {{ $hex }} !important; }
-        @endforeach
-        @endif
-        @if($accentShades)
-        @foreach($accentShades as $step => $hex)
-        .bg-red-{{ $step }} { background-color: {{ $hex }} !important; }
-        .text-red-{{ $step }} { color: {{ $hex }} !important; }
-        @endforeach
-        @endif
+        {{-- Orange/pink/red palettes follow Settings → Branding via CSS variables (see
+             tailwind.config.js + brand_palette_css()) — no per-class overrides needed. --}}
+        {!! brand_palette_css($primaryColor, $secondaryColor, $accentColor) !!}
         @if($textColorChanged)
-        .text-gray-800 { color: {{ $textColor }} !important; }
+        html:not(.dark) .text-gray-800 { color: {{ $textColor }} !important; }
         @endif
         @if(!$isSystemFont)
         .font-sans { font-family: {{ $fontFamily }} !important; }

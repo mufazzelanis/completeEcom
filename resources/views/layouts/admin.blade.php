@@ -32,6 +32,9 @@
         })();
     </script>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    {{-- Brand palette: primary only — orange accents follow Settings → Branding; red/pink stay
+         Tailwind's own so delete buttons and error states keep their warning colors here. --}}
+    <style>{!! brand_palette_css(setting('primary_color')) !!}</style>
     {{-- Loaded globally here instead of once per report/analytics page (reports/*,
          crm/analytics, crm/dashboard previously each had their own copy of this exact
          tag). Turbo Drive (resources/js/app.js) swaps the body on navigation, and a

@@ -57,8 +57,23 @@ class SettingController extends Controller
             $request->merge(['floating_widget_color_from' => null, 'floating_widget_color_to' => null]);
         }
 
+        // Storefront button colors: "Follow brand color" (the default) is stored as empty, which
+        // brand_button_color() resolves to shades of Settings → Branding — so the buttons keep
+        // matching the brand whenever it changes. The color pickers are disabled while it's on,
+        // so the keys must be cleared explicitly here rather than just left unsubmitted.
+        $followBrandGroups = [
+            'order_button_follow_brand'      => ['order_button_color_from', 'order_button_color_via', 'order_button_color_to'],
+            'add_to_cart_follow_brand'       => ['add_to_cart_button_color', 'add_to_cart_button_hover_color'],
+            'newsletter_button_follow_brand' => ['newsletter_button_color', 'newsletter_button_hover_color'],
+        ];
+        foreach ($followBrandGroups as $flag => $keys) {
+            if ($request->has($flag) && $request->boolean($flag)) {
+                $request->merge(array_fill_keys($keys, null));
+            }
+        }
+
         // Save regular fields (skip Laravel internals, delete_ prefixed keys, and _hex companions)
-        $skip = ['_token', '_method'];
+        $skip = array_merge(['_token', '_method'], array_keys($followBrandGroups));
         foreach ($request->except($skip) as $key => $value) {
             if (str_starts_with($key, 'delete_') || str_ends_with($key, '_hex') || $request->hasFile($key)) {
                 continue;

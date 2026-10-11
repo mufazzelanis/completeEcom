@@ -35,6 +35,8 @@ $cartCount = \App\Models\Cart::where('user_id', auth()->id())->sum('quantity');
         })();
     </script>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    {{-- Brand palette — same as layouts/app (Settings → Branding). --}}
+    <style>{!! brand_palette_css(setting('primary_color'), setting('secondary_color'), setting('accent_color')) !!}</style>
     {{-- theme store is registered once, unconditionally, in app.js itself — see the
          comment there. --}}
     <style>[x-cloak]{display:none!important}</style>

@@ -366,7 +366,7 @@ html.dark .prose img { box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4); }
     bottom: 0.875rem;
     padding: 0.4rem 0.9rem;
     border-radius: 999px;
-    background: linear-gradient(135deg, #f97316, #ec4899);
+    background: linear-gradient(135deg, rgb(var(--brand-500)), rgb(var(--secondary-500)));
     color: #fff;
     font-size: 0.75rem;
     font-weight: 700;
@@ -434,7 +434,7 @@ html.dark .admin-nav-toolbar button:hover { color: #fff; }
     color: rgb(107 114 128); transition: color 0.15s, background-color 0.15s;
 }
 .admin-nav-group__head:hover { color: rgb(17 24 39); background: rgba(0, 0, 0, 0.04); }
-.admin-nav-group__head:focus-visible { outline: 2px solid rgb(234 88 12); outline-offset: -2px; }
+.admin-nav-group__head:focus-visible { outline: 2px solid rgb(var(--brand-600)); outline-offset: -2px; }
 .admin-nav-group__title { flex: 1; text-align: left; }
 .admin-nav-group[data-has-active="1"] .admin-nav-group__title { color: rgb(55 65 81); }
 html.dark .admin-nav-group__head:hover { color: rgb(229 231 235); background: rgba(255, 255, 255, 0.05); }
@@ -444,7 +444,7 @@ html.dark .admin-nav-group[data-has-active="1"] .admin-nav-group__title { color:
 .admin-nav-group[data-open="1"] .admin-nav-group__chev { transform: rotate(0deg); }
 
 /* A collapsed group that still contains the page you're on shows a small orange dot. */
-.admin-nav-group__dot { width: 0.4rem; height: 0.4rem; border-radius: 999px; background: rgb(234 88 12); opacity: 0; transition: opacity 0.15s; }
+.admin-nav-group__dot { width: 0.4rem; height: 0.4rem; border-radius: 999px; background: rgb(var(--brand-600)); opacity: 0; transition: opacity 0.15s; }
 .admin-nav-group[data-has-active="1"]:not([data-open="1"]) .admin-nav-group__dot { opacity: 1; }
 
 .admin-nav-group__body { display: grid; grid-template-rows: 0fr; transition: grid-template-rows 0.22s ease; }
@@ -472,7 +472,7 @@ html.dark .admin-nav-group[data-has-active="1"] .admin-nav-group__title { color:
 /* ── Turbo Drive progress bar (resources/js/app.js) ───────────────────────────────────
  * Turbo injects this element itself on every intercepted navigation; restyled here to
  * match the brand color instead of its default blue, on both the storefront and admin. */
-.turbo-progress-bar { height: 3px; background: linear-gradient(to right, #fb923c, #f97316, #ea580c); }
+.turbo-progress-bar { height: 3px; background: linear-gradient(to right, rgb(var(--brand-400)), rgb(var(--brand-500)), rgb(var(--brand-600))); }
 
 /* ── Collapsible icon rail (desktop only) ─────────────────────────────────────────────
  * `data-collapsed` lives on <aside id="admin-sidebar">, set synchronously by
@@ -578,7 +578,7 @@ html.dark .admin-nav-group[data-has-active="1"] .admin-nav-group__title { color:
  * styles the admin applies in the editor (text color, highlight, font size) still win.
  */
 .lp-content {
-    --lp-primary: #ea580c;
+    --lp-primary: rgb(var(--brand-600)); /* landing/show and the editor set the exact brand hex */
     --lp-tint: color-mix(in srgb, var(--lp-primary) 8%, #fff);
     --lp-tint-strong: color-mix(in srgb, var(--lp-primary) 16%, #fff);
     color: #374151;

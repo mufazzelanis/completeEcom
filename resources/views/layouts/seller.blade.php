@@ -31,6 +31,8 @@ $sellerNavItems = [
     <title>@yield('title', 'Seller Dashboard') - {{ $siteName }}</title>
     @if($faviconUrl = setting_file_url('favicon'))<link rel="icon" href="{{ $faviconUrl }}">@endif
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    {{-- Brand palette: primary only (see layouts/admin). --}}
+    <style>{!! brand_palette_css(setting('primary_color')) !!}</style>
     {{-- Loaded globally so Turbo Drive (resources/js/app.js) doesn't have to re-execute a
          <script src> appearing fresh in swapped body content — the CDN's network latency
          can beat a same-script-tag inline chart-init call that assumes it's already

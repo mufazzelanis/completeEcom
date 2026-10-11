@@ -20,9 +20,9 @@
     // from-pink-500 via-fuchsia-500 to-orange-400 exactly, so an untouched install looks identical.
     $orderButtonGradient = sprintf(
         'linear-gradient(to right, %s, %s, %s)',
-        setting('order_button_color_from', '#ec4899'),
-        setting('order_button_color_via', '#d946ef'),
-        setting('order_button_color_to', '#fb923c'),
+        brand_button_color('order_button_color_from'),
+        brand_button_color('order_button_color_via'),
+        brand_button_color('order_button_color_to'),
     );
     $orderButtonTextColor = setting('order_button_text_color', '#ffffff');
 
@@ -33,8 +33,8 @@
     // hover:bg-orange-600 exactly, so an untouched install looks identical.
     $addToCartGradient = sprintf(
         'linear-gradient(to right, %s, %s)',
-        setting('add_to_cart_button_color', '#f97316'),
-        setting('add_to_cart_button_hover_color', '#ea580c'),
+        brand_button_color('add_to_cart_button_color'),
+        brand_button_color('add_to_cart_button_hover_color'),
     );
     $addToCartTextColor = setting('add_to_cart_button_text_color', '#ffffff');
 @endphp

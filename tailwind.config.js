@@ -1,6 +1,25 @@
 import defaultTheme from 'tailwindcss/defaultTheme';
 import forms from '@tailwindcss/forms';
 import typography from '@tailwindcss/typography';
+import plugin from 'tailwindcss/plugin';
+import colors from 'tailwindcss/colors';
+
+// Brand theming: the orange / pink / red palettes are CSS variables, not fixed hexes —
+// orange = Primary, pink = Secondary, red = Accent (Settings → Branding; a landing page's own
+// brand color for its page). brand_palette_css() (app/helpers.php) writes the admin's shades
+// into :root at runtime, so every utility built from these palettes — bg/text/border/ring,
+// gradients, shadows, opacity variants like bg-orange-500/10, hover/focus/dark states —
+// follows the brand automatically. Defaults (below, via addBase) are Tailwind's own values,
+// so nothing changes for a store that never picked custom colors.
+const themedPalettes = { brand: colors.orange, secondary: colors.pink, accent: colors.red };
+const hexToRgb = (hex) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16)).join(' ');
+const varPalette = (name) => Object.fromEntries(
+    Object.keys(themedPalettes[name]).map((shade) => [shade, `rgb(var(--${name}-${shade}) / <alpha-value>)`]),
+);
+const paletteDefaults = plugin(({ addBase }) => addBase({
+    ':root': Object.fromEntries(Object.entries(themedPalettes).flatMap(([name, palette]) =>
+        Object.entries(palette).map(([shade, hex]) => [`--${name}-${shade}`, hexToRgb(hex)]))),
+}));
 
 // Colors used only via runtime interpolation (e.g. `bg-{{ $channel['color'] }}-600` in
 // notification/payment-method admin screens) — Tailwind's scanner can't see a class name
@@ -50,6 +69,9 @@ export default {
             // practice (the storefront re-themes brand colors by overriding the literal
             // `orange-*` classes directly instead, see layouts/app.blade.php).
             colors: {
+                orange: varPalette('brand'),
+                pink: varPalette('secondary'),
+                red: varPalette('accent'),
                 primary: {
                     50: '#fff7ed', 100: '#ffedd5', 200: '#fed7aa', 300: '#fdba74', 400: '#fb923c',
                     500: '#f97316', 600: '#ea580c', 700: '#c2410c', 800: '#9a3412', 900: '#7c2d12',
@@ -61,5 +83,5 @@ export default {
     // typography: renders admin-authored WYSIWYG content (Summernote output — landing pages,
     // blog posts, CMS pages) with sane default spacing/heading sizes instead of raw
     // unstyled HTML, via the `prose` class.
-    plugins: [forms, typography],
+    plugins: [forms, typography, paletteDefaults],
 };
