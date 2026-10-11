@@ -32,7 +32,13 @@ class TelegramNotifier
      *                        callers build this, not this method, so it stays a plain
      *                        "send this text" primitive rather than knowing about orders.
      */
-    public static function send(string $message, string $eventType = 'order'): void
+    /**
+     * @param array|null $buttons Inline keyboard rows (Telegram InlineKeyboardButton arrays,
+     *                            e.g. ['text' => '📋 Phone', 'copy_text' => ['text' => '017…']]).
+     *                            If Telegram rejects them, the message is re-sent without
+     *                            buttons — an order alert must never be lost over a button.
+     */
+    public static function send(string $message, string $eventType = 'order', ?array $buttons = null): void
     {
         if (!self::isEnabled()) {
             return;
@@ -44,7 +50,7 @@ class TelegramNotifier
         $error = null;
 
         try {
-            $response = Http::timeout(10)->post("https://api.telegram.org/bot{$botToken}/sendMessage", [
+            $payload = [
                 'chat_id' => $chatId,
                 'text' => $message,
                 'parse_mode' => 'HTML',
@@ -52,7 +58,14 @@ class TelegramNotifier
                 // notification (admin panel link) just adds visual noise under a message
                 // that's already short and self-contained.
                 'disable_web_page_preview' => true,
-            ]);
+            ];
+            $url = "https://api.telegram.org/bot{$botToken}/sendMessage";
+
+            $response = Http::timeout(10)->post($url, $buttons ? $payload + ['reply_markup' => ['inline_keyboard' => $buttons]] : $payload);
+            if ($response->failed() && $buttons) {
+                Log::warning('Telegram rejected the buttons, re-sending without them', ['body' => mb_substr($response->body(), 0, 300)]);
+                $response = Http::timeout(10)->post($url, $payload);
+            }
 
             if ($response->failed()) {
                 throw new \RuntimeException('Telegram API HTTP ' . $response->status() . ': ' . mb_substr($response->body(), 0, 300));
