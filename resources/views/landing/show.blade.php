@@ -660,6 +660,14 @@
                     @foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach
                 </ul>
             </div>
+            {{-- A failed submission (bad phone, out of stock, ...) redirects back to this
+                 same page — a full navigation, so the browser resets scroll to the very top
+                 by default. On a long landing page (hero/benefits/testimonials all above
+                 this form), that put the error message far below the fold: reported as "the
+                 form just showed again with no message" — it was there, just scrolled out of
+                 view. #order-form already has scroll-mt for the hero CTA's own anchor link;
+                 reusing that here. --}}
+            <script>document.addEventListener('DOMContentLoaded', () => document.getElementById('order-form')?.scrollIntoView({ block: 'start' }));</script>
             @endif
 
             {{-- sending: one tap only — the button locks and shows progress the moment the order is
