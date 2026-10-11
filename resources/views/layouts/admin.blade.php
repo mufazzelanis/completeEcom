@@ -67,7 +67,7 @@
     <style>[x-cloak]{display:none!important}</style>
     @stack('styles')
 </head>
-<body data-theme-key="admin-theme" class="bg-gray-100 dark:bg-gray-950 bg-[radial-gradient(circle_at_top_right,rgba(234,88,12,0.05),transparent_45%)] dark:bg-[radial-gradient(circle_at_top_right,rgba(234,88,12,0.07),transparent_45%)] font-sans antialiased transition-colors">
+<body data-theme-key="admin-theme" class="bg-gray-100 dark:bg-gray-950 bg-[radial-gradient(circle_at_top_right,rgb(var(--brand-600)/0.05),transparent_45%)] dark:bg-[radial-gradient(circle_at_top_right,rgb(var(--brand-600)/0.07),transparent_45%)] font-sans antialiased transition-colors">
 {{-- Turbo Drive (resources/js/app.js) now intercepts admin nav clicks/form submits and
      swaps the page via fetch instead of a real reload, with its own built-in top
      progress bar (`.turbo-progress-bar` — see app.css) — this replaces the hand-rolled

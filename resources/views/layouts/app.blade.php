@@ -543,7 +543,7 @@ $navCategories = \App\Models\Category::with(['children' => fn($q) => $q->active(
              `md:contents` makes this div generate no box at all from md: up, so desktop's
              layout (and every class on the row inside) is completely untouched — this is
              purely a mobile presentation wrapper, not a structural change. --}}
-        <div class="md:contents rounded-2xl md:rounded-none bg-white/95 dark:bg-gray-900/95 md:bg-transparent shadow-[0_4px_20px_-2px_rgba(249,115,22,0.18)] dark:shadow-[0_4px_20px_-2px_rgba(0,0,0,0.5)] md:shadow-none ring-1 ring-orange-100/70 dark:ring-gray-800/80 md:ring-0 px-2 md:px-0 transition-colors">
+        <div class="md:contents rounded-2xl md:rounded-none bg-white/95 dark:bg-gray-900/95 md:bg-transparent shadow-[0_4px_20px_-2px_rgb(var(--brand-500)/0.18)] dark:shadow-[0_4px_20px_-2px_rgba(0,0,0,0.5)] md:shadow-none ring-1 ring-orange-100/70 dark:ring-gray-800/80 md:ring-0 px-2 md:px-0 transition-colors">
         @if($headerLayout === 'centered')
             {{-- Centered layout: logo on its own row, search + actions below --}}
             <div class="flex flex-col items-center py-3 gap-2">

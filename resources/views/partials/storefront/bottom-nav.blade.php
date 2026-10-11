@@ -76,7 +76,7 @@
     <div class="grid grid-cols-5 px-1 pt-1.5">
         @foreach($bnLeftItems as $item)
             <a href="{{ $item['url'] }}" class="relative flex flex-col items-center justify-center gap-1 py-2 active:scale-90 tap-spring transition-transform duration-200">
-                <span class="relative flex items-center justify-center w-11 h-7 rounded-full transition-all {{ $item['active'] ? 'bg-gradient-to-b from-orange-400/20 to-orange-500/10 dark:from-orange-500/25 dark:to-orange-500/10 shadow-[0_0_0_1px_rgba(249,115,22,0.15)]' : '' }}">
+                <span class="relative flex items-center justify-center w-11 h-7 rounded-full transition-all {{ $item['active'] ? 'bg-gradient-to-b from-orange-400/20 to-orange-500/10 dark:from-orange-500/25 dark:to-orange-500/10 shadow-[0_0_0_1px_rgb(var(--brand-500)/0.15)]' : '' }}">
                     @if($item['active'] && !empty($item['iconFilled']))
                         {{-- Solid/filled variant when active — an iOS tab bar's real "you are
                              here" signal, not just a color swap on the same outline glyph. --}}
@@ -115,7 +115,7 @@
 
         @foreach($bnRightItems as $item)
             <a href="{{ $item['url'] }}" class="relative flex flex-col items-center justify-center gap-1 py-2 active:scale-90 tap-spring transition-transform duration-200">
-                <span class="relative flex items-center justify-center w-11 h-7 rounded-full transition-all {{ $item['active'] ? 'bg-gradient-to-b from-orange-400/20 to-orange-500/10 dark:from-orange-500/25 dark:to-orange-500/10 shadow-[0_0_0_1px_rgba(249,115,22,0.15)]' : '' }}">
+                <span class="relative flex items-center justify-center w-11 h-7 rounded-full transition-all {{ $item['active'] ? 'bg-gradient-to-b from-orange-400/20 to-orange-500/10 dark:from-orange-500/25 dark:to-orange-500/10 shadow-[0_0_0_1px_rgb(var(--brand-500)/0.15)]' : '' }}">
                     @if($item['active'] && !empty($item['iconFilled']))
                         <svg class="w-5 h-5 text-orange-600 dark:text-orange-400" fill="currentColor" viewBox="0 0 24 24">
                             @foreach(explode('|', $item['iconFilled']) as $path)
@@ -135,7 +135,7 @@
 
         @auth
             <a href="{{ route('account.dashboard') }}" class="relative flex flex-col items-center justify-center gap-1 py-2 active:scale-90 tap-spring transition-transform duration-200">
-                <span class="flex items-center justify-center w-11 h-7 rounded-full transition-all {{ request()->routeIs('account.*') && !request()->routeIs('account.notifications*') ? 'bg-gradient-to-b from-orange-400/20 to-orange-500/10 dark:from-orange-500/25 dark:to-orange-500/10 shadow-[0_0_0_1px_rgba(249,115,22,0.15)]' : '' }}">
+                <span class="flex items-center justify-center w-11 h-7 rounded-full transition-all {{ request()->routeIs('account.*') && !request()->routeIs('account.notifications*') ? 'bg-gradient-to-b from-orange-400/20 to-orange-500/10 dark:from-orange-500/25 dark:to-orange-500/10 shadow-[0_0_0_1px_rgb(var(--brand-500)/0.15)]' : '' }}">
                     <span class="w-5 h-5 rounded-full bg-gradient-to-br from-orange-400 to-red-500 flex items-center justify-center">
                         <span class="text-white font-bold text-[9px] leading-none">{{ strtoupper(substr(auth()->user()->name, 0, 1)) }}</span>
                     </span>
@@ -144,7 +144,7 @@
             </a>
         @else
             <a href="{{ route('login') }}" class="relative flex flex-col items-center justify-center gap-1 py-2 active:scale-90 tap-spring transition-transform duration-200">
-                <span class="flex items-center justify-center w-11 h-7 rounded-full transition-all {{ request()->routeIs('login') ? 'bg-gradient-to-b from-orange-400/20 to-orange-500/10 dark:from-orange-500/25 dark:to-orange-500/10 shadow-[0_0_0_1px_rgba(249,115,22,0.15)]' : '' }}">
+                <span class="flex items-center justify-center w-11 h-7 rounded-full transition-all {{ request()->routeIs('login') ? 'bg-gradient-to-b from-orange-400/20 to-orange-500/10 dark:from-orange-500/25 dark:to-orange-500/10 shadow-[0_0_0_1px_rgb(var(--brand-500)/0.15)]' : '' }}">
                     <svg class="w-5 h-5 {{ request()->routeIs('login') ? 'text-orange-600 dark:text-orange-400' : 'text-gray-500 dark:text-gray-400' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
                 </span>
                 <span class="text-[10px] font-medium leading-none {{ request()->routeIs('login') ? 'text-orange-600 dark:text-orange-400' : 'text-gray-500 dark:text-gray-400' }}">Login</span>
