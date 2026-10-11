@@ -625,7 +625,46 @@ $navCategories = \App\Models\Category::with(['children' => fn($q) => $q->active(
     {{-- Category Navigation Bar --}}
     @if($headerLayout !== 'minimal')
     <div class="bg-orange-700 hidden md:block border-t border-orange-600">
-        <div class="max-w-[1200px] mx-auto px-4 flex items-center overflow-x-auto scrollbar-hide">
+        {{-- Used to just overflow-x-auto scroll when there were too many categories to fit —
+             no visible scrollbar/affordance on desktop meant the tail end (often "All
+             Products") just looked cut off at the window edge, easy to miss entirely.
+             Now measures each category pill's own width once on load (their widths are
+             fixed regardless of container size, so that measurement never goes stale),
+             and on every resize works out how many fit before "Blogs"/"All Products" at
+             the end — whatever doesn't fit collapses into a "More" dropdown instead of
+             silently disappearing off-screen. --}}
+        <div class="max-w-[1200px] mx-auto px-4 flex items-center"
+             x-data="{
+                cutoffIndex: 9999,
+                itemWidths: [],
+                init() {
+                    this.$nextTick(() => {
+                        this.itemWidths = Array.from(this.$refs.track.children).map(el => el.offsetWidth);
+                        this.recalc();
+                    });
+                    let t;
+                    window.addEventListener('resize', () => { clearTimeout(t); t = setTimeout(() => this.recalc(), 150); });
+                },
+                recalc() {
+                    if (!this.itemWidths.length) return;
+                    const containerWidth = this.$refs.track.clientWidth;
+                    // Everything fits with room to spare — show it all, no 'More' needed
+                    // (checked before reserving space for a button that wouldn't even show).
+                    const total = this.itemWidths.reduce((a, b) => a + b, 0);
+                    if (total <= containerWidth) { this.cutoffIndex = this.itemWidths.length; return; }
+                    const moreReserve = 90; // enough room for the 'More N' trigger itself
+                    let used = 0, cutoff = this.itemWidths.length;
+                    for (let i = 0; i < this.itemWidths.length; i++) {
+                        if (used + this.itemWidths[i] + moreReserve > containerWidth) { cutoff = i; break; }
+                        used += this.itemWidths[i];
+                    }
+                    this.cutoffIndex = cutoff;
+                },
+             }">
+            {{-- flex-1 + min-w-0 (not the items-'natural size' default) is what makes
+                 clientWidth below actually mean "space left after the More button, Blogs,
+                 and All Products" instead of this track's own unconstrained content width. --}}
+            <div class="flex items-center flex-1 min-w-0 overflow-hidden" x-ref="track">
             @foreach($navCategories as $navCat)
                 {{-- The panel below is x-teleport'd to <body> rather than left in place —
                      <header> gets backdrop-blur-xl when sticky (frosted-glass effect), and
@@ -636,13 +675,14 @@ $navCategories = \App\Models\Category::with(['children' => fn($q) => $q->active(
                      shifted down by however tall the bars above <header> are, with a gap where
                      the hero content shows through underneath. Same fix already used for the
                      mobile drawer and the admin orders inline-status dropdown. top/left are
-                     recomputed on every open (not just once) since this bar also scrolls
-                     horizontally (overflow-x-auto above) — a stale position from an earlier open
-                     would drift as the trigger's own position changes. 256 below is w-64 in px
-                     (the panel's own fixed width) — clamping against it keeps a category near
-                     the right edge (e.g. "Rare Collections") from rendering partly off screen. --}}
+                     recomputed on every open (not just once) since window width (and so which
+                     categories are even visible vs. collapsed into "More") can change between
+                     opens — a stale position from an earlier open would drift as the trigger's
+                     own position changes. 256 below is w-64 in px (the panel's own fixed width)
+                     — clamping against it keeps a category near the right edge from rendering
+                     partly off screen. --}}
                 @php $isActiveCat = request()->is('shop/category/'.$navCat->slug); @endphp
-                <div class="relative flex-shrink-0" x-data="{ open: false, top: 0, left: 0 }">
+                <div class="relative flex-shrink-0" x-data="{ open: false, top: 0, left: 0 }" x-show="{{ $loop->index }} < cutoffIndex" x-cloak>
                     <a href="{{ route('shop.category', $navCat->slug) }}"
                        @mouseenter="
                             open = true;
@@ -716,6 +756,56 @@ $navCategories = \App\Models\Category::with(['children' => fn($q) => $q->active(
                     @endif
                 </div>
             @endforeach
+            </div>
+
+            {{-- "More" — only the categories that didn't fit (per cutoffIndex, computed
+                 above). Rendered as a second pass over the same $navCategories rather than
+                 collecting overflowed items in JS, so this stays plain server-rendered
+                 links (real hrefs, no client-side string-building) with x-show just
+                 toggling which copy of each one is visible. --}}
+            <div class="relative flex-shrink-0" x-show="cutoffIndex < {{ $navCategories->count() }}" x-cloak
+                 x-data="{ open: false, top: 0, left: 0 }"
+                 @mouseenter="open = true; const r = $el.getBoundingClientRect(); top = r.bottom; left = Math.max(12, Math.min(r.left, window.innerWidth - 256 - 12));"
+                 @mouseleave="open = false">
+                <button type="button" class="group relative inline-flex items-center gap-1 text-sm text-white whitespace-nowrap px-3 py-2.5 font-medium active:scale-95 tap-spring">
+                    <span class="absolute inset-x-1 inset-y-1 rounded-lg bg-white/15 transition-transform duration-200 ease-out scale-0 group-hover:scale-100"></span>
+                    <span class="relative group-hover:-translate-y-0.5 transition-transform duration-200 ease-out">More</span>
+                    <svg class="relative w-3 h-3 opacity-75 transition-transform duration-200" :class="open ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
+                </button>
+                <template x-teleport="body">
+                    <div x-show="open" x-cloak
+                         @mouseenter="open = true" @mouseleave="open = false"
+                         x-transition:enter="transition ease-out duration-150"
+                         x-transition:enter-start="opacity-0 -translate-y-1"
+                         x-transition:enter-end="opacity-100 translate-y-0"
+                         x-transition:leave="transition ease-in duration-100"
+                         x-transition:leave-start="opacity-100"
+                         x-transition:leave-end="opacity-0"
+                         x-bind:style="`position:fixed; top:${top}px; left:${left}px;`"
+                         class="bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-300 shadow-2xl shadow-black/10 dark:shadow-black/50 rounded-xl w-64 z-[150] ring-1 ring-black/5 dark:ring-white/10 overflow-hidden">
+                        <div class="h-1 bg-gradient-to-r from-orange-500 via-pink-500 to-orange-400"></div>
+                        <div class="p-1.5 pt-2 max-h-[70vh] overflow-y-auto">
+                            @foreach($navCategories as $navCat)
+                            <a href="{{ route('shop.category', $navCat->slug) }}" x-show="{{ $loop->index }} >= cutoffIndex" x-cloak
+                               class="group flex items-center gap-3 px-2.5 py-2.5 rounded-lg hover:bg-orange-50 dark:hover:bg-orange-500/10 transition-colors duration-150">
+                                <span class="flex-shrink-0 w-9 h-9 rounded-lg bg-gradient-to-br from-orange-100 to-amber-50 dark:from-orange-500/20 dark:to-amber-500/10 flex items-center justify-center overflow-hidden group-hover:scale-105 transition-transform duration-200">
+                                    @if($navCat->image)
+                                        <img src="{{ image_thumb($navCat->image, 96) }}" alt="" loading="lazy" decoding="async" class="w-full h-full object-cover">
+                                    @else
+                                        <svg class="w-4 h-4 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><circle cx="7" cy="7" r="1.4" fill="currentColor" stroke="none"/></svg>
+                                    @endif
+                                </span>
+                                <span class="flex-1 min-w-0">
+                                    <span class="block text-sm font-medium text-gray-700 dark:text-gray-200 group-hover:text-orange-700 dark:group-hover:text-orange-400 transition-colors truncate">{{ $navCat->name }}</span>
+                                </span>
+                                <svg class="w-3.5 h-3.5 flex-shrink-0 text-gray-300 dark:text-gray-600 opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 group-hover:text-orange-500 transition-all duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
+                            </a>
+                            @endforeach
+                        </div>
+                    </div>
+                </template>
+            </div>
+
             {{-- A blinking "live" dot (the same ping-ring-over-solid-dot trick used for
                  "recording"/"on air" indicators elsewhere) so this one item visually stands
                  out from the plain category links next to it and actually draws a click,
