@@ -980,14 +980,45 @@ $adminNavIndex = [
                 {{-- Theme Toggle --}}
                 @include('partials.theme-toggle')
 
-                <div class="flex items-center space-x-2.5 pl-2.5 border-l border-gray-100 dark:border-gray-800">
-                    <div class="relative w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 bg-gradient-to-br from-orange-500 to-red-600 shadow-sm shadow-orange-600/20 ring-2 ring-white dark:ring-gray-900">
-                        <span class="text-white font-bold text-sm">{{ strtoupper(substr(auth()->user()->name, 0, 1)) }}</span>
-                        <span class="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-green-500 ring-2 ring-white dark:ring-gray-900" title="Online"></span>
-                    </div>
-                    <div class="hidden sm:block leading-tight">
-                        <span class="block text-sm font-semibold text-gray-700 dark:text-gray-200">{{ auth()->user()->name }}</span>
-                        <span class="block text-[11px] text-gray-400 dark:text-gray-500 capitalize">{{ auth()->user()->role }}</span>
+                {{-- Previously just static text — there was no way to log out from inside
+                     the admin panel at all short of navigating to /logout by hand. Same
+                     Alpine dropdown pattern as the rest of this header (search, alerts
+                     bell, theme toggle). --}}
+                <div class="relative pl-2.5 border-l border-gray-100 dark:border-gray-800" x-data="{ open: false }" @keydown.escape.window="open = false">
+                    <button type="button" @click="open = !open" :aria-expanded="open.toString()"
+                            class="flex items-center space-x-2.5 rounded-lg pr-1.5 py-1 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                        <div class="relative w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 bg-gradient-to-br from-orange-500 to-red-600 shadow-sm shadow-orange-600/20 ring-2 ring-white dark:ring-gray-900">
+                            <span class="text-white font-bold text-sm">{{ strtoupper(substr(auth()->user()->name, 0, 1)) }}</span>
+                            <span class="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-green-500 ring-2 ring-white dark:ring-gray-900" title="Online"></span>
+                        </div>
+                        <div class="hidden sm:block leading-tight text-left">
+                            <span class="block text-sm font-semibold text-gray-700 dark:text-gray-200">{{ auth()->user()->name }}</span>
+                            <span class="block text-[11px] text-gray-400 dark:text-gray-500 capitalize">{{ auth()->user()->role }}</span>
+                        </div>
+                        <svg class="hidden sm:block w-4 h-4 text-gray-400 transition-transform" :class="open ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                    </button>
+
+                    <div x-show="open" x-cloak @click.outside="open = false"
+                         x-transition:enter="transition ease-out duration-150" x-transition:enter-start="opacity-0 scale-95 -translate-y-1" x-transition:enter-end="opacity-100 scale-100 translate-y-0"
+                         x-transition:leave="transition ease-in duration-100" x-transition:leave-start="opacity-100 scale-100" x-transition:leave-end="opacity-0 scale-95"
+                         class="absolute right-0 top-full mt-2 w-60 bg-white dark:bg-gray-800 rounded-xl shadow-xl ring-1 ring-black/5 dark:ring-white/10 overflow-hidden z-50">
+                        <div class="px-4 py-3 border-b border-gray-100 dark:border-gray-700">
+                            <p class="text-sm font-semibold text-gray-800 dark:text-gray-100 truncate">{{ auth()->user()->name }}</p>
+                            <p class="text-xs text-gray-400 dark:text-gray-500 truncate">{{ auth()->user()->email }}</p>
+                        </div>
+                        <a href="{{ route('home') }}" target="_blank" rel="noopener"
+                           class="flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                            <svg class="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                            View Storefront
+                        </a>
+                        <form method="POST" action="{{ route('logout') }}">
+                            @csrf
+                            <button type="submit"
+                                    class="flex items-center gap-2.5 w-full px-4 py-2.5 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors border-t border-gray-100 dark:border-gray-700">
+                                <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+                                Log Out
+                            </button>
+                        </form>
                     </div>
                 </div>
             </div>
