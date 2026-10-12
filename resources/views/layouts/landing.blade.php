@@ -48,7 +48,11 @@
     @php $ogImg = $landingPage->og_image ?? $landingPage->hero_image; @endphp
     @if($ogImg)<meta property="og:image" content="{{ Storage::url($ogImg) }}">@endif
     <meta property="og:type" content="website">
-    <meta property="og:url" content="{{ url()->current() }}">
+    {{-- Canonical = the bare page URL. Ad traffic lands with ?fbclid=… / ?utm_… on every
+         visit — without this each variant counted as its own page (Search Console:
+         "Duplicate without user-selected canonical"). --}}
+    <link rel="canonical" href="{{ url($landingPage->slug) }}">
+    <meta property="og:url" content="{{ url($landingPage->slug) }}">
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     {{-- Brand palette (orange/pink/red Tailwind colors = CSS variables): this page's own brand

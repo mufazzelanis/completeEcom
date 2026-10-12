@@ -36,6 +36,16 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Build every generated URL (links, canonical tags, sitemap, redirects) from APP_URL
+        // in production, never from the incoming request's path. On the live host the site
+        // root internally rewrites into public/, and a request that reached Laravel as
+        // /public/… made it treat "/public" as the base path — every canonical then pointed
+        // at a /public/… duplicate of the whole site. (public/.htaccess also 301s those away.)
+        if ($this->app->environment('production') && str_starts_with((string) config('app.url'), 'https://')) {
+            \Illuminate\Support\Facades\URL::forceRootUrl(config('app.url'));
+            \Illuminate\Support\Facades\URL::forceScheme('https');
+        }
+
         // Any change to something the homepage caches orphans all of its cached blocks at once
         // (HomeController reads keys under this version) — so admin edits, new reviews, stock
         // changes on product save, etc. appear on the next page view, not after the TTL.
