@@ -7,12 +7,27 @@
 
 <div class="bg-white rounded-xl shadow-sm border p-6 space-y-4">
     <h2 class="text-base font-semibold text-gray-900 pb-2 border-b">Default Meta Tags</h2>
-    <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">Default Meta Title</label>
-        <input type="text" name="seo_meta_title" value="{{ setting('seo_meta_title', setting('site_name','ShopVista') . ' – Online Store') }}"
-               maxlength="70"
+    {{-- Shows the value actually saved (empty if none) — the built-in fallback the site
+         uses when it's empty is only the placeholder, so an untouched Save can no longer
+         silently store a different title than the one live on the site. --}}
+    @php $defaultHomeTitle = setting('site_name', 'ShopVista') . ' – Online Shopping in Bangladesh'; @endphp
+    <div x-data="{ title: @js((string) setting('seo_meta_title', '')) }">
+        <label class="block text-sm font-medium text-gray-700 mb-1">Homepage Title <span class="text-gray-400 font-normal">(Default Meta Title)</span></label>
+        <input type="text" name="seo_meta_title" x-model="title" maxlength="70"
+               placeholder="{{ $defaultHomeTitle }}"
                class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-orange-500">
-        <p class="text-xs text-gray-400 mt-1">Recommended: 50–60 characters</p>
+        <div class="flex items-start justify-between gap-3 mt-1">
+            <p class="text-xs text-gray-400">
+                Shown in the browser tab and as the blue headline in Google for your <b>homepage</b> (also used as its main heading).
+                Product, category and other pages use their own titles. Leave empty to use the grey text above.
+                Recommended: 50–60 characters, e.g. "Mitavin – Original Baby Care &amp; Health Products in Bangladesh".
+            </p>
+            <span class="text-xs font-mono shrink-0" :class="(title || @js($defaultHomeTitle)).length > 60 ? 'text-amber-600' : 'text-gray-400'"
+                  x-text="(title || @js($defaultHomeTitle)).length + '/60'"></span>
+        </div>
+        <p class="text-xs mt-1.5 px-2.5 py-1.5 rounded-lg bg-gray-50 border border-gray-100 text-gray-600">
+            Live now: <span class="font-medium text-gray-800" x-text="title || @js($defaultHomeTitle)"></span>
+        </p>
     </div>
     <div>
         <label class="block text-sm font-medium text-gray-700 mb-1">Default Meta Description</label>

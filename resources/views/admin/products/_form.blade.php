@@ -86,12 +86,32 @@
                     <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
                 </svg>${isUpdate ? 'Updating…' : 'Creating…'}`;
 
+            // Files picked in this save (main image, gallery, variant photos, download) or
+            // gallery images marked for removal — after such a save the form no longer
+            // matches the server (the picked files would otherwise be re-uploaded, and the
+            // gallery duplicated, on every following save).
+            const changedFiles = [...form.querySelectorAll('input[type=file]')].some((el) => el.files && el.files.length)
+                || !!form.querySelector('input[name="delete_images[]"]:not([disabled])');
+            const send = () => fetch(form.action, {
+                method: 'POST',
+                body: new FormData(form),
+                headers: { 'Accept': 'application/json' },
+            });
+
             try {
-                const res = await fetch(form.action, {
-                    method: 'POST',
-                    body: new FormData(form),
-                    headers: { 'Accept': 'application/json' },
-                });
+                let res = await send();
+
+                // 419 = the page's CSRF token expired (the edit page sat open past the
+                // session lifetime). Fetch a fresh token and retry once, so the admin's
+                // unsaved edits aren't lost; if the login itself expired, say so.
+                if (res.status === 419) {
+                    const fresh = await refreshCsrfToken();
+                    if (fresh === 'login') {
+                        productFormToast(false, 'Your login expired. Open the admin in a new tab, log in, then press Update again — your edits here are kept.', 9000);
+                        return;
+                    }
+                    if (fresh) res = await send();
+                }
 
                 if (res.status === 422) {
                     const body = await res.json();
@@ -100,12 +120,17 @@
                     return;
                 }
                 if (!res.ok) {
-                    productFormToast(false, 'Something went wrong — please try again.');
+                    productFormToast(false, await failureMessage(res), 9000);
                     return;
                 }
 
                 const result = await res.json();
-                if (isUpdate) {
+                if (isUpdate && changedFiles && window.Turbo) {
+                    // Reload the edit page from the server so new images show with their real
+                    // IDs and nothing gets re-uploaded on the next save; the toast survives it.
+                    try { sessionStorage.setItem('product-form-toast', result.message || 'Saved successfully.'); } catch (e) {}
+                    window.Turbo.visit(result.redirect || window.location.href, { action: 'replace' });
+                } else if (isUpdate) {
                     productFormToast(true, result.message || 'Saved successfully.');
                     if (result.redirect) window.history.replaceState(null, '', result.redirect);
                 } else if (result.redirect && window.Turbo) {
@@ -114,22 +139,57 @@
                     productFormToast(true, result.message || 'Saved successfully.');
                 }
             } catch (err) {
-                productFormToast(false, 'Network error — please try again.');
+                productFormToast(false, 'Network error — check your internet connection and try again. Your edits are still here.', 7000);
             } finally {
                 submitBtn.disabled = false;
                 submitBtn.innerHTML = originalLabel;
             }
         });
+
+        // Toast carried over a post-save reload (see changedFiles above).
+        try {
+            const pending = sessionStorage.getItem('product-form-toast');
+            if (pending) { sessionStorage.removeItem('product-form-toast'); productFormToast(true, pending); }
+        } catch (e) {}
+
+        async function refreshCsrfToken() {
+            try {
+                const r = await fetch(window.location.href, { headers: { 'Accept': 'text/html' }, credentials: 'same-origin' });
+                if (r.redirected && /\/login|two-factor/.test(r.url)) return 'login';
+                const m = (await r.text()).match(/<meta name="csrf-token" content="([^"]+)"/);
+                if (!m) return null;
+                document.querySelector('meta[name="csrf-token"]')?.setAttribute('content', m[1]);
+                form.querySelectorAll('input[name="_token"]').forEach((el) => { el.value = m[1]; });
+                return true;
+            } catch (e) {
+                return null;
+            }
+        }
+
+        // Says WHY a save failed instead of one generic message for every status code.
+        async function failureMessage(res) {
+            let detail = '';
+            try { const body = await res.clone().json(); detail = body.message && body.message !== 'Server Error' ? body.message : ''; } catch (e) {}
+            const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            switch (res.status) {
+                case 413: return 'The images you picked are too large to upload in one save — use smaller images (under 2 MB each) or add fewer at a time.';
+                case 401: case 419: return 'Your session expired — reload the page and log in again.';
+                case 403: return 'You don\'t have permission to edit this product.';
+                case 404: return 'This product no longer exists (it may have been deleted).';
+                case 429: return 'Too many saves in a short time — wait a few seconds and try again.';
+                default: return `Server error (${res.status}) — not saved.${detail ? ' ' + detail : ''} If it keeps happening, note the time (${time}) and report it.`;
+            }
+        }
     });
 
-    function productFormToast(success, message) {
+    function productFormToast(success, message, duration = 3500) {
         document.getElementById('product-form-toast')?.remove();
         const toast = document.createElement('div');
         toast.id = 'product-form-toast';
-        toast.className = `fixed top-20 right-5 z-[100] px-4 py-3 rounded-xl text-sm font-medium shadow-lg flex items-center gap-2 text-white ${success ? 'bg-green-600' : 'bg-red-600'}`;
+        toast.className = `fixed top-20 right-5 z-[100] max-w-sm px-4 py-3 rounded-xl text-sm font-medium shadow-lg flex items-center gap-2 text-white ${success ? 'bg-green-600' : 'bg-red-600'}`;
         toast.textContent = message;
         document.body.appendChild(toast);
-        setTimeout(() => toast.remove(), 3500);
+        setTimeout(() => toast.remove(), duration);
     }
 </script>
 @endpush

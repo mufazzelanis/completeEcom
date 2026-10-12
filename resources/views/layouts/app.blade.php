@@ -105,21 +105,25 @@ $htmlDir   = $currentLanguage->direction ?? 'ltr';
 // etc. (see products/show, shop/index, pages/show, blog/show) so every page gets unique meta
 // tags instead of the whole site sharing one description, while pages that don't bother to
 // override still get sensible non-empty tags for social shares and search snippets.
-$pageTitle       = trim($__env->yieldContent('title', setting('seo_meta_title', $siteName . ' – Online Store')));
-$pageDescription = trim($__env->yieldContent('meta_description', setting('seo_meta_description', $siteTagline)));
-$pageKeywords    = trim($__env->yieldContent('meta_keywords', setting('seo_keywords', '')));
-$pageCanonical   = trim($__env->yieldContent('canonical', url()->current()));
-$pageOgType      = trim($__env->yieldContent('og_type', 'website'));
-$pageOgImage     = trim($__env->yieldContent('og_image', $logoUrl ?: ''));
-$pageOgTitle     = trim($__env->yieldContent('og_title', $pageTitle));
-$pageOgDesc      = trim($__env->yieldContent('og_description', $pageDescription));
-$pageRobots      = trim($__env->yieldContent('robots', 'index, follow'));
+// yieldContent() HTML-escapes both an inline @section('title', $value) and its own default,
+// and the <title>/<meta> tags below escape again with {{ }} — so "Hand & Foot Cream" went out
+// as "Hand &amp;amp; Foot" (og:title even &amp;amp;amp;). Decode once here; the tags escape once.
+$meta = fn (string $section, $default = '') => html_entity_decode(trim($__env->yieldContent($section, $default)), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+$pageTitle       = $meta('title', (setting('seo_meta_title') ?: $siteName . ' – Online Shopping in Bangladesh'));
+$pageDescription = $meta('meta_description', setting('seo_meta_description', $siteTagline));
+$pageKeywords    = $meta('meta_keywords', setting('seo_keywords', ''));
+$pageCanonical   = $meta('canonical', url()->current());
+$pageOgType      = $meta('og_type', 'website');
+$pageOgImage     = $meta('og_image', $logoUrl ?: '');
+$pageOgTitle     = $meta('og_title', $pageTitle);
+$pageOgDesc      = $meta('og_description', $pageDescription);
+$pageRobots      = $meta('robots', 'index, follow');
 $ogSiteName      = setting('og_site_name') ?: $siteName;
 $twitterSite     = setting('og_twitter_user', '');
-$pageTwitterCard  = trim($__env->yieldContent('twitter_card', $pageOgImage ? 'summary_large_image' : 'summary'));
-$pageTwitterTitle = trim($__env->yieldContent('twitter_title', $pageTitle));
-$pageTwitterDesc  = trim($__env->yieldContent('twitter_description', $pageDescription));
-$pageTwitterImage = trim($__env->yieldContent('twitter_image', $pageOgImage));
+$pageTwitterCard  = $meta('twitter_card', $pageOgImage ? 'summary_large_image' : 'summary');
+$pageTwitterTitle = $meta('twitter_title', $pageTitle);
+$pageTwitterDesc  = $meta('twitter_description', $pageDescription);
+$pageTwitterImage = $meta('twitter_image', $pageOgImage);
 @endphp
 <!DOCTYPE html>
 <html lang="{{ $htmlLang }}" dir="{{ $htmlDir }}" class="scroll-smooth">
