@@ -610,24 +610,70 @@ $reviewThemes = [
 <div class="cv-auto mx-3 md:mx-0 mt-3 md:mt-4 bg-white dark:bg-gray-900 rounded-2xl md:rounded-none shadow-sm md:shadow-none">
     <div class="max-w-[1200px] mx-auto px-4 py-6">
         <x-storefront.section-header title="Top Brands" :view-all-url="route('brands.index')" />
-        <div class="carousel-container flex gap-3 overflow-x-auto scrollbar-hide pb-2 scroll-smooth reveal-group">
-            @foreach($brands as $brand)
-                {{-- Forced light tile (dark:bg-white/dark:border/dark:text below) rather than
-                     letting the site-wide dark-mode retrofit darken this one: brand logos are
-                     fixed-color artwork made for a light background, so a logo with a transparent
-                     background and dark-colored mark (e.g. Aveeno's) would otherwise vanish
-                     against the retrofit's near-black card — see resources/css/app.css's
-                     "Site-wide dark mode retrofit" comment, which calls out exactly this kind of
-                     spot as the one to carve out with its own selector. --}}
-                <a href="{{ route('shop.brand', $brand) }}"
-                   class="flex-shrink-0 w-32 h-20 bg-gray-50 dark:bg-white border border-gray-100 dark:border-gray-200 rounded-xl flex items-center justify-center hover:border-orange-300 hover:shadow-md dark:hover:shadow-black/30 transition-all duration-200 group">
-                    @if($brand->logo)
-                        <img src="{{ image_thumb($brand->logo, 200) }}" alt="{{ $brand->name }}" loading="lazy" decoding="async" class="max-w-[80%] max-h-[60%] object-contain group-hover:scale-105 transition">
-                    @else
-                        <span class="text-gray-500 dark:text-gray-500 font-bold text-sm group-hover:text-orange-700 transition">{{ $brand->name }}</span>
-                    @endif
-                </a>
-            @endforeach
+        {{-- carousel-container was a plain overflow-x-auto strip with no way to tell it
+             scrolled at all (no arrows, no motion) — "auto scroll doesn't work" because
+             there never was one. Auto-advances one page at a time, pauses the instant a
+             visitor touches/hovers it (so it never fights a manual scroll or swipe), and
+             the arrows disable+fade at either end instead of staying clickable past the
+             last brand. Edge fades hint there's more to scroll to without needing a
+             scrollbar, same "soft mask" treatment panels like this use elsewhere. --}}
+        <div class="relative"
+             x-data="{
+                atStart: true, atEnd: false, paused: false, timer: null,
+                init() {
+                    this.$nextTick(() => this.updateEdges());
+                    this.$refs.track.addEventListener('scroll', () => this.updateEdges(), { passive: true });
+                    this.timer = setInterval(() => { if (!this.paused) this.step(1, true); }, 3000);
+                },
+                updateEdges() {
+                    const el = this.$refs.track;
+                    this.atStart = el.scrollLeft <= 4;
+                    this.atEnd = el.scrollLeft + el.clientWidth >= el.scrollWidth - 4;
+                },
+                step(dir, auto = false) {
+                    const el = this.$refs.track;
+                    if (auto && this.atEnd) { el.scrollTo({ left: 0, behavior: 'smooth' }); return; }
+                    el.scrollBy({ left: dir * el.clientWidth * 0.8, behavior: 'smooth' });
+                },
+             }"
+             @mouseenter="paused = true" @mouseleave="paused = false"
+             @touchstart.passive="paused = true" @touchend.passive="setTimeout(() => paused = false, 2500)">
+            <div class="carousel-container flex gap-3 overflow-x-auto scrollbar-hide pb-2 scroll-smooth reveal-group" x-ref="track">
+                @foreach($brands as $brand)
+                    {{-- Forced light tile (dark:bg-white/dark:border/dark:text below) rather than
+                         letting the site-wide dark-mode retrofit darken this one: brand logos are
+                         fixed-color artwork made for a light background, so a logo with a transparent
+                         background and dark-colored mark (e.g. Aveeno's) would otherwise vanish
+                         against the retrofit's near-black card — see resources/css/app.css's
+                         "Site-wide dark mode retrofit" comment, which calls out exactly this kind of
+                         spot as the one to carve out with its own selector. --}}
+                    <a href="{{ route('shop.brand', $brand) }}"
+                       class="flex-shrink-0 w-32 h-20 bg-gray-50 dark:bg-white border border-gray-100 dark:border-gray-200 rounded-xl flex items-center justify-center hover:border-orange-300 hover:shadow-md dark:hover:shadow-black/30 transition-all duration-200 group">
+                        @if($brand->logo)
+                            <img src="{{ image_thumb($brand->logo, 200) }}" alt="{{ $brand->name }}" loading="lazy" decoding="async" class="max-w-[80%] max-h-[60%] object-contain group-hover:scale-105 transition">
+                        @else
+                            <span class="text-gray-500 dark:text-gray-500 font-bold text-sm group-hover:text-orange-700 transition">{{ $brand->name }}</span>
+                        @endif
+                    </a>
+                @endforeach
+            </div>
+
+            {{-- Edge fades — pointer-events-none so they never block the arrows/tiles
+                 sitting on top of them. Hidden once scrolled all the way to that edge,
+                 since "more content this way" would be a lie at that point. --}}
+            <div class="pointer-events-none absolute left-0 inset-y-0 top-0 bottom-2 w-10 bg-gradient-to-r from-white dark:from-gray-900 to-transparent transition-opacity duration-200" :class="atStart ? 'opacity-0' : 'opacity-100'"></div>
+            <div class="pointer-events-none absolute right-0 inset-y-0 top-0 bottom-2 w-10 bg-gradient-to-l from-white dark:from-gray-900 to-transparent transition-opacity duration-200" :class="atEnd ? 'opacity-0' : 'opacity-100'"></div>
+
+            {{-- Desktop only — mobile already swipes naturally, and a thumb-width circle
+                 sitting on top of the first/last tile there would cost more than it gives. --}}
+            <button type="button" @click="step(-1)" :disabled="atStart" :class="atStart ? 'opacity-0 pointer-events-none' : 'opacity-100'"
+                    class="hidden md:flex absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1/2 z-10 w-9 h-9 items-center justify-center rounded-full bg-white dark:bg-gray-800 shadow-lg ring-1 ring-black/5 dark:ring-white/10 text-gray-500 dark:text-gray-300 hover:text-orange-600 hover:shadow-xl active:scale-90 transition-all duration-200" aria-label="Scroll brands left">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"/></svg>
+            </button>
+            <button type="button" @click="step(1)" :disabled="atEnd" :class="atEnd ? 'opacity-0 pointer-events-none' : 'opacity-100'"
+                    class="hidden md:flex absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 z-10 w-9 h-9 items-center justify-center rounded-full bg-white dark:bg-gray-800 shadow-lg ring-1 ring-black/5 dark:ring-white/10 text-gray-500 dark:text-gray-300 hover:text-orange-600 hover:shadow-xl active:scale-90 transition-all duration-200" aria-label="Scroll brands right">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
+            </button>
         </div>
     </div>
 </div>
