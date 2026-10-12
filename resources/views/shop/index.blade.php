@@ -20,8 +20,8 @@
         ? (meaningful_seo($category->meta_title, $ownNames) ?? "{$shopHeading} Price in Bangladesh – Buy Online | {$siteName}")
         : (isset($currentBrand) ? "{$currentBrand->name} Products Price in Bangladesh | {$siteName}" : 'Shop');
     $shopSeoDesc  = isset($category)
-        ? (meaningful_seo($category->meta_description, $ownNames, 50) ?? ($shopIntroText ?: $shopFallbackDesc))
-        : (isset($currentBrand) ? ($shopIntroText ?: $shopFallbackDesc) : null);
+        ? (meaningful_seo($category->meta_description, $ownNames, 50) ?? (mb_strlen((string) $shopIntroText) >= 50 ? $shopIntroText : $shopFallbackDesc))
+        : (isset($currentBrand) ? (mb_strlen((string) $shopIntroText) >= 50 ? $shopIntroText : $shopFallbackDesc) : null);
     $shopSeoImage = isset($category) ? ($category->og_image ? Storage::url($category->og_image) : ($category->image ? Storage::url($category->image) : null))
         : (isset($currentBrand) && $currentBrand->logo ? Storage::url($currentBrand->logo) : null);
     $shopCanonical = isset($category) ? ($category->canonical_url ?: route('shop.category', $category))
