@@ -114,16 +114,19 @@ $pageTitle       = $meta('title', (setting('seo_meta_title') ?: $siteName . ' �
 // "Default Meta Description" wins when it's a real sentence; otherwise each page type gets
 // its own — every listing page used to share the same 44-char site tagline ("Your one-stop
 // shop for everything you need."), i.e. duplicate, uninformative snippets in Google.
-$defaultDescription = meaningful_seo(setting('seo_meta_description'), [$siteName], 50)
-    ?? match (true) {
-        request()->routeIs('shop.index')       => "Shop all original products at {$siteName} — baby care, skin care, health and food items with the best price, cash on delivery and fast delivery across Bangladesh.",
-        request()->routeIs('categories.index') => "Browse every product category at {$siteName}: baby care, skin care, health, food and more — original products, cash on delivery, fast delivery across Bangladesh.",
-        request()->routeIs('brands.index')     => "Shop original products from trusted international brands at {$siteName} — best prices, cash on delivery and fast delivery across Bangladesh.",
-        request()->routeIs('faq')              => "Answers to common questions about ordering, delivery, payment, returns and refunds at {$siteName}.",
-        request()->routeIs('contact')          => "Contact {$siteName} — call, message or email us about orders, delivery, products and returns. We're happy to help.",
-        default => meaningful_seo($siteTagline, [$siteName], 50)
-            ?? "{$siteName} — shop original products online in Bangladesh with the best prices, cash on delivery and fast delivery nationwide.",
-    };
+// Page-type texts come first: the admin's site-wide default is for the homepage (and any
+// page without a text of its own) — when it overrode these, six different pages went out
+// with the identical description (duplicate snippets in Google).
+$defaultDescription = match (true) {
+    request()->routeIs('shop.index')       => "Shop all original products at {$siteName} — baby care, skin care, health and food items with the best price, cash on delivery and fast delivery across Bangladesh.",
+    request()->routeIs('categories.index') => "Browse every product category at {$siteName}: baby care, skin care, health, food and more — original products, cash on delivery, fast delivery across Bangladesh.",
+    request()->routeIs('brands.index')     => "Shop original products from trusted international brands at {$siteName} — best prices, cash on delivery and fast delivery across Bangladesh.",
+    request()->routeIs('faq')              => "Answers to common questions about ordering, delivery, payment, returns and refunds at {$siteName}.",
+    request()->routeIs('contact')          => "Contact {$siteName} — call, message or email us about orders, delivery, products and returns. We're happy to help.",
+    default => meaningful_seo(setting('seo_meta_description'), [$siteName], 50)
+        ?? meaningful_seo($siteTagline, [$siteName], 50)
+        ?? "{$siteName} — shop original products online in Bangladesh with the best prices, cash on delivery and fast delivery nationwide.",
+};
 $pageDescription = $meta('meta_description', $defaultDescription);
 $pageKeywords    = $meta('meta_keywords', setting('seo_keywords', ''));
 $pageCanonical   = $meta('canonical', url()->current());
