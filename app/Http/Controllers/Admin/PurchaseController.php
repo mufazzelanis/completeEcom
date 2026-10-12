@@ -205,6 +205,9 @@ class PurchaseController extends Controller
             if ($qty <= 0) continue;
 
             $product = $item->product;
+            if (!$product) {
+                continue; // product deleted since the purchase was entered — nothing to restock
+            }
             $before  = $product->stock;
             $product->increment('stock', $qty);
 

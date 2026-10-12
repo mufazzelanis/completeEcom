@@ -58,7 +58,7 @@
             <tr class="hover:bg-gray-50 transition">
                 <td class="px-6 py-3 text-xs text-gray-500 whitespace-nowrap">{{ $adj->created_at->format('d M Y H:i') }}</td>
                 <td class="px-6 py-3">
-                    <p class="text-sm font-medium text-gray-900">{{ $adj->product->name }}</p>
+                    <p class="text-sm font-medium text-gray-900">{{ $adj->display_name }}</p>
                     @if($adj->reference)<p class="text-xs text-gray-400">{{ $adj->reference }}</p>@endif
                 </td>
                 <td class="px-6 py-3 text-center">

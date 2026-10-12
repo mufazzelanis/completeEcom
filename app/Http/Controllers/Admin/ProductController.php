@@ -412,35 +412,27 @@ class ProductController extends Controller
             return redirect()->route('admin.products.index')->with('success', 'Product deleted.');
         }
 
-        return redirect()->route('admin.products.index')->with('success',
-            "\"{$product->name}\" has purchase / stock-adjustment history, so it was archived instead of deleted — "
-            . 'it is now hidden from the store, search, sitemap and Google feed, and your inventory records stay intact. '
-            . 'Tip: set its Redirect URL (SEO tab) to send its old link to a similar product.');
+        return redirect()->route('admin.products.index')->with('error',
+            "\"{$product->name}\" couldn't be deleted because other records still depend on it, so it was deactivated instead.");
     }
 
     /**
-     * Deletes the product, or — when inventory records still point at it — archives it
-     * (deactivates it) instead. purchase_items and stock_adjustments reference products
-     * with ON DELETE RESTRICT on purpose: they're the store's purchase/stock ledger, and
-     * deleting them would silently rewrite past stock and cost reports. Previously the DB
-     * refused the delete and the admin just got a bare 500 page. Every other table either
-     * cascades or nulls its product_id, so those never block. Returns true if deleted.
+     * Deletes the product for real. Its stock-adjustment and purchase history survive on
+     * their own (they keep a copy of the product's name/SKU and their product_id is set to
+     * NULL — see the keep_inventory_ledger_when_products_are_deleted migration); orders keep
+     * their line items the same way. Only if some *other* table ever adds a RESTRICT key on
+     * products does this fall back to deactivating it, instead of the bare 500 page the
+     * admin used to get. Returns true if deleted.
      */
     private function deleteOrArchive(Product $product): bool
     {
-        $hasLedger = \Illuminate\Support\Facades\DB::table('purchase_items')->where('product_id', $product->id)->exists()
-            || \Illuminate\Support\Facades\DB::table('stock_adjustments')->where('product_id', $product->id)->exists();
+        try {
+            $product->delete();
 
-        if (!$hasLedger) {
-            try {
-                $product->delete();
-
-                return true;
-            } catch (\Illuminate\Database\QueryException $e) {
-                // Any other RESTRICT foreign key added later — archive rather than crash.
-                if (($e->errorInfo[1] ?? null) !== 1451) {
-                    throw $e;
-                }
+            return true;
+        } catch (\Illuminate\Database\QueryException $e) {
+            if (($e->errorInfo[1] ?? null) !== 1451) {
+                throw $e;
             }
         }
 
@@ -528,7 +520,7 @@ class ProductController extends Controller
             'feature' => "$count product(s) marked as Featured.",
             'unfeature' => "$count product(s) unmarked as Featured.",
             'delete' => ($count - $archived) . ' product(s) deleted.'
-                . ($archived ? " $archived had purchase / stock history, so they were archived (hidden from the store) instead — inventory records kept." : ''),
+                . ($archived ? " $archived couldn't be deleted (other records depend on them), so they were deactivated instead." : ''),
         ];
 
         return redirect()->route('admin.products.index')->with('success', $messages[$validated['bulk_action']]);

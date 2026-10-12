@@ -60,6 +60,14 @@ class Product extends Model
                 $product->slug = Str::slug($product->name);
             }
         });
+        // Last chance to name any inventory-ledger row that doesn't carry its own copy yet
+        // (e.g. inserted by raw query) before ON DELETE SET NULL detaches it from this product.
+        static::deleting(function ($product) {
+            foreach (['stock_adjustments', 'purchase_items'] as $table) {
+                \Illuminate\Support\Facades\DB::table($table)->where('product_id', $product->id)->whereNull('product_name')
+                    ->update(['product_name' => $product->name, 'product_sku' => $product->sku]);
+            }
+        });
     }
 
     // Sanitized on write, not read — description is rendered unescaped

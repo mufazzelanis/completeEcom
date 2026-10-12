@@ -46,8 +46,8 @@
                         @foreach($purchase->items as $item)
                         <tr>
                             <td class="px-6 py-3">
-                                <p class="text-sm font-medium text-gray-900">{{ $item->product->name }}</p>
-                                @if($item->product->sku)<p class="text-xs text-gray-400">{{ $item->product->sku }}</p>@endif
+                                <p class="text-sm font-medium text-gray-900">{{ $item->display_name }}</p>
+                                @if($item->product?->sku ?? $item->product_sku)<p class="text-xs text-gray-400">{{ $item->product?->sku ?? $item->product_sku }}</p>@endif
                             </td>
                             <td class="px-6 py-3 text-center text-sm text-gray-700">{{ $item->quantity_ordered }}</td>
                             <td class="px-6 py-3 text-center text-sm {{ $item->quantity_received >= $item->quantity_ordered ? 'text-green-600 font-medium' : 'text-gray-500' }}">
@@ -151,7 +151,7 @@
                 <tbody class="divide-y divide-gray-50">
                     @foreach($purchase->items as $item)
                     <tr>
-                        <td class="py-2 text-sm text-gray-800">{{ $item->product->name }}</td>
+                        <td class="py-2 text-sm text-gray-800">{{ $item->display_name }}</td>
                         <td class="py-2 text-center text-sm text-gray-500">{{ $item->quantity_ordered }}</td>
                         <td class="py-2 text-center">
                             <input type="number" name="quantities[{{ $item->id }}]"
