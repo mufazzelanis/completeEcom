@@ -96,6 +96,37 @@ class SitemapController extends Controller
             'Disallow: /cart',
             'Disallow: /checkout',
             'Disallow: /account',
+            // Faceted navigation: every filter/sort/search combination on the shop is its own
+            // URL (?sort=, ?brand=…&min_price=…, ?search=…) — thousands of near-duplicates that
+            // all canonicalize back to /shop. Search Console showed ~1,900 such "not indexed"
+            // URLs eating the crawl budget that should go to real product/category pages.
+            // Plain /shop, /shop/category/… (incl. ?page=), /brand/…, products and blog stay open.
+            'Disallow: /shop?',
+            'Disallow: /*?*sort=',
+            'Disallow: /*?*search=',
+            'Disallow: /*?*min_price=',
+            'Disallow: /*?*max_price=',
+            'Disallow: /*?*in_stock=',
+            'Disallow: /*?*on_sale=',
+            'Disallow: /*?*featured=',
+            'Disallow: /*?*tag=',
+            // Utility / per-customer pages with nothing worth ranking. Root-level ones are
+            // anchored with $ (exact page) or a trailing / (only what's under it) — landing
+            // pages also live at the root (/{slug}), and a bare prefix like "/login" would
+            // silently block a future landing page slugged "login-offer" too.
+            'Disallow: /search/',
+            'Disallow: /home-sections/',
+            'Disallow: /auth/',
+            'Disallow: /reset-password/',
+            'Disallow: /verify-email/',
+            'Disallow: /orders/',
+            'Disallow: /track-order/',
+            'Disallow: /email/',
+            'Disallow: /newsletter/',
+            ...array_map(fn ($page) => "Disallow: /{$page}$", [
+                'login', 'register', 'forgot-password', 'verify-email', 'two-factor-challenge',
+                'confirm-password', 'profile', 'orders', 'wishlist', 'track-order',
+            ]),
         ];
 
         if (setting('sitemap_enabled', '1') === '1') {
