@@ -1,6 +1,6 @@
 @extends('layouts.app')
 @section('title', 'Blog')
-@section('meta_description', setting('blog_meta_description', 'News, guides, and updates from ' . setting('site_name', 'ShopVista') . '.'))
+@section('meta_description', meaningful_seo(setting('blog_meta_description'), [], 50) ?? 'Guides, tips and product advice from ' . setting('site_name', 'ShopVista') . ' — baby care, skin care, health and online shopping in Bangladesh.')
 
 @push('meta')
 {{-- Blog listing structured data — helps Google understand this is a genuine content

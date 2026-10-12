@@ -110,7 +110,21 @@ $htmlDir   = $currentLanguage->direction ?? 'ltr';
 // as "Hand &amp;amp; Foot" (og:title even &amp;amp;amp;). Decode once here; the tags escape once.
 $meta = fn (string $section, $default = '') => html_entity_decode(trim($__env->yieldContent($section, $default)), ENT_QUOTES | ENT_HTML5, 'UTF-8');
 $pageTitle       = $meta('title', (setting('seo_meta_title') ?: $siteName . ' – Online Shopping in Bangladesh'));
-$pageDescription = $meta('meta_description', setting('seo_meta_description', $siteTagline));
+// Default description for pages that don't set their own. The admin's Settings → SEO
+// "Default Meta Description" wins when it's a real sentence; otherwise each page type gets
+// its own — every listing page used to share the same 44-char site tagline ("Your one-stop
+// shop for everything you need."), i.e. duplicate, uninformative snippets in Google.
+$defaultDescription = meaningful_seo(setting('seo_meta_description'), [$siteName], 50)
+    ?? match (true) {
+        request()->routeIs('shop.index')       => "Shop all original products at {$siteName} — baby care, skin care, health and food items with the best price, cash on delivery and fast delivery across Bangladesh.",
+        request()->routeIs('categories.index') => "Browse every product category at {$siteName}: baby care, skin care, health, food and more — original products, cash on delivery, fast delivery across Bangladesh.",
+        request()->routeIs('brands.index')     => "Shop original products from trusted international brands at {$siteName} — best prices, cash on delivery and fast delivery across Bangladesh.",
+        request()->routeIs('faq')              => "Answers to common questions about ordering, delivery, payment, returns and refunds at {$siteName}.",
+        request()->routeIs('contact')          => "Contact {$siteName} — call, message or email us about orders, delivery, products and returns. We're happy to help.",
+        default => meaningful_seo($siteTagline, [$siteName], 50)
+            ?? "{$siteName} — shop original products online in Bangladesh with the best prices, cash on delivery and fast delivery nationwide.",
+    };
+$pageDescription = $meta('meta_description', $defaultDescription);
 $pageKeywords    = $meta('meta_keywords', setting('seo_keywords', ''));
 $pageCanonical   = $meta('canonical', url()->current());
 $pageOgType      = $meta('og_type', 'website');

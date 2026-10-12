@@ -39,12 +39,20 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ $landingPage->meta_title ?: $landingPage->title }}</title>
-    @if($landingPage->meta_description)<meta name="description" content="{{ $landingPage->meta_description }}">@endif
+    {{-- Admin's meta description when it's a real sentence, else the hero subheading or the
+         page's own copy — ad landing pages were going out with no description at all. --}}
+    @php
+        $lpDescription = meaningful_seo($landingPage->meta_description, [$landingPage->title], 50)
+            ?? meaningful_seo($landingPage->hero_subheading, [$landingPage->title], 50)
+            ?? (meaningful_seo($landingPage->content, [$landingPage->title], 50) ? Str::limit(meaningful_seo($landingPage->content, []), 155, '…') : null)
+            ?? "Order {$landingPage->title} from {$siteName} — cash on delivery and fast delivery across Bangladesh.";
+    @endphp
+    <meta name="description" content="{{ $lpDescription }}">
     @if($faviconUrl)<link rel="icon" href="{{ $faviconUrl }}">@endif
 
     {{-- Open Graph — landing pages are built to be shared/clicked from ads, so these matter --}}
     <meta property="og:title" content="{{ $landingPage->meta_title ?: $landingPage->title }}">
-    @if($landingPage->meta_description)<meta property="og:description" content="{{ $landingPage->meta_description }}">@endif
+    <meta property="og:description" content="{{ $lpDescription }}">
     @php $ogImg = $landingPage->og_image ?? $landingPage->hero_image; @endphp
     @if($ogImg)<meta property="og:image" content="{{ Storage::url($ogImg) }}">@endif
     <meta property="og:type" content="website">

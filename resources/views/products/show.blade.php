@@ -7,7 +7,7 @@
     $ownNames = [$product->name, $product->category?->name, $product->subcategory?->name];
     $customTitle = meaningful_seo($product->meta_title, $ownNames);
     $customDesc = meaningful_seo($product->meta_description, $ownNames, 50);
-    $shortDesc = meaningful_seo($product->short_description, $ownNames, 40);
+    $shortDesc = meaningful_seo($product->short_description, $ownNames, 50);
 
     $seoTitle = $customTitle ?? "{$product->name} Price in Bangladesh | {$siteName}";
     $seoDesc = match (true) {
