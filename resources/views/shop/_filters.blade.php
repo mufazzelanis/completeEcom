@@ -63,14 +63,18 @@
             <svg class="w-3.5 h-3.5 transition-transform" :class="expanded ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
         </button>
         <div x-show="expanded" class="space-y-1.5 max-h-40 overflow-y-auto pr-1">
+            {{-- request()->query('brand'), not request('brand') — on /brand/{brand} the route
+                 parameter is also named "brand", so the plain helper resolved the bound Brand
+                 model instead of the (absent) query string there, and no slug ever matched it:
+                 every radio here silently showed unchecked on a page that's visiting a brand. --}}
             <label class="flex items-center gap-2 cursor-pointer py-0.5">
-                <input type="radio" name="brand" value="" {{ !(request('brand') ?? ($currentBrand->slug ?? null)) ? 'checked' : '' }} class="text-orange-500">
+                <input type="radio" name="brand" value="" {{ !(request()->query('brand') ?? ($currentBrand->slug ?? null)) ? 'checked' : '' }} class="text-orange-500">
                 <span class="text-sm text-gray-600">All Brands</span>
             </label>
             @foreach($brands as $brand)
                 <label class="flex items-center gap-2 cursor-pointer py-0.5">
                     <input type="radio" name="brand" value="{{ $brand->slug }}"
-                        {{ (request('brand') ?? ($currentBrand->slug ?? null)) === $brand->slug ? 'checked' : '' }} class="text-orange-500">
+                        {{ (request()->query('brand') ?? ($currentBrand->slug ?? null)) === $brand->slug ? 'checked' : '' }} class="text-orange-500">
                     <span class="text-sm text-gray-600">{{ $brand->name }}</span>
                 </label>
             @endforeach

@@ -96,16 +96,25 @@
     </div>
 
     @php
+        /* request()->query(...) everywhere, not the plain request(...) helper — on
+           /brand/{brand} the route parameter is also literally named "brand", and
+           request('brand') resolves THAT (the bound Brand model) ahead of the query
+           string when there's no ?brand= in the URL. Concatenating a model into a
+           string trips its __toString() (Eloquent's JSON dump), rendered straight into
+           the page as 'Brand: {"id":1,"name":"AVEENO",...}' — exactly what got
+           reported. ->query() only ever reads the actual query string, same fix
+           'category' already had (it sits on the same kind of route, /shop/category/
+           {category}, but was written safely from the start). */
         $activeFilters = collect([
-            'search'   => request('search') ? 'Search: "'.request('search').'"' : null,
+            'search'   => request()->query('search') ? 'Search: "'.request()->query('search').'"' : null,
             'category' => request()->query('category') ? 'Category: '.request()->query('category') : null,
-            'brand'    => request('brand') ? 'Brand: '.request('brand') : null,
-            'tag'      => request('tag') ? 'Tag: '.request('tag') : null,
-            'min_price'=> request('min_price') ? 'Min ৳'.request('min_price') : null,
-            'max_price'=> request('max_price') ? 'Max ৳'.request('max_price') : null,
-            'featured' => request('featured') ? 'Featured Only' : null,
-            'in_stock' => request('in_stock') ? 'In Stock Only' : null,
-            'on_sale'  => request('on_sale') ? 'On Sale Only' : null,
+            'brand'    => request()->query('brand') ? 'Brand: '.request()->query('brand') : null,
+            'tag'      => request()->query('tag') ? 'Tag: '.request()->query('tag') : null,
+            'min_price'=> request()->query('min_price') ? 'Min ৳'.request()->query('min_price') : null,
+            'max_price'=> request()->query('max_price') ? 'Max ৳'.request()->query('max_price') : null,
+            'featured' => request()->query('featured') ? 'Featured Only' : null,
+            'in_stock' => request()->query('in_stock') ? 'In Stock Only' : null,
+            'on_sale'  => request()->query('on_sale') ? 'On Sale Only' : null,
         ])->filter()->count();
     @endphp
 
@@ -144,9 +153,9 @@
             @if($activeFilters > 0)
             <div class="flex flex-wrap items-center gap-2 mb-4">
                 <span class="text-xs text-gray-500 font-medium">Active:</span>
-                @if(request('search'))
+                @if(request()->query('search'))
                     <span class="inline-flex items-center gap-1 px-2.5 py-1 bg-orange-50 text-orange-700 rounded-full text-xs font-medium">
-                        "{{ request('search') }}"
+                        "{{ request()->query('search') }}"
                         <a href="{{ request()->fullUrlWithQuery(['search' => null, 'page' => null]) }}" class="hover:text-orange-900">&times;</a>
                     </span>
                 @endif
@@ -156,31 +165,34 @@
                         <a href="{{ request()->fullUrlWithQuery(['category' => null, 'page' => null]) }}" class="hover:text-orange-900">&times;</a>
                     </span>
                 @endif
-                @if(request('brand'))
+                {{-- request()->query(), not request() — see the comment above $activeFilters;
+                     this is the exact chip that was rendering the raw Brand model as JSON on
+                     /brand/{brand} pages. --}}
+                @if(request()->query('brand'))
                     <span class="inline-flex items-center gap-1 px-2.5 py-1 bg-orange-50 text-orange-700 rounded-full text-xs font-medium">
-                        Brand: {{ request('brand') }}
+                        Brand: {{ request()->query('brand') }}
                         <a href="{{ request()->fullUrlWithQuery(['brand' => null, 'page' => null]) }}" class="hover:text-orange-900">&times;</a>
                     </span>
                 @endif
-                @if(request('tag'))
+                @if(request()->query('tag'))
                     <span class="inline-flex items-center gap-1 px-2.5 py-1 bg-orange-50 text-orange-700 rounded-full text-xs font-medium">
-                        #{{ request('tag') }}
+                        #{{ request()->query('tag') }}
                         <a href="{{ request()->fullUrlWithQuery(['tag' => null, 'page' => null]) }}" class="hover:text-orange-900">&times;</a>
                     </span>
                 @endif
-                @if(request('on_sale'))
+                @if(request()->query('on_sale'))
                     <span class="inline-flex items-center gap-1 px-2.5 py-1 bg-red-50 text-red-600 rounded-full text-xs font-medium">
                         On Sale
                         <a href="{{ request()->fullUrlWithQuery(['on_sale' => null, 'page' => null]) }}" class="hover:text-red-800">&times;</a>
                     </span>
                 @endif
-                @if(request('in_stock'))
+                @if(request()->query('in_stock'))
                     <span class="inline-flex items-center gap-1 px-2.5 py-1 bg-green-50 text-green-600 rounded-full text-xs font-medium">
                         In Stock
                         <a href="{{ request()->fullUrlWithQuery(['in_stock' => null, 'page' => null]) }}" class="hover:text-green-800">&times;</a>
                     </span>
                 @endif
-                @if(request('featured'))
+                @if(request()->query('featured'))
                     <span class="inline-flex items-center gap-1 px-2.5 py-1 bg-yellow-50 text-yellow-700 rounded-full text-xs font-medium">
                         Featured
                         <a href="{{ request()->fullUrlWithQuery(['featured' => null, 'page' => null]) }}" class="hover:text-yellow-900">&times;</a>
