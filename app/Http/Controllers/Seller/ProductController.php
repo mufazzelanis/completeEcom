@@ -115,7 +115,17 @@ class ProductController extends Controller
             return back()->with('error', 'Cannot delete a product that has already been ordered.');
         }
 
-        $product->delete();
+        try {
+            $product->delete();
+        } catch (\Illuminate\Database\QueryException $e) {
+            // Purchase / stock-adjustment records reference products with ON DELETE RESTRICT
+            // (the store's inventory ledger) — refuse cleanly instead of a 500 page.
+            if (($e->errorInfo[1] ?? null) !== 1451) {
+                throw $e;
+            }
+
+            return back()->with('error', 'This product has stock / purchase history, so it can\'t be deleted. Mark it inactive instead.');
+        }
 
         return back()->with('success', 'Product deleted.');
     }

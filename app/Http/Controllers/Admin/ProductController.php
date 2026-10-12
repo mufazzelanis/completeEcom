@@ -408,8 +408,45 @@ class ProductController extends Controller
 
     public function destroy(Product $product)
     {
-        $product->delete();
-        return redirect()->route('admin.products.index')->with('success', 'Product deleted.');
+        if ($this->deleteOrArchive($product)) {
+            return redirect()->route('admin.products.index')->with('success', 'Product deleted.');
+        }
+
+        return redirect()->route('admin.products.index')->with('success',
+            "\"{$product->name}\" has purchase / stock-adjustment history, so it was archived instead of deleted — "
+            . 'it is now hidden from the store, search, sitemap and Google feed, and your inventory records stay intact. '
+            . 'Tip: set its Redirect URL (SEO tab) to send its old link to a similar product.');
+    }
+
+    /**
+     * Deletes the product, or — when inventory records still point at it — archives it
+     * (deactivates it) instead. purchase_items and stock_adjustments reference products
+     * with ON DELETE RESTRICT on purpose: they're the store's purchase/stock ledger, and
+     * deleting them would silently rewrite past stock and cost reports. Previously the DB
+     * refused the delete and the admin just got a bare 500 page. Every other table either
+     * cascades or nulls its product_id, so those never block. Returns true if deleted.
+     */
+    private function deleteOrArchive(Product $product): bool
+    {
+        $hasLedger = \Illuminate\Support\Facades\DB::table('purchase_items')->where('product_id', $product->id)->exists()
+            || \Illuminate\Support\Facades\DB::table('stock_adjustments')->where('product_id', $product->id)->exists();
+
+        if (!$hasLedger) {
+            try {
+                $product->delete();
+
+                return true;
+            } catch (\Illuminate\Database\QueryException $e) {
+                // Any other RESTRICT foreign key added later — archive rather than crash.
+                if (($e->errorInfo[1] ?? null) !== 1451) {
+                    throw $e;
+                }
+            }
+        }
+
+        $product->update(['is_active' => false, 'is_featured' => false]);
+
+        return false;
     }
 
     /**
@@ -467,12 +504,22 @@ class ProductController extends Controller
         $query = Product::whereIn('id', $validated['ids']);
         $count = count($validated['ids']);
 
+        // Delete goes product by product (not one bulk query) so a single product with
+        // inventory history no longer fails the whole batch with a 500 — it's archived
+        // instead (see deleteOrArchive) — and model events (cache refresh) still fire.
+        $archived = 0;
+        if ($validated['bulk_action'] === 'delete') {
+            foreach ($query->get() as $product) {
+                $archived += $this->deleteOrArchive($product) ? 0 : 1;
+            }
+        }
+
         match ($validated['bulk_action']) {
             'activate' => $query->update(['is_active' => true]),
             'deactivate' => $query->update(['is_active' => false]),
             'feature' => $query->update(['is_featured' => true]),
             'unfeature' => $query->update(['is_featured' => false]),
-            'delete' => $query->delete(),
+            'delete' => null,
         };
 
         $messages = [
@@ -480,7 +527,8 @@ class ProductController extends Controller
             'deactivate' => "$count product(s) deactivated.",
             'feature' => "$count product(s) marked as Featured.",
             'unfeature' => "$count product(s) unmarked as Featured.",
-            'delete' => "$count product(s) deleted.",
+            'delete' => ($count - $archived) . ' product(s) deleted.'
+                . ($archived ? " $archived had purchase / stock history, so they were archived (hidden from the store) instead — inventory records kept." : ''),
         ];
 
         return redirect()->route('admin.products.index')->with('success', $messages[$validated['bulk_action']]);
