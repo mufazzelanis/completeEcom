@@ -1,7 +1,9 @@
 @extends('layouts.app')
 @php
-    $seoTitle = $blogPost->meta_title ?: $blogPost->title;
-    $seoDesc  = $blogPost->meta_description ?: $blogPost->excerpt;
+    $seoTitle = meaningful_seo($blogPost->meta_title, [$blogPost->title]) ?? $blogPost->title;
+    $seoDesc  = meaningful_seo($blogPost->meta_description, [$blogPost->title], 50)
+        ?? meaningful_seo($blogPost->excerpt, [$blogPost->title], 50)
+        ?? Str::limit(trim(preg_replace('/\s+/u', ' ', strip_tags((string) $blogPost->content))), 155, '…');
     $seoImage = $blogPost->image ? Storage::url($blogPost->image) : null;
     $canonicalUrl = route('blog.show', $blogPost);
     // ~200 words/minute, floored at 1 so a very short post still reads as "1 min read"
@@ -91,7 +93,7 @@
                  the article body specifically would stay dark, hard-to-read text regardless of
                  everything else on the page correctly going dark. --}}
             <div class="prose prose-gray dark:prose-invert max-w-none leading-relaxed">
-                {!! $blogPost->content !!}
+                {!! demote_h1($blogPost->content) !!}
             </div>
 
             {{-- Kept below the article body (not stacked with the AdSense in-article unit

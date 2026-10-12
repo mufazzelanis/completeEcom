@@ -5,16 +5,22 @@
     // filled in — a bare "FOREIGN FOODS" title and the site-wide tagline as description
     // give Google nothing to rank or show. Admin-entered meta_title/description still win.
     $shopHeading = isset($category) ? Str::title(Str::lower($category->name)) : (isset($currentBrand) ? $currentBrand->name : 'Shop');
-    $shopIntro   = isset($category) ? $category->description : (isset($currentBrand) ? $currentBrand->description : null);
-    $shopIntroText = trim(Str::limit(preg_replace('/\s+/', ' ', strip_tags((string) $shopIntro)), 155, '…'));
+    // Admin text that's only the page's own name (category description "Baby Store") or too
+    // short to be a real description (a brand whose description was set to a category name)
+    // is ignored — see meaningful_seo(). Real descriptions show as intro copy and feed the
+    // meta description; otherwise the formulas below take over.
+    $ownNames    = array_filter([$category->name ?? null, $category->parent->name ?? null, $currentBrand->name ?? null]);
+    $shopIntro   = meaningful_seo(isset($category) ? $category->description : ($currentBrand->description ?? null), $ownNames, 25)
+        ? (isset($category) ? $category->description : $currentBrand->description) : null;
+    $shopIntroText = $shopIntro ? Str::limit(meaningful_seo($shopIntro, $ownNames), 155, '…') : null;
     $shopFallbackDesc = isset($currentBrand)
         ? "Buy original {$currentBrand->name} products online in Bangladesh at {$siteName}. Best price, cash on delivery and fast delivery across Bangladesh."
         : "Shop {$shopHeading} online in Bangladesh at {$siteName}. Original products, best price, cash on delivery and fast delivery across Bangladesh.";
     $shopSeoTitle = isset($category)
-        ? ($category->meta_title ?: "{$shopHeading} Price in Bangladesh – Buy Online | {$siteName}")
+        ? (meaningful_seo($category->meta_title, $ownNames) ?? "{$shopHeading} Price in Bangladesh – Buy Online | {$siteName}")
         : (isset($currentBrand) ? "{$currentBrand->name} Products Price in Bangladesh | {$siteName}" : 'Shop');
     $shopSeoDesc  = isset($category)
-        ? ($category->meta_description ?: ($shopIntroText ?: $shopFallbackDesc))
+        ? (meaningful_seo($category->meta_description, $ownNames, 50) ?? ($shopIntroText ?: $shopFallbackDesc))
         : (isset($currentBrand) ? ($shopIntroText ?: $shopFallbackDesc) : null);
     $shopSeoImage = isset($category) ? ($category->og_image ? Storage::url($category->og_image) : ($category->image ? Storage::url($category->image) : null))
         : (isset($currentBrand) && $currentBrand->logo ? Storage::url($currentBrand->logo) : null);

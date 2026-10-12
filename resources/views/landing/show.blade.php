@@ -376,7 +376,7 @@
             <div class="relative bg-white rounded-3xl shadow-[0_12px_40px_-16px_rgba(0,0,0,0.18)] ring-1 ring-gray-100 overflow-hidden">
                 <div class="h-1.5" style="background: linear-gradient(90deg, {{ $primary }}, {{ $primaryDark }}, {{ $primary }}55);"></div>
                 <div class="lp-content px-5 py-6" style="--lp-primary: {{ $primary }};">
-                    {!! $landingPage->content !!}
+                    {!! demote_h1($landingPage->content) !!}
                 </div>
             </div>
         </div>

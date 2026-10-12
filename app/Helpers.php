@@ -481,6 +481,46 @@ if (!function_exists('brand_palette_css')) {
     }
 }
 
+if (!function_exists('meaningful_seo')) {
+    /**
+     * An admin-entered meta title/description, or null when it carries no real information —
+     * blank, just the page's own name (or a shortened piece of it: a product renamed to
+     * "…POWDER-598g" whose old meta title still reads "…POWDER"), or, with $minLength, too
+     * short to work as a search snippet. Live data had plenty of these (category description
+     * "Baby Store", page description "Privacy Policy"), all of which made worse SEO text than
+     * the automatic formulas the callers fall back to.
+     */
+    function meaningful_seo(?string $value, array $ownNames, int $minLength = 0): ?string
+    {
+        $value = trim(preg_replace('/\s+/u', ' ', strip_tags((string) $value)));
+        $norm = fn ($s) => preg_replace('/[^\p{L}\p{N}]+/u', '', mb_strtolower((string) $s));
+        $key = $norm($value);
+        if ($key === '' || mb_strlen($value) < $minLength) {
+            return null;
+        }
+        foreach ($ownNames as $name) {
+            if ($name && str_contains($norm($name), $key)) {
+                return null;
+            }
+        }
+
+        return $value;
+    }
+}
+
+if (!function_exists('demote_h1')) {
+    /**
+     * Turns <h1> inside admin-written rich text (blog posts, pages, product descriptions,
+     * landing content) into <h2>. Each page already has its own single H1 (the post/product
+     * title); writers using "Heading 1" for every section left blog posts with 44–82 H1s,
+     * which muddles what the page is about for search engines.
+     */
+    function demote_h1(?string $html): string
+    {
+        return preg_replace('/<(\/?)h1(?=[\s>])/i', '<$1h2', (string) $html);
+    }
+}
+
 if (!function_exists('custom_text_color')) {
     /**
      * Settings → Branding → Text Color, or null when it's the default or unreadable. It lands

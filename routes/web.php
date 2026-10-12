@@ -384,7 +384,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::patch('products/{product}/reject', [AdminProductController::class, 'reject'])->name('products.reject');
 
     // Brands
-    Route::resource('brands', AdminBrandController::class);
+    Route::resource('brands', AdminBrandController::class)->except(['show']); // no admin brand detail screen
     Route::patch('brands/{brand}/move-up', [AdminBrandController::class, 'moveUp'])->name('brands.move-up');
     Route::patch('brands/{brand}/move-down', [AdminBrandController::class, 'moveDown'])->name('brands.move-down');
 
@@ -396,7 +396,8 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::patch('attributes/{attribute}/toggle', [AdminAttributeController::class, 'toggle'])->name('attributes.toggle');
 
     // Tags
-    Route::resource('tags', AdminTagController::class)->except(['show']);
+    // Tags are added/edited inline on the index page — there are no create/edit screens.
+    Route::resource('tags', AdminTagController::class)->except(['show', 'create', 'edit']);
     Route::post('tags/quick-create', [AdminTagController::class, 'quickCreate'])->name('tags.quick-create');
     // Manual/phone order entry — MUST be registered before the orders resource below:
     // that resource's 'show' route is GET orders/{order}, a wildcard that would otherwise

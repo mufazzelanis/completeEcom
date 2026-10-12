@@ -55,7 +55,7 @@
         <div class="space-y-6">
             @if($page?->content)
             <div class="prose prose-gray dark:prose-invert text-gray-600 text-sm">
-                {!! $page->content !!}
+                {!! demote_h1($page->content) !!}
             </div>
             @else
             <div class="bg-gray-50 rounded-2xl p-6 space-y-4">
