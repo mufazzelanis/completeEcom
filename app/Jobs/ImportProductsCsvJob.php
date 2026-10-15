@@ -2,15 +2,19 @@
 
 namespace App\Jobs;
 
+use App\Http\Controllers\HomeController;
 use App\Models\BulkImport;
 use App\Models\Brand;
 use App\Models\Category;
 use App\Models\Product;
+use App\Services\Catalog\ProductMatcher;
+use App\Support\ImageOptimizer;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -53,6 +57,12 @@ class ImportProductsCsvJob implements ShouldQueue
                 'status'      => 'completed',
                 'finished_at' => now(),
             ]);
+
+            // Product::insert() fires no model events, so the homepage cache (normally
+            // invalidated on Product::created) is refreshed here, once for the whole file.
+            if ($import->fresh()->created_count > 0) {
+                Cache::forever(HomeController::CACHE_VERSION_KEY, (int) Cache::get(HomeController::CACHE_VERSION_KEY, 1) + 1);
+            }
         } catch (\Throwable $e) {
             $import->update([
                 'status'      => 'failed',
@@ -173,6 +183,37 @@ class ImportProductsCsvJob implements ShouldQueue
             ->map(fn ($b) => $b->id)
             ->toArray();
 
+        // Duplicate guard: a row is skipped when its SKU or its name+size already exists —
+        // in the store or earlier in this same file — so uploading a CSV twice (or one that
+        // repeats a product) never creates the same product again.
+        $matcher = new ProductMatcher();
+        $knownSkus = [];
+        $knownNames = []; // sizes|numbers signature => [[fingerprint, label], …]
+        $remember = function (string $name, ?string $sku, string $label) use ($matcher, &$knownSkus, &$knownNames) {
+            if ($sku !== null && $sku !== '') {
+                $knownSkus[mb_strtolower($sku)] = $label;
+            }
+            $fp = $matcher->fingerprint($name);
+            $knownNames[implode(',', $fp['sizes']) . '|' . implode(',', $fp['numbers'])][] = [$fp, $label];
+        };
+        foreach (Product::query()->get(['id', 'name', 'sku']) as $p) {
+            $remember($p->name, $p->sku, "#{$p->id} {$p->name}");
+        }
+        $findDuplicate = function (string $name, string $sku) use ($matcher, &$knownSkus, &$knownNames): ?string {
+            if ($sku !== '' && isset($knownSkus[mb_strtolower($sku)])) {
+                return $knownSkus[mb_strtolower($sku)] . ' (same SKU)';
+            }
+            $fp = $matcher->fingerprint($name);
+            // only same-size/same-number products can match, so compare within that group
+            foreach ($knownNames[implode(',', $fp['sizes']) . '|' . implode(',', $fp['numbers'])] ?? [] as [$other, $label]) {
+                if ($matcher->isSame($fp, $other)) {
+                    return $label;
+                }
+            }
+
+            return null;
+        };
+
         $usedSlugs           = [];
         $pending             = [];
         $errors              = [];
@@ -192,6 +233,13 @@ class ImportProductsCsvJob implements ShouldQueue
 
             if ($name === '' || !is_numeric($price)) {
                 $errors[] = "Row {$row}: name or price missing/invalid.";
+                $skippedCount++;
+                continue;
+            }
+
+            $sku = $get($data, 'sku');
+            if ($duplicateOf = $findDuplicate($name, $sku)) {
+                $errors[] = "Row {$row}: '{$name}' already exists as {$duplicateOf} — skipped.";
                 $skippedCount++;
                 continue;
             }
@@ -258,10 +306,13 @@ class ImportProductsCsvJob implements ShouldQueue
             $weight = $get($data, 'weight');
             $lowStock = $get($data, 'low_stock_threshold');
 
+            $remember($name, $sku, "row {$row} of this file");
+            $description = $get($data, 'description');
+
             $pending[] = [
                 'slug_base'           => Str::slug($name),
                 'name'                => $name,
-                'sku'                 => $get($data, 'sku') ?: null,
+                'sku'                 => $sku ?: null,
                 'barcode'             => $get($data, 'barcode') ?: null,
                 'category_id'         => $catId,
                 'subcategory_id'      => $subcatId,
@@ -273,7 +324,9 @@ class ImportProductsCsvJob implements ShouldQueue
                 'weight'              => is_numeric($weight) ? $weight : null,
                 'image'               => $imagePath,
                 'short_description'   => $get($data, 'short_description') ?: null,
-                'description'         => $get($data, 'description') ?: null,
+                // Rows are bulk-inserted, bypassing Product::setDescriptionAttribute(), so the
+                // same sanitizing is applied here — the description is rendered unescaped.
+                'description'         => $description !== '' ? clean($description, 'rich_content') : null,
                 'meta_title'          => $get($data, 'meta_title') ?: null,
                 'meta_description'    => $get($data, 'meta_description') ?: null,
                 'is_active'           => $get($data, 'is_active') !== '0' ? 1 : 0,
@@ -320,8 +373,12 @@ class ImportProductsCsvJob implements ShouldQueue
             return null;
         }
 
-        $storedName = 'products/'.Str::random(32).'.'.$extension;
-        Storage::disk('public')->put($storedName, file_get_contents($sourceAbsolutePath));
+        // Resized + WebP like every other product image upload (ImageOptimizer), falling
+        // back to the original bytes when GD can't handle the file.
+        $optimized = ImageOptimizer::optimize($sourceAbsolutePath, $info['mime'], 1600, 82);
+
+        $storedName = 'products/'.Str::random(32).'.'.($optimized['extension'] ?? $extension);
+        Storage::disk('public')->put($storedName, $optimized['bytes'] ?? file_get_contents($sourceAbsolutePath));
 
         return $storedName;
     }
@@ -347,32 +404,13 @@ class ImportProductsCsvJob implements ShouldQueue
             return null;
         }
 
-        $body = $response->body();
         $tmpFile = tempnam(sys_get_temp_dir(), 'bulk_import_img');
-        file_put_contents($tmpFile, $body);
-        $info = @getimagesize($tmpFile);
-        @unlink($tmpFile);
-
-        if ($info === false) {
-            return null;
+        file_put_contents($tmpFile, $response->body());
+        try {
+            return $this->storeImage($tmpFile);
+        } finally {
+            @unlink($tmpFile);
         }
-
-        $extension = match ($info['mime'] ?? null) {
-            'image/jpeg' => 'jpg',
-            'image/png'  => 'png',
-            'image/gif'  => 'gif',
-            'image/webp' => 'webp',
-            'image/bmp'  => 'bmp',
-            default      => null,
-        };
-        if ($extension === null) {
-            return null;
-        }
-
-        $storedName = 'products/'.Str::random(32).'.'.$extension;
-        Storage::disk('public')->put($storedName, $body);
-
-        return $storedName;
     }
 
     /**
