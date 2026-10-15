@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Models\Brand;
 use App\Models\Category;
 use App\Models\Product;
+use App\Services\Catalog\PartnerContentCleaner;
 use App\Services\Catalog\ProductMatcher;
 use App\Services\Catalog\WooCommerceStoreClient;
 use App\Support\ImageOptimizer;
@@ -273,16 +274,12 @@ class ImportWooCommerceCatalog extends Command
         return trim(preg_replace('/\s+/u', ' ', html_entity_decode(strip_tags((string) $html), ENT_QUOTES | ENT_HTML5, 'UTF-8')));
     }
 
-    /** Source description with links back into the source store unwrapped (text kept). */
+    /** Source description minus the partner's self-promotion, links and name (PartnerContentCleaner). */
     private function cleanDescription(?string $html): ?string
     {
-        $html = trim((string) $html);
-        if ($html === '') {
-            return null;
-        }
-        $host = preg_quote(preg_replace('/^www\./', '', $this->host), '#');
+        $cleaner = new PartnerContentCleaner(Str::before(preg_replace('/^www\./', '', $this->host), '.'), setting('site_name', config('app.name')));
 
-        return preg_replace('#<a\b[^>]*href=["\']https?://(?:www\.)?' . $host . '[^"\']*["\'][^>]*>(.*?)</a>#is', '$1', $html);
+        return $cleaner->clean(trim((string) $html) ?: null);
     }
 
     private function bestMatch(array $fp, array $fingerprints): array
