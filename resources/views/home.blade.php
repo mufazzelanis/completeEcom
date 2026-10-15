@@ -437,11 +437,11 @@
 
             {{-- Desktop only — mobile already swipes natively. --}}
             <button type="button" @click="step(-1)" :disabled="atStart" :class="atStart ? 'opacity-0 pointer-events-none' : 'opacity-100'"
-                    class="hidden md:flex absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1/2 z-10 w-9 h-9 items-center justify-center rounded-full bg-white dark:bg-gray-800 shadow-lg ring-1 ring-black/5 dark:ring-white/10 text-gray-500 dark:text-gray-300 hover:text-orange-600 hover:shadow-xl active:scale-90 transition-all duration-200" aria-label="Scroll categories left">
+                    class="hidden md:flex absolute left-0 top-[34px] -translate-y-1/2 -translate-x-1/2 z-10 w-9 h-9 items-center justify-center rounded-full bg-white dark:bg-gray-800 shadow-lg ring-1 ring-black/5 dark:ring-white/10 text-gray-500 dark:text-gray-300 hover:text-orange-600 hover:shadow-xl active:scale-90 transition-all duration-200" aria-label="Scroll categories left">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"/></svg>
             </button>
             <button type="button" @click="step(1)" :disabled="atEnd" :class="atEnd ? 'opacity-0 pointer-events-none' : 'opacity-100'"
-                    class="hidden md:flex absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 z-10 w-9 h-9 items-center justify-center rounded-full bg-white dark:bg-gray-800 shadow-lg ring-1 ring-black/5 dark:ring-white/10 text-gray-500 dark:text-gray-300 hover:text-orange-600 hover:shadow-xl active:scale-90 transition-all duration-200" aria-label="Scroll categories right">
+                    class="hidden md:flex absolute right-0 top-[34px] -translate-y-1/2 translate-x-1/2 z-10 w-9 h-9 items-center justify-center rounded-full bg-white dark:bg-gray-800 shadow-lg ring-1 ring-black/5 dark:ring-white/10 text-gray-500 dark:text-gray-300 hover:text-orange-600 hover:shadow-xl active:scale-90 transition-all duration-200" aria-label="Scroll categories right">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
             </button>
         </div>
