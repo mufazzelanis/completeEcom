@@ -15,9 +15,16 @@ namespace App\Services\Catalog;
  */
 class PartnerContentCleaner
 {
-    private const PROMO_PATTERNS = [
-        '/order this product on our fa\w*book page/i',
-        '/visit our (?:web\s*site|facebook|page)/i',
+    /**
+     * The partner's promotional sentences. Each runs to the end of its paragraph (it's always
+     * the last thing there), including the link/name that follows, e.g.
+     * "You can also order this product on our Facebook page <a …>CosmeClassy</a>".
+     */
+    private const PROMO_SENTENCES = [
+        '#(?:You can also\s+)?order this product (?:directly\s+)?on our fa\w*book page[^<]*(?:<a\b[^>]*>.*?</a>)?[^<]*#is',
+        // "For more product like that, visit our website …", "Please Visit Our website: …",
+        // "Visit our website X for more product like this"
+        '#(?:Please\s+|For more[^<.]{0,40}?,?\s*)?visit our (?:web\s*site|fa\w*book page)\b[^<]*(?:<a\b[^>]*>.*?</a>)?[^<]*#is',
     ];
 
     private string $namePattern;
@@ -38,14 +45,11 @@ class PartnerContentCleaner
             return $html;
         }
 
-        // 1. promotional blocks
+        // 1. promotional sentences (paragraphs left empty are dropped at the end), and
+        //    blocks that are just the partner's name/address ("www.cosmeclassy.com")
+        $html = preg_replace(self::PROMO_SENTENCES, '', $html);
         $html = preg_replace_callback('#<(p|li|h[1-6])\b[^>]*>(.*?)</\1>#is', function ($m) {
             $text = trim(html_entity_decode(strip_tags($m[2]), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
-            foreach (self::PROMO_PATTERNS as $pattern) {
-                if (preg_match($pattern, $text)) {
-                    return '';
-                }
-            }
 
             return preg_match($this->exactNamePattern, $text) ? '' : $m[0];
         }, $html);
@@ -67,13 +71,22 @@ class PartnerContentCleaner
         $html = implode('', $parts);
 
         // leftovers: empty paragraphs/headings the removals produced
-        $html = preg_replace('#<(p|h[1-6])\b[^>]*>(?:\s|&nbsp;|<br\s*/?>)*</\1>#i', '', $html);
+        $html = preg_replace('#<(p|li|h[1-6])\b[^>]*>(?:\s|&nbsp;|<br\s*/?>)*</\1>#i', '', $html);
 
         return trim($html) === '' ? null : trim($html);
     }
 
     public function mentionsPartner(?string $html): bool
     {
-        return $html !== null && (preg_match($this->namePattern, $html) || preg_match(self::PROMO_PATTERNS[0], $html));
+        if ($html === null) {
+            return false;
+        }
+        foreach (self::PROMO_SENTENCES as $pattern) {
+            if (preg_match($pattern, $html)) {
+                return true;
+            }
+        }
+
+        return (bool) preg_match($this->namePattern, $html);
     }
 }
