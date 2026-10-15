@@ -370,22 +370,44 @@
     <div class="pointer-events-none absolute -bottom-12 -right-12 w-40 h-40 bg-red-400/10 blur-3xl rounded-full"></div>
     <div class="relative max-w-[1200px] mx-auto px-4 pt-3 pb-3">
         <x-storefront.section-header title="Categories" :view-all-url="route('categories.index')" :count="$categories->count()" spacing="mb-3" />
-        {{-- Mobile: a swipeable horizontal row (fixed-width tiles, scroll-snap, no "More"
-             button needed at all — every category is one swipe away) instead of a grid
-             capped at 6 with a toggle to reveal the rest. This is the same pattern
-             Daraz/AliExpress/Amazon's own apps use for a category rail on a phone, and it
-             reads as smoother/more native than a static grid + button. sm: and up reverts
-             to the original grid (there's already room to show everything at once there,
-             so a scroller would just be wasted horizontal space on a wide screen). --}}
-        <div class="relative">
-            <div class="flex sm:grid gap-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 overflow-x-auto sm:overflow-visible snap-x snap-mandatory sm:snap-none scrollbar-hide pb-1 reveal-group">
+        {{-- Used to switch to a plain grid at sm:+ (sm:grid-cols-4, md:6, lg:8), which
+             just meant it wrapped onto a second row the moment there were more categories
+             than one row's column count — reported as categories "going down" on wider
+             screens. Now a single horizontal rail at every breakpoint, same auto-scroll +
+             arrows + edge-fade carousel as the Top Brands rail below (copy-pasted scroll
+             logic; kept as its own instance rather than a shared component since Blade has
+             no component-with-slot-and-shared-Alpine-state primitive worth the indirection
+             here). Auto-advances one page every 3.5s, pauses instantly on hover/touch, and
+             the arrows (desktop only — phones already swipe) disable+fade at either end. --}}
+        <div class="relative"
+             x-data="{
+                atStart: true, atEnd: false, paused: false, timer: null,
+                init() {
+                    this.$nextTick(() => this.updateEdges());
+                    this.$refs.track.addEventListener('scroll', () => this.updateEdges(), { passive: true });
+                    this.timer = setInterval(() => { if (!this.paused) this.step(1, true); }, 3500);
+                },
+                updateEdges() {
+                    const el = this.$refs.track;
+                    this.atStart = el.scrollLeft <= 4;
+                    this.atEnd = el.scrollLeft + el.clientWidth >= el.scrollWidth - 4;
+                },
+                step(dir, auto = false) {
+                    const el = this.$refs.track;
+                    if (auto && this.atEnd) { el.scrollTo({ left: 0, behavior: 'smooth' }); return; }
+                    el.scrollBy({ left: dir * el.clientWidth * 0.8, behavior: 'smooth' });
+                },
+             }"
+             @mouseenter="paused = true" @mouseleave="paused = false"
+             @touchstart.passive="paused = true" @touchend.passive="setTimeout(() => paused = false, 2500)">
+            <div class="flex gap-3 overflow-x-auto snap-x snap-mandatory scrollbar-hide pb-1 reveal-group" x-ref="track">
                 @foreach($categories as $category)
                     {{-- Circular "story ring" tile (Instagram/Daraz "Shop by Category" pattern)
                          instead of a square icon block — reads as noticeably more polished at
                          a smaller footprint, and the ring + press-scale make it unmistakably
                          tappable rather than just decorative. --}}
                     <a href="{{ route('shop.category', $category->slug) }}"
-                       class="group w-14 flex-shrink-0 sm:w-auto sm:flex-shrink snap-start flex flex-col items-center gap-2 p-1.5 rounded-xl active:scale-95 transition-transform duration-150">
+                       class="group w-16 sm:w-20 md:w-24 flex-shrink-0 snap-start flex flex-col items-center gap-2 p-1.5 rounded-xl active:scale-95 transition-transform duration-150">
                         {{-- category-ring (app.blade.php <style>) is a continuously-spinning
                              conic-gradient border — smaller than before, too, so one more
                              tile fits in the same mobile viewport width. --}}
@@ -408,9 +430,20 @@
                     </a>
                 @endforeach
             </div>
-            {{-- Right-edge fade — hints there's more to swipe to without needing a "More"
-                 button; invisible once everything already fits (nothing to scroll to). --}}
-            <div class="sm:hidden pointer-events-none absolute top-0 right-0 bottom-1 w-10 bg-gradient-to-l from-white dark:from-gray-900 to-transparent"></div>
+
+            {{-- Edge fades, hidden once scrolled all the way to that edge. --}}
+            <div class="pointer-events-none absolute left-0 inset-y-0 top-0 bottom-1 w-8 md:w-10 bg-gradient-to-r from-orange-50/70 dark:from-gray-900 to-transparent transition-opacity duration-200" :class="atStart ? 'opacity-0' : 'opacity-100'"></div>
+            <div class="pointer-events-none absolute right-0 inset-y-0 top-0 bottom-1 w-8 md:w-10 bg-gradient-to-l from-white dark:from-gray-900 to-transparent transition-opacity duration-200" :class="atEnd ? 'opacity-0' : 'opacity-100'"></div>
+
+            {{-- Desktop only — mobile already swipes natively. --}}
+            <button type="button" @click="step(-1)" :disabled="atStart" :class="atStart ? 'opacity-0 pointer-events-none' : 'opacity-100'"
+                    class="hidden md:flex absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1/2 z-10 w-9 h-9 items-center justify-center rounded-full bg-white dark:bg-gray-800 shadow-lg ring-1 ring-black/5 dark:ring-white/10 text-gray-500 dark:text-gray-300 hover:text-orange-600 hover:shadow-xl active:scale-90 transition-all duration-200" aria-label="Scroll categories left">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"/></svg>
+            </button>
+            <button type="button" @click="step(1)" :disabled="atEnd" :class="atEnd ? 'opacity-0 pointer-events-none' : 'opacity-100'"
+                    class="hidden md:flex absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 z-10 w-9 h-9 items-center justify-center rounded-full bg-white dark:bg-gray-800 shadow-lg ring-1 ring-black/5 dark:ring-white/10 text-gray-500 dark:text-gray-300 hover:text-orange-600 hover:shadow-xl active:scale-90 transition-all duration-200" aria-label="Scroll categories right">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
+            </button>
         </div>
     </div>
 </div>
