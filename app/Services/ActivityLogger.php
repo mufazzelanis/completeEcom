@@ -29,6 +29,7 @@ class ActivityLogger
                 'subject_type' => $subject ? get_class($subject) : null,
                 'subject_id'   => $subject?->getKey(),
                 'url'          => Request::fullUrl(),
+                'referrer'     => Request::header('referer'),
                 'ip_address'   => Request::ip(),
                 'user_agent'   => $userAgent,
                 'device'       => $device,

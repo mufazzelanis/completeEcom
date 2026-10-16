@@ -37,6 +37,8 @@ class ActivityLogController extends Controller
                 // accurate even if the customer's account phone changes later — preferred over
                 // users.phone (the view falls back to that) for exactly this reason.
                 'activity_logs.properties',
+                'activity_logs.url',
+                'activity_logs.referrer',
                 'activity_logs.ip_address',
                 'activity_logs.device',
                 'activity_logs.browser',
@@ -59,6 +61,8 @@ class ActivityLogController extends Controller
                 'audit_logs.model_type as subject_type',
                 'audit_logs.model_id as subject_id',
                 DB::raw('NULL as properties'),
+                DB::raw('NULL as url'),
+                DB::raw('NULL as referrer'),
                 'audit_logs.ip_address',
                 DB::raw('NULL as device'),
                 DB::raw('NULL as browser'),

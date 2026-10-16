@@ -110,6 +110,7 @@
                 <th class="px-5 py-3 text-left">Phone</th>
                 <th class="px-5 py-3 text-left">Event</th>
                 <th class="px-5 py-3 text-left">Description</th>
+                <th class="px-5 py-3 text-left">Source</th>
                 <th class="px-5 py-3 text-left">Device</th>
                 <th class="px-5 py-3 text-left">IP</th>
             </tr>
@@ -180,7 +181,19 @@
                     @endif
                 </td>
                 <td class="px-5 py-3 text-gray-700 max-w-xs">
-                    <p class="truncate text-xs">{{ $log->description }}</p>
+                    {{-- $log->url is the exact page this event happened on (stored as
+                         Request::fullUrl() at write time) — reusing it instead of
+                         reconstructing a products.show() URL from subject_id means this
+                         links correctly for every event type (product, order, page...)
+                         without a route-specific lookup or an extra query per row. --}}
+                    @if($log->url)
+                        <a href="{{ $log->url }}" target="_blank" rel="noopener" class="truncate text-xs text-gray-700 hover:text-indigo-600 hover:underline block" title="Open this page">{{ $log->description }}</a>
+                    @else
+                        <p class="truncate text-xs">{{ $log->description }}</p>
+                    @endif
+                </td>
+                <td class="px-5 py-3 text-xs text-gray-500 whitespace-nowrap">
+                    {{ \App\Models\ActivityLog::channelFromReferrer($log->referrer) }}
                 </td>
                 <td class="px-5 py-3 text-xs text-gray-500">
                     @if($log->device)
@@ -202,7 +215,7 @@
             </tr>
             @empty
             <tr>
-                <td colspan="7" class="px-5 py-16 text-center">
+                <td colspan="8" class="px-5 py-16 text-center">
                     <svg class="w-12 h-12 text-gray-200 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
                     <p class="text-gray-400">No activity found.</p>
                 </td>

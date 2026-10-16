@@ -10,7 +10,7 @@ class ActivityLog extends Model
 
     protected $fillable = [
         'user_id', 'event', 'description', 'subject_type', 'subject_id',
-        'url', 'ip_address', 'user_agent', 'device', 'browser', 'platform',
+        'url', 'referrer', 'ip_address', 'user_agent', 'device', 'browser', 'platform',
         'is_bot', 'properties', 'created_at',
     ];
 
@@ -147,5 +147,37 @@ class ActivityLog extends Model
     public static function isBotUserAgent(string $userAgent): bool
     {
         return trim($userAgent) === '' || (bool) preg_match(self::BOT_SIGNATURES, $userAgent);
+    }
+
+    /**
+     * "Which medium did this visit come through" — Google search, Facebook, a direct URL
+     * (typed, bookmarked, or clicked from a non-web source like SMS/WhatsApp, which sends
+     * no referrer at all), or another site. Derived from the raw referrer at display time
+     * (not stored pre-computed) so relabeling what counts as which channel doesn't require
+     * touching old rows — this app's own domain is filtered out first so an internal
+     * click (e.g. home → this product) doesn't get mislabeled as an external "source".
+     */
+    public static function channelFromReferrer(?string $referrer): string
+    {
+        if (!$referrer) {
+            return 'Direct / App';
+        }
+
+        $host = parse_url($referrer, PHP_URL_HOST) ?: '';
+        if ($host === '' || $host === parse_url(config('app.url'), PHP_URL_HOST)) {
+            return 'Direct / App';
+        }
+
+        return match (true) {
+            (bool) preg_match('/(^|\.)google\./i', $host) => 'Google',
+            (bool) preg_match('/(^|\.)bing\./i', $host) => 'Bing',
+            (bool) preg_match('/(^|\.)(facebook|fb)\./i', $host) => 'Facebook',
+            (bool) preg_match('/(^|\.)instagram\./i', $host) => 'Instagram',
+            (bool) preg_match('/(^|\.)(twitter|x)\.com$/i', $host) || $host === 't.co' => 'Twitter/X',
+            (bool) preg_match('/(^|\.)youtube\./i', $host) => 'YouTube',
+            (bool) preg_match('/(^|\.)(wa\.me|whatsapp)\./i', $host) => 'WhatsApp',
+            (bool) preg_match('/(^|\.)t\.me$/i', $host) || preg_match('/(^|\.)telegram\./i', $host) => 'Telegram',
+            default => $host,
+        };
     }
 }
