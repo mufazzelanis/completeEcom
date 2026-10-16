@@ -103,8 +103,12 @@
             @forelse($logs as $log)
             <tr class="hover:bg-gray-50 transition">
                 <td class="px-5 py-3 whitespace-nowrap">
-                    <p class="font-medium text-gray-800 text-xs">{{ \Illuminate\Support\Carbon::parse($log->created_at)->format('M d, Y') }}</p>
-                    <p class="text-gray-400 text-xs">{{ \Illuminate\Support\Carbon::parse($log->created_at)->format('H:i:s') }}</p>
+                    {{-- setTimezone — created_at is stored in app.timezone (UTC); shown
+                         bare, every timestamp on this page read 6 hours behind an admin's
+                         actual Dhaka time, reported as the log "not looking real-time". --}}
+                    @php $logTime = \Illuminate\Support\Carbon::parse($log->created_at)->setTimezone(setting('timezone', 'Asia/Dhaka')); @endphp
+                    <p class="font-medium text-gray-800 text-xs">{{ $logTime->format('M d, Y') }}</p>
+                    <p class="text-gray-400 text-xs">{{ $logTime->format('H:i:s') }}</p>
                 </td>
                 <td class="px-5 py-3">
                     @if($log->user_name)
@@ -169,7 +173,15 @@
                         <span class="text-gray-300">—</span>
                     @endif
                 </td>
-                <td class="px-5 py-3 text-xs text-gray-400 font-mono">{{ $log->ip_address ?? '—' }}</td>
+                <td class="px-5 py-3 text-xs text-gray-400 font-mono">
+                    {{ $log->ip_address ?? '—' }}
+                    {{-- City/country only — never a street address or anything close to it;
+                         that precision isn't available from an IP to anyone outside the ISP
+                         itself, not to this site or any other. --}}
+                    @if($log->ip_address && ($loc = $ipLocations[$log->ip_address] ?? null))
+                        <span class="block text-gray-300 font-sans">{{ $loc }}</span>
+                    @endif
+                </td>
             </tr>
             @empty
             <tr>

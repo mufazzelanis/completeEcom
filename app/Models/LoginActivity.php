@@ -24,17 +24,19 @@ class LoginActivity extends Model
         // Clear old current flag
         static::where('user_id', $userId)->where('is_current', true)->update(['is_current' => false]);
 
-        preg_match('/(Chrome|Firefox|Safari|Edge|Opera|MSIE|Trident)[\/\s]?([\d.]+)?/i', $userAgent, $browser);
-        preg_match('/(Windows|Mac|Linux|Android|iPhone|iPad)/i', $userAgent, $platform);
-        $device = preg_match('/(iPhone|iPad|Android)/i', $userAgent) ? 'Mobile' : 'Desktop';
+        // Same parser ActivityLog uses — this used to carry its own copy of the old,
+        // unordered version (every Chromium browser's UA also contains "Chrome" and
+        // "Safari" tokens, so checking them unordered mislabeled most non-Chrome
+        // browsers), which had quietly drifted from ActivityLog's copy.
+        [$device, $browser, $platform] = ActivityLog::parseUserAgent($userAgent);
 
         static::create([
             'user_id'    => $userId,
             'ip_address' => $ip,
             'user_agent' => $userAgent,
             'device'     => $device,
-            'browser'    => $browser[1] ?? 'Unknown',
-            'platform'   => $platform[1] ?? 'Unknown',
+            'browser'    => $browser,
+            'platform'   => $platform,
             'is_current' => true,
             'created_at' => now(),
         ]);

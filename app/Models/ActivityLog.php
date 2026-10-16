@@ -58,16 +58,68 @@ class ActivityLog extends Model
     }
 
     /**
-     * Rough UA parse — same regex approach as LoginActivity::record(), factored
-     * out here so every logging call site (login, product view, cart, etc.)
-     * gets consistent device/browser/platform values without duplicating it.
+     * UA parse — factored out here so every logging call site (login, product view,
+     * cart, etc.) gets consistent device/browser/platform values without duplicating it.
+     *
+     * The old version matched browsers/platforms in whatever order preg_match's
+     * alternation happened to try them, which is wrong for UA strings specifically —
+     * every Chromium browser's UA also contains "Safari" and "Chrome" tokens (Edge,
+     * Opera, Samsung Internet are all Chrome-based), so an unordered check mislabeled
+     * most of them, and a background/non-request call site with no real UA string
+     * silently fell through to "Desktop" + "Unknown" instead of reporting that there
+     * was no UA at all — reported as the Device column showing "Desktop · Unknown" far
+     * more often than real Chrome/Firefox/Safari traffic would ever actually be unknown.
      */
     public static function parseUserAgent(string $userAgent): array
     {
-        preg_match('/(Chrome|Firefox|Safari|Edge|Opera|MSIE|Trident)[\/\s]?([\d.]+)?/i', $userAgent, $browser);
-        preg_match('/(Windows|Mac|Linux|Android|iPhone|iPad)/i', $userAgent, $platform);
-        $device = preg_match('/(iPhone|iPad|Android)/i', $userAgent) ? 'Mobile' : 'Desktop';
+        if (trim($userAgent) === '') {
+            return ['Unknown', 'Unknown', 'Unknown'];
+        }
 
-        return [$device, $browser[1] ?? 'Unknown', $platform[1] ?? 'Unknown'];
+        // Most-specific-first: every Chromium-based browser's UA also contains a
+        // bare "Chrome/" token (and most contain "Safari/" too), so the specific
+        // browser name has to be checked before the generic engine tokens it rides on.
+        $browser = match (true) {
+            (bool) preg_match('/EdgiOS|EdgA|Edg\//i', $userAgent) => 'Edge',
+            (bool) preg_match('/OPR\/|Opera/i', $userAgent) => 'Opera',
+            (bool) preg_match('/SamsungBrowser/i', $userAgent) => 'Samsung Internet',
+            (bool) preg_match('/UCBrowser/i', $userAgent) => 'UC Browser',
+            (bool) preg_match('/FxiOS/i', $userAgent) => 'Firefox',
+            (bool) preg_match('/CriOS|Chrome\//i', $userAgent) => 'Chrome',
+            (bool) preg_match('/Firefox\//i', $userAgent) => 'Firefox',
+            (bool) preg_match('/Version\/[\d.]+.*Safari/i', $userAgent) => 'Safari', // bare Safari UA names the engine twice; Chrome et al. are already caught above
+            (bool) preg_match('/MSIE|Trident/i', $userAgent) => 'Internet Explorer',
+            default => 'Unknown',
+        };
+
+        $platform = match (true) {
+            (bool) preg_match('/Windows NT/i', $userAgent) => 'Windows',
+            (bool) preg_match('/Mac OS X/i', $userAgent) && !preg_match('/iPhone|iPad/i', $userAgent) => 'macOS',
+            (bool) preg_match('/CrOS/i', $userAgent) => 'ChromeOS',
+            (bool) preg_match('/Android/i', $userAgent) => 'Android',
+            (bool) preg_match('/iPad/i', $userAgent) => 'iPadOS',
+            (bool) preg_match('/iPhone|iPod/i', $userAgent) => 'iOS',
+            (bool) preg_match('/Linux/i', $userAgent) => 'Linux',
+            default => 'Unknown',
+        };
+
+        // Android device model, when present, rides along as "Android <ver>; <model>)"
+        // in the UA string — the closest thing to a real "which phone" signal that's
+        // actually available (never from the IP, which carries no device info at all).
+        if ($platform === 'Android' && preg_match('/Android[^;]*;\s*([^;)]+)\)/i', $userAgent, $m)) {
+            $model = trim($m[1]);
+            if ($model !== '' && !str_contains(strtolower($model), 'wv')) {
+                $platform .= " ({$model})";
+            }
+        }
+
+        $device = match (true) {
+            (bool) preg_match('/iPad/i', $userAgent) => 'Tablet',
+            (bool) preg_match('/Android/i', $userAgent) && !preg_match('/Mobile/i', $userAgent) => 'Tablet',
+            (bool) preg_match('/iPhone|iPod|Android|Mobile/i', $userAgent) => 'Mobile',
+            default => 'Desktop',
+        };
+
+        return [$device, $browser, $platform];
     }
 }
