@@ -34,6 +34,10 @@ class ActivityLogger
                 'device'       => $device,
                 'browser'      => $browser,
                 'platform'     => $platform,
+                // A logged-in admin/staff member is never a bot regardless of what their
+                // User-Agent happens to match — only matters for the guest traffic this
+                // is actually meant to filter (product views, cart adds, ...).
+                'is_bot'       => Auth::guest() && ActivityLog::isBotUserAgent($userAgent),
                 'properties'   => $properties ?: null,
                 'created_at'   => now(),
             ]);

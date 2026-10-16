@@ -19,6 +19,13 @@
     <div class="bg-white rounded-2xl shadow-sm p-4">
         <p class="text-xs text-gray-400 uppercase tracking-wider font-medium">Product Views Today</p>
         <p class="text-2xl font-bold text-gray-800 mt-1">{{ $stats['product_views_today'] }}</p>
+        {{-- Split out so this number doesn't quietly read as "real people looked at a
+             product today" when some of it is crawler/scraper traffic — a datacenter
+             IP hammering product pages (the actual thing that prompted this) shows up
+             here instead of inflating the headline count with nothing to back it. --}}
+        @if($stats['product_views_today_bot'] > 0)
+            <p class="text-[11px] text-gray-400 mt-1">incl. <span class="font-semibold text-orange-500">{{ $stats['product_views_today_bot'] }}</span> bot/crawler</p>
+        @endif
     </div>
     <div class="bg-white rounded-2xl shadow-sm p-4">
         <p class="text-xs text-gray-400 uppercase tracking-wider font-medium">Cart Adds Today</p>
@@ -66,6 +73,14 @@
                 @foreach($logUsers as $u)
                 <option value="{{ $u->id }}" {{ request('user_id') == $u->id ? 'selected' : '' }}>{{ $u->name }}</option>
                 @endforeach
+            </select>
+        </div>
+        <div>
+            <label class="text-xs font-medium text-gray-500 uppercase mb-1 block">Traffic</label>
+            <select name="traffic" class="border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                <option value="" {{ request('traffic') === null || request('traffic') === '' ? 'selected' : '' }}>All</option>
+                <option value="humans" {{ request('traffic') === 'humans' ? 'selected' : '' }}>Real users only</option>
+                <option value="bots" {{ request('traffic') === 'bots' ? 'selected' : '' }}>Bots/crawlers only</option>
             </select>
         </div>
         <div>
@@ -160,6 +175,8 @@
                     </span>
                     @if($log->source === 'audit')
                     <span class="block text-[10px] text-gray-400 mt-0.5">admin action</span>
+                    @elseif($log->is_bot)
+                    <span class="inline-flex items-center gap-0.5 text-[10px] text-orange-500 font-medium mt-0.5">🤖 bot/crawler</span>
                     @endif
                 </td>
                 <td class="px-5 py-3 text-gray-700 max-w-xs">

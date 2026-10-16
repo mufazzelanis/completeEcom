@@ -11,12 +11,13 @@ class ActivityLog extends Model
     protected $fillable = [
         'user_id', 'event', 'description', 'subject_type', 'subject_id',
         'url', 'ip_address', 'user_agent', 'device', 'browser', 'platform',
-        'properties', 'created_at',
+        'is_bot', 'properties', 'created_at',
     ];
 
     protected $casts = [
         'properties' => 'array',
         'created_at' => 'datetime',
+        'is_bot' => 'boolean',
     ];
 
     public function user()
@@ -121,5 +122,30 @@ class ActivityLog extends Model
         };
 
         return [$device, $browser, $platform];
+    }
+
+    /**
+     * Known crawler/bot/script signatures — computed once at write time (see
+     * ActivityLogger::log()) into the is_bot column, so "real users only" on the
+     * activity dashboard is a plain indexed WHERE instead of re-parsing every row's
+     * user_agent on every single page load.
+     *
+     * Legitimate search/social crawlers (Googlebot, facebookexternalhit, ...) are
+     * included deliberately, not just malicious scrapers — a site owner asking "which
+     * of this is a real person" wants Googlebot excluded from that count exactly as
+     * much as a Python scraper, even though the former is welcome traffic for a
+     * different reason (SEO, not a customer). A handful of generic HTTP client
+     * signatures (curl, python-requests, Go-http-client, PostmanRuntime, ...) are
+     * included too — no real browser ever sends these as its own User-Agent.
+     */
+    private const BOT_SIGNATURES = '/bot|crawl|spider|slurp|archiver|facebookexternalhit|'
+        . 'whatsapp|telegrambot|discordbot|skypeuripreview|redditbot|pinterest|'
+        . 'python-requests|python-urllib|scrapy|curl\/|wget\/|libwww-perl|go-http-client|'
+        . 'java\/|okhttp|postmanruntime|apache-httpclient|axios\/|node-fetch|httpie|'
+        . 'headlesschrome|phantomjs|puppeteer|playwright|selenium/i';
+
+    public static function isBotUserAgent(string $userAgent): bool
+    {
+        return trim($userAgent) === '' || (bool) preg_match(self::BOT_SIGNATURES, $userAgent);
     }
 }

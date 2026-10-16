@@ -41,6 +41,7 @@ class ActivityLogController extends Controller
                 'activity_logs.device',
                 'activity_logs.browser',
                 'activity_logs.platform',
+                'activity_logs.is_bot',
                 'activity_logs.created_at',
             ]);
 
@@ -62,6 +63,9 @@ class ActivityLogController extends Controller
                 DB::raw('NULL as device'),
                 DB::raw('NULL as browser'),
                 DB::raw('NULL as platform'),
+                // An admin/staff action behind a login screen, never a bot — the
+                // concept only applies to the guest-facing traffic in activity_logs.
+                DB::raw('0 as is_bot'),
                 'audit_logs.created_at',
             ]);
 
@@ -93,6 +97,15 @@ class ActivityLogController extends Controller
             $query->where('source', $request->source);
         }
 
+        // Defaults to showing everything (nothing hidden by surprise) — "Humans only"
+        // / "Bots only" are an explicit choice via the Traffic filter, backed by the
+        // is_bot column computed once at write time (see ActivityLogger::log()).
+        if ($request->input('traffic') === 'humans') {
+            $query->where('is_bot', false);
+        } elseif ($request->input('traffic') === 'bots') {
+            $query->where('is_bot', true);
+        }
+
         if ($request->filled('from')) {
             $query->whereDate('created_at', '>=', $request->from);
         }
@@ -118,11 +131,16 @@ class ActivityLogController extends Controller
         // this app already uses (BlogPostController, TelegramOrderObserver, ...).
         $today = now()->setTimezone(setting('timezone', 'Asia/Dhaka'))->startOfDay()->utc();
         $stats = [
-            'logins_today'        => ActivityLog::where('event', 'login')->where('created_at', '>=', $today)->count(),
-            'product_views_today' => ActivityLog::where('event', 'product.view')->where('created_at', '>=', $today)->count(),
-            'cart_adds_today'     => ActivityLog::where('event', 'cart.add')->where('created_at', '>=', $today)->count(),
-            'orders_placed_today' => ActivityLog::where('event', 'order.place')->where('created_at', '>=', $today)->count(),
-            'order_views_today'   => ActivityLog::where('event', 'order.view')->where('created_at', '>=', $today)->count(),
+            'logins_today'            => ActivityLog::where('event', 'login')->where('created_at', '>=', $today)->count(),
+            'product_views_today'     => ActivityLog::where('event', 'product.view')->where('created_at', '>=', $today)->count(),
+            // Split out so the raw number above doesn't quietly include crawler/scraper
+            // traffic in what reads as "real people looked at a product today" — a
+            // datacenter IP hammering product pages (which is what prompted this) would
+            // otherwise inflate that count with zero corresponding carts/orders to match.
+            'product_views_today_bot' => ActivityLog::where('event', 'product.view')->where('is_bot', true)->where('created_at', '>=', $today)->count(),
+            'cart_adds_today'         => ActivityLog::where('event', 'cart.add')->where('created_at', '>=', $today)->count(),
+            'orders_placed_today'     => ActivityLog::where('event', 'order.place')->where('created_at', '>=', $today)->count(),
+            'order_views_today'       => ActivityLog::where('event', 'order.view')->where('created_at', '>=', $today)->count(),
         ];
 
         return view('admin.activity-logs.index', compact('logs', 'eventTypes', 'logUsers', 'stats', 'ipLocations'));
