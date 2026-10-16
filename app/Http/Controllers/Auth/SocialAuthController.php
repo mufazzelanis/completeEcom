@@ -109,6 +109,17 @@ class SocialAuthController extends Controller
             $user->update(['avatar_url' => $socialUser->getAvatar()]);
         }
 
+        // Read by RecordLoginActivityListener (fired synchronously inside Auth::login()
+        // below, before regenerate() even runs) so the activity log can say exactly which
+        // provider + which provider-side email was used ("logged in with Google
+        // (name@gmail.com)") instead of a generic "logged in" indistinguishable from a
+        // plain password login.
+        request()->session()->put('_login_via', [
+            'provider' => $provider,
+            'email' => $socialUser->getEmail(),
+            'name' => $socialUser->getName(),
+        ]);
+
         Auth::login($user, remember: true);
         request()->session()->regenerate();
 

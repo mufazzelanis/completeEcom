@@ -183,6 +183,18 @@
                             str_contains($log->event_type, 'updated') => 'bg-blue-100 text-blue-700',
                             default => 'bg-gray-100 text-gray-700',
                         };
+                        // Which provider this particular login came through — set only on
+                        // social sign-ins (see RecordLoginActivityListener); a plain password
+                        // login has no login_provider key and shows no badge at all.
+                        $loginProvider = $log->event_type === 'login' && $log->properties
+                            ? (json_decode($log->properties, true)['login_provider'] ?? null)
+                            : null;
+                        $providerBadge = match ($loginProvider) {
+                            'google' => ['bg-red-50 text-red-600', 'Google'],
+                            'facebook' => ['bg-blue-50 text-blue-600', 'Facebook'],
+                            'linkedin' => ['bg-sky-50 text-sky-600', 'LinkedIn'],
+                            default => null,
+                        };
                     @endphp
                     <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium {{ $color }}">
                         {{ $log->event_type }}
@@ -191,19 +203,32 @@
                     <span class="block text-[10px] text-gray-400 mt-0.5">admin action</span>
                     @elseif($log->is_bot)
                     <span class="inline-flex items-center gap-0.5 text-[10px] text-orange-500 font-medium mt-0.5">🤖 bot/crawler</span>
+                    @elseif($providerBadge)
+                    <span class="inline-flex items-center px-1.5 py-0 rounded-full text-[10px] font-medium mt-0.5 {{ $providerBadge[0] }}">via {{ $providerBadge[1] }}</span>
                     @endif
                 </td>
                 <td class="px-5 py-3 text-gray-700 max-w-xs">
-                    {{-- $log->url is the exact page this event happened on (stored as
-                         Request::fullUrl() at write time) — reusing it instead of
-                         reconstructing a products.show() URL from subject_id means this
-                         links correctly for every event type (product, order, page...)
-                         without a route-specific lookup or an extra query per row. --}}
-                    @if($log->url)
-                        <a href="{{ $log->url }}" target="_blank" rel="noopener" class="truncate text-xs text-gray-700 hover:text-indigo-600 hover:underline block" title="Open this page">{{ $log->description }}</a>
-                    @else
-                        <p class="truncate text-xs">{{ $log->description }}</p>
-                    @endif
+                    <div class="flex items-center gap-1.5" x-data="{ copied: false }">
+                        {{-- $log->url is the exact page this event happened on (stored as
+                             Request::fullUrl() at write time) — reusing it instead of
+                             reconstructing a products.show() URL from subject_id means this
+                             links correctly for every event type (product, order, page...)
+                             without a route-specific lookup or an extra query per row. --}}
+                        @if($log->url)
+                            <a href="{{ $log->url }}" target="_blank" rel="noopener" class="truncate text-xs text-gray-700 hover:text-indigo-600 hover:underline" title="Open this page">{{ $log->description }}</a>
+                        @else
+                            <p class="truncate text-xs">{{ $log->description }}</p>
+                        @endif
+                        {{-- Copies the full description text (e.g. the product title inside
+                             "Added "X" to cart") — an admin watching a specific product's
+                             traffic needs the exact title to search/filter elsewhere without
+                             retyping it by hand from a truncated cell. --}}
+                        <button type="button" @click="navigator.clipboard.writeText(@js($log->description)); copied = true; setTimeout(() => copied = false, 1500)"
+                            class="flex-shrink-0 text-gray-300 hover:text-indigo-600 transition" :title="copied ? 'Copied!' : 'Copy'">
+                            <svg x-show="!copied" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                            <svg x-show="copied" x-cloak class="w-3.5 h-3.5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                        </button>
+                    </div>
                 </td>
                 <td class="px-5 py-3 text-xs text-gray-500 whitespace-nowrap">
                     {{ \App\Models\ActivityLog::channelFromReferrer($log->referrer) }}
