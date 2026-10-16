@@ -14,15 +14,34 @@
         setting('facebook_url'), setting('instagram_url'), setting('youtube_url'),
         setting('linkedin_url'), setting('twitter_url'),
     ]));
+    // Bangladesh-qualified description + @id — this is what actually helps Google tell
+    // THIS "Mitavin" (an e-commerce store in Bangladesh) apart from an unrelated foreign
+    // brand that happens to share the plain word "mitavin" (e.g. an Indian supplement
+    // sold via 1mg) when it builds its knowledge panel / AI Overview for the query. A
+    // bare "name": "Mitavin" with no address/description gives Google nothing to
+    // disambiguate with; this does.
+    $orgId = route('home') . '#organization';
+    // The tagline alone ("Your one-stop shop...") says nothing that distinguishes this
+    // Mitavin from any other business with the same name, so "Bangladesh" is appended
+    // explicitly — that's the actual disambiguating token Google's AI Overview needs.
+    $orgDescription = trim((setting('site_tagline') ?: 'Online shopping store') . ' — ' . setting('site_name', 'Mitavin') . ' is an e-commerce store based in Bangladesh.');
 @endphp
 <script type="application/ld+json">
 {!! json_encode(array_filter([
     '@@context' => 'https://schema.org',
     '@type' => 'Organization',
+    '@id' => $orgId,
     'name' => setting('site_name', 'ShopVista'),
+    'description' => $orgDescription,
     'url' => route('home'),
     'logo' => setting_file_url('site_logo'),
     'sameAs' => $orgSameAs ?: null,
+    'address' => setting('company_address') ? [
+        '@type' => 'PostalAddress',
+        'streetAddress' => setting('company_address'),
+        'addressCountry' => 'BD',
+    ] : null,
+    'telephone' => setting('contact_phone') ?: setting('company_phone') ?: null,
 ], fn ($v) => $v !== null && $v !== ''), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}
 </script>
 <script type="application/ld+json">
@@ -31,6 +50,7 @@
     '@type' => 'WebSite',
     'name' => setting('site_name', 'ShopVista'),
     'url' => route('home'),
+    'publisher' => ['@id' => $orgId],
     'potentialAction' => [
         '@type' => 'SearchAction',
         'target' => route('shop.index') . '?search={search_term_string}',

@@ -178,6 +178,12 @@ Route::post('/products/{product}/review', [ProductController::class, 'storeRevie
 
 // Cart Routes
 Route::get('/cart', [CartController::class, 'index'])->name('cart.index');
+// Browsers resurface a previously-POSTed URL via address-bar autocomplete, and some
+// bots/crawlers GET-probe every discovered URL regardless of method — both land here
+// as a plain navigation, which without this route 405'd with the host's raw error
+// page instead of the app's own branding. A friendly redirect costs nothing and a
+// visitor just lands on their cart instead of a broken-looking error screen.
+Route::get('/cart/add', fn () => redirect()->route('cart.index'));
 Route::post('/cart/add', [CartController::class, 'add'])->name('cart.add');
 Route::patch('/cart/{cart}', [CartController::class, 'update'])->name('cart.update');
 Route::delete('/cart/{cart}', [CartController::class, 'remove'])->name('cart.remove');

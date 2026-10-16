@@ -110,12 +110,37 @@ class ActivityLogController extends Controller
             $query->where('is_bot', true);
         }
 
-        if ($request->filled('from')) {
-            $query->whereDate('created_at', '>=', $request->from);
-        }
+        // Quick period presets (Today / This Week / ... / Lifetime) computed in the
+        // admin's own timezone, not UTC — created_at is stored in app.timezone (UTC),
+        // so a naive whereDate() against it reads up to 6 hours off from what "today"
+        // or "this month" actually means in Dhaka (the same class of bug already fixed
+        // for the stat cards above). "custom"/no period falls back to the explicit
+        // From/To date inputs, which get the same Dhaka-aware day boundaries.
+        $tz = setting('timezone', 'Asia/Dhaka');
+        $period = $request->input('period');
 
-        if ($request->filled('to')) {
-            $query->whereDate('created_at', '<=', $request->to);
+        if ($period && $period !== 'custom') {
+            $now = now()->setTimezone($tz);
+            [$start, $end] = match ($period) {
+                'today' => [$now->copy()->startOfDay(), $now->copy()->endOfDay()],
+                'this_week' => [$now->copy()->startOfWeek(), $now->copy()->endOfWeek()],
+                'this_month' => [$now->copy()->startOfMonth(), $now->copy()->endOfMonth()],
+                'last_month' => [$now->copy()->subMonthNoOverflow()->startOfMonth(), $now->copy()->subMonthNoOverflow()->endOfMonth()],
+                'this_year' => [$now->copy()->startOfYear(), $now->copy()->endOfYear()],
+                default => [null, null], // lifetime (or unrecognized) — no bound
+            };
+
+            if ($start && $end) {
+                $query->whereBetween('created_at', [$start->copy()->utc(), $end->copy()->utc()]);
+            }
+        } else {
+            if ($request->filled('from')) {
+                $query->where('created_at', '>=', \Illuminate\Support\Carbon::parse($request->from, $tz)->startOfDay()->utc());
+            }
+
+            if ($request->filled('to')) {
+                $query->where('created_at', '<=', \Illuminate\Support\Carbon::parse($request->to, $tz)->endOfDay()->utc());
+            }
         }
 
         $logs = $query->orderByDesc('created_at')->paginate(50)->withQueryString();

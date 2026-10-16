@@ -43,7 +43,8 @@
 
 {{-- Filters --}}
 <div class="bg-white rounded-2xl shadow-sm p-4 mb-6">
-    <form action="{{ route('admin.activity-logs.index') }}" method="GET" class="flex flex-wrap items-end gap-3">
+    <form action="{{ route('admin.activity-logs.index') }}" method="GET" class="flex flex-wrap items-end gap-3"
+        x-data="{ period: '{{ request('period') ?: (request('from') || request('to') ? 'custom' : '') }}' }">
         <div class="flex-1 min-w-40">
             <label class="text-xs font-medium text-gray-500 uppercase mb-1 block">Search</label>
             <input type="text" name="search" value="{{ request('search') }}" placeholder="Search description..."
@@ -84,11 +85,23 @@
             </select>
         </div>
         <div>
+            <label class="text-xs font-medium text-gray-500 uppercase mb-1 block">Period</label>
+            <select name="period" x-model="period" class="border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                <option value="" {{ request('period', request('from') || request('to') ? 'custom' : '') === '' ? 'selected' : '' }}>Lifetime</option>
+                <option value="today" {{ request('period') === 'today' ? 'selected' : '' }}>Today</option>
+                <option value="this_week" {{ request('period') === 'this_week' ? 'selected' : '' }}>This Week</option>
+                <option value="this_month" {{ request('period') === 'this_month' ? 'selected' : '' }}>This Month</option>
+                <option value="last_month" {{ request('period') === 'last_month' ? 'selected' : '' }}>Last Month</option>
+                <option value="this_year" {{ request('period') === 'this_year' ? 'selected' : '' }}>This Year</option>
+                <option value="custom" {{ request('period') === 'custom' || (!request('period') && (request('from') || request('to'))) ? 'selected' : '' }}>Custom Range</option>
+            </select>
+        </div>
+        <div x-show="period === 'custom'" x-cloak>
             <label class="text-xs font-medium text-gray-500 uppercase mb-1 block">From</label>
             <input type="date" name="from" value="{{ request('from') }}"
                 class="border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
         </div>
-        <div>
+        <div x-show="period === 'custom'" x-cloak>
             <label class="text-xs font-medium text-gray-500 uppercase mb-1 block">To</label>
             <input type="date" name="to" value="{{ request('to') }}"
                 class="border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
