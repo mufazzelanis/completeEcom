@@ -28,7 +28,8 @@
 
     $trackCurrency = setting('currency_code', 'BDT');
     $trackProduct = [
-        'id'    => $landingPage->product_id ? ($landingPage->product?->sku ?: (string) $landingPage->product_id) : $landingPage->slug,
+        // product ID (not SKU) — the same ID as the storefront's events, Merchant feed and Meta catalog
+        'id'    => $landingPage->product_id ? (string) $landingPage->product_id : $landingPage->slug,
         'name'  => $landingPage->product?->name ?: $landingPage->title,
         'value' => (float) ($landingPage->effective_price ?? 0),
     ];

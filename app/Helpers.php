@@ -568,6 +568,37 @@ if (!function_exists('custom_text_color')) {
     }
 }
 
+if (!function_exists('tracking_item')) {
+    /**
+     * One product as a GA4 ecommerce item — the single source for every analytics event
+     * (view_item, list impressions, add_to_cart, checkout, purchase), so the same product is
+     * always the same item in reports. item_id is the product ID, matching the Google
+     * Merchant feed's g:id and the Meta pixel's content_ids — using the SKU in some events
+     * and the ID in others split one product into two in GA4 and broke catalog matching.
+     * Brand/category are read only when already loaded, so a product grid never pays an
+     * extra query per card for them.
+     */
+    function tracking_item(?\App\Models\Product $product, array $extra = []): array
+    {
+        if (!$product) {
+            return $extra;
+        }
+        $item = [
+            'item_id'   => (string) $product->id,
+            'item_name' => $product->name,
+            'price'     => round((float) $product->final_price, 2),
+        ];
+        if ($product->relationLoaded('brand') && $product->brand) {
+            $item['item_brand'] = $product->brand->name;
+        }
+        if ($product->relationLoaded('category') && $product->category) {
+            $item['item_category'] = $product->category->name;
+        }
+
+        return array_merge($item, array_filter($extra, fn ($v) => $v !== null && $v !== ''));
+    }
+}
+
 if (!function_exists('contrast_ratio')) {
     /** WCAG contrast ratio (1–21) between two #rrggbb colors, or null if either isn't one. */
     function contrast_ratio(?string $a, ?string $b): ?float

@@ -428,12 +428,94 @@ $pageTwitterImage = $meta('twitter_image', $pageOgImage);
     <script>
         window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());
         @if($googleEnhancedOn && $trackingData['google'])gtag('set','user_data',{!! Js::from($trackingData['google']) !!});@endif
+        {{-- Configured once with automatic page views off, then exactly one page_view per
+             Turbo navigation (turbo:load also fires for the first load). Re-running config on
+             every navigation re-sent a page view each time, on top of GA4's own history-change
+             tracking — double-counted views. In GA4 → Data streams → Enhanced measurement →
+             Page views → advanced settings, turn OFF "Page changes based on browser history
+             events" so GA4 doesn't add its own on top of these. --}}
+        @if($gaId)gtag('config','{{ $gaId }}',{send_page_view:false});@endif
+        @if($adsConversionId)gtag('config','{{ $adsConversionId }}');@endif
+        @if($gaId)
         document.addEventListener('turbo:load', function () {
-            @if($gaId)gtag('config','{{ $gaId }}');@endif
-            @if($adsConversionId)gtag('config','{{ $adsConversionId }}');@endif
+            gtag('event', 'page_view', { send_to: '{{ $gaId }}', page_location: location.href, page_title: document.title, page_referrer: window.mvLastUrl || document.referrer });
+            window.mvLastUrl = location.href;
         });
+        @endif
     </script>
     @endif
+    <script>
+    /*
+     * Ecommerce analytics — one sender for every GA4 event (gtag) and its GTM twin (dataLayer),
+     * so all of them share one shape and one product ID (see tracking_item() in helpers):
+     *
+     *   view_item_list  a product grid (homepage section, shop/category/brand page, related
+     *                   products) scrolls into view — every [data-track-list] container
+     *   select_item     a product card is clicked
+     *   add_to_cart / remove_from_cart / view_item / begin_checkout / purchase — fired by the
+     *                   pages that own them, through mvTrack()
+     *
+     * The list a product was picked from is remembered per product (sessionStorage) and attached
+     * as item_list_name to its later add_to_cart / checkout / purchase events — so GA4's
+     * "Item list name" dimension shows which homepage section or page actually sells.
+     * Guarded: Turbo re-runs <body> scripts on each visit; the listeners must exist only once.
+     */
+    if (!window.mvTrack) (function () {
+        var currency = {!! Js::from(setting('currency_code', 'BDT')) !!};
+        function listOf(id) { try { return sessionStorage.getItem('mv_list:' + id) || ''; } catch (e) { return ''; } }
+        function remember(id, list) { try { if (list) sessionStorage.setItem('mv_list:' + id, list); } catch (e) {} }
+        function cardItem(el) { try { return JSON.parse(el.getAttribute('data-track-item')); } catch (e) { return null; } }
+        function listName(el) { var c = el && el.closest('[data-track-list]'); return c ? c.getAttribute('data-track-list') : ''; }
+
+        window.mvTrack = function (event, data) {
+            data = Object.assign({ currency: currency }, data || {});
+            if (data.items) {
+                data.items = data.items.map(function (it) {
+                    var o = Object.assign({}, it);
+                    o.item_id = String(o.item_id);
+                    if (!o.item_list_name && listOf(o.item_id)) o.item_list_name = listOf(o.item_id);
+                    return o;
+                });
+            }
+            if (typeof gtag === 'function') gtag('event', event, data);
+            window.dataLayer = window.dataLayer || [];
+            window.dataLayer.push({ ecommerce: null }); // GTM: clear the previous ecommerce object
+            window.dataLayer.push({ event: event, ecommerce: data });
+        };
+        // GA4 item for a product card (its data-track-item JSON), tagged with the list it sits in
+        window.mvCardItem = function (el) {
+            var card = el && el.closest('[data-track-item]');
+            var it = card && cardItem(card);
+            if (it && listName(card)) it.item_list_name = listName(card);
+            return it;
+        };
+
+        var io = 'IntersectionObserver' in window ? new IntersectionObserver(function (entries) {
+            entries.forEach(function (en) {
+                if (!en.isIntersecting) return;
+                var list = en.target.getAttribute('data-track-list');
+                var items = [].slice.call(en.target.querySelectorAll('[data-track-item]'), 0, 30)
+                    .map(function (card, i) { var it = cardItem(card); if (it) { it.item_list_name = list; it.index = i; } return it; })
+                    .filter(Boolean);
+                if (!items.length) return; // a lazy section still loading — reported once its cards are in
+                io.unobserve(en.target);
+                window.mvTrack('view_item_list', { item_list_name: list, items: items });
+            });
+        }, { threshold: 0.25 }) : null;
+        document.addEventListener('turbo:load', function () {
+            if (io) document.querySelectorAll('[data-track-list]').forEach(function (c) { io.observe(c); });
+        });
+
+        document.addEventListener('click', function (e) {
+            var a = e.target.closest && e.target.closest('a[href]');
+            var it = a && window.mvCardItem(a);
+            if (!it) return;
+            remember(it.item_id, it.item_list_name);
+            window.mvTrack('select_item', { item_list_name: it.item_list_name || undefined, items: [it] });
+        }, true);
+        window.mvRememberList = remember;
+    })();
+    </script>
     @if($gtmId)
     <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer','{{ $gtmId }}');
         // Standard SPA pattern for GTM: push a virtual-pageview event on every Turbo
@@ -1453,9 +1535,16 @@ async function toggleWishlist(productId, btn) {
 // its fetch() succeeds) and the product-page form (a full-page POST + redirect —
 // see the session-flash block near the end of this file, which calls this once
 // per add, guarded server-side the same way the Purchase event already is).
+
+// Fires AddToCart for both the quick-add button (called directly, right after
+// its fetch() succeeds) and the product-page form (a full-page POST + redirect —
+// see the session-flash block near the end of this file, which calls this once
+// per add, guarded server-side the same way the Purchase event already is).
+// item.ga: the full GA4 item (brand, category, list) when the caller has it.
 function trackAddToCart(item) {
     var currency = {!! Js::from(setting('currency_code', 'BDT')) !!};
-    var value = (item.price || 0) * (item.quantity || 1);
+    var qty = item.quantity || 1;
+    var value = (item.price || 0) * qty;
     if (typeof fbq === 'function') {
         // eventID (when present) matches the server-side Conversions API call
         // CartController@add already fired for this same add — lets Meta dedupe the
@@ -1465,16 +1554,10 @@ function trackAddToCart(item) {
             content_name: item.name, value: value, currency: currency,
         }, item.fb_event_id ? { eventID: item.fb_event_id } : undefined);
     }
-    if (typeof gtag === 'function') {
-        gtag('event', 'add_to_cart', {
-            currency: currency, value: value,
-            items: [{ item_id: String(item.id), item_name: item.name, price: item.price, quantity: item.quantity || 1 }],
-        });
-    }
-    window.dataLayer = window.dataLayer || [];
-    window.dataLayer.push({
-        event: 'add_to_cart',
-        ecommerce: { currency: currency, value: value, items: [{ item_id: String(item.id), item_name: item.name, price: item.price, quantity: item.quantity || 1 }] },
+    if (item.ga && item.ga.item_list_name) window.mvRememberList(String(item.id), item.ga.item_list_name);
+    window.mvTrack('add_to_cart', {
+        value: value,
+        items: [Object.assign({ item_id: String(item.id), item_name: item.name, price: item.price }, item.ga || {}, { quantity: qty })],
     });
 }
 
@@ -1519,6 +1602,10 @@ async function toggleCartItem(productId, btn) {
         if (res.ok && (data.status === 'added' || data.status === 'removed')) {
             setQuickAddButtonState(btn, data.status === 'added');
 
+            if (data.status === 'removed') {
+                const it = window.mvCardItem(btn) || { item_id: String(productId), item_name: btn.dataset.productName || '', price: parseFloat(btn.dataset.productPrice || '0') };
+                window.mvTrack('remove_from_cart', { value: it.price || 0, items: [Object.assign(it, { quantity: 1 })] });
+            }
             if (data.status === 'added') {
                 trackAddToCart({
                     id: productId,
@@ -1526,6 +1613,7 @@ async function toggleCartItem(productId, btn) {
                     price: parseFloat(btn.dataset.productPrice || '0'),
                     quantity: 1,
                     fb_event_id: data.fb_event_id,
+                    ga: window.mvCardItem(btn),
                 });
                 const name = btn.dataset.productName;
                 showToast(name ? `Added "${name}" to cart!` : 'Added to cart!');

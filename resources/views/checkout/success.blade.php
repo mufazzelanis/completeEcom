@@ -186,12 +186,22 @@
 @if($shouldTrackPurchase ?? false)
 @php
     $currencyCode = setting('currency_code', 'BDT');
+    // Product ID (not SKU) — the same item_id/content_id as view_item, add_to_cart, the
+    // Merchant feed and Meta's catalog; mixing in SKUs here split each product in two.
     $trackedItems = $order->items->map(fn ($item) => [
-        'id'       => $item->product?->sku ?: (string) $item->product_id,
+        'id'       => (string) $item->product_id,
         'name'     => $item->product_name,
         'price'    => (float) $item->price,
         'quantity' => $item->quantity,
     ])->values();
+    $order->items->pluck('product')->filter()->each->loadMissing('brand', 'category');
+    $gaItems = $order->items->map(fn ($item) => tracking_item($item->product, [
+        'item_id' => (string) $item->product_id, // still set when the product was since deleted
+        'item_name' => $item->product_name,
+        'price' => (float) $item->price,
+        'quantity' => (int) $item->quantity,
+        'item_variant' => $item->variant_label,
+    ]))->values();
 
     // Re-derived here rather than reused from layouts/app.blade.php — @extends
     // evaluates this @section before the parent layout's own @php block runs,
@@ -227,15 +237,19 @@
     }
     @endif
 
+    // GA4 + GTM via the layout's shared tracker. value = revenue incl. shipping, as GA4
+    // expects; shipping/tax/coupon broken out so reports can separate them.
+    window.mvTrack('purchase', {
+        transaction_id: orderId,
+        value: value,
+        shipping: {{ (float) $order->shipping }},
+        tax: {{ (float) $order->tax }},
+        @if($order->coupon_code)coupon: @json($order->coupon_code),@endif
+        @if((float) $order->discount > 0)discount: {{ (float) $order->discount }},@endif
+        payment_type: @json($order->payment_method),
+        items: @json($gaItems),
+    });
     if (typeof gtag === 'function') {
-        gtag('event', 'purchase', {
-            transaction_id: orderId,
-            value: value,
-            currency: currency,
-            items: items.map(function (i) {
-                return { item_id: i.id, item_name: i.name, price: i.price, quantity: i.quantity };
-            })
-        });
         @if($adsConversionId && $adsPurchaseLabel)
         gtag('event', 'conversion', {
             send_to: {!! Js::from($adsConversionId . '/' . $adsPurchaseLabel) !!},
@@ -246,16 +260,6 @@
         @endif
     }
 
-    window.dataLayer = window.dataLayer || [];
-    window.dataLayer.push({
-        event: 'purchase',
-        ecommerce: {
-            transaction_id: orderId,
-            value: value,
-            currency: currency,
-            items: items
-        }
-    });
 
     @if($pixelOn)
     if (typeof fbq === 'function') {

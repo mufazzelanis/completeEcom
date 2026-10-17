@@ -574,7 +574,7 @@ class CheckoutController extends Controller
                 eventName: 'Purchase',
                 eventId: $fbPurchaseEventId,
                 customData: [
-                    'content_ids'  => $order->items->map(fn ($item) => $item->product?->sku ?: (string) $item->product_id)->values()->all(),
+                    'content_ids'  => $order->items->map(fn ($item) => (string) $item->product_id)->values()->all(), // product ID, same as the pixel/catalog
                     'content_type' => 'product',
                     'value'        => (float) $order->total,
                     'currency'     => setting('currency_code', 'BDT'),

@@ -208,4 +208,14 @@
         @endif
     @endif
 </div>
+@if($cartItems->isNotEmpty())
+@php
+    $cartItems->pluck('product')->filter()->each->loadMissing('brand', 'category');
+    $gaCartItems = $cartItems->filter(fn ($i) => $i->product)->map(fn ($i) => tracking_item($i->product, [
+        'price' => (float) $i->unit_price, 'quantity' => (int) $i->quantity, 'item_variant' => $i->combination?->label,
+    ]))->values();
+@endphp
+{{-- GA4 view_cart — the step between add_to_cart and begin_checkout in the funnel report --}}
+<script>window.mvTrack && window.mvTrack('view_cart', { value: {{ (float) $cartItems->sum('subtotal') }}, items: @json($gaCartItems) });</script>
+@endif
 @endsection

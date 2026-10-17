@@ -548,6 +548,13 @@ function fillAddress(address) {
         'price'    => (float) $item->unit_price,
         'quantity' => $item->quantity,
     ])->values();
+    // Full GA4 items (brand, category, variant — same shape/ID as every other event)
+    $cartItems->pluck('product')->filter()->each->loadMissing('brand', 'category');
+    $gaItems = $cartItems->map(fn ($item) => tracking_item($item->product, [
+        'price' => (float) $item->unit_price,
+        'quantity' => (int) $item->quantity,
+        'item_variant' => $item->combination?->label,
+    ]))->values();
 @endphp
 <script>
 (function () {
@@ -564,14 +571,8 @@ function fillAddress(address) {
             value: value, currency: currency,
         }, { eventID: {!! Js::from($fbInitiateCheckoutEventId) !!} });
     }
-    if (typeof gtag === 'function') {
-        gtag('event', 'begin_checkout', {
-            currency: currency, value: value,
-            items: items.map(function (i) { return { item_id: i.id, item_name: i.name, price: i.price, quantity: i.quantity }; }),
-        });
-    }
-    window.dataLayer = window.dataLayer || [];
-    window.dataLayer.push({ event: 'begin_checkout', ecommerce: { currency: currency, value: value, items: items } });
+    // GA4 + GTM (GTM previously got {id, name} items, which GA4 tags can't read)
+    window.mvTrack('begin_checkout', { value: value, items: @json($gaItems) });
 })();
 </script>
 @endsection

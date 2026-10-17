@@ -7,7 +7,7 @@
     $primary = $landingPage->brand_color ?: setting('primary_color', '#ea580c');
     $primaryDark = hex_shade($primary, -0.22);
     $currencyCode = setting('currency_code', 'BDT');
-    $trackProductId = $landingPage->product_id ? ($landingPage->product?->sku ?: (string) $landingPage->product_id) : $landingPage->slug;
+    $trackProductId = $landingPage->product_id ? (string) $landingPage->product_id : $landingPage->slug; // product ID (not SKU), as in every other event and the Merchant feed
     // Computed once, shared by the hero badge and the offer box below (was duplicated/undefined-if-no-hero-image before).
     $discountPct = ($landingPage->compare_at_price && $landingPage->effective_price && $landingPage->compare_at_price > $landingPage->effective_price)
         ? round((($landingPage->compare_at_price - $landingPage->effective_price) / $landingPage->compare_at_price) * 100)

@@ -679,7 +679,7 @@
     @if($related->isNotEmpty())
         <div class="mt-12">
             <h2 class="text-xl font-bold text-gray-900 mb-6">Related Products</h2>
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-6" data-track-list="Related products">
                 @foreach($related as $relProduct)
                     @include('partials.product-card', ['product' => $relProduct])
                 @endforeach
@@ -715,16 +715,10 @@ function updateQty(delta) {
             content_category: category, value: value, currency: currency,
         }, { eventID: {!! Js::from($fbViewContentEventId) !!} });
     }
-    if (typeof gtag === 'function') {
-        gtag('event', 'view_item', {
-            currency: currency, value: value,
-            items: [{ item_id: id, item_name: name, item_category: category, price: value }],
-        });
-    }
-    window.dataLayer = window.dataLayer || [];
-    window.dataLayer.push({
-        event: 'view_item',
-        ecommerce: { currency: currency, value: value, items: [{ item_id: id, item_name: name, item_category: category, price: value }] },
+    // GA4 + GTM through the layout's shared tracker (same item shape/ID as every other event)
+    window.mvTrack('view_item', {
+        value: value,
+        items: [{!! Js::from(tracking_item($product->loadMissing('brand', 'category'), ['price' => round($trackedValue, 2)])) !!}],
     });
 })();
 </script>

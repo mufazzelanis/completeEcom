@@ -202,6 +202,11 @@ class CartController extends Controller
             'price' => $addedPrice,
             'quantity' => (int) $request->quantity,
             'fb_event_id' => $fbAddToCartEventId,
+            // full GA4 item (brand, category, chosen variant) for the analytics event
+            'ga' => tracking_item($product->loadMissing('brand', 'category'), [
+                'price' => $addedPrice,
+                'item_variant' => $combination?->label ?? null,
+            ]),
         ]);
 
         return back()->with('success', 'Product added to cart!');

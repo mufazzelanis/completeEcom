@@ -450,6 +450,8 @@
                 },
                 step(dir, auto = false) {
                     const el = this.$refs.track;
+                    // Turbo swapped the page out but this timer kept firing — stop it for good
+                    if (!el || !el.isConnected) { clearInterval(this.timer); return; }
                     if (auto && this.atEnd) { el.scrollTo({ left: 0, behavior: 'smooth' }); return; }
                     el.scrollBy({ left: dir * el.clientWidth * 0.8, behavior: 'smooth' });
                 },
@@ -545,6 +547,7 @@
          fetched batch) is pulled from home.section-products a batch at a time on "See More",
          instead of shipping every hidden card in the initial HTML. --}}
     <div class="cv-auto relative overflow-hidden mx-3 md:mx-0 mt-3 md:mt-4 rounded-2xl md:rounded-none shadow-sm md:shadow-none {{ $sec->theme === 'sale' ? 'bg-gradient-to-r from-red-500 to-orange-500' : 'bg-white dark:bg-gray-900' }}"
+         data-track-list="{{ $sec->source_type === 'personalized' ? 'Home: Recommended for you' : 'Home: ' . $sec->title }}"
          x-data="{
             expanded: false, loading: false,
             next: {{ min($sec->product_limit, count($entry['products'])) }},
@@ -742,6 +745,8 @@ $reviewThemes = [
                 },
                 step(dir, auto = false) {
                     const el = this.$refs.track;
+                    // Turbo swapped the page out but this timer kept firing — stop it for good
+                    if (!el || !el.isConnected) { clearInterval(this.timer); return; }
                     if (auto && this.atEnd) { el.scrollTo({ left: 0, behavior: 'smooth' }); return; }
                     el.scrollBy({ left: dir * el.clientWidth * 0.8, behavior: 'smooth' });
                 },

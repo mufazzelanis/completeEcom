@@ -214,7 +214,8 @@
                 {{-- Product cards title themselves with <h3>; this keeps the outline h1 → h2 → h3
                      for screen readers (and PageSpeed's "heading order") without changing the look. --}}
                 <h2 class="sr-only">Products</h2>
-                <div class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
+                <div class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4"
+                     data-track-list="{{ request()->filled('search') ? 'Search results' : (isset($category) ? 'Category: ' : (isset($currentBrand) ? 'Brand: ' : '')) . (request()->filled('search') ? '' : $shopHeading) }}">
                     @foreach($products as $product)
                         @include('partials.product-card', ['product' => $product])
                     @endforeach

@@ -203,7 +203,7 @@ class LandingPageController extends Controller
             eventName: 'Purchase',
             eventId: $fbPurchaseEventId,
             customData: [
-                'content_ids'  => [$landingPage->product?->sku ?: ($landingPage->product_id ? (string) $landingPage->product_id : $landingPage->slug)],
+                'content_ids'  => [$landingPage->product_id ? (string) $landingPage->product_id : $landingPage->slug], // product ID, same as the pixel/catalog
                 'content_type' => 'product',
                 'value'        => (float) $order->total,
                 'currency'     => setting('currency_code', 'BDT'),
