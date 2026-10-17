@@ -21,7 +21,7 @@
                 <article class="bg-white dark:bg-gray-900 rounded-2xl shadow-sm overflow-hidden hover:shadow-md transition group border border-transparent dark:border-gray-800">
                     @if($post->image)
                     <a href="{{ route('blog.show', $post) }}" class="block aspect-[16/10] bg-gray-100 dark:bg-gray-800 overflow-hidden">
-                        <img src="{{ Storage::url($post->image) }}" alt="{{ $post->title }}" loading="lazy" decoding="async" class="w-full h-full object-cover group-hover:scale-105 transition duration-300">
+                        <img src="{{ image_thumb($post->image, 800) }}" alt="{{ $post->title }}" loading="lazy" decoding="async" class="w-full h-full object-cover group-hover:scale-105 transition duration-300">
                     </a>
                     @endif
                     <div class="p-5">

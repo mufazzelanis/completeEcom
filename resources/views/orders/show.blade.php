@@ -26,7 +26,7 @@
                         <div class="flex items-center space-x-4">
                             <div class="w-16 h-16 bg-gray-100 rounded-xl overflow-hidden flex-shrink-0 p-1.5">
                                 @if($item->product && $item->product->image)
-                                    <img src="{{ Storage::url($item->product->image) }}" class="w-full h-full object-contain">
+                                    <img src="{{ image_thumb($item->product->image, 200) }}" alt="" loading="lazy" class="w-full h-full object-contain">
                                 @endif
                             </div>
                             <div class="flex-1">

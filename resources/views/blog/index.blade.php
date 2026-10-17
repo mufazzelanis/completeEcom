@@ -57,7 +57,7 @@
             @foreach($featured as $post)
             <a href="{{ route('blog.show', $post) }}" class="relative shrink-0 w-[80%] sm:w-[60%] md:w-auto snap-center rounded-2xl overflow-hidden shadow-sm group aspect-[16/10] bg-gray-100 dark:bg-gray-800">
                 @if($post->image)
-                    <img src="{{ Storage::url($post->image) }}" alt="{{ $post->title }}" loading="lazy" class="w-full h-full object-cover group-hover:scale-105 transition duration-300">
+                    <img src="{{ image_thumb($post->image, 800) }}" alt="{{ $post->title }}" loading="lazy" class="w-full h-full object-cover group-hover:scale-105 transition duration-300">
                 @endif
                 <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent"></div>
                 <div class="absolute bottom-0 left-0 right-0 p-4">
@@ -78,7 +78,7 @@
                 <article class="bg-white dark:bg-gray-900 rounded-2xl shadow-sm overflow-hidden hover:shadow-md transition group border border-transparent dark:border-gray-800">
                     @if($post->image)
                     <a href="{{ route('blog.show', $post) }}" class="block aspect-[16/10] bg-gray-100 dark:bg-gray-800 overflow-hidden">
-                        <img src="{{ Storage::url($post->image) }}" alt="{{ $post->title }}" loading="lazy" decoding="async" class="w-full h-full object-cover group-hover:scale-105 transition duration-300">
+                        <img src="{{ image_thumb($post->image, 800) }}" alt="{{ $post->title }}" loading="lazy" decoding="async" class="w-full h-full object-cover group-hover:scale-105 transition duration-300">
                     </a>
                     @endif
                     <div class="p-5">

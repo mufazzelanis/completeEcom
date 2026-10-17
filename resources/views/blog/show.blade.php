@@ -137,7 +137,7 @@
                     @foreach($related as $r)
                     <a href="{{ route('blog.show', $r) }}" class="flex gap-3 group">
                         @if($r->image)
-                        <img src="{{ Storage::url($r->image) }}" alt="{{ $r->title }}" loading="lazy" class="w-16 h-16 object-cover rounded-xl flex-shrink-0">
+                        <img src="{{ image_thumb($r->image, 200) }}" alt="{{ $r->title }}" loading="lazy" class="w-16 h-16 object-cover rounded-xl flex-shrink-0">
                         @endif
                         <div class="min-w-0">
                             <p class="text-sm font-medium text-gray-700 group-hover:text-indigo-600 transition line-clamp-2">{{ $r->title }}</p>

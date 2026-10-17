@@ -354,7 +354,7 @@
                                 @elseif($pm->type === 'card') bg-purple-100
                                 @else bg-blue-100 @endif">
                                 @if($pm->logo)
-                                    <img src="{{ Storage::url($pm->logo) }}" class="w-8 h-8 object-contain">
+                                    <img src="{{ image_thumb($pm->logo, 96) }}" alt="" class="w-8 h-8 object-contain">
                                 @elseif($pm->type === 'cod')
                                     <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
                                 @elseif($pm->type === 'mobile_banking')
@@ -432,7 +432,7 @@
                             <div class="flex items-center space-x-3">
                                 <div class="w-12 h-12 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0 p-1">
                                     @if($item->product->image)
-                                        <img src="{{ Storage::url($item->product->image) }}" class="w-full h-full object-contain">
+                                        <img src="{{ image_thumb($item->product->image, 200) }}" alt="" class="w-full h-full object-contain">
                                     @endif
                                 </div>
                                 <div class="flex-1 min-w-0">

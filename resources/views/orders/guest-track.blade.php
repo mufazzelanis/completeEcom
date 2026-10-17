@@ -86,7 +86,7 @@
                 <div class="flex items-center gap-4 py-3 {{ !$loop->last ? 'border-b border-gray-100' : '' }}">
                     <div class="w-14 h-14 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0 p-1.5">
                         @if($item->product && $item->product->image)
-                            <img src="{{ Storage::url($item->product->image) }}" class="w-full h-full object-contain">
+                            <img src="{{ image_thumb($item->product->image, 200) }}" alt="" loading="lazy" class="w-full h-full object-contain">
                         @endif
                     </div>
                     <div class="flex-1 min-w-0">

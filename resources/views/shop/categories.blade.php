@@ -32,7 +32,7 @@
                         <a href="{{ route('shop.category', $category->slug) }}" class="flex items-center gap-4">
                             <div class="w-16 h-16 bg-gradient-to-br from-orange-100 to-orange-50 dark:from-orange-500/20 dark:to-orange-500/10 rounded-2xl flex items-center justify-center flex-shrink-0 overflow-hidden group-hover/card:from-orange-200 group-hover/card:to-orange-100 dark:group-hover/card:from-orange-500/30 dark:group-hover/card:to-orange-500/15 group-hover/card:scale-105 transition-all duration-200">
                                 @if($category->image)
-                                    <img src="{{ Storage::url($category->image) }}" alt="{{ $category->name }}" loading="lazy" decoding="async" class="w-full h-full object-cover">
+                                    <img src="{{ image_thumb($category->image, 200) }}" alt="{{ $category->name }}" loading="lazy" decoding="async" class="w-full h-full object-cover">
                                 @else
                                     <span class="text-orange-700 dark:text-orange-400 font-extrabold text-xl">{{ strtoupper(substr($category->name, 0, 2)) }}</span>
                                 @endif

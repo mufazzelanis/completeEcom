@@ -21,7 +21,7 @@
                    class="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow duration-200 p-5 flex flex-col items-center text-center gap-3 group">
                     <div class="w-16 h-16 bg-gradient-to-br from-orange-100 to-orange-50 rounded-2xl flex items-center justify-center flex-shrink-0 overflow-hidden group-hover:from-orange-200 group-hover:to-orange-100 transition-all">
                         @if($brand->logo)
-                            <img src="{{ Storage::url($brand->logo) }}" alt="{{ $brand->name }}" class="w-full h-full object-contain p-2">
+                            <img src="{{ image_thumb($brand->logo, 200) }}" alt="{{ $brand->name }}" loading="lazy" decoding="async" class="w-full h-full object-contain p-2">
                         @else
                             <span class="text-orange-700 font-extrabold text-xl">{{ strtoupper(substr($brand->name, 0, 2)) }}</span>
                         @endif
