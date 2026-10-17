@@ -110,7 +110,8 @@ class HomeController extends Controller
 
         $testimonials = $this->remember('testimonials', fn () => Review::with('user', 'product')
             ->where('is_approved', true)
-            ->whereHas('user')
+            // account reviews, plus verified buyers who reviewed from a post-delivery link
+            ->where(fn ($q) => $q->whereHas('user')->orWhereNotNull('reviewer_name'))
             ->latest()
             ->take(15)
             ->get());

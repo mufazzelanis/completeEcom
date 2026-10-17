@@ -109,6 +109,11 @@
             @endif
 
             @if(in_array($order->status, ['delivered', 'completed']))
+                {{-- Same no-login review page the post-delivery SMS/email links to --}}
+                <a href="{{ $order->reviewUrl() }}"
+                    class="flex items-center justify-center w-full bg-orange-700 text-white py-2.5 rounded-xl text-sm font-semibold hover:brightness-110 transition mb-3">
+                    ⭐ Rate your products
+                </a>
                 @if($existingReturn)
                     <a href="{{ route('account.returns.show', $existingReturn) }}" class="block bg-gray-50 hover:bg-gray-100 transition rounded-xl p-4 text-center">
                         <p class="text-xs text-gray-500 mb-1">Return Request</p>

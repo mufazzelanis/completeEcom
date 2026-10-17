@@ -371,6 +371,8 @@ class CheckoutController extends Controller
 
                 Auth::login($user);
                 $accountCreated = true;
+                // its password is random — the success page offers to set a real one (SetPasswordController)
+                session(['can_set_password' => $user->id]);
             }
         }
 

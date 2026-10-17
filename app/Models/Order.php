@@ -17,6 +17,7 @@ class Order extends Model
         'points_awarded_at', 'points_redeemed', 'points_discount_value',
         'landing_page_id', 'landing_page_data',
         'source', 'created_by',
+        'delivered_at', 'review_requested_at', 'review_token',
     ];
 
     protected $casts = [
@@ -31,6 +32,8 @@ class Order extends Model
         'fraud_checked_at'       => 'datetime',
         'points_awarded_at'      => 'datetime',
         'landing_page_data'      => 'array',
+        'delivered_at'           => 'datetime',
+        'review_requested_at'    => 'datetime',
     ];
 
     protected static function boot()
@@ -39,6 +42,13 @@ class Order extends Model
         static::creating(function ($order) {
             if (empty($order->guest_token) && !$order->user_id) {
                 $order->guest_token = Str::random(64);
+            }
+        });
+        // Stamped the first time an order reaches "delivered", whatever path changes the status
+        // — the post-delivery review request (reviews:send-requests) is timed from this.
+        static::saving(function ($order) {
+            if ($order->isDirty('status') && in_array($order->status, ['delivered', 'completed'], true) && !$order->delivered_at) {
+                $order->delivered_at = now();
             }
         });
         static::updated(function ($order) {
@@ -51,6 +61,23 @@ class Order extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    /**
+     * Short, unguessable link to this order's review page (/r/{token}) — works without an
+     * account, so a customer who ordered with only a phone number can still review. The token
+     * is created on first use and kept, so every message about this order carries the same link.
+     */
+    public function reviewUrl(): string
+    {
+        if (!$this->review_token) {
+            do {
+                $token = Str::random(12);
+            } while (static::where('review_token', $token)->exists());
+            $this->forceFill(['review_token' => $token])->saveQuietly();
+        }
+
+        return route('reviews.request', $this->review_token);
     }
 
     public function crmContact()

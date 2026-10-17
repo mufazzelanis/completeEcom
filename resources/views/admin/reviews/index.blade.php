@@ -28,7 +28,7 @@
         <tbody class="divide-y divide-gray-50">
             @forelse($reviews as $review)
                 <tr class="hover:bg-gray-50 transition">
-                    <td class="px-6 py-4 text-sm font-medium text-gray-800">{{ $review->user->name }}</td>
+                    <td class="px-6 py-4 text-sm font-medium text-gray-800">{{ $review->author_name }}@if($review->isVerifiedPurchase()) <span class="text-[11px] text-green-700">✓ verified</span>@endif</td>
                     <td class="px-6 py-4 text-sm text-gray-600 max-w-36 truncate">{{ $review->product->name }}</td>
                     <td class="px-6 py-4 text-center">
                         <div class="flex justify-center">

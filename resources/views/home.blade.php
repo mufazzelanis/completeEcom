@@ -701,10 +701,10 @@ $reviewThemes = [
                         <p class="text-gray-700 dark:text-gray-700 text-sm leading-relaxed line-clamp-4 mb-4 min-h-[4.5rem] font-medium">&ldquo;{{ $review->comment }}&rdquo;</p>
                         <div class="flex items-center gap-3 pt-3 border-t border-white/60">
                             <div class="w-9 h-9 bg-gradient-to-br {{ $theme['avatar'] }} rounded-full flex items-center justify-center flex-shrink-0 shadow-sm">
-                                <span class="text-white font-bold text-xs">{{ strtoupper(substr($review->user->name, 0, 1)) }}</span>
+                                <span class="text-white font-bold text-xs">{{ mb_strtoupper(mb_substr($review->author_name, 0, 1)) }}</span>
                             </div>
                             <div class="min-w-0">
-                                <p class="font-semibold text-gray-800 dark:text-gray-800 text-sm truncate">{{ $review->user->name }}</p>
+                                <p class="font-semibold text-gray-800 dark:text-gray-800 text-sm truncate">{{ $review->author_name }}</p>
                                 @if($review->product)
                                     <p class="text-gray-500 dark:text-gray-500 text-[11px] truncate">on <a href="{{ route('products.show', $review->product->slug) }}" class="hover:text-orange-600 hover:underline transition">{{ $review->product->name }}</a></p>
                                 @endif

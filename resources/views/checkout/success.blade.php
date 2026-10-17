@@ -22,10 +22,35 @@
                     <div>
                         <p class="text-sm font-semibold text-green-700">Account Created!</p>
                         <p class="text-sm text-green-600">Your account has been created with phone number <strong>{{ auth()->user()->phone }}</strong>.</p>
-                        <p class="text-xs text-green-500 mt-1">Next time, just login with your phone number to track orders and manage your account.</p>
+                        <p class="text-xs text-green-600 mt-1">Set a password now to log in later with your phone number — to track this order and rate the products once they arrive.</p>
                     </div>
                 </div>
             </div>
+        @endif
+
+        {{-- First password for the account just created (it's random otherwise, with no email to
+             reset through) — offered for the whole session, so it survives a page refresh. --}}
+        @if(session('password_set'))
+            <div class="bg-green-50 border border-green-200 rounded-xl p-4 mb-6 text-left">
+                <p class="text-sm font-semibold text-green-700">✓ Password saved — log in any time with {{ auth()->user()->phone }} and your password.</p>
+            </div>
+        @elseif(session('can_set_password') === auth()->id())
+            <form method="POST" action="{{ route('account.set-password') }}" class="bg-white border border-gray-200 rounded-xl p-4 mb-6 text-left space-y-3">
+                @csrf
+                <p class="text-sm font-semibold text-gray-800">Set your password</p>
+                <div>
+                    <label for="new-password" class="block text-xs text-gray-600 mb-1">Password (at least 6 characters)</label>
+                    <input id="new-password" type="password" name="password" required minlength="6" autocomplete="new-password"
+                           class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500">
+                </div>
+                <div>
+                    <label for="new-password-confirm" class="block text-xs text-gray-600 mb-1">Confirm password</label>
+                    <input id="new-password-confirm" type="password" name="password_confirmation" required minlength="6" autocomplete="new-password"
+                           class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500">
+                </div>
+                @error('password')<p class="text-xs text-red-600">{{ $message }}</p>@enderror
+                <button type="submit" class="w-full bg-orange-700 text-white font-semibold py-2.5 rounded-lg text-sm hover:brightness-110 transition">Save password</button>
+            </form>
         @endif
 
         <div class="bg-gray-50 rounded-xl p-6 text-left mb-8">

@@ -142,7 +142,7 @@
     'review' => $product->reviews->count() > 0 ? $product->reviews->map(fn ($review) => [
         '@type' => 'Review',
         'reviewRating' => ['@type' => 'Rating', 'ratingValue' => $review->rating],
-        'author' => ['@type' => 'Person', 'name' => $review->user->name],
+        'author' => ['@type' => 'Person', 'name' => $review->author_name],
         'reviewBody' => $review->comment,
         'datePublished' => $review->created_at->format('Y-m-d'),
     ])->all() : null,
@@ -589,10 +589,12 @@
                         <div class="flex items-center justify-between mb-2">
                             <div class="flex items-center space-x-3">
                                 <div class="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center">
-                                    <span class="text-indigo-600 font-semibold text-sm">{{ strtoupper(substr($review->user->name, 0, 1)) }}</span>
+                                    <span class="text-indigo-600 font-semibold text-sm">{{ mb_strtoupper(mb_substr($review->author_name, 0, 1)) }}</span>
                                 </div>
                                 <div>
-                                    <p class="font-semibold text-gray-800 text-sm">{{ $review->user->name }}</p>
+                                    <p class="font-semibold text-gray-800 text-sm">{{ $review->author_name }}
+                                        @if($review->isVerifiedPurchase())<span class="ml-1.5 inline-flex items-center gap-0.5 text-[11px] font-medium text-green-700 dark:text-green-400">✓ Verified purchase</span>@endif
+                                    </p>
                                     <div class="flex">
                                         @for($i = 1; $i <= 5; $i++)
                                             <svg class="w-4 h-4 {{ $i <= $review->rating ? 'text-yellow-400' : 'text-gray-300' }}" fill="currentColor" viewBox="0 0 20 20">

@@ -174,6 +174,9 @@ Route::get('/brands', [ShopController::class, 'brands'])->name('brands.index');
 Route::get('/shop/category/{category}', [ShopController::class, 'category'])->name('shop.category');
 Route::get('/brand/{brand:slug}', [ShopController::class, 'brand'])->name('shop.brand');
 Route::get('/products/{product}', [ProductController::class, 'show'])->name('products.show');
+// Post-delivery review link sent by reviews:send-requests (short, so it fits in one SMS)
+Route::get('/r/{token}', [\App\Http\Controllers\ReviewRequestController::class, 'show'])->where('token', '[A-Za-z0-9]{12}')->name('reviews.request');
+Route::post('/r/{token}', [\App\Http\Controllers\ReviewRequestController::class, 'store'])->where('token', '[A-Za-z0-9]{12}')->middleware('throttle:20,1')->name('reviews.request.store');
 Route::post('/products/{product}/review', [ProductController::class, 'storeReview'])->middleware(['auth', 'throttle:5,1'])->name('products.review');
 
 // Cart Routes
@@ -212,6 +215,9 @@ Route::post('/track-order', [CheckoutController::class, 'guestTrackLookup'])->mi
 Route::get('/track-order/{order_number}/{token}', [CheckoutController::class, 'guestTrack'])->name('guest.order.track');
 
 Route::middleware('auth')->group(function () {
+
+    // First password for an account just created at checkout (phone only) — see SetPasswordController
+    Route::post('/account/set-password', [\App\Http\Controllers\SetPasswordController::class, 'store'])->middleware('throttle:10,1')->name('account.set-password');
 
     // Orders
     Route::get('/orders', [OrderController::class, 'index'])->name('orders.index');

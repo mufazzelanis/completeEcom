@@ -40,6 +40,12 @@
         @if($order->status === 'cancelled')
             <div class="mt-4 bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-600 font-medium">This order has been cancelled.</div>
         @endif
+        @if(in_array($order->status, ['delivered', 'completed']))
+            {{-- Same no-login review page the post-delivery SMS/email links to --}}
+            <a href="{{ $order->reviewUrl() }}" class="mt-4 flex items-center justify-center w-full bg-orange-700 text-white py-2.5 rounded-xl text-sm font-semibold hover:brightness-110 transition">
+                ⭐ Rate your products
+            </a>
+        @endif
     </div>
 
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">

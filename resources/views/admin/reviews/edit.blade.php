@@ -23,7 +23,7 @@
             @endif
             <div>
                 <p class="font-semibold text-gray-800">{{ $review->product->name ?? 'Unknown product' }}</p>
-                <p class="text-xs text-gray-400">by {{ $review->user->name ?? 'Unknown customer' }} &middot; {{ $review->created_at->format('d M Y') }}</p>
+                <p class="text-xs text-gray-400">by {{ $review->author_name }}{{ $review->isVerifiedPurchase() ? ' (verified purchase, order #' . $review->order_id . ')' : '' }} &middot; {{ $review->created_at->format('d M Y') }}</p>
             </div>
         </div>
 
