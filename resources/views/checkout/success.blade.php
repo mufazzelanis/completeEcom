@@ -35,21 +35,68 @@
                 <p class="text-sm font-semibold text-green-700">✓ Password saved — log in any time with {{ auth()->user()->phone }} and your password.</p>
             </div>
         @elseif(session('can_set_password') === auth()->id())
-            <form method="POST" action="{{ route('account.set-password') }}" class="bg-white border border-gray-200 rounded-xl p-4 mb-6 text-left space-y-3">
+            {{-- Same <x-auth-field> as the login page (eye button to show/hide each field), plus a
+                 live strength meter, match check and Caps Lock warning; Save stays disabled until
+                 the password is valid and both fields match. Meter colors are inline hex, not
+                 Tailwind classes — the orange/red palettes follow the admin's brand colors here,
+                 which would turn a "weak" bar into brand blue. --}}
+            <form method="POST" action="{{ route('account.set-password') }}" class="bg-white border border-gray-200 rounded-xl p-4 mb-6 text-left space-y-4"
+                  x-data="{
+                      pw: '', pw2: '', caps: false, saving: false,
+                      get score() {
+                          const p = this.pw; if (p.length < 6) return 0;
+                          let s = 1;
+                          if (p.length >= 10) s++;
+                          if (/[a-zA-Z]/.test(p) && /\d/.test(p)) s++;
+                          if (/[A-Z]/.test(p) && /[a-z]/.test(p) || /[^a-zA-Z0-9]/.test(p)) s++;
+                          return Math.min(s, 4);
+                      },
+                      get level() { return [['Too short', '#9ca3af'], ['Weak', '#f43f5e'], ['Fair', '#f59e0b'], ['Good', '#14b8a6'], ['Strong', '#10b981']][this.score]; },
+                      get matches() { return this.pw2.length > 0 && this.pw === this.pw2; },
+                      get valid() { return this.pw.length >= 6 && this.matches; },
+                      checkCaps(e) { this.caps = !!(e.getModifierState && e.getModifierState('CapsLock')); },
+                  }"
+                  @submit="if (!valid) { $event.preventDefault(); return; } saving = true">
                 @csrf
-                <p class="text-sm font-semibold text-gray-800">Set your password</p>
                 <div>
-                    <label for="new-password" class="block text-xs text-gray-600 mb-1">Password (at least 6 characters)</label>
-                    <input id="new-password" type="password" name="password" required minlength="6" autocomplete="new-password"
-                           class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500">
+                    <p class="text-sm font-semibold text-gray-800">Set your password</p>
+                    <p class="text-xs text-gray-500 mt-0.5">You'll log in with <strong>{{ auth()->user()->phone }}</strong> and this password.</p>
                 </div>
+
                 <div>
-                    <label for="new-password-confirm" class="block text-xs text-gray-600 mb-1">Confirm password</label>
-                    <input id="new-password-confirm" type="password" name="password_confirmation" required minlength="6" autocomplete="new-password"
-                           class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500">
+                    <x-auth-field id="new-password" name="password" type="password" icon="lock" label="Password"
+                                  required minlength="6" autocomplete="new-password" placeholder="At least 6 characters"
+                                  x-model="pw" x-on:keyup="checkCaps($event)" x-on:keydown="checkCaps($event)" />
+                    {{-- strength meter: 4 segments filled up to the current score --}}
+                    <div class="mt-2" x-show="pw.length" x-cloak>
+                        <div class="flex gap-1" aria-hidden="true">
+                            <template x-for="i in 4" :key="i">
+                                <div class="h-1.5 flex-1 rounded-full bg-gray-200 dark:bg-gray-700 transition-colors"
+                                     :style="i <= score ? `background-color: ${level[1]}` : ''"></div>
+                            </template>
+                        </div>
+                        <p class="text-xs mt-1 font-medium" :style="`color: ${level[1]}`" aria-live="polite">
+                            <span x-text="level[0]"></span><span x-show="score > 0 && score < 3" class="text-gray-500 font-normal"> — longer, with numbers and symbols, is safer</span>
+                        </p>
+                    </div>
                 </div>
-                @error('password')<p class="text-xs text-red-600">{{ $message }}</p>@enderror
-                <button type="submit" class="w-full bg-orange-700 text-white font-semibold py-2.5 rounded-lg text-sm hover:brightness-110 transition">Save password</button>
+
+                <div>
+                    <x-auth-field id="new-password-confirm" name="password_confirmation" type="password" icon="lock" label="Confirm password"
+                                  required minlength="6" autocomplete="new-password" placeholder="Type it again"
+                                  x-model="pw2" x-on:keyup="checkCaps($event)" x-on:keydown="checkCaps($event)" />
+                    <p class="text-xs mt-1 font-medium" x-show="pw2.length" x-cloak aria-live="polite"
+                       :style="`color: ${matches ? '#10b981' : '#f59e0b'}`"
+                       x-text="matches ? '✓ Passwords match' : '✗ Passwords don\'t match yet'"></p>
+                </div>
+
+                <p class="text-xs font-medium text-amber-700 dark:text-yellow-400" x-show="caps" x-cloak>⚠ Caps Lock is on</p>
+
+                <button type="submit" :disabled="!valid || saving" :class="(!valid || saving) && 'opacity-60 cursor-not-allowed'"
+                        class="w-full bg-orange-700 text-white font-semibold py-2.5 rounded-lg text-sm hover:brightness-110 transition">
+                    <span x-show="!saving">Save password</span>
+                    <span x-show="saving" x-cloak>Saving…</span>
+                </button>
             </form>
         @endif
 
