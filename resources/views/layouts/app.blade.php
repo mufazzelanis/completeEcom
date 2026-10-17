@@ -11,7 +11,6 @@ $accentColor    = setting('accent_color', '#dc2626');
 $textColor       = custom_text_color();
 $textColorChanged = $textColor !== null;
 $gaId         = setting('google_analytics_id', '');
-$gtmId        = setting('google_tag_manager_id', '');
 $adsConversionId = setting('google_ads_conversion_id', '');
 $googleEnhancedOn = setting('google_enhanced_conversions_enabled', '0') == '1';
 $pixelId      = setting('facebook_pixel_id', '');
@@ -516,15 +515,7 @@ $pageTwitterImage = $meta('twitter_image', $pageOgImage);
         window.mvRememberList = remember;
     })();
     </script>
-    @if($gtmId)
-    <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer','{{ $gtmId }}');
-        // Standard SPA pattern for GTM: push a virtual-pageview event on every Turbo
-        // navigation for any tag the admin has wired to trigger on it in their GTM container.
-        document.addEventListener('turbo:load', function () {
-            window.dataLayer.push({ event: 'virtualPageview', page_path: window.location.pathname + window.location.search });
-        });
-    </script>
-    @endif
+    @include('partials.tracking.tag-manager-clarity')
     @if($pixelOn)
     <script>
         {{-- Facebook's standard snippet, except fbevents.js (~200 KB, ~400 ms of main-thread
@@ -553,7 +544,6 @@ $pageTwitterImage = $meta('twitter_image', $pageOgImage);
      same as before the off-canvas drawer was introduced. Confirmed by reproducing the
      broken behavior with the old wrapper and fixing it by removing it. --}}
 <body data-theme-key="site-theme" x-data="{ mobileOpen: false }" x-effect="document.body.style.overflow = mobileOpen ? 'hidden' : ''" class="bg-gray-100 dark:bg-gray-950 font-sans antialiased transition-colors pb-[calc(4rem_+_env(safe-area-inset-bottom))] md:pb-0">
-@if($gtmId)<noscript><iframe src="https://www.googletagmanager.com/ns.html?id={{ $gtmId }}" height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>@endif
 
 @include('partials.delivery-loader')
 @include('partials.confirm-modal')

@@ -47,7 +47,12 @@ class SecurityHeaders
             // *.adtrafficquality.google added alongside connect-src's entry for the same
             // domain (see below) — AdSense's SODAR anti-fraud check loads an actual script
             // (ep2.adtrafficquality.google/sodar/sodar2.js) in addition to the beacon ping.
-            "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://cdn.jsdelivr.net https://www.googletagmanager.com https://www.google.com https://www.gstatic.com https://connect.facebook.net https://googleads.g.doubleclick.net https://pagead2.googlesyndication.com https://*.googlesyndication.com https://*.profitableratecpmnetwork.com https://*.highrevenueformat.com https://*.adtrafficquality.google",
+            // www.clarity.ms / *.clarity.ms: Microsoft Clarity (Settings → Google Analytics & Ads).
+            // With Google Tag Manager switched on, any HTTPS script source is allowed: tags
+            // added in the GTM container (TikTok, LinkedIn, Hotjar…) load from whatever domain
+            // that vendor uses, and an allowlist here would silently block each new one.
+            "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://cdn.jsdelivr.net https://www.googletagmanager.com https://www.google.com https://www.gstatic.com https://connect.facebook.net https://googleads.g.doubleclick.net https://pagead2.googlesyndication.com https://*.googlesyndication.com https://*.profitableratecpmnetwork.com https://*.highrevenueformat.com https://*.adtrafficquality.google https://www.clarity.ms https://*.clarity.ms"
+                . ($this->tagManagerOn() ? ' https:' : ''),
             "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com",
             // cdn.jsdelivr.net added for the Summernote editor's bundled icon font
             // (resources/views/partials/rich-editor.blade.php) — same CDN already
@@ -83,5 +88,15 @@ class SecurityHeaders
         }
 
         return $response;
+    }
+
+    /** Google Tag Manager is switched on with an ID (Settings → Google Analytics & Ads). */
+    private function tagManagerOn(): bool
+    {
+        try {
+            return setting('google_tag_manager_enabled', '1') === '1' && trim((string) setting('google_tag_manager_id', '')) !== '';
+        } catch (\Throwable) {
+            return false;
+        }
     }
 }
