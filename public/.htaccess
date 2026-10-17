@@ -30,6 +30,15 @@
     RewriteCond %{THE_REQUEST} \s/public(/[^\s?]*[^\s?/])/?[\s?] [NC]
     RewriteRule ^ %1 [L,R=301]
 
+    # Same for the front controller's own name: /index.php served the homepage (and
+    # /index.php/shop the shop, etc.) as a 200 duplicate whose canonical pointed at
+    # /public/index.php. A real request naming index.php goes to the clean URL; the
+    # internal rewrite to index.php below never matches, since THE_REQUEST is untouched.
+    RewriteCond %{THE_REQUEST} \s/(?:public/)?index\.php/([^\s?]*)[\s?] [NC]
+    RewriteRule ^ /%1 [L,R=301,NE]
+    RewriteCond %{THE_REQUEST} \s/(?:public/)?index\.php[\s?] [NC]
+    RewriteRule ^ / [L,R=301]
+
     # Handle Authorization Header
     RewriteCond %{HTTP:Authorization} .
     RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]

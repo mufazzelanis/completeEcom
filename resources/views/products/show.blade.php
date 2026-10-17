@@ -9,13 +9,27 @@
     $customDesc = meaningful_seo($product->meta_description, $ownNames, 50);
     $shortDesc = meaningful_seo($product->short_description, $ownNames, 50);
 
-    $seoTitle = $customTitle ?? "{$product->name} Price in Bangladesh | {$siteName}";
+    // Google shows ~60 characters of a title and ~155 of a description and cuts the rest — with
+    // long imported product names the fixed formula ran to 80–117 characters, so the part people
+    // actually search with ("… price in Bangladesh") was the part cut off. The first variant that
+    // fits is used; the product name always comes first and is never shortened.
+    $firstFitting = fn (array $variants, int $max) => collect($variants)->first(fn ($v) => mb_strlen($v) <= $max) ?? end($variants);
+    $seoTitle = $customTitle ?? $firstFitting([
+        "{$product->name} Price in Bangladesh | {$siteName}",
+        "{$product->name} Price in BD | {$siteName}",
+        "{$product->name} Price in BD",
+        $product->name,
+    ], 65);
+    $priceText = setting('currency_symbol', '৳') . number_format((float) ($product->sale_price ?? $product->price));
+    $returnDays = (int) setting('return_days', '7');
     $seoDesc = match (true) {
         $customDesc !== null => $customDesc,
         $shortDesc !== null => Str::limit($shortDesc, 155, '…'),
-        default => "Buy original {$product->name} at " . setting('currency_symbol', '৳') . number_format((float) ($product->sale_price ?? $product->price))
-            . " in Bangladesh from {$siteName}. Cash on delivery & fast delivery"
-            . ((int) setting('return_days', '7') > 0 ? ', ' . (int) setting('return_days', '7') . '-day return.' : '.'),
+        default => $firstFitting([
+            "Buy original {$product->name} at {$priceText} in Bangladesh from {$siteName}. Cash on delivery & fast delivery" . ($returnDays > 0 ? ", {$returnDays}-day return." : '.'),
+            "Buy original {$product->name} at {$priceText} in Bangladesh. Cash on delivery" . ($returnDays > 0 ? ", {$returnDays}-day return." : '.'),
+            "Buy original {$product->name} at {$priceText} in Bangladesh. Cash on delivery.",
+        ], 160),
     };
     $ogImage  = $product->og_image ?: ($product->image ? Storage::url($product->image) : null);
     $canonicalUrl = $product->canonical_url ?: route('products.show', $product);
