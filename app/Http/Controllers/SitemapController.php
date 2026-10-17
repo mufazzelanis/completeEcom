@@ -110,6 +110,13 @@ class SitemapController extends Controller
             'Disallow: /*?*on_sale=',
             'Disallow: /*?*featured=',
             'Disallow: /*?*tag=',
+            // …except the WooCommerce leftovers spam backlinks point at (?add-to-cart=, ?filter_…):
+            // they 301 to the clean URL (LegacyUrlRedirects), and Google has to be allowed to
+            // fetch them to see that and drop them. These longer rules win over "/shop?".
+            'Allow: /*?*add-to-cart=',
+            'Allow: /*?*filter_',
+            'Allow: /*?*orderby=',
+            'Allow: /*?*product_cat=',
             // Utility / per-customer pages with nothing worth ranking. Root-level ones are
             // anchored with $ (exact page) or a trailing / (only what's under it) — landing
             // pages also live at the root (/{slug}), and a bare prefix like "/login" would

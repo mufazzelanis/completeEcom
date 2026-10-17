@@ -156,13 +156,16 @@ $pageTwitterImage = $meta('twitter_image', $pageOgImage);
     @if($faviconUrl)<link rel="icon" href="{{ $faviconUrl }}">@endif
     @if(setting('google_site_verification'))<meta name="google-site-verification" content="{{ setting('google_site_verification') }}">@endif
 
-    {{-- AdSense's own "site needs review" step asks for its loader script in <head> on
-         every page — separate from whether "Enable ads on the Blog" (ads_enabled) is on,
-         since Google needs to crawl and verify the site before that toggle even matters.
-         Kept to just the Publisher ID condition so it's present the moment that's saved,
-         letting Settings → Advertisements → Verify work without any other step. --}}
+    {{-- AdSense site verification is satisfied by this meta tag on every page (one of the
+         three methods AdSense accepts), so it works the moment a Publisher ID is saved. The
+         loader script itself (~250 KB, ~450 ms of main-thread blocking on a phone per
+         PageSpeed) only goes on blog pages — the only place ad units are ever rendered
+         (partials/adsense-unit) — instead of slowing every shop/product page for nothing. --}}
     @if(setting('adsense_publisher_id', ''))
+    <meta name="google-adsense-account" content="{{ setting('adsense_publisher_id') }}">
+    @if(request()->routeIs('blog.*'))
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client={{ setting('adsense_publisher_id') }}" crossorigin="anonymous"></script>
+    @endif
     @endif
 
     {{-- PWA — lets a phone browser offer "Add to Home Screen" and, once installed, launch
@@ -1223,7 +1226,7 @@ $navCategories = \App\Models\Category::with(['children' => fn($q) => $q->active(
             <div class="col-span-2 md:col-span-1">
                 <div class="flex items-center space-x-2 mb-4">
                     @if($footerLogo)
-                        <img src="{{ $footerLogo }}" alt="{{ $siteName }}" class="h-8 max-w-[120px] object-contain">
+                        <img src="{{ $footerLogo }}" alt="{{ $siteName }}" class="h-8 max-w-[120px] object-contain" loading="lazy" decoding="async">
                     @else
                         <div class="w-8 h-8 bg-gradient-to-br from-orange-500 to-red-500 rounded-lg flex items-center justify-center shadow-lg shadow-orange-900/30">
                             <span class="text-white font-bold">{{ strtoupper(substr($siteName,0,1)) }}</span>
@@ -1241,7 +1244,7 @@ $navCategories = \App\Models\Category::with(['children' => fn($q) => $q->active(
                     @for($i = 1; $i <= 8; $i++)
                         @if(setting("payment_icon_{$i}"))
                             @php $hasPaymentIcons = true; @endphp
-                            <img src="{{ setting_file_url("payment_icon_{$i}") }}" alt="Payment method"
+                            <img src="{{ image_thumb(setting("payment_icon_{$i}"), 200) }}" alt="Payment method" loading="lazy" decoding="async"
                                  class="h-6 max-w-[60px] object-contain rounded-lg bg-white/90 px-1.5 py-1 ring-1 ring-white/10 hover:ring-orange-400/50 hover:-translate-y-0.5 transition-all">
                         @endif
                     @endfor

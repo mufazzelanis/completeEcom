@@ -5,6 +5,18 @@
 @php $homeHeading = setting('seo_meta_title') ?: setting('site_name', 'ShopVista') . ' – Online Shopping in Bangladesh'; @endphp
 @section('title', $homeHeading)
 
+@if($banners->first()?->image)
+@push('meta')
+{{-- The first hero slide is the homepage's LCP image, but its <img> only appears ~240 KB into
+     the HTML (after the header/menu) — preloading it from <head> starts the download right away.
+     Same srcset/sizes as the <img>, so the browser fetches exactly the file it will use. --}}
+@php $heroImage = $banners->first()->image; @endphp
+<link rel="preload" as="image" fetchpriority="high"
+      imagesrcset="{{ image_thumb($heroImage, 800) }} 800w, {{ image_thumb($heroImage, 1200) }} 1200w, {{ Storage::url($heroImage) }} 1920w"
+      imagesizes="(max-width: 1200px) 100vw, 1200px">
+@endpush
+@endif
+
 @push('meta')
 {{-- Organization + WebSite structured data — homepage-only signals for Google's
      knowledge panel and sitelinks search box, mirroring the per-product/category
@@ -114,7 +126,10 @@
         <div class="relative rounded-2xl overflow-hidden bg-gray-200 aspect-[16/5] shadow-lg sm:shadow-xl shadow-orange-900/5">
             @if($banners->count() > 0)
                 @foreach($banners as $i => $banner)
-                <div x-show="current === {{ $i }}"
+                {{-- Slides after the first start hidden in the HTML itself: until Alpine boots,
+                     x-show hasn't hidden them yet, so they sat visible in the viewport and their
+                     lazy images downloaded immediately, competing with the LCP slide. --}}
+                <div x-show="current === {{ $i }}" @if($i > 0) style="display: none" @endif
                      x-transition:enter="transition ease-[cubic-bezier(.16,1,.3,1)] duration-700" x-transition:enter-start="opacity-0 scale-105" x-transition:enter-end="opacity-100 scale-100"
                      x-transition:leave="transition ease-in duration-300" x-transition:leave-start="opacity-100 scale-100" x-transition:leave-end="opacity-0 scale-105"
                      class="absolute inset-0 overflow-hidden">

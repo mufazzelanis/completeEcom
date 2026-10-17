@@ -227,10 +227,18 @@
                 <div class="aspect-square rounded-xl overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100 mb-4 relative group cursor-zoom-in p-6 md:p-10"
                      @mousemove="zoomX = (($event.offsetX / $event.currentTarget.offsetWidth) * 100).toFixed(2); zoomY = (($event.offsetY / $event.currentTarget.offsetHeight) * 100).toFixed(2)"
                      @mouseleave="zoomX = 50; zoomY = 50">
+                    {{-- The main photo is the page's LCP element, so it's in the server HTML with a real
+                         src and high priority — inside <template x-if> it didn't exist until Alpine
+                         booted, which delayed its download by seconds (PageSpeed "LCP load delay").
+                         :src still swaps it when a color with its own photo is picked. --}}
+                    @if($product->image)
+                        <img src="{{ Storage::url($product->image) }}" :src="active || '{{ Storage::url($product->image) }}'" fetchpriority="high" decoding="async" :style="`transform-origin: ${zoomX}% ${zoomY}%`" alt="{{ $product->image_alt ?: $product->name }}" title="{{ $product->image_title ?: $product->name }}" class="w-full h-full object-contain transition-transform duration-300 ease-out group-hover:scale-[1.8]">
+                    @else
                     <template x-if="active">
                         <img :src="active" :style="`transform-origin: ${zoomX}% ${zoomY}%`" alt="{{ $product->image_alt ?: $product->name }}" title="{{ $product->image_title ?: $product->name }}" class="w-full h-full object-contain transition-transform duration-300 ease-out group-hover:scale-[1.8]">
                     </template>
-                    <template x-if="!active">
+                    @endif
+                    <template x-if="!active && {{ $product->image ? 'false' : 'true' }}">
                         <div class="w-full h-full flex items-center justify-center">
                             <svg class="w-24 h-24 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>

@@ -3,6 +3,7 @@
 use App\Listeners\RecordLoginActivityListener;
 use App\Http\Middleware\AdminMiddleware;
 use App\Http\Middleware\ForceHttps;
+use App\Http\Middleware\LegacyUrlRedirects;
 use App\Http\Middleware\MaintenanceMode;
 use App\Http\Middleware\PermissionMiddleware;
 use App\Http\Middleware\RecordLoginActivity;
@@ -29,6 +30,9 @@ return Application::configure(basePath: dirname(__DIR__))
             'vendor' => VendorMiddleware::class,
             'record-login' => RecordLoginActivity::class,
         ]);
+        // Global, not web: most legacy WooCommerce paths (/product/x, /wp-json/…) match no route,
+        // so route middleware would never see them.
+        $middleware->prepend(LegacyUrlRedirects::class);
         $middleware->web(prepend: [ForceHttps::class]);
         $middleware->web(append: [SetLocale::class, MaintenanceMode::class, SecurityHeaders::class]);
     })

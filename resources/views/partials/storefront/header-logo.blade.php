@@ -11,9 +11,9 @@
          entire page shifting sideways on scroll — not just the header looking cramped. --}}
     <div class="md:hidden flex items-center gap-2">
         @if($logoMobileUrl ?? null)
-            <img src="{{ $logoMobileUrl }}" alt="{{ $siteName }}" class="h-9 max-w-[130px] object-contain">
+            <img src="{{ $logoMobileUrl }}" alt="{{ $siteName }}" class="h-9 max-w-[130px] object-contain" loading="lazy" decoding="async">
         @elseif($logoUrl)
-            <img src="{{ $logoUrl }}" alt="{{ $siteName }}" class="h-9 max-w-[130px] object-contain">
+            <img src="{{ $logoUrl }}" alt="{{ $siteName }}" class="h-9 max-w-[130px] object-contain" loading="lazy" decoding="async">
         @else
             <div class="w-8 h-8 bg-gradient-to-br from-orange-500 to-red-500 rounded-lg flex items-center justify-center">
                 <span class="text-white font-bold text-lg">{{ strtoupper(substr($siteName,0,1)) }}</span>
@@ -23,7 +23,7 @@
     </div>
     <div class="hidden md:flex items-center gap-2">
         @if($logoUrl)
-            <img src="{{ $logoUrl }}" alt="{{ $siteName }}" class="h-16 max-w-[220px] object-contain">
+            <img src="{{ $logoUrl }}" alt="{{ $siteName }}" class="h-16 max-w-[220px] object-contain" loading="lazy" decoding="async">
         @else
             <div class="w-8 h-8 bg-gradient-to-br from-orange-500 to-red-500 rounded-lg flex items-center justify-center">
                 <span class="text-white font-bold text-lg">{{ strtoupper(substr($siteName,0,1)) }}</span>
