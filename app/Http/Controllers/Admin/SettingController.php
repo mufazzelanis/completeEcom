@@ -74,15 +74,20 @@ class SettingController extends Controller
 
         // Save regular fields (skip Laravel internals, delete_ prefixed keys, and _hex companions)
         $skip = array_merge(['_token', '_method'], array_keys($followBrandGroups));
-        foreach ($request->except($skip) as $key => $value) {
-            if (str_starts_with($key, 'delete_') || str_ends_with($key, '_hex') || $request->hasFile($key)) {
-                continue;
+        // Model events off while saving the batch: each Setting write used to clear the
+        // (database-stored) settings cache on its own — one extra query per field. Cleared once below.
+        Setting::withoutEvents(function () use ($request, $skip, $rawHtmlKeys, $group) {
+            foreach ($request->except($skip) as $key => $value) {
+                if (str_starts_with($key, 'delete_') || str_ends_with($key, '_hex') || $request->hasFile($key)) {
+                    continue;
+                }
+                if (in_array($key, $rawHtmlKeys, true) && $value !== null) {
+                    $value = clean($value, 'inline');
+                }
+                Setting::set($key, $value, $group);
             }
-            if (in_array($key, $rawHtmlKeys, true) && $value !== null) {
-                $value = clean($value, 'inline');
-            }
-            Setting::set($key, $value, $group);
-        }
+        });
+        Setting::bust();
 
         // Handle boolean fields that may be absent when unchecked
         // (they send hidden "0" before each checkbox in the view, so this is fine)
@@ -143,7 +148,8 @@ class SettingController extends Controller
 
         TelegramNotifier::send(
             '✅ <b>Test message</b> — Telegram notifications are set up correctly for ' . e(setting('site_name', config('app.name'))) . '.',
-            'test'
+            'test',
+            now: true // sent immediately so the result below can be reported
         );
 
         $log = NotificationLog::where('channel', 'telegram')->latest('id')->first();

@@ -115,7 +115,9 @@ class AdminAlerts
                 }
             }
 
-            (new WebPushSender)->send($messages, static::TYPES[$type]['urgency'] ?? 'normal');
+            // the push itself (HTTP calls to each browser's push service) goes out after the response
+            $urgency = static::TYPES[$type]['urgency'] ?? 'normal';
+            after_response(fn () => (new WebPushSender)->send($messages, $urgency));
         } catch (Throwable $e) {
             Log::warning('Admin alert push dispatch failed: ' . $e->getMessage());
         }

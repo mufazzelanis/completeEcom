@@ -568,6 +568,29 @@ if (!function_exists('custom_text_color')) {
     }
 }
 
+if (!function_exists('after_response')) {
+    /**
+     * Runs $fn after the response has been sent to the browser — for slow outside calls a page
+     * shouldn't wait on (Telegram, SMTP email, SMS/WhatsApp, web push). On LiteSpeed/PHP-FPM
+     * the connection is closed first (Symfony's Response::send calls litespeed_finish_request /
+     * fastcgi_finish_request), so saving an order no longer waits seconds for the mail server.
+     * From artisan commands there's no response to wait for, so it simply runs right away.
+     * A failure is logged, never shown to the visitor.
+     */
+    function after_response(callable $fn): void
+    {
+        $run = function () use ($fn) {
+            try {
+                $fn();
+            } catch (\Throwable $e) {
+                report($e);
+            }
+        };
+
+        app()->runningInConsole() ? $run() : app()->terminating($run);
+    }
+}
+
 if (!function_exists('tracking_item')) {
     /**
      * One product as a GA4 ecommerce item — the single source for every analytics event

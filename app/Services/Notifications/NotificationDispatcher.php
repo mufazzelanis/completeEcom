@@ -28,14 +28,17 @@ class NotificationDispatcher
         'new_return'           => 'return',
     ];
 
+    // Both run after the response has been sent (after_response): email (an SMTP connection
+    // alone takes seconds), SMS, WhatsApp and push used to happen inside the request, so e.g.
+    // changing an order's status kept the admin waiting until the customer's email went out.
     public static function customer(string $eventType, User $user, array $vars = []): void
     {
-        static::dispatch('customer', $eventType, $user, $vars);
+        after_response(fn () => static::dispatch('customer', $eventType, $user, $vars));
     }
 
     public static function admin(string $eventType, array $vars = []): void
     {
-        static::dispatch('admin', $eventType, null, $vars);
+        after_response(fn () => static::dispatch('admin', $eventType, null, $vars));
     }
 
     private static function dispatch(string $recipient, string $eventType, ?User $user, array $vars): void

@@ -29,7 +29,19 @@
             showTagDropdown: false,
             creatingTag: false,
             allTags: {{ Js::from($allTags) }},
-            allProducts: {{ Js::from($simpleProducts) }},
+            allProducts: [],
+            bundleOptionsLoading: false,
+            // The bundle-item picker's product list (every simple product) is fetched only when
+            // the product actually is a bundle — embedding all ~2,300 products in every
+            // create/edit page made it ~300 KB heavier and seconds slower to open.
+            async loadBundleOptions() {
+                if (this.allProducts.length || this.bundleOptionsLoading) return;
+                this.bundleOptionsLoading = true;
+                try {
+                    const res = await fetch('{{ route('admin.products.bundle-options', ['except' => $product->id]) }}', { headers: { 'Accept': 'application/json' } });
+                    if (res.ok) this.allProducts = await res.json();
+                } finally { this.bundleOptionsLoading = false; }
+            },
             attributeNames: {{ Js::from($attributeNames) }},
             get tagSuggestions() {
                 if (!this.tagQuery.trim()) return this.allTags.filter(t => !this.selectedTags.find(s=>s.id===t.id));

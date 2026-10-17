@@ -134,6 +134,20 @@ class ProductController extends Controller
     }
 
     /**
+     * Products that can go into a bundle (simple/digital, active) for the bundle-item picker on
+     * the create/edit form — fetched by that form only when the product is a bundle, instead
+     * of being embedded in every product form. ?except= leaves out the bundle itself.
+     */
+    public function bundleOptions(Request $request)
+    {
+        return response()->json(
+            Product::whereNotIn('type', ['bundle', 'variable'])->where('is_active', true)
+                ->when($request->integer('except'), fn ($q, $id) => $q->whereKeyNot($id))
+                ->orderBy('name')->get(['id', 'name', 'price'])
+        );
+    }
+
+    /**
      * Every product id matching the current filters, regardless of page — backs
      * the "Select all N matching products" bulk-select link, so it can select
      * products beyond the 15 shown on the current page.
@@ -195,10 +209,9 @@ class ProductController extends Controller
         // 'variable' excluded too: bundling one would decrement its products.stock
         // directly on checkout, desyncing it from the per-combination stock that
         // column is supposed to mirror — there's no "which color/size" UI here.
-        $simpleProducts   = Product::whereNotIn('type', ['bundle', 'variable'])->where('is_active', true)->orderBy('name')->get(['id', 'name', 'price']);
 
         return view('admin.products.create', compact(
-            'categoryTree', 'allSubcategories', 'brands', 'allTags', 'attributeNames', 'simpleProducts'
+            'categoryTree', 'allSubcategories', 'brands', 'allTags', 'attributeNames'
         ));
     }
 
@@ -319,14 +332,13 @@ class ProductController extends Controller
         $brands           = Brand::where('is_active', true)->orderBy('name')->get(['id', 'name']);
         $allTags          = Tag::orderBy('name')->get(['id', 'name']);
         $attributeNames   = Attribute::where('is_active', true)->orderBy('sort_order')->orderBy('name')->pluck('name');
-        $simpleProducts   = Product::whereNotIn('type', ['bundle', 'variable'])->where('is_active', true)->where('id', '!=', $product->id)->orderBy('name')->get(['id', 'name', 'price']);
 
         $product->load(['images', 'colors', 'sizes', 'combinations.color', 'combinations.size', 'tags', 'faqs', 'specs', 'bundleItems.itemProduct']);
         $variantMatrix = $this->variantMatrixJsData($product);
 
         return view('admin.products.edit', compact(
             'product', 'categoryTree', 'allSubcategories', 'brands',
-            'allTags', 'attributeNames', 'simpleProducts', 'variantMatrix'
+            'allTags', 'attributeNames', 'variantMatrix'
         ));
     }
 

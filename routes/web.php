@@ -382,6 +382,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     // Bulk upload must be before resource to prevent slug binding conflict
     Route::get('products/ids', [AdminProductController::class, 'ids'])->name('products.ids');
     Route::get('products/bulk-upload', [AdminBulkProductController::class, 'index'])->name('products.bulk-upload');
+    Route::get('products/bundle-options', [AdminProductController::class, 'bundleOptions'])->name('products.bundle-options');
     Route::get('products/bulk-upload/template', [AdminBulkProductController::class, 'template'])->name('products.bulk-upload.template');
     Route::post('products/bulk-upload', [AdminBulkProductController::class, 'import'])->name('products.bulk-upload.import');
     Route::get('products/bulk-upload/{bulkImport}/status', [AdminBulkProductController::class, 'status'])->name('products.bulk-upload.status');

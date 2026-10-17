@@ -79,6 +79,20 @@
 @include('partials.confirm-modal')
 
 @php
+// Sidebar badge counts — computed together and cached for a minute instead of 9 separate
+// COUNT queries on every admin page load (the out-of-stock one scans the whole products table).
+$adminBadges = \Illuminate\Support\Facades\Cache::remember('admin_sidebar_badges', 60, fn () => [
+    'pendingProducts'   => \App\Models\Product::where('approval_status', 'pending')->count(),
+    'pendingVendors'    => \App\Models\Vendor::where('status', 'pending')->count(),
+    'pendingCategories' => \App\Models\Category::where('approval_status', 'pending')->count(),
+    'outOfStock'        => \App\Models\Product::where('is_active', true)->where('stock', 0)->count(),
+    'pendingReturns'    => \App\Models\ProductReturn::where('status', 'pending')->count(),
+    'liveFlash'         => \App\Models\FlashSale::where('is_active', true)->where('starts_at', '<=', now())->where('ends_at', '>=', now())->count(),
+    'pendingReferrals'  => \App\Models\ReferralReward::where('status', 'pending')->count(),
+    'openTickets'       => \App\Models\SupportTicket::whereIn('status', ['open', 'pending'])->count(),
+    'fraudFlagged'      => \App\Models\Order::where('is_fraud_flagged', true)->count(),
+]);
+
 // Every navigable admin page, for the global quick-search box below — keeps the whole
 // admin panel reachable in a couple of keystrokes instead of hunting through the sidebar.
 $adminNavIndex = [
@@ -306,7 +320,7 @@ $adminNavIndex = [
                 class="flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium transition {{ request()->routeIs('admin.products.index') || request()->routeIs('admin.products.show') || request()->routeIs('admin.products.edit') ? 'bg-orange-600 text-white' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800' }}">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
                 <span class="flex-1">All Products</span>
-                @php $pendingProductCount = \App\Models\Product::where('approval_status', 'pending')->count(); @endphp
+                @php $pendingProductCount = $adminBadges['pendingProducts']; @endphp
                 @if($pendingProductCount > 0)<span class="bg-yellow-500 text-white text-xs rounded-full px-1.5 py-0.5 font-semibold">{{ $pendingProductCount }}</span>@endif
             </a>
             <a href="{{ route('admin.products.create') }}"
@@ -347,7 +361,7 @@ $adminNavIndex = [
                 class="flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium transition {{ request()->routeIs('admin.vendors.*') ? 'bg-orange-600 text-white' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800' }}">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h18v4H3V3zm0 7h18v11H3V10zm4 4h4"/></svg>
                 <span class="flex-1">All Vendors</span>
-                @php $pendingVendors = \App\Models\Vendor::where('status','pending')->count(); @endphp
+                @php $pendingVendors = $adminBadges['pendingVendors']; @endphp
                 @if($pendingVendors > 0)
                 <span class="bg-orange-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center flex-shrink-0">{{ $pendingVendors > 9 ? '9+' : $pendingVendors }}</span>
                 @endif
@@ -363,7 +377,7 @@ $adminNavIndex = [
                 <span class="flex-1">Pending Products</span>
                 @if($pendingProductCount > 0)<span class="bg-yellow-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center flex-shrink-0">{{ $pendingProductCount > 9 ? '9+' : $pendingProductCount }}</span>@endif
             </a>
-            @php $pendingCategoryCount = \App\Models\Category::where('approval_status', 'pending')->count(); @endphp
+            @php $pendingCategoryCount = $adminBadges['pendingCategories']; @endphp
             <a href="{{ route('admin.categories.index') }}"
                 class="flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium transition {{ request()->routeIs('admin.categories.*') ? 'bg-orange-600 text-white' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800' }}">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
@@ -389,7 +403,7 @@ $adminNavIndex = [
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                 <span>Stock Reasons</span>
             </a>
-            @php $lowStockCount = \App\Models\Product::where('is_active', true)->where('stock', 0)->count(); @endphp
+            @php $lowStockCount = $adminBadges['outOfStock']; @endphp
             <a href="{{ route('admin.low-stock.index') }}"
                 class="flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium transition {{ request()->routeIs('admin.low-stock.*') ? 'bg-orange-600 text-white' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800' }}">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
@@ -449,7 +463,7 @@ $adminNavIndex = [
                 class="flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium transition {{ request()->routeIs('admin.returns.*') ? 'bg-orange-600 text-white' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800' }}">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"/></svg>
                 <span>Returns</span>
-                @php $pendingReturns = \App\Models\ProductReturn::where('status','pending')->count(); @endphp
+                @php $pendingReturns = $adminBadges['pendingReturns']; @endphp
                 @if($pendingReturns > 0)
                 <span class="ml-auto bg-orange-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center flex-shrink-0">{{ $pendingReturns > 9 ? '9+' : $pendingReturns }}</span>
                 @endif
@@ -630,7 +644,7 @@ $adminNavIndex = [
                 class="flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium transition {{ request()->routeIs('admin.flash-sales.*') ? 'bg-orange-600 text-white' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800' }}">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
                 <span class="flex-1">Flash Sales</span>
-                @php $liveFlash = \App\Models\FlashSale::where('is_active',true)->where('starts_at','<=',now())->where('ends_at','>=',now())->count(); @endphp
+                @php $liveFlash = $adminBadges['liveFlash']; @endphp
                 @if($liveFlash > 0)<span class="w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>@endif
             </a>
             <a href="{{ route('admin.promo-codes.index') }}"
@@ -652,7 +666,7 @@ $adminNavIndex = [
                 class="flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium transition {{ request()->routeIs('admin.referrals.*') ? 'bg-orange-600 text-white' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800' }}">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
                 <span class="flex-1">Referrals</span>
-                @php $pendingRef = \App\Models\ReferralReward::where('status','pending')->count(); @endphp
+                @php $pendingRef = $adminBadges['pendingReferrals']; @endphp
                 @if($pendingRef > 0)<span class="bg-orange-500 text-white text-xs rounded-full px-1.5 py-0.5 font-semibold">{{ $pendingRef }}</span>@endif
             </a>
             <a href="{{ route('admin.email-campaigns.index') }}"
@@ -707,7 +721,7 @@ $adminNavIndex = [
 
             {{-- Support --}}
             <x-admin.nav-group name="support" title="Support">
-            @php $openTicketCount = \App\Models\SupportTicket::whereIn('status', ['open', 'pending'])->count(); @endphp
+            @php $openTicketCount = $adminBadges['openTickets']; @endphp
             <a href="{{ route('admin.support-tickets.index') }}"
                 class="flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium transition {{ request()->routeIs('admin.support-tickets.*') ? 'bg-orange-600 text-white' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800' }}">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 2a2 2 0 012 2v12a2 2 0 01-2 2H6l-4 4V4a2 2 0 012-2h14z"/></svg>
@@ -718,7 +732,7 @@ $adminNavIndex = [
 
             {{-- Security --}}
             <x-admin.nav-group name="security" title="Security">
-            @php $fraudFlagged = \App\Models\Order::where('is_fraud_flagged', true)->count(); @endphp
+            @php $fraudFlagged = $adminBadges['fraudFlagged']; @endphp
             <a href="{{ route('admin.orders.index', ['fraud' => 1]) }}"
                 class="flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium transition {{ request()->routeIs('admin.orders.index') && request('fraud') ? 'bg-red-700 text-white' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800' }}">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>

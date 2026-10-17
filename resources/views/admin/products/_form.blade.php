@@ -379,9 +379,9 @@
         @include('admin.products._variant_matrix')
 
         {{-- Bundle Items --}}
-        <div class="bg-white rounded-2xl shadow-sm p-6" x-show="productType === 'bundle'" x-cloak>
+        <div class="bg-white rounded-2xl shadow-sm p-6" x-show="productType === 'bundle'" x-cloak x-effect="productType === 'bundle' && loadBundleOptions()">
             <div class="flex items-center justify-between mb-4">
-                <h3 class="font-semibold text-gray-800">Bundle Items</h3>
+                <h3 class="font-semibold text-gray-800">Bundle Items <span x-show="bundleOptionsLoading" class="text-xs font-normal text-gray-400">loading products…</span></h3>
                 <button type="button" @click="addBundleItem()" class="text-sm text-indigo-600 hover:text-indigo-800 font-medium flex items-center gap-1">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg> Add Item
                 </button>

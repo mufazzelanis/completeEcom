@@ -109,6 +109,27 @@ class AppServiceProvider extends ServiceProvider
         $this->applySocialLoginSettings();
     }
 
+    private ?bool $settingsAvailable = null;
+
+    /**
+     * Whether settings can be read yet (false before the first migration). Answered by reading
+     * a setting — served from the settings cache — instead of Schema::hasTable(), which ran an
+     * information_schema query twice on every single request.
+     */
+    private function settingsAvailable(): bool
+    {
+        if ($this->settingsAvailable === null) {
+            try {
+                setting('site_name');
+                $this->settingsAvailable = true;
+            } catch (\Throwable) {
+                $this->settingsAvailable = false;
+            }
+        }
+
+        return $this->settingsAvailable;
+    }
+
     /**
      * Settings → Email & SMTP saves into the settings table, but nothing previously
      * read those columns back — every mail always used whatever was hardcoded in
@@ -118,7 +139,7 @@ class AppServiceProvider extends ServiceProvider
     protected function applyMailSettings(): void
     {
         try {
-            if (!Schema::hasTable('settings')) {
+            if (!$this->settingsAvailable()) {
                 return;
             }
         } catch (\Throwable $e) {
@@ -161,7 +182,7 @@ class AppServiceProvider extends ServiceProvider
     protected function applySocialLoginSettings(): void
     {
         try {
-            if (!Schema::hasTable('settings')) {
+            if (!$this->settingsAvailable()) {
                 return;
             }
         } catch (\Throwable $e) {

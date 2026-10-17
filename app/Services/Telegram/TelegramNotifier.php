@@ -38,9 +38,17 @@ class TelegramNotifier
      *                            If Telegram rejects them, the message is re-sent without
      *                            buttons — an order alert must never be lost over a button.
      */
-    public static function send(string $message, string $eventType = 'order', ?array $buttons = null): void
+    public static function send(string $message, string $eventType = 'order', ?array $buttons = null, bool $now = false): void
     {
         if (!self::isEnabled()) {
+            return;
+        }
+        // Sent after the page has gone out (after_response) — the request that placed or
+        // updated the order no longer waits up to 10–20 s on api.telegram.org. $now: the
+        // "Test Telegram" button, which reports the result on the same page.
+        if (!$now) {
+            after_response(fn () => self::send($message, $eventType, $buttons, true));
+
             return;
         }
 
