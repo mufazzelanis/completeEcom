@@ -506,7 +506,16 @@
 
 {{-- ═══════════ HOMEPAGE PRODUCT SECTIONS (admin-managed) ═══════════ --}}
 @foreach($homeSections as $entry)
-    @php $sec = $entry['section']; $totalCount = $entry['totalCount']; @endphp
+    @php
+        $sec = $entry['section']; $totalCount = $entry['totalCount'];
+        // Only the first two sections are rendered into the page; the rest (each ~250-450 DOM
+        // elements of product cards) fetch their cards as the visitor scrolls near them. With all
+        // ~100 cards in the initial HTML, building and Alpine-initializing a 4,300-element page
+        // was the main source of PageSpeed's Total Blocking Time on phones. Google renders
+        // IntersectionObserver lazy-loading, so these products stay visible to it. Personalized
+        // sections differ per visitor and stay server-rendered.
+        $lazySection = $loop->index >= 2 && $sec->source_type !== 'personalized';
+    @endphp
     {{-- revealedExtra: how many of the beyond-product_limit "overflow" products are currently
          shown, staged in batches of $step (2 desktop rows' worth) per click instead of all at
          once — a long section used to dump its entire remaining batch on the first click, which
@@ -519,6 +528,20 @@
             expanded: false, loading: false,
             next: {{ min($sec->product_limit, count($entry['products'])) }},
             hasMore: {{ count($entry['products']) > $sec->product_limit ? 'true' : 'false' }},
+            @if($lazySection)
+            init() {
+                if (!this.$refs.grid.querySelector('[data-skeleton]')) return; // already filled (Turbo restore)
+                const io = new IntersectionObserver((entries) => {
+                    if (!entries.some(e => e.isIntersecting)) return;
+                    io.disconnect();
+                    fetch('{{ route('home.section-products', $sec) }}?offset=0&count={{ $sec->product_limit }}&mobile_cap={{ min(8, $sec->product_limit) }}', { headers: { 'Accept': 'application/json' } })
+                        .then(r => r.json())
+                        .then(data => { this.$refs.grid.innerHTML = data.html; })
+                        .catch(() => { this.$refs.grid.innerHTML = ''; });
+                }, { rootMargin: '800px 0px' });
+                io.observe(this.$el);
+            },
+            @endif
             async loadMore(count) {
                 this.expanded = true;
                 if (this.loading || !this.hasMore) return;
@@ -577,18 +600,16 @@
                     : ($sec->theme === 'sale' ? 'bg-white text-orange-600 hover:bg-gray-100' : 'bg-gradient-to-r from-orange-500 to-red-500 text-white hover:shadow-lg hover:shadow-orange-500/30');
             @endphp
             <div class="grid {{ $sec->getGridColsClass() }} gap-3 reveal-group" x-ref="grid">
-                @foreach($entry['products']->take($sec->product_limit) as $i => $product)
-                    @if($i < $mobileCap)
-                        @include('partials.product-card', ['product' => $product])
-                    @else
-                        {{-- Within the admin's chosen limit, so always shown on desktop;
-                             on mobile it waits behind "More" alongside the overflow. --}}
-                        <div x-show="expanded" x-cloak class="sm:!block"
-                             x-transition:enter="transition ease-out duration-400" x-transition:enter-start="opacity-0 translate-y-3" x-transition:enter-end="opacity-100 translate-y-0">
-                            @include('partials.product-card', ['product' => $product])
-                        </div>
-                    @endif
-                @endforeach
+                @if($lazySection)
+                    {{-- Placeholders holding the section's height until its cards arrive --}}
+                    @for($i = 0; $i < min($sec->product_limit, count($entry['products'])); $i++)
+                        <div data-skeleton class="{{ $i >= $mobileCap ? 'hidden sm:block' : '' }} aspect-[3/5] rounded-xl bg-gray-100 dark:bg-gray-800"></div>
+                    @endfor
+                @else
+                    @foreach($entry['products']->take($sec->product_limit) as $i => $product)
+                        @include('partials.home-section-card', ['product' => $product, 'hideOnMobile' => $i >= $mobileCap])
+                    @endforeach
+                @endif
             </div>
             {{-- Only rendered when there's actually more to reveal — clicking stays right
                  here on the homepage and shows the rest of this section's fetched batch,

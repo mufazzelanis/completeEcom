@@ -122,7 +122,9 @@ class SitemapController extends Controller
             // pages also live at the root (/{slug}), and a bare prefix like "/login" would
             // silently block a future landing page slugged "login-offer" too.
             'Disallow: /search/',
-            'Disallow: /home-sections/',
+            // (/home-sections/… is deliberately NOT disallowed: homepage sections below the fold
+            // load their products from it, and Googlebot must be able to fetch it to see them.
+            // The JSON itself carries X-Robots-Tag: noindex.)
             'Disallow: /auth/',
             'Disallow: /reset-password/',
             'Disallow: /verify-email/',

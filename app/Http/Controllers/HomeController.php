@@ -150,13 +150,23 @@ class HomeController extends Controller
 
         $offset = max(0, $request->integer('offset'));
         $count = min(24, max(1, $request->integer('count', 8)));
-        $all = $section->getProducts();
-        $products = $all->slice($offset, $count);
+        // Lazy-loaded homepage sections call this for their first cards as the visitor scrolls
+        // (see home.blade.php), so the product list is cached exactly like the homepage's own —
+        // except personalized sections, which differ per visitor.
+        $all = $section->source_type === 'personalized'
+            ? $section->getProducts()
+            : $this->remember("section-products:{$section->id}", fn () => $section->getProducts());
+        $products = $all->slice($offset, $count)->values();
+        // mobile_cap: cards past this index are desktop-only until "More" (home-section-card)
+        $mobileCap = $request->filled('mobile_cap') ? max(0, $request->integer('mobile_cap')) : null;
 
         return response()->json([
-            'html' => $products->map(fn ($product) => view('partials.product-card', ['product' => $product])->render())->implode(''),
+            'html' => $products->map(fn ($product, $i) => view('partials.home-section-card', [
+                'product' => $product,
+                'hideOnMobile' => $mobileCap !== null && $offset + $i >= $mobileCap,
+            ])->render())->implode(''),
             'next' => $offset + $products->count(),
             'hasMore' => $offset + $products->count() < $all->count(),
-        ]);
+        ])->header('X-Robots-Tag', 'noindex'); // Googlebot fetches it to render the homepage, never indexes it
     }
 }
