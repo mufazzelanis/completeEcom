@@ -29,6 +29,8 @@ $navGroups = [
     ],
     'Content & SEO' => [
         ['group' => 'seo',          'label' => 'SEO',               'icon' => 'M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z'],
+        // its own page (RedirectController), not a settings group — hence 'route'
+        ['group' => 'redirects',    'label' => 'Redirects',         'icon' => 'M13 7l5 5m0 0l-5 5m5-5H6', 'route' => 'admin.redirects.index'],
         ['group' => 'social',       'label' => 'Social Media',      'icon' => 'M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z'],
         ['group' => 'pages',        'label' => 'Page Settings',     'icon' => 'M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z'],
     ],
@@ -46,7 +48,7 @@ $navGroups = [
         ['group' => 'api',          'label' => 'API & Integrations','icon' => 'M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4'],
     ],
 ];
-$currentGroup = request()->route('group', 'general');
+$currentGroup = request()->routeIs('admin.redirects.*') ? 'redirects' : request()->route('group', 'general');
 @endphp
 
 {{-- flex-col on mobile — same reasoning as admin/reports/layout.blade.php: a fixed w-52
@@ -58,7 +60,7 @@ $currentGroup = request()->route('group', 'general');
     <nav class="lg:hidden -mx-4 px-4 flex gap-2 overflow-x-auto scrollbar-hide pb-1">
         @foreach($navGroups as $items)
             @foreach($items as $item)
-            <a href="{{ route('admin.settings.show', $item['group']) }}"
+            <a href="{{ isset($item['route']) ? route($item['route']) : route('admin.settings.show', $item['group']) }}"
                class="shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-medium whitespace-nowrap transition
                       {{ $currentGroup === $item['group'] ? 'bg-orange-600 text-white' : 'bg-white border border-gray-200 text-gray-600' }}">
                 <svg class="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -78,7 +80,7 @@ $currentGroup = request()->route('group', 'general');
                 <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider">{{ $sectionLabel }}</p>
             </div>
             @foreach($items as $item)
-            <a href="{{ route('admin.settings.show', $item['group']) }}"
+            <a href="{{ isset($item['route']) ? route($item['route']) : route('admin.settings.show', $item['group']) }}"
                class="flex items-center gap-2.5 px-3 py-2 text-sm transition
                       {{ $currentGroup === $item['group'] ? 'bg-orange-600 text-white' : 'text-gray-600 hover:bg-gray-50 hover:text-orange-600' }}">
                 <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -3,6 +3,7 @@
 use App\Listeners\RecordLoginActivityListener;
 use App\Http\Middleware\AdminMiddleware;
 use App\Http\Middleware\ForceHttps;
+use App\Http\Middleware\CustomRedirects;
 use App\Http\Middleware\LegacyUrlRedirects;
 use App\Http\Middleware\MaintenanceMode;
 use App\Http\Middleware\PermissionMiddleware;
@@ -33,6 +34,9 @@ return Application::configure(basePath: dirname(__DIR__))
         // Global, not web: most legacy WooCommerce paths (/product/x, /wp-json/…) match no route,
         // so route middleware would never see them.
         $middleware->prepend(LegacyUrlRedirects::class);
+        // prepended after, so it runs first: the admin's own redirects (Settings → Redirects)
+        // take precedence over the built-in WooCommerce/WordPress cleanup rules
+        $middleware->prepend(CustomRedirects::class);
         $middleware->web(prepend: [ForceHttps::class]);
         $middleware->web(append: [SetLocale::class, MaintenanceMode::class, SecurityHeaders::class]);
     })
@@ -40,6 +44,13 @@ return Application::configure(basePath: dirname(__DIR__))
         $exceptions->shouldRenderJsonWhen(
             fn (Request $request) => $request->is('api/*'),
         );
+        // Count storefront 404s (Settings → Redirects → 404 log) so broken links that still get
+        // visits can be redirected; returning nothing keeps the normal 404 page.
+        $exceptions->render(function (\Symfony\Component\HttpKernel\Exception\NotFoundHttpException $e, Request $request) {
+            \App\Models\NotFoundLog::record($request);
+
+            return null;
+        });
     })
     ->withSchedule(function (Schedule $schedule): void {
         $schedule->command('blog:publish-scheduled')->everyMinute();
@@ -76,5 +87,10 @@ return Application::configure(basePath: dirname(__DIR__))
 
         // Post-delivery review requests (SMS + email) — daytime only, Bangladesh time, so
         // nobody gets a text at night; each order is asked once (see the command's docblock).
+        // 404 log (Settings → Redirects): drop addresses nobody has hit for 90 days, so the
+        // list stays about links that still get traffic
+        $schedule->call(fn () => \App\Models\NotFoundLog::where('last_hit_at', '<', now()->subDays(90))->delete())
+            ->name('not-found-log:prune')->dailyAt('03:00');
+
         $schedule->command('reviews:send-requests')->hourly()->between('10:00', '20:00')->timezone('Asia/Dhaka')->withoutOverlapping();
     })->create();

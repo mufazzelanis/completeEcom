@@ -746,6 +746,15 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
         // Route::redirect (not a closure) so this survives `php artisan route:cache` —
         // destination is the literal path admin.settings.show('general') resolves to.
         Route::redirect('settings', 'admin/settings/general')->name('settings');
+        // Settings → Redirects (old indexed addresses → new ones, + 404 log). Registered before
+        // settings/{group} so "redirects" isn't taken for a settings group name.
+        Route::get('settings/redirects', [\App\Http\Controllers\Admin\RedirectController::class, 'index'])->name('redirects.index');
+        Route::post('settings/redirects', [\App\Http\Controllers\Admin\RedirectController::class, 'store'])->name('redirects.store');
+        Route::post('settings/redirects/import', [\App\Http\Controllers\Admin\RedirectController::class, 'import'])->name('redirects.import');
+        Route::post('settings/redirects/404/clear', [\App\Http\Controllers\Admin\RedirectController::class, 'clearNotFound'])->name('redirects.404.clear');
+        Route::delete('settings/redirects/404/{notFoundLog}', [\App\Http\Controllers\Admin\RedirectController::class, 'dismissNotFound'])->name('redirects.404.dismiss');
+        Route::put('settings/redirects/{redirect}', [\App\Http\Controllers\Admin\RedirectController::class, 'update'])->name('redirects.update');
+        Route::delete('settings/redirects/{redirect}', [\App\Http\Controllers\Admin\RedirectController::class, 'destroy'])->name('redirects.destroy');
         Route::get('settings/{group}', [AdminSettingController::class, 'show'])->name('settings.show');
         Route::patch('settings/{group}', [AdminSettingController::class, 'update'])->name('settings.update');
         Route::post('settings/test-email', [AdminSettingController::class, 'testEmail'])->name('settings.test-email');
