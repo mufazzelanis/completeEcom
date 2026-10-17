@@ -95,11 +95,12 @@
 
     <div class="relative" x-data="{
         current: 0,
+        rotated: false, // true after the first auto-advance — see the slide text animation below
         total: {{ max($banners->count(), 1) }},
         touchX: null,
         init() {
             @if($banners->count() > 1)
-            setInterval(() => { this.current = (this.current + 1) % this.total }, 5000);
+            setInterval(() => { this.rotated = true; this.current = (this.current + 1) % this.total }, 5000);
             @endif
         },
         onTouchStart(e) { this.touchX = e.changedTouches[0].clientX; },
@@ -108,6 +109,7 @@
             const dx = e.changedTouches[0].clientX - this.touchX;
             this.touchX = null;
             if (Math.abs(dx) < 40) return;  // a tap/scroll, not a swipe
+            this.rotated = true;
             this.current = dx < 0 ? (this.current + 1) % this.total : (this.current - 1 + this.total) % this.total;
         }
     }" @touchstart.passive="onTouchStart($event)" @touchend.passive="onTouchEnd($event)">
@@ -171,7 +173,10 @@
                             <div class="absolute inset-0 bg-gradient-to-r from-black/65 via-black/25 to-transparent"></div>
                             @endif
                             <div class="absolute inset-0 flex items-center px-6 md:px-14">
-                                <div class="animate-fade-in-up max-w-lg">
+                                {{-- No fade-in on first paint: the first slide is the LCP area, and text caught mid-fade
+                                     (semi-transparent) fails PageSpeed's contrast check on a slow run. Slides
+                                     shown by the rotation still animate in. --}}
+                                <div class="max-w-lg" :class="rotated && 'animate-fade-in-up'">
                                     {{-- Margins trimmed (mb-3→mb-1.5, mb-2→mb-1) now that the box
                                          can be as short as ~90px on the narrowest phones (no more
                                          min-h floor forcing extra height) — the content itself needs
@@ -242,7 +247,7 @@
             @foreach($banners as $i => $banner)
             {{-- The dot stays small; the button around it is a 24px-tall tap target, with the
                  padding keeping 24px between dot centers (PageSpeed "touch targets too small"). --}}
-            <button @click="current = {{ $i }}" class="h-6 flex items-center" style="padding: 0 9px" aria-label="Go to slide {{ $i + 1 }}">
+            <button @click="rotated = true; current = {{ $i }}" class="h-6 flex items-center" style="padding: 0 9px" aria-label="Go to slide {{ $i + 1 }}">
                 <span class="block h-1.5 rounded-full transition-all duration-300"
                       :class="current === {{ $i }} ? 'bg-gray-800 dark:bg-gray-200 w-6' : 'bg-gray-300 dark:bg-gray-600 w-1.5 hover:bg-gray-400 dark:hover:bg-gray-500'"></span>
             </button>
