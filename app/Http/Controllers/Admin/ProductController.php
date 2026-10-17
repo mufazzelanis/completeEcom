@@ -38,13 +38,26 @@ class ProductController extends Controller
         $query = Product::query();
 
         if ($request->filled('search')) {
-            $q = $request->search;
-            $query->where(fn($qr) => $qr
-                ->where('name', 'like', "%$q%")
-                ->orWhere('sku', 'like', "%$q%")
-                ->orWhere('barcode', 'like', "%$q%")
-                ->orWhere('short_description', 'like', "%$q%")
-            );
+            $q = trim($request->search);
+            // Every word must appear somewhere in the name/SKU, in any order — a single
+            // "%whole phrase%" match missed near-identical products whose names differ by one
+            // word or spelling ("Cream Normal To Dry" vs "Cream For Normal To Dry"), so a
+            // search for one never showed its duplicate. A number (or #number) also matches
+            // the product ID.
+            $words = array_filter(array_map(fn ($w) => trim($w, " \t-–—()[],."), preg_split('/\s+/u', $q)), 'strlen');
+            $query->where(function ($qr) use ($q, $words) {
+                $qr->where(function ($all) use ($words) {
+                    foreach ($words as $word) {
+                        $all->where(fn ($w) => $w->where('name', 'like', "%{$word}%")->orWhere('sku', 'like', "%{$word}%"));
+                    }
+                })
+                    ->orWhere('sku', 'like', "%$q%")
+                    ->orWhere('barcode', 'like', "%$q%")
+                    ->orWhere('short_description', 'like', "%$q%");
+                if (ctype_digit(ltrim($q, '#'))) {
+                    $qr->orWhere('id', (int) ltrim($q, '#'));
+                }
+            });
         }
         if ($request->filled('category')) {
             $query->where('category_id', $request->category);
