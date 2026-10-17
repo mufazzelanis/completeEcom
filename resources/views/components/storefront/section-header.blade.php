@@ -7,7 +7,7 @@
             {{-- A real count (not a fabricated "hot" tag) — a quiet abundance/trust signal
                  that costs nothing to show since the caller already queried it. --}}
             @if($count)
-                <span class="hidden sm:inline-flex items-center text-[11px] font-bold px-2 py-0.5 rounded-full {{ $theme === 'sale' ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400' }}">{{ number_format($count) }}</span>
+                <span class="hidden sm:inline-flex items-center text-[11px] font-bold px-2 py-0.5 rounded-full {{ $theme === 'sale' ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400' }}">{{ number_format($count) }}</span>
             @endif
         </div>
         @if($subtitle)

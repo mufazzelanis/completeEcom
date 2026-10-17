@@ -121,7 +121,7 @@
         </div>
     @else
         <a href="{{ route('login') }}" class="hidden md:block text-gray-600 dark:text-gray-300 hover:text-orange-700 font-medium text-sm px-3 py-1.5 rounded hover:bg-gray-100 dark:hover:bg-gray-800 transition">{{ t('header.login', 'Login', [], 'header') }}</a>
-        <a href="{{ route('register') }}" class="hidden md:block bg-orange-500 text-white px-4 py-1.5 rounded text-sm font-medium hover:bg-orange-600 transition">{{ t('header.signup', 'Sign Up', [], 'header') }}</a>
+        <a href="{{ route('register') }}" class="hidden md:block bg-orange-700 text-white px-4 py-1.5 rounded text-sm font-medium hover:brightness-110 transition">{{ t('header.signup', 'Sign Up', [], 'header') }}</a>
     @endauth
 
     {{-- Mobile Menu Toggle — the one solid-filled icon in the row on purpose: every other

@@ -100,7 +100,17 @@
         touchX: null,
         init() {
             @if($banners->count() > 1)
-            setInterval(() => { this.rotated = true; this.current = (this.current + 1) % this.total }, 5000);
+            // Auto-advance starts on the visitor's first scroll/tap/keypress, not on page load:
+            // nothing moves until someone is actually engaging with the page (WCAG 2.2.2 motion),
+            // and a slide caught mid-crossfade by an automated audit no longer reads as
+            // low-contrast text. Visitors who ask their OS for reduced motion get no autoplay.
+            if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+            const evs = ['scroll', 'pointerdown', 'keydown', 'touchstart'];
+            const start = () => {
+                evs.forEach(ev => window.removeEventListener(ev, start));
+                setInterval(() => { this.rotated = true; this.current = (this.current + 1) % this.total }, 5000);
+            };
+            evs.forEach(ev => window.addEventListener(ev, start, { passive: true, once: true }));
             @endif
         },
         onTouchStart(e) { this.touchX = e.changedTouches[0].clientX; },
