@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\ActivityLog;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -71,21 +70,52 @@ class ActivityLogController extends Controller
             ->merge(DB::table('audit_logs')->whereNotNull('user_id')->distinct()->pluck('user_id'))->unique()->values()->all());
         $logUsers = User::whereIn('id', $logUserIds)->orderBy('name')->get(['id', 'name', 'role']);
 
-        // Today's headline numbers (Dhaka day), whatever the filters — each card links to that
-        // event filtered to today. Cheap: (event, created_at) is indexed.
-        $today = now()->setTimezone($tz)->startOfDay()->utc();
-        $stats = Cache::remember('activity_log:stats:' . $today->timestamp, 60, fn () => [
-            'logins_today'            => ActivityLog::where('event', 'login')->where('created_at', '>=', $today)->count(),
-            'product_views_today'     => ActivityLog::where('event', 'product.view')->where('created_at', '>=', $today)->count(),
-            'product_views_today_bot' => ActivityLog::where('event', 'product.view')->where('is_bot', true)->where('created_at', '>=', $today)->count(),
-            'cart_adds_today'         => ActivityLog::where('event', 'cart.add')->where('created_at', '>=', $today)->count(),
-            'orders_placed_today'     => ActivityLog::where('event', 'order.place')->where('created_at', '>=', $today)->count(),
-            'order_views_today'       => ActivityLog::where('event', 'order.view')->where('created_at', '>=', $today)->count(),
-        ]);
-
+        $stats = $this->eventStats($request, $start, $end);
+        $periodLabel = $this->periodLabel($request);
         $activeFilters = $this->activeFilters($request, $logUsers);
+        $data = compact('logs', 'eventTypes', 'logUsers', 'stats', 'periodLabel', 'ipLocations', 'activeFilters');
 
-        return view('admin.activity-logs.index', compact('logs', 'eventTypes', 'logUsers', 'stats', 'ipLocations', 'activeFilters'));
+        // A filter change from the page itself (fetch, no reload) gets just the results block
+        return $request->ajax()
+            ? response(view('admin.activity-logs._results', $data)->render())
+            : view('admin.activity-logs.index', $data);
+    }
+
+    /**
+     * Per-event counts for the cards, under the same filters as the list (period, search, role,
+     * user, traffic) — all except the event filter itself, so every card keeps its number. One
+     * grouped query on the (event, created_at) index, cached for a minute per filter set.
+     */
+    private function eventStats(Request $request, ?Carbon $start, ?Carbon $end): array
+    {
+        $events = ['login', 'product.view', 'cart.add', 'order.place', 'order.view'];
+        $empty = array_fill_keys($events, ['count' => 0, 'bots' => 0]);
+        if ($request->input('source') === 'audit') {
+            return $empty; // admin actions only — none of these are site activity
+        }
+
+        $key = 'activity_log:stats:' . md5(json_encode([$request->only(['search', 'role', 'user_id', 'traffic']), $start?->timestamp, $end?->timestamp]));
+
+        return Cache::remember($key, 60, function () use ($request, $start, $end, $events, $empty) {
+            $withoutEvent = $request->duplicate($request->except('event_type'));
+            $query = $this->filtered(DB::table('activity_logs')->leftJoin('users', 'users.id', '=', 'activity_logs.user_id'), $withoutEvent, $start, $end, 'activity_logs', 'event');
+
+            return $query->whereIn('activity_logs.event', $events)
+                ->groupBy('activity_logs.event')
+                ->selectRaw('activity_logs.event as event, COUNT(*) as total, SUM(activity_logs.is_bot) as bots')
+                ->get()
+                ->reduce(fn ($carry, $row) => array_replace($carry, [$row->event => ['count' => (int) $row->total, 'bots' => (int) $row->bots]]), $empty);
+        });
+    }
+
+    /** "Today", "This month", … for the card captions; "All time" with no period. */
+    private function periodLabel(Request $request): string
+    {
+        return match ($request->input('period')) {
+            'today' => 'Today', 'yesterday' => 'Yesterday', 'last_7' => 'Last 7 days', 'this_week' => 'This week',
+            'this_month' => 'This month', 'last_month' => 'Last month', 'this_year' => 'This year',
+            default => $request->filled('from') || $request->filled('to') ? 'Selected dates' : 'All time',
+        };
     }
 
     private function activityQuery()
