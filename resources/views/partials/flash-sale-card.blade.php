@@ -20,11 +20,11 @@
                 </svg>
             </div>
         @endif
-        <span class="absolute top-0 left-0 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-br-lg">
+        <span class="absolute top-0 left-0 bg-red-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-br-lg">
             -{{ $discountPct }}%
         </span>
     </div>
-    <p class="text-sm font-bold text-red-500">৳{{ number_format($flashPrice) }}</p>
+    <p class="text-sm font-bold text-red-600 dark:text-red-400">৳{{ number_format($flashPrice) }}</p>
     <p class="text-[10px] text-gray-500 line-through">৳{{ number_format($basePrice) }}</p>
     <div class="mt-1.5 bg-orange-100 rounded-full h-3 overflow-hidden relative">
         <div class="bg-gradient-to-r from-orange-400 to-red-500 h-full rounded-full transition-all" style="width: {{ max(10, $soldPct) }}%"></div>

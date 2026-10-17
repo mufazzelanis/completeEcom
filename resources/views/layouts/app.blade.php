@@ -1081,7 +1081,7 @@ $navCategories = \App\Models\Category::with(['children' => fn($q) => $q->active(
                 </div>
                 <button type="button" @click="toggle()"
                    class="mt-3 w-full flex items-center justify-center gap-1.5 text-white text-xs font-bold py-2.5 rounded-xl transition hover:opacity-90 shadow-sm"
-                   style="background-color: {{ $primaryContact['bg'] }}">
+                   style="background-color: {{ darken_for_white_text($primaryContact['bg']) }}">
                     {{ $fabLabel }}
                 </button>
                 {{-- Little speech-bubble tail pointing down at the button — a plain

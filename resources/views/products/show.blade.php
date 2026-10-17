@@ -153,7 +153,7 @@
 @section('content')
 <div class="max-w-7xl mx-auto px-4 py-8">
     <!-- Breadcrumb -->
-    <div class="flex items-center space-x-2 text-sm text-gray-500 mb-6">
+    <div class="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400 mb-6">
         <a href="{{ route('home') }}" class="hover:text-indigo-600">Home</a>
         <span>/</span>
         <a href="{{ route('shop.index') }}" class="hover:text-indigo-600">Shop</a>
@@ -425,11 +425,11 @@
                             </span>
                         </template>
                         <template x-if="selectedCombo && selectedCombo.sku">
-                            <span class="ml-3 text-xs text-gray-400" x-text="'SKU: ' + selectedCombo.sku"></span>
+                            <span class="ml-3 text-xs text-gray-500 dark:text-gray-400" x-text="'SKU: ' + selectedCombo.sku"></span>
                         </template>
                         @if($product->sku)
                             <template x-if="!(selectedCombo && selectedCombo.sku)">
-                                <span class="ml-3 text-xs text-gray-400">SKU: {{ $product->sku }}</span>
+                                <span class="ml-3 text-xs text-gray-500 dark:text-gray-400">SKU: {{ $product->sku }}</span>
                             </template>
                         @endif
                     </div>
@@ -447,7 +447,7 @@
                             </span>
                         @endif
                         @if($product->sku)
-                            <span class="ml-3 text-xs text-gray-400">SKU: {{ $product->sku }}</span>
+                            <span class="ml-3 text-xs text-gray-500 dark:text-gray-400">SKU: {{ $product->sku }}</span>
                         @endif
                     </div>
                 @endif
@@ -506,7 +506,7 @@
                                  spreading "-"/"1"/"+" apart with a huge empty gap between them. --}}
                             <div class="self-start inline-flex items-center bg-gray-50 border border-gray-200 rounded-xl overflow-hidden shadow-sm">
                                 <button type="button" onclick="updateQty(-1)" class="w-11 h-11 flex items-center justify-center text-gray-500 hover:bg-gray-100 hover:text-gray-700 active:scale-90 transition-all text-lg font-bold">−</button>
-                                <input type="number" name="quantity" id="qty" value="1" min="1" max="{{ $product->available_stock }}"
+                                <input type="number" name="quantity" id="qty" aria-label="Quantity" value="1" min="1" max="{{ $product->available_stock }}"
                                     class="w-12 text-center bg-transparent border-0 focus:outline-none focus:ring-0 text-sm font-bold text-gray-900">
                                 <button type="button" onclick="updateQty(1)" class="w-11 h-11 flex items-center justify-center text-gray-500 hover:bg-gray-100 hover:text-gray-700 active:scale-90 transition-all text-lg font-bold">+</button>
                             </div>
@@ -565,7 +565,7 @@
 
             <div x-show="tab === 'description'">
                 <div class="prose prose-sm dark:prose-invert max-w-none text-gray-600">
-                    {!! $product->description ? demote_h1($product->description) : 'No description available.' !!}
+                    {!! $product->description ? rebase_headings($product->description, 2) : 'No description available.' !!}
                 </div>
             </div>
 

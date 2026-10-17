@@ -161,7 +161,9 @@
                             <img src="{{ Storage::url($banner->image) }}"
                                 srcset="{{ image_thumb($banner->image, 800) }} 800w, {{ image_thumb($banner->image, 1200) }} 1200w, {{ Storage::url($banner->image) }} 1920w"
                                 sizes="(max-width: 1200px) 100vw, 1200px" width="1920" height="600"
-                                alt="{{ $banner->title ?: $banner->subtitle ?: setting('site_name', 'Banner') }}"
+                                {{-- With text overlaid, the title is already read out — repeating it as alt
+                                     makes screen readers say it twice (PageSpeed "redundant alt"). --}}
+                                alt="{{ $hasOverlayText ? '' : ($banner->title ?: $banner->subtitle ?: setting('site_name', 'Banner')) }}"
                                 class="w-full h-full object-cover object-center transition-transform duration-[6000ms] ease-linear"
                                 :class="current === {{ $i }} ? 'scale-110' : 'scale-100'"
                                 @if($i === 0) fetchpriority="high" @else loading="lazy" @endif>
@@ -188,7 +190,7 @@
                                              (default a solid white/charcoal, same as before, when unset) reads as
                                              a deliberate accent chip rather than a plain oversized white slab. --}}
                                         <span class="btn-glow inline-flex items-center gap-1 px-3.5 py-1.5 md:px-4 md:py-2 rounded-full text-xs md:text-sm font-bold shadow-lg hover:scale-105 hover:brightness-110 transition-all"
-                                              style="background-color: {{ $btnBg }}; color: {{ $btnText }};">
+                                              style="background-color: {{ $btnBg }}; color: {{ readable_text_color($btnBg, $btnText) }};">
                                             {{ $banner->button_text }}
                                             <svg class="w-3.5 h-3.5 md:w-4 md:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
                                         </span>
@@ -236,10 +238,14 @@
              aspect ratios (the same overlap class of bug the arrows just had), and it also
              reads cleaner against a plain background than against a photo. --}}
         @if($banners->count() > 1)
-        <div class="flex items-center justify-center gap-1.5 mt-2.5">
+        <div class="flex items-center justify-center mt-1">
             @foreach($banners as $i => $banner)
-            <button @click="current = {{ $i }}" class="h-1.5 rounded-full transition-all duration-300" aria-label="Go to slide {{ $i + 1 }}"
-                    :class="current === {{ $i }} ? 'bg-gray-800 dark:bg-gray-200 w-6' : 'bg-gray-300 dark:bg-gray-600 w-1.5 hover:bg-gray-400 dark:hover:bg-gray-500'"></button>
+            {{-- The dot stays small; the button around it is a 24px-tall tap target, with the
+                 padding keeping 24px between dot centers (PageSpeed "touch targets too small"). --}}
+            <button @click="current = {{ $i }}" class="h-6 flex items-center" style="padding: 0 9px" aria-label="Go to slide {{ $i + 1 }}">
+                <span class="block h-1.5 rounded-full transition-all duration-300"
+                      :class="current === {{ $i }} ? 'bg-gray-800 dark:bg-gray-200 w-6' : 'bg-gray-300 dark:bg-gray-600 w-1.5 hover:bg-gray-400 dark:hover:bg-gray-500'"></span>
+            </button>
             @endforeach
         </div>
         @endif
@@ -380,7 +386,7 @@
                     </div>
                 </div>
             </div>
-            <a href="{{ route('shop.index') }}?on_sale=1" class="group inline-flex items-center gap-1 bg-red-50 hover:bg-red-100 dark:bg-red-500/10 dark:hover:bg-red-500/20 text-red-600 dark:text-red-400 px-3.5 py-1.5 rounded-full font-bold text-xs transition">
+            <a href="{{ route('shop.index') }}?on_sale=1" class="group inline-flex items-center gap-1 bg-red-50 hover:bg-red-100 dark:bg-red-500/10 dark:hover:bg-red-500/20 text-red-700 dark:text-red-400 px-3.5 py-1.5 rounded-full font-bold text-xs transition">
                 SHOP ALL
                 <svg class="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
             </a>
@@ -450,7 +456,7 @@
                             <div class="w-full h-full rounded-full bg-white dark:bg-gray-900 p-[3px]">
                                 <div class="w-full h-full rounded-full overflow-hidden bg-gradient-to-br from-orange-50 to-orange-100 dark:from-gray-800 dark:to-gray-700 flex items-center justify-center">
                                     @if($category->image)
-                                        <img src="{{ image_thumb($category->image, 200) }}" alt="{{ $category->name }}" width="200" height="200" loading="lazy" decoding="async" class="w-full h-full object-cover">
+                                        <img src="{{ image_thumb($category->image, 200) }}" alt="" width="200" height="200" loading="lazy" decoding="async" class="w-full h-full object-cover">
                                     @else
                                         {{-- A generic tag icon (not two-letter initials) reads as an
                                              intentional, uniform icon set — initials look like a raw
@@ -603,7 +609,7 @@
                 @if($lazySection)
                     {{-- Placeholders holding the section's height until its cards arrive --}}
                     @for($i = 0; $i < min($sec->product_limit, count($entry['products'])); $i++)
-                        <div data-skeleton class="{{ $i >= $mobileCap ? 'hidden sm:block' : '' }} aspect-[3/5] rounded-xl bg-gray-100 dark:bg-gray-800"></div>
+                        <div data-skeleton class="{{ $i >= $mobileCap ? 'hidden sm:block' : '' }} rounded-xl bg-gray-100 dark:bg-gray-800" style="aspect-ratio: 3 / 5"></div>
                     @endfor
                 @else
                     @foreach($entry['products']->take($sec->product_limit) as $i => $product)

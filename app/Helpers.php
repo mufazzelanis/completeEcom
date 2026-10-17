@@ -521,6 +521,31 @@ if (!function_exists('demote_h1')) {
     }
 }
 
+if (!function_exists('rebase_headings')) {
+    /**
+     * Renumbers the headings in rich text into a gap-free outline starting at <h{$top}>: the
+     * levels actually used, in order, become top, top+1, … — e.g. an imported description
+     * using h3/h5/h6 becomes h2/h3/h4 under the product's <h1>. Skipped levels (h1 → h3,
+     * h3 → h5) are an accessibility failure ("heading order") and blur the page outline for
+     * search engines; the headings' relative ranking is kept.
+     */
+    function rebase_headings(?string $html, int $top = 2): string
+    {
+        $html = (string) $html;
+        if (!preg_match_all('/<h([1-6])(?=[\s>])/i', $html, $m)) {
+            return $html;
+        }
+        $levels = array_values(array_unique(array_map('intval', $m[1])));
+        sort($levels);
+        $map = [];
+        foreach ($levels as $i => $level) {
+            $map[$level] = min(6, $top + $i);
+        }
+
+        return preg_replace_callback('/<(\/?)h([1-6])(?=[\s>])/i', fn ($h) => '<' . $h[1] . 'h' . $map[(int) $h[2]], $html);
+    }
+}
+
 if (!function_exists('custom_text_color')) {
     /**
      * Settings → Branding → Text Color, or null when it's the default or unreadable. It lands
@@ -540,6 +565,65 @@ if (!function_exists('custom_text_color')) {
         }
 
         return 1.05 / ($lum + 0.05) >= 4.5 ? $hex : null;
+    }
+}
+
+if (!function_exists('contrast_ratio')) {
+    /** WCAG contrast ratio (1–21) between two #rrggbb colors, or null if either isn't one. */
+    function contrast_ratio(?string $a, ?string $b): ?float
+    {
+        $lum = function (?string $hex): ?float {
+            if (!preg_match('/^#?([0-9a-f]{6})$/i', trim((string) $hex), $m)) {
+                return null;
+            }
+            $l = 0;
+            foreach ([0.2126, 0.7152, 0.0722] as $i => $w) {
+                $c = hexdec(substr($m[1], $i * 2, 2)) / 255;
+                $l += $w * ($c <= 0.03928 ? $c / 12.92 : (($c + 0.055) / 1.055) ** 2.4);
+            }
+
+            return $l;
+        };
+        [$x, $y] = [$lum($a), $lum($b)];
+
+        return $x === null || $y === null ? null : (max($x, $y) + 0.05) / (min($x, $y) + 0.05);
+    }
+}
+
+if (!function_exists('readable_text_color')) {
+    /**
+     * $preferred text color on $bg when it's readable (WCAG AA 4.5:1), otherwise whichever of
+     * white / near-black reads better — so an admin color pair like white on a light orange
+     * banner button still shows legible text instead of failing silently.
+     */
+    function readable_text_color(?string $bg, ?string $preferred = null): string
+    {
+        $ratio = contrast_ratio($bg, $preferred);
+        if ($preferred && ($ratio === null || $ratio >= 4.5)) {
+            return $preferred;
+        }
+
+        return (contrast_ratio($bg, '#ffffff') ?? 21) >= (contrast_ratio($bg, '#1f2937') ?? 0) ? '#ffffff' : '#1f2937';
+    }
+}
+
+if (!function_exists('darken_for_white_text')) {
+    /**
+     * $bg darkened just enough for white text on it to reach WCAG AA (4.5:1) — e.g. WhatsApp's
+     * #25D366 (1.98:1 with white) becomes a deeper green of the same hue. Unchanged if it
+     * already passes or isn't a #rrggbb color.
+     */
+    function darken_for_white_text(string $bg): string
+    {
+        if (!preg_match('/^#?([0-9a-f]{6})$/i', $bg, $m)) {
+            return $bg;
+        }
+        $rgb = array_map(fn ($i) => hexdec(substr($m[1], $i, 2)), [0, 2, 4]);
+        for ($step = 0; $step < 40 && (contrast_ratio(vsprintf('#%02x%02x%02x', $rgb), '#ffffff') ?? 21) < 4.5; $step++) {
+            $rgb = array_map(fn ($c) => (int) floor($c * 0.95), $rgb);
+        }
+
+        return vsprintf('#%02x%02x%02x', $rgb);
     }
 }
 

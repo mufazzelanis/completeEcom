@@ -34,8 +34,9 @@
     <div class="flex flex-wrap items-center justify-center gap-1.5">
         {{-- Previous --}}
         @if ($paginator->onFirstPage())
-            <span aria-disabled="true" aria-label="{{ __('pagination.previous') }}"
+            <span aria-disabled="true"
                 class="w-9 h-9 flex items-center justify-center rounded-full text-gray-300 dark:text-gray-700 cursor-not-allowed">
+                <span class="sr-only">{!! __("pagination.previous") !!}</span>
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"/></svg>
             </span>
         @else
@@ -73,8 +74,9 @@
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
             </a>
         @else
-            <span aria-disabled="true" aria-label="{{ __('pagination.next') }}"
+            <span aria-disabled="true"
                 class="w-9 h-9 flex items-center justify-center rounded-full text-gray-300 dark:text-gray-700 cursor-not-allowed">
+                <span class="sr-only">{!! __("pagination.next") !!}</span>
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
             </span>
         @endif

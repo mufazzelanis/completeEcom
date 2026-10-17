@@ -70,7 +70,7 @@
 
 @section('content')
 <div class="max-w-7xl mx-auto px-4 py-8">
-    <div class="flex items-center space-x-2 text-sm text-gray-500 mb-6">
+    <div class="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400 mb-6">
         <a href="{{ route('home') }}" class="hover:text-orange-700">Home</a>
         <span>/</span>
         @if(isset($category))
@@ -211,6 +211,9 @@
                     <a href="{{ route('shop.index') }}" class="text-orange-700 hover:text-orange-800 text-sm font-medium">Clear all filters</a>
                 </div>
             @else
+                {{-- Product cards title themselves with <h3>; this keeps the outline h1 → h2 → h3
+                     for screen readers (and PageSpeed's "heading order") without changing the look. --}}
+                <h2 class="sr-only">Products</h2>
                 <div class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
                     @foreach($products as $product)
                         @include('partials.product-card', ['product' => $product])
