@@ -313,4 +313,100 @@ class Product extends Model
     {
         return $query->where('is_featured', true);
     }
+
+    /*
+     * Storefront search (shop page + search-box suggestions). A single "%whole phrase%" match
+     * found nothing for how customers actually type — "cerave 453g" against "CeraVe
+     * Moisturizing Cream ... 453G", "natures bounty" against "Nature’s Bounty" — so:
+     *   - every word must appear somewhere in the name, SKU or brand, in any order;
+     *   - apostrophes are ignored on both sides, Bangla digits are read as digits;
+     *   - British/US spellings match each other (moisturising ↔ moisturizing);
+     *   - loose mode (used only when nothing matches every word) needs at least half the
+     *     words, so a slightly-off search still shows the closest products.
+     * Results are ranked by orderByRelevance(): name starting with the search, then containing
+     * it as a phrase, then by how many words matched.
+     */
+
+    /** Normalized search words: lowercase, no apostrophes, 2+ characters (or a number). */
+    public static function searchWords(string $term): array
+    {
+        $term = str_replace(['’', "'", '`', '‘'], '', mb_strtolower(normalize_digits($term)));
+        $words = preg_split('/[^\p{L}\p{N}.]+/u', $term, -1, PREG_SPLIT_NO_EMPTY);
+
+        return array_values(array_unique(array_filter($words, fn ($w) => mb_strlen(trim($w, '.')) >= 2 || ctype_digit($w))));
+    }
+
+    /** SQL condition (with bindings) for one word matching the name, SKU or brand. */
+    private static function searchWordSql(string $word): array
+    {
+        $variants = [$word];
+        foreach ([['ising', 'izing'], ['iser', 'izer'], ['ise', 'ize'], ['colour', 'color'], ['flavour', 'flavor']] as [$uk, $us]) {
+            if (str_contains($word, $uk)) {
+                $variants[] = str_replace($uk, $us, $word);
+            } elseif (str_contains($word, $us)) {
+                $variants[] = str_replace($us, $uk, $word);
+            }
+        }
+        $sql = [];
+        $bindings = [];
+        foreach (array_unique($variants) as $v) {
+            $like = '%' . addcslashes($v, '%_\\') . '%';
+            // name with apostrophes stripped, so "natures" matches "Nature’s"
+            $sql[] = "REPLACE(REPLACE(products.name, '’', ''), '''', '') LIKE ? OR products.sku LIKE ?"
+                . ' OR EXISTS (SELECT 1 FROM brands WHERE brands.id = products.brand_id AND brands.name LIKE ?)';
+            array_push($bindings, $like, $like, $like);
+        }
+
+        return ['(' . implode(' OR ', $sql) . ')', $bindings];
+    }
+
+    /** "How many of the words match" as one SQL expression. */
+    private static function searchScoreSql(array $words): array
+    {
+        $parts = [];
+        $bindings = [];
+        foreach ($words as $w) {
+            [$cond, $b] = static::searchWordSql($w);
+            $parts[] = "(CASE WHEN {$cond} THEN 1 ELSE 0 END)";
+            array_push($bindings, ...$b);
+        }
+
+        return ['(' . implode(' + ', $parts) . ')', $bindings];
+    }
+
+    public function scopeSearch($query, string $term, bool $loose = false)
+    {
+        $words = static::searchWords($term);
+        $phrase = '%' . addcslashes(trim($term), '%_\\') . '%';
+        if (!$words) {
+            return $query->where('products.name', 'like', $phrase);
+        }
+
+        if ($loose && count($words) > 1) {
+            [$score, $bindings] = static::searchScoreSql($words);
+
+            return $query->whereRaw("{$score} >= ?", [...$bindings, (int) ceil(count($words) / 2)]);
+        }
+
+        return $query->where(function ($q) use ($words, $phrase) {
+            $q->where(function ($all) use ($words) {
+                foreach ($words as $w) {
+                    [$cond, $bindings] = static::searchWordSql($w);
+                    $all->whereRaw($cond, $bindings);
+                }
+            })->orWhere('products.short_description', 'like', $phrase);
+        });
+    }
+
+    public function scopeOrderByRelevance($query, string $term)
+    {
+        $t = addcslashes(trim($term), '%_\\');
+        $words = static::searchWords($term);
+        [$score, $bindings] = $words ? static::searchScoreSql($words) : ['0', []];
+
+        return $query
+            ->orderByRaw('CASE WHEN products.name LIKE ? THEN 0 WHEN products.name LIKE ? THEN 1 ELSE 2 END', ["{$t}%", "%{$t}%"])
+            ->orderByRaw("{$score} DESC", $bindings)
+            ->orderByDesc('products.views');
+    }
 }

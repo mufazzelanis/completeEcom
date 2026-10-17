@@ -211,6 +211,12 @@
                     <a href="{{ route('shop.index') }}" class="text-orange-700 hover:text-orange-800 text-sm font-medium">Clear all filters</a>
                 </div>
             @else
+                @if(($searchMode ?? null) === 'close')
+                    {{-- nothing matched every word (ShopController) — these match most of them --}}
+                    <p class="mb-3 text-sm text-gray-600 dark:text-gray-400">
+                        No exact match for <strong>“{{ request('search') }}”</strong> — showing the closest products.
+                    </p>
+                @endif
                 {{-- Product cards title themselves with <h3>; this keeps the outline h1 → h2 → h3
                      for screen readers (and PageSpeed's "heading order") without changing the look. --}}
                 <h2 class="sr-only">Products</h2>

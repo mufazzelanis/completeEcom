@@ -18,14 +18,13 @@ class SearchController extends Controller
             return response()->json(['products' => [], 'categories' => []]);
         }
 
-        $products = Product::active()
-            ->where(fn($qb) => $qb
-                ->where('name', 'like', "%$q%")
-                ->orWhere('sku', 'like', "%$q%")
-                ->orWhere('short_description', 'like', "%$q%")
-            )
-            ->limit(6)
-            ->get(['id', 'name', 'slug', 'image', 'price', 'sale_price']);
+        // Same matching as the shop page (Product::scopeSearch — every word, any order, brand,
+        // spelling variants), best matches first; closest matches if nothing matches every word.
+        $columns = ['products.id', 'products.name', 'products.slug', 'products.image', 'products.price', 'products.sale_price'];
+        $products = Product::active()->search($q)->orderByRelevance($q)->limit(6)->get($columns);
+        if ($products->isEmpty()) {
+            $products = Product::active()->search($q, loose: true)->orderByRelevance($q)->limit(6)->get($columns);
+        }
 
         $categories = Category::where('is_active', true)
             ->where('name', 'like', "%$q%")

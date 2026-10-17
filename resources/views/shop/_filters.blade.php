@@ -119,7 +119,11 @@
     <div class="mb-5">
         <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Sort By</label>
         <select name="sort" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500">
-            <option value="latest"     {{ request('sort', 'latest') === 'latest'     ? 'selected' : '' }}>Latest</option>
+            @php $defaultSort = request()->filled('search') ? 'relevance' : 'latest'; @endphp
+            @if(request()->filled('search'))
+            <option value="relevance"  {{ request('sort', $defaultSort) === 'relevance' ? 'selected' : '' }}>Best match</option>
+            @endif
+            <option value="latest"     {{ request('sort', $defaultSort) === 'latest'     ? 'selected' : '' }}>Latest</option>
             <option value="popular"    {{ request('sort') === 'popular'    ? 'selected' : '' }}>Most Popular</option>
             <option value="price_low"  {{ request('sort') === 'price_low'  ? 'selected' : '' }}>Price: Low to High</option>
             <option value="price_high" {{ request('sort') === 'price_high' ? 'selected' : '' }}>Price: High to Low</option>

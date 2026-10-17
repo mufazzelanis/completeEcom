@@ -31,13 +31,19 @@ class ShopController extends Controller
         // turning a 12-24-product listing page into 12-24+ extra DB round-trips.
         $query = Product::with(['category', 'brand', 'activeFlashSaleProduct', 'reviews'])->active();
 
+        $searchMode = null;
         if ($request->filled('search')) {
-            $s = $request->search;
-            $query->where(fn($q) => $q
-                ->where('name', 'like', "%$s%")
-                ->orWhere('sku', 'like', "%$s%")
-                ->orWhere('short_description', 'like', "%$s%")
-            );
+            $s = trim($request->search);
+            // Every word, in any order (Product::scopeSearch). Only when that finds nothing at
+            // all, fall back to products matching most of the words — shown with a "closest
+            // matches" note — instead of an empty "No products found" page.
+            if ((clone $query)->search($s)->exists()) {
+                $query->search($s);
+                $searchMode = 'exact';
+            } else {
+                $query->search($s, loose: true);
+                $searchMode = 'close';
+            }
             // An actually-submitted search (landed here), not every autosuggest keystroke —
             // see SearchQuery::record()'s own docblock. Feeds the homepage personalized
             // section (HomeSection::getPersonalizedProducts()).
@@ -83,8 +89,10 @@ class ShopController extends Controller
             $query->whereNotNull('sale_price');
         }
 
-        $sortBy = $request->get('sort', 'latest');
+        // a search with no sort picked is ordered by how well each product matches it
+        $sortBy = $request->get('sort', $searchMode ? 'relevance' : 'latest');
         match($sortBy) {
+            'relevance'  => $query->orderByRelevance($request->search),
             'price_low'  => $query->orderBy('price', 'asc'),
             'price_high' => $query->orderBy('price', 'desc'),
             'name'       => $query->orderBy('name', 'asc'),
@@ -102,7 +110,7 @@ class ShopController extends Controller
         $brands     = Brand::where('is_active', true)->orderBy('name')->get(['id', 'name', 'slug']);
         $tags       = Tag::orderBy('name')->get(['id', 'name', 'slug']);
 
-        return view('shop.index', compact('products', 'categories', 'brands', 'tags'));
+        return view('shop.index', compact('products', 'categories', 'brands', 'tags', 'searchMode'));
     }
 
     public function categories()
