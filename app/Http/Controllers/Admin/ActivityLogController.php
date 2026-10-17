@@ -4,23 +4,93 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\ActivityLog;
-use App\Models\AuditLog;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 
+/**
+ * Admin → Activity Log: ActivityLog (logins, product/order views, cart, orders — customers and
+ * guests) and AuditLog (admin data changes) in one filterable, newest-first feed.
+ *
+ * Every filter is applied to each table on its own, using its indexes, and only the rows needed
+ * for the requested page are merged — the previous version merged both whole tables first and
+ * filtered the result, which on ~30k live rows made each filter take so long it looked like
+ * filtering did nothing. Totals are per-table counts added together; the event and user dropdown
+ * lists are cached for 10 minutes; IP locations never hold the page up (see batchIpLocations).
+ */
 class ActivityLogController extends Controller
 {
-    /**
-     * Unifies the two behavioral/security event sources this app records —
-     * ActivityLog (logins, logouts, product/order views, cart actions) and
-     * AuditLog (admin data-mutation trail) — into one filterable, paginated
-     * feed via a SQL UNION ALL, joined to `users` so role/name are available
-     * for filtering without a second round-trip per row.
-     */
-    private function baseUnion()
+    private const PER_PAGE = 50;
+
+    public function index(Request $request)
     {
-        $activity = DB::table('activity_logs')
+        $tz = setting('timezone', 'Asia/Dhaka');
+        [$start, $end] = $this->periodRange($request, $tz);
+
+        $source = $request->input('source');
+        $traffic = $request->input('traffic');
+        $branches = [];
+        if ($source !== 'audit') {
+            $branches[] = $this->filtered($this->activityQuery(), $request, $start, $end, 'activity_logs', 'event');
+        }
+        // admin actions are never bot traffic, so "bots only" leaves them out entirely
+        if ($source !== 'activity' && $traffic !== 'bots') {
+            $branches[] = $this->filtered($this->auditQuery(), $request, $start, $end, 'audit_logs', 'action');
+        }
+
+        $total = collect($branches)->sum(fn ($q) => (clone $q)->reorder()->count());
+        $page = max(1, (int) $request->input('page', 1));
+        $offset = ($page - 1) * self::PER_PAGE;
+
+        $rows = collect();
+        if ($branches && $offset < $total) {
+            // each table contributes at most offset+perPage of its newest matching rows
+            $parts = array_map(fn ($q) => $q->orderByDesc('created_at')->limit($offset + self::PER_PAGE), $branches);
+            $union = array_shift($parts);
+            foreach ($parts as $part) {
+                $union->unionAll($part);
+            }
+            $rows = DB::query()->fromSub($union, 'logs')
+                ->orderByDesc('created_at')->offset($offset)->limit(self::PER_PAGE)->get();
+        }
+
+        $logs = new LengthAwarePaginator($rows, $total, self::PER_PAGE, $page, [
+            'path' => $request->url(),
+            'query' => $request->except('page'),
+        ]);
+        $ipLocations = $this->batchIpLocations($rows->pluck('ip_address')->filter()->unique());
+
+        $eventTypes = Cache::remember('activity_log:event_types', 600, fn () => DB::table('activity_logs')->distinct()->pluck('event')
+            ->merge(DB::table('audit_logs')->distinct()->pluck('action'))->filter()->unique()->sort()->values()->all());
+
+        $logUserIds = Cache::remember('activity_log:user_ids', 600, fn () => DB::table('activity_logs')->whereNotNull('user_id')->distinct()->pluck('user_id')
+            ->merge(DB::table('audit_logs')->whereNotNull('user_id')->distinct()->pluck('user_id'))->unique()->values()->all());
+        $logUsers = User::whereIn('id', $logUserIds)->orderBy('name')->get(['id', 'name', 'role']);
+
+        // Today's headline numbers (Dhaka day), whatever the filters — each card links to that
+        // event filtered to today. Cheap: (event, created_at) is indexed.
+        $today = now()->setTimezone($tz)->startOfDay()->utc();
+        $stats = Cache::remember('activity_log:stats:' . $today->timestamp, 60, fn () => [
+            'logins_today'            => ActivityLog::where('event', 'login')->where('created_at', '>=', $today)->count(),
+            'product_views_today'     => ActivityLog::where('event', 'product.view')->where('created_at', '>=', $today)->count(),
+            'product_views_today_bot' => ActivityLog::where('event', 'product.view')->where('is_bot', true)->where('created_at', '>=', $today)->count(),
+            'cart_adds_today'         => ActivityLog::where('event', 'cart.add')->where('created_at', '>=', $today)->count(),
+            'orders_placed_today'     => ActivityLog::where('event', 'order.place')->where('created_at', '>=', $today)->count(),
+            'order_views_today'       => ActivityLog::where('event', 'order.view')->where('created_at', '>=', $today)->count(),
+        ]);
+
+        $activeFilters = $this->activeFilters($request, $logUsers);
+
+        return view('admin.activity-logs.index', compact('logs', 'eventTypes', 'logUsers', 'stats', 'ipLocations', 'activeFilters'));
+    }
+
+    private function activityQuery()
+    {
+        return DB::table('activity_logs')
             ->leftJoin('users', 'users.id', '=', 'activity_logs.user_id')
             ->select([
                 'activity_logs.id',
@@ -33,9 +103,8 @@ class ActivityLogController extends Controller
                 'activity_logs.description',
                 'activity_logs.subject_type',
                 'activity_logs.subject_id',
-                // order.place stores the shipping phone as it was AT THAT ORDER, which stays
-                // accurate even if the customer's account phone changes later — preferred over
-                // users.phone (the view falls back to that) for exactly this reason.
+                // order.place stores the shipping phone as it was AT THAT ORDER (the view
+                // prefers it over users.phone, which can change later)
                 'activity_logs.properties',
                 'activity_logs.url',
                 'activity_logs.referrer',
@@ -46,8 +115,11 @@ class ActivityLogController extends Controller
                 'activity_logs.is_bot',
                 'activity_logs.created_at',
             ]);
+    }
 
-        $audit = DB::table('audit_logs')
+    private function auditQuery()
+    {
+        return DB::table('audit_logs')
             ->leftJoin('users', 'users.id', '=', 'audit_logs.user_id')
             ->select([
                 'audit_logs.id',
@@ -67,123 +139,112 @@ class ActivityLogController extends Controller
                 DB::raw('NULL as device'),
                 DB::raw('NULL as browser'),
                 DB::raw('NULL as platform'),
-                // An admin/staff action behind a login screen, never a bot — the
-                // concept only applies to the guest-facing traffic in activity_logs.
-                DB::raw('0 as is_bot'),
+                DB::raw('0 as is_bot'), // an admin action behind a login, never a bot
                 'audit_logs.created_at',
             ]);
-
-        return $activity->unionAll($audit);
     }
 
-    public function index(Request $request)
+    /** The request's filters applied to one table ($table, whose event column is $eventColumn). */
+    private function filtered($query, Request $request, ?Carbon $start, ?Carbon $end, string $table, string $eventColumn)
     {
-        $union = $this->baseUnion();
-        $query = DB::query()->fromSub($union, 'logs');
-
         if ($request->filled('search')) {
-            $query->where('description', 'like', '%' . $request->search . '%');
+            $query->where("{$table}.description", 'like', '%' . addcslashes(trim($request->search), '%_\\') . '%');
         }
-
         if ($request->filled('event_type')) {
-            $query->where('event_type', $request->event_type);
+            $query->where("{$table}.{$eventColumn}", $request->event_type);
         }
-
-        if ($request->filled('role')) {
-            $query->where('user_role', $request->role);
+        if ($request->input('role') === 'guest') {
+            $query->whereNull("{$table}.user_id");
+        } elseif ($request->filled('role')) {
+            $query->where('users.role', $request->role);
         }
-
         if ($request->filled('user_id')) {
-            $query->where('user_id', $request->user_id);
+            $query->where("{$table}.user_id", (int) $request->user_id);
+        }
+        if ($table === 'activity_logs' && $request->input('traffic') === 'humans') {
+            $query->where('activity_logs.is_bot', false);
+        } elseif ($table === 'activity_logs' && $request->input('traffic') === 'bots') {
+            $query->where('activity_logs.is_bot', true);
+        }
+        if ($start) {
+            $query->where("{$table}.created_at", '>=', $start);
+        }
+        if ($end) {
+            $query->where("{$table}.created_at", '<=', $end);
         }
 
-        if ($request->filled('source')) {
-            $query->where('source', $request->source);
-        }
-
-        // Defaults to showing everything (nothing hidden by surprise) — "Humans only"
-        // / "Bots only" are an explicit choice via the Traffic filter, backed by the
-        // is_bot column computed once at write time (see ActivityLogger::log()).
-        if ($request->input('traffic') === 'humans') {
-            $query->where('is_bot', false);
-        } elseif ($request->input('traffic') === 'bots') {
-            $query->where('is_bot', true);
-        }
-
-        // Quick period presets (Today / This Week / ... / Lifetime) computed in the
-        // admin's own timezone, not UTC — created_at is stored in app.timezone (UTC),
-        // so a naive whereDate() against it reads up to 6 hours off from what "today"
-        // or "this month" actually means in Dhaka (the same class of bug already fixed
-        // for the stat cards above). "custom"/no period falls back to the explicit
-        // From/To date inputs, which get the same Dhaka-aware day boundaries.
-        $tz = setting('timezone', 'Asia/Dhaka');
-        $period = $request->input('period');
-
-        if ($period && $period !== 'custom') {
-            $now = now()->setTimezone($tz);
-            [$start, $end] = match ($period) {
-                'today' => [$now->copy()->startOfDay(), $now->copy()->endOfDay()],
-                'this_week' => [$now->copy()->startOfWeek(), $now->copy()->endOfWeek()],
-                'this_month' => [$now->copy()->startOfMonth(), $now->copy()->endOfMonth()],
-                'last_month' => [$now->copy()->subMonthNoOverflow()->startOfMonth(), $now->copy()->subMonthNoOverflow()->endOfMonth()],
-                'this_year' => [$now->copy()->startOfYear(), $now->copy()->endOfYear()],
-                default => [null, null], // lifetime (or unrecognized) — no bound
-            };
-
-            if ($start && $end) {
-                $query->whereBetween('created_at', [$start->copy()->utc(), $end->copy()->utc()]);
-            }
-        } else {
-            if ($request->filled('from')) {
-                $query->where('created_at', '>=', \Illuminate\Support\Carbon::parse($request->from, $tz)->startOfDay()->utc());
-            }
-
-            if ($request->filled('to')) {
-                $query->where('created_at', '<=', \Illuminate\Support\Carbon::parse($request->to, $tz)->endOfDay()->utc());
-            }
-        }
-
-        $logs = $query->orderByDesc('created_at')->paginate(50)->withQueryString();
-        $ipLocations = $this->batchIpLocations($logs->pluck('ip_address')->filter()->unique());
-
-        $eventTypes = DB::query()->fromSub($this->baseUnion(), 'logs')
-            ->distinct()->orderBy('event_type')->pluck('event_type');
-
-        $logUsers = User::whereIn('id', DB::table('activity_logs')->distinct()->pluck('user_id')->filter()
-            ->merge(DB::table('audit_logs')->distinct()->pluck('user_id')->filter()))
-            ->orderBy('name')->get();
-
-        // now()->startOfDay() used app.timezone (UTC) — "today" started/ended 6 hours off
-        // from an admin's actual Bangladesh day, so these counters could show yesterday
-        // evening's Dhaka activity as "today", or cut off this morning's. setting('timezone')
-        // is the same admin-configurable value every other Dhaka-local date calculation in
-        // this app already uses (BlogPostController, TelegramOrderObserver, ...).
-        $today = now()->setTimezone(setting('timezone', 'Asia/Dhaka'))->startOfDay()->utc();
-        $stats = [
-            'logins_today'            => ActivityLog::where('event', 'login')->where('created_at', '>=', $today)->count(),
-            'product_views_today'     => ActivityLog::where('event', 'product.view')->where('created_at', '>=', $today)->count(),
-            // Split out so the raw number above doesn't quietly include crawler/scraper
-            // traffic in what reads as "real people looked at a product today" — a
-            // datacenter IP hammering product pages (which is what prompted this) would
-            // otherwise inflate that count with zero corresponding carts/orders to match.
-            'product_views_today_bot' => ActivityLog::where('event', 'product.view')->where('is_bot', true)->where('created_at', '>=', $today)->count(),
-            'cart_adds_today'         => ActivityLog::where('event', 'cart.add')->where('created_at', '>=', $today)->count(),
-            'orders_placed_today'     => ActivityLog::where('event', 'order.place')->where('created_at', '>=', $today)->count(),
-            'order_views_today'       => ActivityLog::where('event', 'order.view')->where('created_at', '>=', $today)->count(),
-        ];
-
-        return view('admin.activity-logs.index', compact('logs', 'eventTypes', 'logUsers', 'stats', 'ipLocations'));
+        return $query;
     }
 
     /**
-     * City/country for a batch of IPs, via ip-api.com's free (no API key) batch endpoint
-     * (city-level only — never a street address or anything close to it; that level of
-     * precision isn't available to anyone outside the ISP itself, not to this site or any
-     * other). One request per PAGE of the log (not per row — a naive per-IP lookup across
-     * 50 rows could mean 50 outbound requests on every page load), and each result is
-     * cached for a month since an IP's rough location essentially never changes for this
-     * purpose. A slow or failed lookup just leaves that IP out of the map rather than ever
-     * blocking the page — this is a convenience on top of the IP column, not a dependency.
+     * [start, end] in UTC for the Period filter, computed on the admin's own (Dhaka) calendar —
+     * created_at is stored in UTC, so a plain whereDate() would be up to 6 hours off. "custom"
+     * (or no period) uses the From/To dates with the same Dhaka-aware day boundaries.
+     */
+    private function periodRange(Request $request, string $tz): array
+    {
+        $period = $request->input('period');
+        if ($period && $period !== 'custom') {
+            $now = now()->setTimezone($tz);
+            [$start, $end] = match ($period) {
+                'today'      => [$now->copy()->startOfDay(), $now->copy()->endOfDay()],
+                'yesterday'  => [$now->copy()->subDay()->startOfDay(), $now->copy()->subDay()->endOfDay()],
+                'last_7'     => [$now->copy()->subDays(6)->startOfDay(), $now->copy()->endOfDay()],
+                'this_week'  => [$now->copy()->startOfWeek(), $now->copy()->endOfWeek()],
+                'this_month' => [$now->copy()->startOfMonth(), $now->copy()->endOfMonth()],
+                'last_month' => [$now->copy()->subMonthNoOverflow()->startOfMonth(), $now->copy()->subMonthNoOverflow()->endOfMonth()],
+                'this_year'  => [$now->copy()->startOfYear(), $now->copy()->endOfYear()],
+                default      => [null, null],
+            };
+
+            return [$start?->copy()->utc(), $end?->copy()->utc()];
+        }
+
+        $start = $end = null;
+        try {
+            if ($request->filled('from')) {
+                $start = Carbon::parse($request->from, $tz)->startOfDay()->utc();
+            }
+            if ($request->filled('to')) {
+                $end = Carbon::parse($request->to, $tz)->endOfDay()->utc();
+            }
+        } catch (\Throwable) {
+            // an unparseable date is simply ignored
+        }
+
+        return [$start, $end];
+    }
+
+    /** Human-readable chips for the filters in use, each with the URL that removes it. */
+    private function activeFilters(Request $request, $logUsers): array
+    {
+        $periods = ['today' => 'Today', 'yesterday' => 'Yesterday', 'last_7' => 'Last 7 days', 'this_week' => 'This week', 'this_month' => 'This month', 'last_month' => 'Last month', 'this_year' => 'This year'];
+        $labels = [
+            'search'     => fn ($v) => "“{$v}”",
+            'event_type' => fn ($v) => "Event: {$v}",
+            'role'       => fn ($v) => 'Role: ' . ($v === 'guest' ? 'Guest' : User::roleLabel($v)),
+            'user_id'    => fn ($v) => 'User: ' . ($logUsers->firstWhere('id', (int) $v)?->name ?? "#{$v}"),
+            'traffic'    => fn ($v) => $v === 'bots' ? 'Bots only' : 'Real users only',
+            'source'     => fn ($v) => $v === 'audit' ? 'Admin actions only' : 'Site activity only',
+            'period'     => fn ($v) => $periods[$v] ?? null,
+            'from'       => fn ($v) => "From {$v}",
+            'to'         => fn ($v) => "To {$v}",
+        ];
+        $chips = [];
+        foreach ($labels as $key => $label) {
+            if ($request->filled($key) && ($text = $label($request->input($key)))) {
+                $chips[] = ['label' => $text, 'remove' => $request->fullUrlWithQuery([$key => null, 'page' => null])];
+            }
+        }
+
+        return $chips;
+    }
+
+    /**
+     * City/country for this page's IPs (city level only — never a street address). Only what's
+     * already cached is used for this page; IPs not looked up yet are fetched from ip-api.com's
+     * free batch endpoint AFTER the response has been sent and cached for a month, so they show
+     * on the next load — an outside service never makes this page wait.
      *
      * @param  \Illuminate\Support\Collection<int, string>  $ips
      * @return array<string, string> ip => "City, Country"
@@ -195,9 +256,9 @@ class ActivityLogController extends Controller
 
         foreach ($ips as $ip) {
             if (!filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE)) {
-                continue; // private/reserved/loopback (e.g. local dev) has no public geolocation
+                continue; // private/reserved/loopback has no public geolocation
             }
-            $cached = \Illuminate\Support\Facades\Cache::get("ip_location:{$ip}", '__miss__');
+            $cached = Cache::get("ip_location:{$ip}", '__miss__');
             if ($cached === '__miss__') {
                 $uncached[] = $ip;
             } elseif ($cached !== null) {
@@ -205,27 +266,22 @@ class ActivityLogController extends Controller
             }
         }
 
-        if (!empty($uncached)) {
-            try {
-                $response = \Illuminate\Support\Facades\Http::timeout(3)
-                    ->post('http://ip-api.com/batch?fields=status,city,country,query', array_values($uncached));
-
-                if ($response->ok()) {
-                    foreach ($response->json() ?: [] as $entry) {
-                        $ip = $entry['query'] ?? null;
-                        if (!$ip) continue;
-                        $location = ($entry['status'] ?? null) === 'success'
-                            ? collect([$entry['city'] ?? null, $entry['country'] ?? null])->filter()->implode(', ') ?: null
-                            : null;
-                        \Illuminate\Support\Facades\Cache::put("ip_location:{$ip}", $location, now()->addMonth());
-                        if ($location) {
-                            $result[$ip] = $location;
-                        }
-                    }
+        if ($uncached) {
+            after_response(function () use ($uncached) {
+                $response = Http::timeout(5)->post('http://ip-api.com/batch?fields=status,city,country,query', array_values(array_slice($uncached, 0, 100)));
+                if (!$response->ok()) {
+                    return;
                 }
-            } catch (\Throwable $e) {
-                // Geolocation is a nice-to-have on this page, never a reason to break it.
-            }
+                foreach ($response->json() ?: [] as $entry) {
+                    if (!($ip = $entry['query'] ?? null)) {
+                        continue;
+                    }
+                    $location = ($entry['status'] ?? null) === 'success'
+                        ? (collect([$entry['city'] ?? null, $entry['country'] ?? null])->filter()->implode(', ') ?: null)
+                        : null;
+                    Cache::put("ip_location:{$ip}", $location, now()->addMonth());
+                }
+            });
         }
 
         return $result;

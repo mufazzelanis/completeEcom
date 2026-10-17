@@ -2,52 +2,68 @@
 @section('title', 'Activity Log')
 
 @section('content')
-<div class="flex items-center justify-between mb-6">
+@php
+    $todayLink = fn (string $event) => route('admin.activity-logs.index', ['event_type' => $event, 'period' => 'today']);
+    $isCard = fn (string $event) => request('event_type') === $event && request('period') === 'today';
+@endphp
+<div class="flex flex-wrap items-center justify-between gap-3 mb-6">
     <div>
         <h1 class="text-xl font-bold text-gray-800">Activity Log</h1>
         <p class="text-sm text-gray-500 mt-0.5">Who logged in, viewed, and did what — across customers and admins</p>
     </div>
-    <span class="text-sm text-gray-400">{{ $logs->total() }} total entries</span>
-</div>
-
-{{-- Stats --}}
-<div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
-    <div class="bg-white rounded-2xl shadow-sm p-4">
-        <p class="text-xs text-gray-400 uppercase tracking-wider font-medium">Logins Today</p>
-        <p class="text-2xl font-bold text-gray-800 mt-1">{{ $stats['logins_today'] }}</p>
-    </div>
-    <div class="bg-white rounded-2xl shadow-sm p-4">
-        <p class="text-xs text-gray-400 uppercase tracking-wider font-medium">Product Views Today</p>
-        <p class="text-2xl font-bold text-gray-800 mt-1">{{ $stats['product_views_today'] }}</p>
-        {{-- Split out so this number doesn't quietly read as "real people looked at a
-             product today" when some of it is crawler/scraper traffic — a datacenter
-             IP hammering product pages (the actual thing that prompted this) shows up
-             here instead of inflating the headline count with nothing to back it. --}}
-        @if($stats['product_views_today_bot'] > 0)
-            <p class="text-[11px] text-gray-400 mt-1">incl. <span class="font-semibold text-orange-500">{{ $stats['product_views_today_bot'] }}</span> bot/crawler</p>
+    <span class="text-sm text-gray-500">
+        @if($logs->total())
+            Showing <strong class="text-gray-800">{{ number_format($logs->firstItem()) }}–{{ number_format($logs->lastItem()) }}</strong> of
         @endif
-    </div>
-    <div class="bg-white rounded-2xl shadow-sm p-4">
-        <p class="text-xs text-gray-400 uppercase tracking-wider font-medium">Cart Adds Today</p>
-        <p class="text-2xl font-bold text-gray-800 mt-1">{{ $stats['cart_adds_today'] }}</p>
-    </div>
-    <div class="bg-white rounded-2xl shadow-sm p-4 ring-1 ring-emerald-100">
-        <p class="text-xs text-emerald-600 uppercase tracking-wider font-medium">Orders Placed Today</p>
-        <p class="text-2xl font-bold text-emerald-700 mt-1">{{ $stats['orders_placed_today'] }}</p>
-    </div>
-    <div class="bg-white rounded-2xl shadow-sm p-4">
-        <p class="text-xs text-gray-400 uppercase tracking-wider font-medium">Order Views Today</p>
-        <p class="text-2xl font-bold text-gray-800 mt-1">{{ $stats['order_views_today'] }}</p>
-    </div>
+        <strong class="text-gray-800">{{ number_format($logs->total()) }}</strong> {{ $activeFilters ? 'matching' : 'total' }} entries
+    </span>
 </div>
 
-{{-- Filters --}}
+{{-- Today's numbers — each card filters the log to that event today (click again to clear) --}}
+<div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+    @foreach([
+        ['login', 'Logins Today', $stats['logins_today']],
+        ['product.view', 'Product Views Today', $stats['product_views_today']],
+        ['cart.add', 'Cart Adds Today', $stats['cart_adds_today']],
+        ['order.place', 'Orders Placed Today', $stats['orders_placed_today']],
+        ['order.view', 'Order Views Today', $stats['order_views_today']],
+    ] as [$event, $label, $value])
+        <a href="{{ $isCard($event) ? route('admin.activity-logs.index') : $todayLink($event) }}"
+           title="{{ $isCard($event) ? 'Show everything again' : 'Show only these' }}"
+           class="block bg-white rounded-2xl shadow-sm p-4 transition hover:shadow-md hover:-translate-y-0.5 {{ $isCard($event) ? 'ring-2 ring-indigo-500' : ($event === 'order.place' ? 'ring-1 ring-emerald-100' : '') }}">
+            <p class="text-xs uppercase tracking-wider font-medium {{ $event === 'order.place' ? 'text-emerald-600' : 'text-gray-400' }}">{{ $label }}</p>
+            <p class="text-2xl font-bold mt-1 {{ $event === 'order.place' ? 'text-emerald-700' : 'text-gray-800' }}">{{ number_format($value) }}</p>
+            @if($event === 'product.view' && $stats['product_views_today_bot'] > 0)
+                {{-- so crawler traffic doesn't read as "real people looked at a product" --}}
+                <p class="text-[11px] text-gray-400 mt-1">incl. <span class="font-semibold text-orange-500">{{ number_format($stats['product_views_today_bot']) }}</span> bot/crawler</p>
+            @endif
+        </a>
+    @endforeach
+</div>
+
+{{-- Filters — applied as soon as a choice changes (search: shortly after typing stops); the
+     table dims while the filtered page loads. The Filter button stays for keyboard users. --}}
 <div class="bg-white rounded-2xl shadow-sm p-4 mb-6">
-    <form action="{{ route('admin.activity-logs.index') }}" method="GET" class="flex flex-wrap items-end gap-3"
-        x-data="{ period: '{{ request('period') ?: (request('from') || request('to') ? 'custom' : '') }}' }">
+    <form action="{{ route('admin.activity-logs.index') }}" method="GET" class="flex flex-wrap items-end gap-3" x-ref="form"
+        x-data="{
+            period: '{{ request('period') ?: (request('from') || request('to') ? 'custom' : '') }}',
+            loading: false,
+            timer: null,
+            apply() {
+                if (this.period === 'custom' && !this.$refs.from.value && !this.$refs.to.value) return;
+                this.loading = true;
+                document.getElementById('activity-log-table')?.classList.add('opacity-40', 'pointer-events-none');
+                // $refs.form, not $el: from the search box's handler $el is the input itself
+                this.$refs.form.querySelectorAll('[name]').forEach(i => i.disabled = !i.value);
+                this.$refs.form.submit();
+            },
+            typed() { clearTimeout(this.timer); this.timer = setTimeout(() => this.apply(), 600); },
+        }"
+        @change="if ($event.target.name !== 'search') apply()"
+        @submit.prevent="apply()">
         <div class="flex-1 min-w-40">
             <label class="text-xs font-medium text-gray-500 uppercase mb-1 block">Search</label>
-            <input type="text" name="search" value="{{ request('search') }}" placeholder="Search description..."
+            <input type="text" name="search" value="{{ request('search') }}" placeholder="Product, order no., IP…" @input="typed()"
                 class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
         </div>
         <div>
@@ -55,7 +71,7 @@
             <select name="event_type" class="border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
                 <option value="">All Events</option>
                 @foreach($eventTypes as $e)
-                <option value="{{ $e }}" {{ request('event_type') === $e ? 'selected' : '' }}>{{ $e }}</option>
+                <option value="{{ $e }}" @selected(request('event_type') === $e)>{{ $e }}</option>
                 @endforeach
             </select>
         </div>
@@ -63,58 +79,85 @@
             <label class="text-xs font-medium text-gray-500 uppercase mb-1 block">Role</label>
             <select name="role" class="border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
                 <option value="">All Roles</option>
-                <option value="admin" {{ request('role') === 'admin' ? 'selected' : '' }}>Admin</option>
-                <option value="customer" {{ request('role') === 'customer' ? 'selected' : '' }}>Customer</option>
+                <option value="admin" @selected(request('role') === 'admin')>Admin</option>
+                <option value="customer" @selected(request('role') === 'customer')>Customer</option>
+                <option value="guest" @selected(request('role') === 'guest')>Guest (not logged in)</option>
             </select>
         </div>
         <div>
             <label class="text-xs font-medium text-gray-500 uppercase mb-1 block">User</label>
-            <select name="user_id" class="border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            <select name="user_id" class="border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 max-w-[12rem]">
                 <option value="">All Users</option>
                 @foreach($logUsers as $u)
-                <option value="{{ $u->id }}" {{ request('user_id') == $u->id ? 'selected' : '' }}>{{ $u->name }}</option>
+                <option value="{{ $u->id }}" @selected(request('user_id') == $u->id)>{{ $u->name }}</option>
                 @endforeach
             </select>
         </div>
         <div>
             <label class="text-xs font-medium text-gray-500 uppercase mb-1 block">Traffic</label>
             <select name="traffic" class="border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                <option value="" {{ request('traffic') === null || request('traffic') === '' ? 'selected' : '' }}>All</option>
-                <option value="humans" {{ request('traffic') === 'humans' ? 'selected' : '' }}>Real users only</option>
-                <option value="bots" {{ request('traffic') === 'bots' ? 'selected' : '' }}>Bots/crawlers only</option>
+                <option value="">All</option>
+                <option value="humans" @selected(request('traffic') === 'humans')>Real users only</option>
+                <option value="bots" @selected(request('traffic') === 'bots')>Bots/crawlers only</option>
+            </select>
+        </div>
+        <div>
+            <label class="text-xs font-medium text-gray-500 uppercase mb-1 block">Type</label>
+            <select name="source" class="border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                <option value="">Everything</option>
+                <option value="activity" @selected(request('source') === 'activity')>Site activity</option>
+                <option value="audit" @selected(request('source') === 'audit')>Admin actions</option>
             </select>
         </div>
         <div>
             <label class="text-xs font-medium text-gray-500 uppercase mb-1 block">Period</label>
             <select name="period" x-model="period" class="border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                <option value="" {{ request('period', request('from') || request('to') ? 'custom' : '') === '' ? 'selected' : '' }}>Lifetime</option>
-                <option value="today" {{ request('period') === 'today' ? 'selected' : '' }}>Today</option>
-                <option value="this_week" {{ request('period') === 'this_week' ? 'selected' : '' }}>This Week</option>
-                <option value="this_month" {{ request('period') === 'this_month' ? 'selected' : '' }}>This Month</option>
-                <option value="last_month" {{ request('period') === 'last_month' ? 'selected' : '' }}>Last Month</option>
-                <option value="this_year" {{ request('period') === 'this_year' ? 'selected' : '' }}>This Year</option>
-                <option value="custom" {{ request('period') === 'custom' || (!request('period') && (request('from') || request('to'))) ? 'selected' : '' }}>Custom Range</option>
+                <option value="">Lifetime</option>
+                <option value="today">Today</option>
+                <option value="yesterday">Yesterday</option>
+                <option value="last_7">Last 7 days</option>
+                <option value="this_week">This Week</option>
+                <option value="this_month">This Month</option>
+                <option value="last_month">Last Month</option>
+                <option value="this_year">This Year</option>
+                <option value="custom">Custom Range</option>
             </select>
         </div>
         <div x-show="period === 'custom'" x-cloak>
             <label class="text-xs font-medium text-gray-500 uppercase mb-1 block">From</label>
-            <input type="date" name="from" value="{{ request('from') }}"
+            <input type="date" name="from" x-ref="from" value="{{ request('from') }}"
                 class="border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
         </div>
         <div x-show="period === 'custom'" x-cloak>
             <label class="text-xs font-medium text-gray-500 uppercase mb-1 block">To</label>
-            <input type="date" name="to" value="{{ request('to') }}"
+            <input type="date" name="to" x-ref="to" value="{{ request('to') }}"
                 class="border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
         </div>
-        <div class="flex gap-2">
-            <button type="submit" class="bg-indigo-600 text-white px-4 py-2 rounded-xl text-sm hover:bg-indigo-700 transition">Filter</button>
-            <a href="{{ route('admin.activity-logs.index') }}" class="bg-gray-100 text-gray-600 px-4 py-2 rounded-xl text-sm hover:bg-gray-200 transition">Clear</a>
+        <div class="flex items-center gap-2">
+            <button type="submit" class="bg-indigo-600 text-white px-4 py-2 rounded-xl text-sm hover:bg-indigo-700 transition inline-flex items-center gap-1.5">
+                <svg x-show="loading" x-cloak class="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+                <span x-text="loading ? 'Loading…' : 'Filter'">Filter</span>
+            </button>
+            @if($activeFilters)
+                <a href="{{ route('admin.activity-logs.index') }}" class="bg-gray-100 text-gray-600 px-4 py-2 rounded-xl text-sm hover:bg-gray-200 transition">Clear</a>
+            @endif
         </div>
     </form>
+
+    @if($activeFilters)
+        <div class="flex flex-wrap items-center gap-2 mt-3 pt-3 border-t border-gray-100">
+            <span class="text-xs text-gray-500">Active:</span>
+            @foreach($activeFilters as $chip)
+                <a href="{{ $chip['remove'] }}" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-indigo-50 text-indigo-700 text-xs font-medium hover:bg-indigo-100" title="Remove this filter">
+                    {{ $chip['label'] }} <span aria-hidden="true">×</span>
+                </a>
+            @endforeach
+        </div>
+    @endif
 </div>
 
-{{-- Log Table --}}
-<div class="bg-white rounded-2xl shadow-sm overflow-x-auto">
+{{-- Log Table (dimmed while a filter change loads — see the form above) --}}
+<div id="activity-log-table" class="bg-white rounded-2xl shadow-sm overflow-x-auto transition-opacity">
     <table class="w-full text-sm">
         <thead class="bg-gray-50 border-b border-gray-100">
             <tr class="text-xs text-gray-500 uppercase tracking-wider">
@@ -255,7 +298,8 @@
             <tr>
                 <td colspan="8" class="px-5 py-16 text-center">
                     <svg class="w-12 h-12 text-gray-200 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-                    <p class="text-gray-400">No activity found.</p>
+                    <p class="text-gray-400">No activity matches these filters.</p>
+                    @if($activeFilters)<a href="{{ route('admin.activity-logs.index') }}" class="inline-block mt-2 text-sm text-indigo-600 hover:underline">Clear all filters</a>@endif
                 </td>
             </tr>
             @endforelse
