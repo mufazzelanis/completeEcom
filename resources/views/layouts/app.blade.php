@@ -154,6 +154,7 @@ $pageTwitterImage = $meta('twitter_image', $pageOgImage);
     <link rel="canonical" href="{{ $pageCanonical }}">
     @if($faviconUrl)<link rel="icon" href="{{ $faviconUrl }}">@endif
     @if(setting('google_site_verification'))<meta name="google-site-verification" content="{{ setting('google_site_verification') }}">@endif
+    @if(setting('facebook_domain_verification'))<meta name="facebook-domain-verification" content="{{ setting('facebook_domain_verification') }}">@endif
 
     {{-- AdSense site verification is satisfied by this meta tag on every page (one of the
          three methods AdSense accepts), so it works the moment a Publisher ID is saved. The

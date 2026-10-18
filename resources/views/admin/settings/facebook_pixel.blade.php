@@ -6,6 +6,21 @@
 @csrf @method('PATCH')
 
 <div class="bg-white rounded-xl shadow-sm border p-6 space-y-4">
+    <h2 class="text-base font-semibold text-gray-900 pb-2 border-b">Domain Verification</h2>
+    <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Facebook Domain Verification Code</label>
+        <input type="text" name="facebook_domain_verification" value="{{ setting('facebook_domain_verification', '') }}"
+               class="w-full border rounded-lg px-3 py-2 text-sm font-mono focus:ring-2 focus:ring-orange-500"
+               placeholder="e.g. q8fvpie0xk2gb3bscrcalx8ofta516">
+        <p class="text-xs text-gray-400 mt-1">
+            Business Settings → Brand Safety and Suitability → Domains → your domain → Verify
+            domain → "Add a meta-tag". Paste only the <code>content="..."</code> value here (not
+            the whole &lt;meta&gt; tag) — the site renders the tag itself on every page.
+        </p>
+    </div>
+</div>
+
+<div class="bg-white rounded-xl shadow-sm border p-6 space-y-4 mt-6">
     <h2 class="text-base font-semibold text-gray-900 pb-2 border-b">Facebook / Meta Pixel</h2>
     <div>
         <label class="block text-sm font-medium text-gray-700 mb-1">Pixel ID</label>
