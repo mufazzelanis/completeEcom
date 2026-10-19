@@ -137,7 +137,15 @@
                     @if($log->source === 'audit')
                     <span class="block text-[10px] text-gray-400 mt-0.5">admin action</span>
                     @elseif($log->is_bot)
-                    <span class="inline-flex items-center gap-0.5 text-[10px] text-orange-500 font-medium mt-0.5">🤖 bot/crawler</span>
+                    @php
+                        $botWhy = match ($log->properties ? (json_decode($log->properties, true)['bot'] ?? null) : null) {
+                            'no-browser-headers' => 'Pretends to be a browser but sends none of the headers a real one does (scraper)',
+                            'too-fast' => 'Viewed more than 30 products in 10 minutes from this IP',
+                            'user-agent' => 'Identifies itself as a bot/crawler',
+                            default => 'Bot or crawler',
+                        };
+                    @endphp
+                    <span class="inline-flex items-center gap-0.5 text-[10px] text-orange-500 font-medium mt-0.5 cursor-help" title="{{ $botWhy }}">🤖 bot/crawler</span>
                     @elseif($providerBadge)
                     <span class="inline-flex items-center px-1.5 py-0 rounded-full text-[10px] font-medium mt-0.5 {{ $providerBadge[0] }}">via {{ $providerBadge[1] }}</span>
                     @endif

@@ -22,6 +22,20 @@ class ActivityLogger
             $userAgent = Request::userAgent() ?? '';
             [$device, $browser, $platform] = ActivityLog::parseUserAgent($userAgent);
 
+            // A logged-in admin/staff member/customer is never a bot. For guests: a bot-like
+            // User-Agent, missing browser headers (ActivityLog::automationSignal), or reading
+            // product pages faster than a person can — 30+ in 10 minutes from one IP.
+            $botReason = null;
+            if (Auth::guest()) {
+                $botReason = ActivityLog::automationSignal(request());
+                if (!$botReason && $event === 'product.view' && static::tooFast((string) Request::ip())) {
+                    $botReason = 'too-fast';
+                }
+                if ($botReason) {
+                    $properties['bot'] = $botReason;
+                }
+            }
+
             ActivityLog::create([
                 'user_id'      => Auth::id(),
                 'event'        => $event,
@@ -35,15 +49,24 @@ class ActivityLogger
                 'device'       => $device,
                 'browser'      => $browser,
                 'platform'     => $platform,
-                // A logged-in admin/staff member is never a bot regardless of what their
-                // User-Agent happens to match — only matters for the guest traffic this
-                // is actually meant to filter (product views, cart adds, ...).
-                'is_bot'       => Auth::guest() && ActivityLog::isBotUserAgent($userAgent),
+                'is_bot'       => $botReason !== null,
                 'properties'   => $properties ?: null,
                 'created_at'   => now(),
             ]);
         } catch (\Throwable $e) {
             Log::error('ActivityLogger failed: ' . $e->getMessage());
         }
+    }
+
+    /** More than 30 product views from this IP in the current 10-minute window. */
+    private static function tooFast(string $ip): bool
+    {
+        if ($ip === '') {
+            return false;
+        }
+        $key = 'pv-rate:' . $ip . ':' . intdiv(time(), 600);
+        \Illuminate\Support\Facades\Cache::add($key, 0, 660);
+
+        return \Illuminate\Support\Facades\Cache::increment($key) > 30;
     }
 }

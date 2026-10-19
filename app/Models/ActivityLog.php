@@ -150,6 +150,39 @@ class ActivityLog extends Model
     }
 
     /**
+     * Why this request looks automated, or null for a real browser. The User-Agent alone is
+     * easy to fake — scrapers announce themselves as "Chrome on Windows" and passed as real
+     * visitors (product views from Brazil, Colombia, Singapore… with no carts or orders). Two
+     * things a real browser always sends and plain HTTP scripts don't:
+     *   - Accept-Language — every browser sends the user's languages on every request;
+     *   - Sec-Fetch-Mode — Chromium (Chrome, Edge, Opera, Samsung, Android in-app browsers)
+     *     since v76 and Firefox since v90 send it on every request ("navigate" for a page,
+     *     "cors" for Turbo/fetch). Only checked for those engines; iPhone browsers (WebKit)
+     *     added it later, so they're never flagged for missing it.
+     */
+    public static function automationSignal(\Illuminate\Http\Request $request): ?string
+    {
+        $ua = (string) $request->userAgent();
+        if (static::isBotUserAgent($ua)) {
+            return 'user-agent';
+        }
+        if (!$request->headers->has('accept-language')) {
+            return 'no-browser-headers';
+        }
+        $isIos = (bool) preg_match('/iPhone|iPad|iPod|CriOS|FxiOS/i', $ua);
+        if (!$isIos && !$request->headers->has('sec-fetch-mode')) {
+            if (preg_match('#(?:Chrome|Chromium|Edg|OPR|SamsungBrowser)/(\d+)#', $ua, $m) && (int) $m[1] >= 80) {
+                return 'no-browser-headers';
+            }
+            if (preg_match('#Firefox/(\d+)#', $ua, $m) && (int) $m[1] >= 90) {
+                return 'no-browser-headers';
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * "Which medium did this visit come through" — Google search, Facebook, a direct URL
      * (typed, bookmarked, or clicked from a non-web source like SMS/WhatsApp, which sends
      * no referrer at all), or another site. Derived from the raw referrer at display time
