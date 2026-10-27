@@ -162,15 +162,21 @@
                         @else
                             <p class="truncate text-xs">{{ $log->description }}</p>
                         @endif
-                        {{-- Copies the full description text (e.g. the product title inside
-                             "Added "X" to cart") — an admin watching a specific product's
-                             traffic needs the exact title to search/filter elsewhere without
-                             retyping it by hand from a truncated cell. --}}
-                        <button type="button" @click="navigator.clipboard.writeText(@js($log->description)); copied = true; setTimeout(() => copied = false, 1500)"
-                            class="flex-shrink-0 text-gray-300 hover:text-indigo-600 transition" :title="copied ? 'Copied!' : 'Copy'">
+                        {{-- Copy: just the useful part — the product name (not "Viewed product: …"),
+                             the order number, or the person — ready to paste into a search. --}}
+                        @php $key = \App\Models\ActivityLog::keyText($log->description); @endphp
+                        <button type="button" @click="navigator.clipboard.writeText(@js($key)); copied = true; setTimeout(() => copied = false, 1500)"
+                            class="flex-shrink-0 text-gray-300 hover:text-indigo-600 transition" :title="copied ? 'Copied!' : @js('Copy “' . \Illuminate\Support\Str::limit($key, 60) . '”')">
                             <svg x-show="!copied" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
                             <svg x-show="copied" x-cloak class="w-3.5 h-3.5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
                         </button>
+                        {{-- Show every log entry about this same product / order / person --}}
+                        @if($key !== trim((string) $log->description))
+                            <a href="{{ request()->fullUrlWithQuery(['search' => $key, 'page' => null]) }}" data-al-link
+                               class="flex-shrink-0 text-gray-300 hover:text-indigo-600 transition" title="Show all activity for “{{ \Illuminate\Support\Str::limit($key, 60) }}”">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/></svg>
+                            </a>
+                        @endif
                     </div>
                 </td>
                 <td class="px-5 py-3 text-xs text-gray-500 whitespace-nowrap">
@@ -185,7 +191,14 @@
                     @endif
                 </td>
                 <td class="px-5 py-3 text-xs text-gray-400 font-mono">
-                    {{ $log->ip_address ?? '—' }}
+                    {{-- click: everything this visitor (IP) did — the quickest way to tell a
+                         shopper's path from a scraper's --}}
+                    @if($log->ip_address)
+                        <a href="{{ request()->fullUrlWithQuery(['ip' => $log->ip_address, 'page' => null]) }}" data-al-link
+                           class="hover:text-indigo-600 hover:underline" title="Show everything from this IP">{{ $log->ip_address }}</a>
+                    @else
+                        —
+                    @endif
                     {{-- City/country only — never a street address or anything close to it;
                          that precision isn't available from an IP to anyone outside the ISP
                          itself, not to this site or any other. --}}

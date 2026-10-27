@@ -144,6 +144,29 @@ class ActivityLog extends Model
         . 'java\/|okhttp|postmanruntime|apache-httpclient|axios\/|node-fetch|httpie|'
         . 'headlesschrome|phantomjs|puppeteer|playwright|selenium/i';
 
+    /**
+     * The useful part of a log description — what an admin actually wants to copy or search
+     * by: the product name from "Viewed product: X" / 'Added "X" x1 to cart', the order number
+     * from "Viewed order #ORD-…", the person from "X logged in…". Falls back to the whole text.
+     */
+    public static function keyText(?string $description): string
+    {
+        $d = trim((string) $description);
+        $patterns = [
+            '/^Viewed product:\s*(.+)$/u',       // product.view
+            '/^[A-Za-z]+ "(.+?)"/u',             // cart.add / cart.remove / order.download
+            '/#\s*([A-Z]{2,}-[A-Z0-9-]+)/u',     // order.view / order.place (order number)
+            '/^(.+?) logged (?:in|out)\b/u',     // login / logout
+        ];
+        foreach ($patterns as $pattern) {
+            if (preg_match($pattern, $d, $m)) {
+                return trim($m[1]);
+            }
+        }
+
+        return $d;
+    }
+
     public static function isBotUserAgent(string $userAgent): bool
     {
         return trim($userAgent) === '' || (bool) preg_match(self::BOT_SIGNATURES, $userAgent);

@@ -94,7 +94,7 @@ class ActivityLogController extends Controller
             return $empty; // admin actions only — none of these are site activity
         }
 
-        $key = 'activity_log:stats:' . md5(json_encode([$request->only(['search', 'role', 'user_id', 'traffic']), $start?->timestamp, $end?->timestamp]));
+        $key = 'activity_log:stats:' . md5(json_encode([$request->only(['search', 'role', 'user_id', 'traffic', 'ip']), $start?->timestamp, $end?->timestamp]));
 
         return Cache::remember($key, 60, function () use ($request, $start, $end, $events, $empty) {
             $withoutEvent = $request->duplicate($request->except('event_type'));
@@ -191,6 +191,9 @@ class ActivityLogController extends Controller
         if ($request->filled('user_id')) {
             $query->where("{$table}.user_id", (int) $request->user_id);
         }
+        if ($request->filled('ip')) {
+            $query->where("{$table}.ip_address", trim($request->ip));
+        }
         if ($table === 'activity_logs' && $request->input('traffic') === 'humans') {
             $query->where('activity_logs.is_bot', false);
         } elseif ($table === 'activity_logs' && $request->input('traffic') === 'bots') {
@@ -254,6 +257,7 @@ class ActivityLogController extends Controller
             'event_type' => fn ($v) => "Event: {$v}",
             'role'       => fn ($v) => 'Role: ' . ($v === 'guest' ? 'Guest' : User::roleLabel($v)),
             'user_id'    => fn ($v) => 'User: ' . ($logUsers->firstWhere('id', (int) $v)?->name ?? "#{$v}"),
+            'ip'         => fn ($v) => "IP: {$v}",
             'traffic'    => fn ($v) => $v === 'bots' ? 'Bots only' : 'Real users only',
             'source'     => fn ($v) => $v === 'audit' ? 'Admin actions only' : 'Site activity only',
             'period'     => fn ($v) => $periods[$v] ?? null,
