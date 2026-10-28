@@ -427,10 +427,23 @@
                 <!-- Stock -->
                 @if($product->isVariable())
                     <div class="mb-6">
-                        <template x-if="selectedCombo">
+                        {{-- Same rule as simple products below: no exact count unless it's low --}}
+                        <template x-if="selectedCombo && selectedCombo.stock > 5">
                             <span class="inline-flex items-center bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm font-medium">
                                 <span class="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
-                                <span x-text="'In Stock (' + selectedCombo.stock + ' available)'"></span>
+                                In Stock
+                            </span>
+                        </template>
+                        <template x-if="selectedCombo && selectedCombo.stock > 0 && selectedCombo.stock <= 5">
+                            <span class="inline-flex items-center bg-amber-100 text-amber-700 px-3 py-1 rounded-full text-sm font-medium">
+                                <span class="w-2 h-2 bg-amber-500 rounded-full mr-2 animate-pulse"></span>
+                                <span x-text="'Only ' + selectedCombo.stock + ' left — order soon'"></span>
+                            </span>
+                        </template>
+                        <template x-if="selectedCombo && selectedCombo.stock <= 0">
+                            <span class="inline-flex items-center bg-red-100 text-red-700 px-3 py-1 rounded-full text-sm font-medium">
+                                <span class="w-2 h-2 bg-red-500 rounded-full mr-2"></span>
+                                Out of Stock
                             </span>
                         </template>
                         <template x-if="!selectedCombo">
@@ -449,10 +462,19 @@
                     </div>
                 @else
                     <div class="mb-6">
-                        @if($product->available_stock > 0)
+                        {{-- The exact count isn't shown unless it's low: "20 available" said nothing
+                             useful (and for imported products 20 is just a default, not a real
+                             count), while "Only 3 left" is real, helpful urgency — the same rule
+                             the product cards use. --}}
+                        @if($product->available_stock > 5)
                             <span class="inline-flex items-center bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm font-medium">
                                 <span class="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
-                                In Stock ({{ $product->available_stock }} available)
+                                In Stock
+                            </span>
+                        @elseif($product->available_stock > 0)
+                            <span class="inline-flex items-center bg-amber-100 text-amber-700 px-3 py-1 rounded-full text-sm font-medium">
+                                <span class="w-2 h-2 bg-amber-500 rounded-full mr-2 animate-pulse"></span>
+                                Only {{ $product->available_stock }} left — order soon
                             </span>
                         @else
                             <span class="inline-flex items-center bg-red-100 text-red-700 px-3 py-1 rounded-full text-sm font-medium">
