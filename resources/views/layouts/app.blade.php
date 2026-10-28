@@ -517,6 +517,7 @@ $pageTwitterImage = $meta('twitter_image', $pageOgImage);
     })();
     </script>
     @include('partials.tracking.tag-manager-clarity')
+    @include('partials.tracking.live-heartbeat', ['turbo' => true])
     @if($pixelOn)
     <script>
         {{-- Facebook's standard snippet, except fbevents.js (~200 KB, ~400 ms of main-thread

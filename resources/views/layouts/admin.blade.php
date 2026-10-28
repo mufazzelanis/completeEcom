@@ -97,6 +97,7 @@ $adminBadges = \Illuminate\Support\Facades\Cache::remember('admin_sidebar_badges
 // admin panel reachable in a couple of keystrokes instead of hunting through the sidebar.
 $adminNavIndex = [
     ['label' => 'Dashboard', 'url' => route('admin.dashboard'), 'group' => 'General'],
+    ['label' => 'Live Visitors', 'url' => route('admin.live-visitors.index'), 'group' => 'General'],
     ['label' => 'Alerts (new orders & subscribers)', 'url' => route('admin.alerts.index'), 'group' => 'Notifications'],
     ['label' => 'Homepage Sections', 'url' => route('admin.home-sections.index'), 'group' => 'General'],
     ['label' => 'Categories', 'url' => route('admin.categories.index'), 'group' => 'Catalog'],
@@ -288,6 +289,14 @@ $adminNavIndex = [
                 class="sb-toplevel flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium transition {{ request()->routeIs('admin.dashboard') ? 'bg-orange-600 text-white' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800' }}">
                 <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
                 <span>Dashboard</span>
+            </a>
+            <a href="{{ route('admin.live-visitors.index') }}" title="Live Visitors"
+                class="sb-toplevel flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium transition {{ request()->routeIs('admin.live-visitors.*') ? 'bg-orange-600 text-white' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800' }}">
+                <span class="relative flex w-5 h-5 flex-shrink-0 items-center justify-center">
+                    <span class="animate-ping absolute inline-flex h-2.5 w-2.5 rounded-full" style="background:#4ade80; opacity:.7"></span>
+                    <span class="relative inline-flex rounded-full h-2.5 w-2.5" style="background:#22c55e"></span>
+                </span>
+                <span>Live Visitors</span>
             </a>
             <a href="{{ route('admin.home-sections.index') }}" title="Homepage Sections"
                 class="sb-toplevel flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium transition {{ request()->routeIs('admin.home-sections.*') ? 'bg-orange-600 text-white' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800' }}">

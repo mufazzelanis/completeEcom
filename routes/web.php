@@ -102,6 +102,8 @@ use Illuminate\Support\Facades\Route;
 
 // Search suggest (public)
 Route::get('/search/suggest', [SearchController::class, 'suggest'])->name('search.suggest');
+// Live-visitor heartbeat from storefront pages (Admin → Live Visitors)
+Route::post('/live/ping', [\App\Http\Controllers\LiveVisitorController::class, 'ping'])->middleware('throttle:60,1')->name('live.ping');
 
 // SEO: sitemap + robots.txt (public/robots.txt removed so this route is actually reached)
 Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemap');
@@ -638,6 +640,9 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     // Audit Logs
     Route::get('audit-logs', [AdminAuditLogController::class, 'index'])->name('audit-logs.index');
     Route::get('activity-logs', [AdminActivityLogController::class, 'index'])->name('activity-logs.index');
+    Route::get('live-visitors', [\App\Http\Controllers\Admin\LiveVisitorController::class, 'index'])->name('live-visitors.index');
+    Route::get('live-visitors/feed', [\App\Http\Controllers\Admin\LiveVisitorController::class, 'feed'])->name('live-visitors.feed');
+    Route::get('live-visitors/summary', [\App\Http\Controllers\Admin\LiveVisitorController::class, 'summary'])->name('live-visitors.summary');
     Route::get('facebook-conversion-logs', [AdminFacebookConversionLogController::class, 'index'])->name('facebook-conversion-logs.index');
 
     // CMS — Blog

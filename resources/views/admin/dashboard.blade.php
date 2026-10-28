@@ -86,6 +86,67 @@
     </div>
 </div>
 
+{{-- Live visitors right now — polls Admin → Live Visitors' summary every 10 s (paused while the tab is hidden) --}}
+<a href="{{ route('admin.live-visitors.index') }}"
+   class="dash-in relative block overflow-hidden rounded-2xl p-4 sm:p-5 mb-6 text-white shadow-lg hover:shadow-xl transition"
+   style="background: linear-gradient(120deg, #4338ca 0%, #7c3aed 50%, #db2777 100%);"
+   x-data="{
+        count: null, checkout: 0, byType: {}, top: [], timer: null,
+        labels: { checkout: ['Checkout','💳'], cart: ['Cart','🛒'], product: ['Product','🧴'], search: ['Search','🔎'], category: ['Category','🗂️'], brand: ['Brand','🏷️'], shop: ['Shop','🛍️'], home: ['Home','🏠'], landing: ['Landing','🚀'], blog: ['Blog','📝'], account: ['Account','👤'], other: ['Other','📄'] },
+        async load() {
+            if (document.hidden) return;
+            try {
+                const r = await fetch('{{ route('admin.live-visitors.summary') }}', { headers: { 'Accept': 'application/json' }, credentials: 'same-origin' });
+                if (!r.ok) return;
+                const d = await r.json();
+                this.count = d.count; this.checkout = d.checkout; this.byType = d.byType; this.top = d.top;
+            } catch (e) {}
+        },
+        init() {
+            this.load();
+            this.timer = setInterval(() => this.load(), 10000);
+            const stop = () => { clearInterval(this.timer); document.removeEventListener('turbo:before-visit', stop); };
+            document.addEventListener('turbo:before-visit', stop);
+        },
+        destroy() { clearInterval(this.timer); }
+   }">
+    <div class="pointer-events-none absolute -top-12 -right-8 w-48 h-48 rounded-full" style="background: rgba(255,255,255,.12);"></div>
+    <div class="relative flex flex-wrap items-center gap-x-6 gap-y-3">
+        <div class="flex items-center gap-3">
+            <span class="relative flex h-3.5 w-3.5">
+                <span class="animate-ping absolute inline-flex h-full w-full rounded-full" style="background:#4ade80; opacity:.75"></span>
+                <span class="relative inline-flex rounded-full h-3.5 w-3.5" style="background:#22c55e"></span>
+            </span>
+            <div>
+                <p class="text-3xl font-extrabold leading-none tabular-nums" x-text="count === null ? '…' : count"></p>
+                <p class="text-xs uppercase tracking-wider" style="color: rgba(255,255,255,.8);">live now</p>
+            </div>
+        </div>
+        <div class="flex flex-wrap gap-1.5 flex-1 min-w-0">
+            <template x-for="(n, type) in byType" :key="type">
+                <span class="rounded-full px-2.5 py-0.5 text-xs font-semibold" style="background: rgba(255,255,255,.18);"
+                      x-text="(labels[type] || labels.other)[1] + ' ' + (labels[type] || labels.other)[0] + ' ' + n"></span>
+            </template>
+            <span x-show="count === 0" class="text-sm" style="color: rgba(255,255,255,.8);">Nobody on the site right now</span>
+        </div>
+        <div class="hidden md:flex items-center gap-2">
+            <template x-for="p in top" :key="p.url">
+                <span class="flex items-center gap-2 rounded-xl pl-1 pr-2.5 py-1" style="background: rgba(255,255,255,.16);" :title="p.name">
+                    <img :src="p.image || ''" x-show="p.image" alt="" class="w-8 h-8 rounded-lg object-contain bg-white">
+                    <span class="text-xs leading-tight">
+                        <span class="block truncate font-semibold" style="max-width: 9rem;" x-text="p.name"></span>
+                        <span style="color: rgba(255,255,255,.85);" x-text="'৳' + Math.round(p.price).toLocaleString() + ' · 👀 ' + p.viewers"></span>
+                    </span>
+                </span>
+            </template>
+        </div>
+        <span class="text-sm font-semibold whitespace-nowrap" style="color: rgba(255,255,255,.9);">
+            <span x-show="checkout > 0" class="mr-2 rounded-full px-2 py-0.5" style="background:#10b981;" x-text="'💳 ' + checkout + ' at checkout'"></span>
+            View all →
+        </span>
+    </div>
+</a>
+
 <!-- Stats Grid -->
 <div class="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 mb-8">
     @foreach($cards as $i => $stat)

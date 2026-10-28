@@ -91,6 +91,9 @@ return Application::configure(basePath: dirname(__DIR__))
         // list stays about links that still get traffic
         $schedule->call(fn () => \App\Models\NotFoundLog::where('last_hit_at', '<', now()->subDays(90))->delete())
             ->name('not-found-log:prune')->dailyAt('03:00');
+        // Live Visitors only ever looks back 30 minutes (visits-today: one day) — keep two days
+        $schedule->call(fn () => \App\Models\LiveVisitor::where('last_seen_at', '<', now()->subDays(2))->delete())
+            ->name('live-visitors:prune')->hourly();
 
         $schedule->command('reviews:send-requests')->hourly()->between('10:00', '20:00')->timezone('Asia/Dhaka')->withoutOverlapping();
     })->create();

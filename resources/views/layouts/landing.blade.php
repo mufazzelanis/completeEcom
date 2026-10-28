@@ -135,6 +135,7 @@
     {{-- GTM + Clarity, same as the storefront — not in the admin's preview, so previews aren't recorded as visits --}}
     @unless($isPreview)
     @include('partials.tracking.tag-manager-clarity')
+    @include('partials.tracking.live-heartbeat')
     @endunless
 </head>
 <body class="bg-gray-100 text-gray-900 antialiased overflow-x-hidden">
