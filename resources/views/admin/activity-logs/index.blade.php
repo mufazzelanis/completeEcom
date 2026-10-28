@@ -20,6 +20,7 @@
             const params = new URLSearchParams();
             this.$refs.form.querySelectorAll('[name]').forEach(i => { if (i.value) params.set(i.name, i.value); });
             if (this.period !== 'custom') { params.delete('from'); params.delete('to'); }
+            if (this.rolling()) { params.delete('t_from'); params.delete('t_to'); }
             const qs = params.toString();
             return '{{ route('admin.activity-logs.index') }}' + (qs ? '?' + qs : '');
         },
@@ -28,6 +29,11 @@
             this.load(this.url(), true);
         },
         typed() { clearTimeout(this.timer); this.timer = setTimeout(() => this.apply(), 500); },
+        times: { from: '{{ request('t_from') }}', to: '{{ request('t_to') }}' },
+        rolling() { return ['last_15m', 'last_1h', 'last_6h', 'last_24h'].includes(this.period); },
+        setTime(from, to) { this.$refs.tFrom.value = from; this.$refs.tTo.value = to; this.times = { from, to }; this.apply(); },
+        timeIs(from, to) { return this.times.from === from && this.times.to === to; },
+        hasTime() { return !!(this.times.from || this.times.to); },
         async load(url, push) {
             this.controller?.abort(); // a newer choice replaces a request still in flight
             this.controller = new AbortController();
@@ -52,6 +58,7 @@
             const params = new URL(url, location.origin).searchParams;
             this.$refs.form.querySelectorAll('[name]').forEach(i => { if (document.activeElement !== i) i.value = params.get(i.name) ?? ''; });
             this.period = params.get('period') || (params.get('from') || params.get('to') ? 'custom' : '');
+            this.times = { from: params.get('t_from') || '', to: params.get('t_to') || '' };
         },
         init() {
             // links inside the results (chips, cards, pagination) load in place too
@@ -119,6 +126,13 @@
             <label class="text-xs font-medium text-gray-500 uppercase mb-1 block">Period</label>
             <select name="period" x-model="period" class="border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
                 <option value="">Lifetime</option>
+                <optgroup label="Recent">
+                    <option value="last_15m">Last 15 minutes</option>
+                    <option value="last_1h">Last 1 hour</option>
+                    <option value="last_6h">Last 6 hours</option>
+                    <option value="last_24h">Last 24 hours</option>
+                </optgroup>
+                <optgroup label="Days">
                 <option value="today">Today</option>
                 <option value="yesterday">Yesterday</option>
                 <option value="last_7">Last 7 days</option>
@@ -127,6 +141,7 @@
                 <option value="last_month">Last Month</option>
                 <option value="this_year">This Year</option>
                 <option value="custom">Custom Range</option>
+                </optgroup>
             </select>
         </div>
         <div x-show="period === 'custom'" x-cloak>
@@ -138,6 +153,25 @@
             <label class="text-xs font-medium text-gray-500 uppercase mb-1 block">To</label>
             <input type="date" name="to" x-ref="to" value="{{ request('to') }}"
                 class="border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+        </div>
+        {{-- Time of day (Dhaka time) on every day the Period covers — hidden for the rolling "last N" periods, where it means nothing --}}
+        <div x-show="!rolling()">
+            <label class="text-xs font-medium text-gray-500 uppercase mb-1 block">Time <span class="normal-case font-normal text-gray-400">(any day in period)</span></label>
+            <div class="flex items-center gap-1.5">
+                <input type="time" name="t_from" x-ref="tFrom" value="{{ request('t_from') }}" title="From this time"
+                    class="border border-gray-200 rounded-xl px-2.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                <span class="text-gray-400 text-sm">–</span>
+                <input type="time" name="t_to" x-ref="tTo" value="{{ request('t_to') }}" title="Until this time"
+                    class="border border-gray-200 rounded-xl px-2.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            </div>
+            <div class="flex flex-wrap gap-1 mt-1.5">
+                @foreach([['🌅 Morning', '06:00', '11:59'], ['☀️ Afternoon', '12:00', '16:59'], ['🌇 Evening', '17:00', '20:59'], ['🌙 Night', '21:00', '05:59']] as [$name, $tf, $tt])
+                    <button type="button" @click="setTime('{{ $tf }}', '{{ $tt }}')"
+                        class="rounded-full px-2 py-0.5 text-xs transition"
+                        :class="timeIs('{{ $tf }}', '{{ $tt }}') ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'">{{ $name }}</button>
+                @endforeach
+                <button type="button" x-show="hasTime()" x-cloak @click="setTime('', '')" class="rounded-full px-2 py-0.5 text-xs text-red-500 hover:bg-red-50">✕ Any time</button>
+            </div>
         </div>
         <div class="flex items-center gap-2">
             <button type="submit" class="bg-indigo-600 text-white px-4 py-2 rounded-xl text-sm hover:bg-indigo-700 transition inline-flex items-center gap-1.5">

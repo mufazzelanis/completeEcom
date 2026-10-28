@@ -94,7 +94,7 @@ class ActivityLogController extends Controller
             return $empty; // admin actions only — none of these are site activity
         }
 
-        $key = 'activity_log:stats:' . md5(json_encode([$request->only(['search', 'role', 'user_id', 'traffic', 'ip']), $start?->timestamp, $end?->timestamp]));
+        $key = 'activity_log:stats:' . md5(json_encode([$request->only(['search', 'role', 'user_id', 'traffic', 'ip', 't_from', 't_to']), $start?->timestamp, $end?->timestamp]));
 
         return Cache::remember($key, 60, function () use ($request, $start, $end, $events, $empty) {
             $withoutEvent = $request->duplicate($request->except('event_type'));
@@ -111,7 +111,19 @@ class ActivityLogController extends Controller
     /** "Today", "This month", … for the card captions; "All time" with no period. */
     private function periodLabel(Request $request): string
     {
+        $label = $this->basePeriodLabel($request);
+        [$from, $to] = $this->timeRange($request);
+        if ($from !== null || $to !== null) {
+            $label .= ', ' . self::clock(substr($from ?? '00:00', 0, 5)) . '–' . self::clock(substr($to ?? '23:59', 0, 5));
+        }
+
+        return $label;
+    }
+
+    private function basePeriodLabel(Request $request): string
+    {
         return match ($request->input('period')) {
+            'last_15m' => 'Last 15 minutes', 'last_1h' => 'Last hour', 'last_6h' => 'Last 6 hours', 'last_24h' => 'Last 24 hours',
             'today' => 'Today', 'yesterday' => 'Yesterday', 'last_7' => 'Last 7 days', 'this_week' => 'This week',
             'this_month' => 'This month', 'last_month' => 'Last month', 'this_year' => 'This year',
             default => $request->filled('from') || $request->filled('to') ? 'Selected dates' : 'All time',
@@ -205,8 +217,52 @@ class ActivityLogController extends Controller
         if ($end) {
             $query->where("{$table}.created_at", '<=', $end);
         }
+        $this->timeOfDay($query, $request, "{$table}.created_at");
 
         return $query;
+    }
+
+    /**
+     * "Time" filter: only entries whose local (Dhaka) clock time falls between t_from and t_to,
+     * on whichever days the Period covers — e.g. Today 10:00–14:00, or every evening this month.
+     * created_at is UTC, so it's shifted by the site's UTC offset before taking the time; a range
+     * that crosses midnight (22:00–02:00) wraps around. Either end may be left empty.
+     */
+    private function timeOfDay($query, Request $request, string $column): void
+    {
+        [$from, $to] = $this->timeRange($request);
+        if ($from === null && $to === null) {
+            return;
+        }
+        $offset = (int) now()->setTimezone(setting('timezone', 'Asia/Dhaka'))->utcOffset(); // minutes
+        $local = "TIME(DATE_ADD({$column}, INTERVAL {$offset} MINUTE))";
+        $from ??= '00:00:00';
+        $to ??= '23:59:59';
+
+        if ($from <= $to) {
+            $query->whereRaw("{$local} BETWEEN ? AND ?", [$from, $to]);
+        } else {
+            $query->where(fn ($q) => $q->whereRaw("{$local} >= ?", [$from])->orWhereRaw("{$local} <= ?", [$to]));
+        }
+    }
+
+    /** [from, to] as HH:MM:SS (to includes its whole minute), null for a missing/invalid end. */
+    private function timeRange(Request $request): array
+    {
+        if (in_array($request->input('period'), ['last_15m', 'last_1h', 'last_6h', 'last_24h'], true)) {
+            return [null, null]; // a rolling window already pins the time
+        }
+        $valid = fn ($v) => is_string($v) && preg_match('/^([01]\d|2[0-3]):[0-5]\d$/', $v);
+        $from = $valid($request->input('t_from')) ? $request->input('t_from') . ':00' : null;
+        $to = $valid($request->input('t_to')) ? $request->input('t_to') . ':59' : null;
+
+        return [$from, $to];
+    }
+
+    /** "10:00 AM" from "10:00". */
+    private static function clock(string $hm): string
+    {
+        return Carbon::createFromFormat('H:i', $hm)->format('g:i A');
     }
 
     /**
@@ -220,6 +276,11 @@ class ActivityLogController extends Controller
         if ($period && $period !== 'custom') {
             $now = now()->setTimezone($tz);
             [$start, $end] = match ($period) {
+                // rolling windows, up to this moment
+                'last_15m'   => [$now->copy()->subMinutes(15), $now->copy()],
+                'last_1h'    => [$now->copy()->subHour(), $now->copy()],
+                'last_6h'    => [$now->copy()->subHours(6), $now->copy()],
+                'last_24h'   => [$now->copy()->subDay(), $now->copy()],
                 'today'      => [$now->copy()->startOfDay(), $now->copy()->endOfDay()],
                 'yesterday'  => [$now->copy()->subDay()->startOfDay(), $now->copy()->subDay()->endOfDay()],
                 'last_7'     => [$now->copy()->subDays(6)->startOfDay(), $now->copy()->endOfDay()],
@@ -251,7 +312,7 @@ class ActivityLogController extends Controller
     /** Human-readable chips for the filters in use, each with the URL that removes it. */
     private function activeFilters(Request $request, $logUsers): array
     {
-        $periods = ['today' => 'Today', 'yesterday' => 'Yesterday', 'last_7' => 'Last 7 days', 'this_week' => 'This week', 'this_month' => 'This month', 'last_month' => 'Last month', 'this_year' => 'This year'];
+        $periods = ['last_15m' => 'Last 15 minutes', 'last_1h' => 'Last hour', 'last_6h' => 'Last 6 hours', 'last_24h' => 'Last 24 hours', 'today' => 'Today', 'yesterday' => 'Yesterday', 'last_7' => 'Last 7 days', 'this_week' => 'This week', 'this_month' => 'This month', 'last_month' => 'Last month', 'this_year' => 'This year'];
         $labels = [
             'search'     => fn ($v) => "“{$v}”",
             'event_type' => fn ($v) => "Event: {$v}",
@@ -263,6 +324,8 @@ class ActivityLogController extends Controller
             'period'     => fn ($v) => $periods[$v] ?? null,
             'from'       => fn ($v) => "From {$v}",
             'to'         => fn ($v) => "To {$v}",
+            't_from'     => fn ($v) => $this->timeRange($request)[0] ? 'After ' . self::clock($v) : null,
+            't_to'       => fn ($v) => $this->timeRange($request)[1] ? 'Before ' . self::clock($v) : null,
         ];
         $chips = [];
         foreach ($labels as $key => $label) {
