@@ -25,6 +25,12 @@ class SecurityHeaders
         // Legacy header, harmless to keep for older browsers alongside CSP frame-ancestors.
         $response->headers->set('X-XSS-Protection', '0');
 
+        // A PDF has no scripts to restrict, and the policy's object-src 'none' stops Chrome's
+        // built-in viewer from showing it inline (Custom Invoices' preview / Print)
+        if (str_starts_with((string) $response->headers->get('Content-Type'), 'application/pdf')) {
+            return $response;
+        }
+
         // 'unsafe-inline'/'unsafe-eval' on script-src are required by this stack (Tailwind's
         // CDN build injects styles at runtime, Alpine.js evaluates x-data/x-on expressions via
         // `new Function()`, and most pages carry inline <script> blocks rather than external

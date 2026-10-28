@@ -627,6 +627,14 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
 
     // Order invoice PDF + fraud re-check
     Route::get('orders/{order}/invoice', [AdminOrderController::class, 'invoice'])->name('orders.invoice');
+
+    // Custom invoices / quotations / receipts written by hand (no order, no stock change)
+    Route::get('custom-invoices/lookup', [\App\Http\Controllers\Admin\CustomInvoiceController::class, 'lookup'])->name('custom-invoices.lookup');
+    Route::post('custom-invoices/{custom_invoice}/duplicate', [\App\Http\Controllers\Admin\CustomInvoiceController::class, 'duplicate'])->name('custom-invoices.duplicate');
+    Route::post('custom-invoices/{custom_invoice}/payment', [\App\Http\Controllers\Admin\CustomInvoiceController::class, 'payment'])->name('custom-invoices.payment');
+    Route::patch('custom-invoices/{custom_invoice}/status', [\App\Http\Controllers\Admin\CustomInvoiceController::class, 'status'])->name('custom-invoices.status');
+    Route::get('custom-invoices/{custom_invoice}/pdf', [\App\Http\Controllers\Admin\CustomInvoiceController::class, 'pdf'])->name('custom-invoices.pdf');
+    Route::resource('custom-invoices', \App\Http\Controllers\Admin\CustomInvoiceController::class);
     Route::patch('orders/{order}/fraud-recheck', [AdminOrderController::class, 'recheckFraud'])->name('orders.fraud-recheck');
 
     // Courier Fraud Checker — checks a phone number's delivery history across Bangladeshi

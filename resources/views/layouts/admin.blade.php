@@ -134,6 +134,8 @@ $adminNavIndex = [
     ['label' => 'Pending Vendor Products', 'url' => route('admin.products.index', ['approval_status' => 'pending']), 'group' => 'Vendors'],
     ['label' => 'Pending Vendor Categories', 'url' => route('admin.categories.index'), 'group' => 'Vendors'],
     ['label' => 'Orders', 'url' => route('admin.orders.index'), 'group' => 'Sales'],
+    ['label' => 'Custom Invoices', 'url' => route('admin.custom-invoices.index'), 'group' => 'Sales'],
+    ['label' => 'New Custom Invoice', 'url' => route('admin.custom-invoices.create'), 'group' => 'Sales'],
     ['label' => 'Returns', 'url' => route('admin.returns.index'), 'group' => 'Sales'],
     ['label' => 'Payments', 'url' => route('admin.payments.index'), 'group' => 'Sales'],
     ['label' => 'Payment Methods', 'url' => route('admin.payment-methods.index'), 'group' => 'Sales'],
@@ -467,6 +469,11 @@ $adminNavIndex = [
                 class="flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium transition {{ request()->routeIs('admin.orders.*') ? 'bg-orange-600 text-white' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800' }}">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
                 <span>Orders</span>
+            </a>
+            <a href="{{ route('admin.custom-invoices.index') }}"
+                class="flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium transition {{ request()->routeIs('admin.custom-invoices.*') ? 'bg-orange-600 text-white' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800' }}">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 14l2 2 4-4M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+                <span>Custom Invoices</span>
             </a>
             <a href="{{ route('admin.returns.index') }}"
                 class="flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium transition {{ request()->routeIs('admin.returns.*') ? 'bg-orange-600 text-white' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800' }}">
