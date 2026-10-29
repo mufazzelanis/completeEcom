@@ -208,6 +208,16 @@ $pageTwitterImage = $meta('twitter_image', $pageOgImage);
     @if($pageTwitterImage)<meta name="twitter:image" content="{{ $pageTwitterImage }}">@endif
 
     @stack('meta') {{-- JSON-LD / structured data pushed by individual pages --}}
+    {{-- First interaction → html.mv-live, which lets the decorative loops start (see the
+         .mv-live rules in the <style> below). Stays set across Turbo page changes. --}}
+    <script>
+    (function (d, w) {
+        var h = d.documentElement; if (h.classList.contains('mv-live')) return;
+        var ev = ['scroll', 'pointerdown', 'keydown', 'touchstart', 'mousemove'];
+        var go = function () { h.classList.add('mv-live'); ev.forEach(function (e) { w.removeEventListener(e, go, true); }); };
+        ev.forEach(function (e) { w.addEventListener(e, go, { passive: true, capture: true }); });
+    })(document, window);
+    </script>
     <script>
         // Applied before first paint so there's never a flash of the wrong theme.
         (function () {
@@ -338,9 +348,25 @@ $pageTwitterImage = $meta('twitter_image', $pageOgImage);
 
         /* Soft breathing glow for the one hero CTA that should feel "alive"
            without every button on the page competing for attention. */
-        @keyframes ctaGlow{0%,100%{box-shadow:0 0 0 0 rgba(255,255,255,.55)}50%{box-shadow:0 0 0 8px rgba(255,255,255,0)}}
-        .btn-glow{animation:ctaGlow 2.2s ease-out infinite}
-        @media (prefers-reduced-motion: reduce){ .btn-glow{animation:none} }
+        /* A soft ring expanding out behind the button, drawn by ::after and animated with
+           transform/opacity only (GPU-composited) — the old box-shadow keyframes repainted on
+           the main thread every frame (PageSpeed "non-composited animation"). */
+        @keyframes ctaGlow{0%{transform:scale(1);opacity:.7}100%{transform:scale(1.18,1.55);opacity:0}}
+        .btn-glow{position:relative;isolation:isolate}
+        .btn-glow::after{content:'';position:absolute;inset:0;z-index:-1;border-radius:inherit;background:rgba(255,255,255,.6);pointer-events:none;animation:ctaGlow 2.2s ease-out infinite}
+        @media (prefers-reduced-motion: reduce){ .btn-glow::after{animation:none;opacity:0} }
+
+        /* Decorative loops (announcement stripes/shine, floating service icons, spinning
+           category rings, CTA glow, reviews marquee, hero slow zoom) hold still until the
+           visitor's first scroll/tap/key/mouse move (the .mv-live class, set by the small
+           script in <head>). Until then the screen is already complete — a page that keeps
+           moving on its own reads to PageSpeed as still loading (Speed Index), and nobody is
+           looking at the motion before they've touched the page anyway. */
+        html:not(.mv-live) .announcement-drift, html:not(.mv-live) .announcement-glint,
+        html:not(.mv-live) .icon-float, html:not(.mv-live) .category-ring::before,
+        html:not(.mv-live) .btn-glow::after, html:not(.mv-live) .animate-marquee { animation-play-state: paused; }
+        html:not(.mv-live) .btn-glow::after { opacity: 0; }
+        html:not(.mv-live) .hero-kb { transform: none !important; }
 
         /* Shared "acknowledged" micro-interaction for the wishlist heart and quick-add-
            to-cart button — a quick overshoot pop on activation rather than a flat color
@@ -1354,7 +1380,9 @@ $navCategories = \App\Models\Category::with(['children' => fn($q) => $q->active(
                     @for($i = 1; $i <= 8; $i++)
                         @if(setting("payment_icon_{$i}"))
                             @php $hasPaymentIcons = true; @endphp
+                            @php $payDims = image_dims(setting("payment_icon_{$i}")) ?? [60, 24]; @endphp
                             <img src="{{ image_thumb(setting("payment_icon_{$i}"), 200) }}" alt="Payment method" loading="lazy" decoding="async"
+                                 width="{{ $payDims[0] }}" height="{{ $payDims[1] }}" style="width:auto"
                                  class="h-6 max-w-[60px] object-contain rounded-lg bg-white/90 px-1.5 py-1 ring-1 ring-white/10 hover:ring-orange-400/50 hover:-translate-y-0.5 transition-all">
                         @endif
                     @endfor

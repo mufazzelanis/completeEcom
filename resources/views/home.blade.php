@@ -176,7 +176,7 @@
                                 {{-- With text overlaid, the title is already read out — repeating it as alt
                                      makes screen readers say it twice (PageSpeed "redundant alt"). --}}
                                 alt="{{ $hasOverlayText ? '' : ($banner->title ?: $banner->subtitle ?: setting('site_name', 'Banner')) }}"
-                                class="w-full h-full object-cover object-center transition-transform duration-[6000ms] ease-linear"
+                                class="hero-kb w-full h-full object-cover object-center transition-transform duration-[6000ms] ease-linear"
                                 :class="current === {{ $i }} ? 'scale-110' : 'scale-100'"
                                 @if($i === 0) fetchpriority="high" @else loading="lazy" @endif>
                             @if($hasOverlayText)

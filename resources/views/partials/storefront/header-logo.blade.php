@@ -13,7 +13,12 @@
         }
         $dims = image_dims($path);
 
-        return ['src' => image_thumb($path, 400), 'w' => $dims[0] ?? null, 'h' => $dims[1] ?? null];
+        // 200w for normal screens (shown ~150 px wide), 400w only where the screen is sharp enough to need it
+        return [
+            'src' => image_thumb($path, 200),
+            'srcset' => image_thumb($path, 200) . ' 200w, ' . image_thumb($path, 400) . ' 400w',
+            'w' => $dims[0] ?? null, 'h' => $dims[1] ?? null,
+        ];
     };
     $mainLogo = $logoUrl ? $logoImg('site_logo') : null;
     $mobileLogo = ($logoMobileUrl ?? null) ? $logoImg('site_logo_mobile') : null;
@@ -28,7 +33,7 @@
          entire page shifting sideways on scroll — not just the header looking cramped. --}}
     <div class="md:hidden flex items-center gap-2">
         @if($mobileLogo)
-            <img src="{{ $mobileLogo['src'] }}" alt="{{ $siteName }}" class="h-9 max-w-[130px] object-contain" style="width:auto"
+            <img src="{{ $mobileLogo['src'] }}" srcset="{{ $mobileLogo['srcset'] }}" sizes="{{ $mobileLogo['w'] ? (int) ceil(min(130, 36 * $mobileLogo['w'] / max(1, $mobileLogo['h']))) : 130 }}px" alt="{{ $siteName }}" class="h-9 max-w-[130px] object-contain" style="width:auto"
                  @if($mobileLogo['w']) width="{{ $mobileLogo['w'] }}" height="{{ $mobileLogo['h'] }}" @endif decoding="async">
         @else
             <div class="w-8 h-8 bg-gradient-to-br from-orange-500 to-red-500 rounded-lg flex items-center justify-center">
@@ -39,7 +44,7 @@
     </div>
     <div class="hidden md:flex items-center gap-2">
         @if($mainLogo)
-            <img src="{{ $mainLogo['src'] }}" alt="{{ $siteName }}" class="h-16 max-w-[220px] object-contain" style="width:auto"
+            <img src="{{ $mainLogo['src'] }}" srcset="{{ $mainLogo['srcset'] }}" sizes="{{ $mainLogo['w'] ? (int) ceil(min(220, 64 * $mainLogo['w'] / max(1, $mainLogo['h']))) : 220 }}px" alt="{{ $siteName }}" class="h-16 max-w-[220px] object-contain" style="width:auto"
                  @if($mainLogo['w']) width="{{ $mainLogo['w'] }}" height="{{ $mainLogo['h'] }}" @endif
                  {{-- same file as the phone logo → already being fetched; a different one stays lazy so phones (where it's hidden) never download it --}}
                  @if(($mobileLogo['src'] ?? null) !== $mainLogo['src']) loading="lazy" @endif decoding="async">

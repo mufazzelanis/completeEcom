@@ -16,7 +16,9 @@ use Illuminate\Support\Facades\Storage;
  */
 class ImageThumbController extends Controller
 {
-    public const WIDTHS = [96, 200, 400, 800, 1200];
+    // 300: product cards on phones are ~150-160 CSS px wide = ~260-280 device px at a typical
+    // 1.75-2x screen, so 400 was ~45% more image than needed (PageSpeed "image delivery")
+    public const WIDTHS = [96, 200, 300, 400, 800, 1200];
 
     public function show(int $width, string $path)
     {
