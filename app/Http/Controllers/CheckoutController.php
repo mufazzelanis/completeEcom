@@ -532,13 +532,14 @@ class CheckoutController extends Controller
         NotificationDispatcher::customer('order_placed', $user, [
             'order_number' => $order->order_number,
             'total' => '৳'.number_format($order->total, 2),
-            'url' => route('orders.show', $order),
+            '_order' => $order,
         ]);
 
         NotificationDispatcher::admin('new_order', [
             'order_number' => $order->order_number,
             'customer' => $request->shipping_name,
             'total' => '৳'.number_format($order->total, 2),
+            '_order' => $order,
         ]);
 
         return redirect()->route('checkout.success', $order->id)

@@ -406,23 +406,27 @@ if (!function_exists('wrap_branded_email')) {
      * (falling back to the Main Logo, then the site name as text) plus a simple footer,
      * so outgoing emails aren't just an unbranded snippet of HTML.
      */
-    function wrap_branded_email(string $bodyHtml, ?string $footerExtra = null): string
+    function wrap_branded_email(string $bodyHtml, ?string $footerExtra = null, ?string $preheader = null): string
     {
-        $siteName = setting('site_name', 'ShopVista');
-        $logoUrl  = setting_file_url('email_logo', setting_file_url('site_logo'));
+        return view('emails.layouts.branded', [
+            'body' => $bodyHtml,
+            'footerExtra' => $footerExtra,
+            'preheader' => $preheader,
+        ])->render();
+    }
+}
 
-        $logoHtml = $logoUrl
-            ? '<img src="' . e($logoUrl) . '" alt="' . e($siteName) . '" style="max-height:48px;">'
-            : '<span style="font-size:20px;font-weight:bold;color:#1f2937;">' . e($siteName) . '</span>';
+if (!function_exists('email_accent_color')) {
+    /** Brand colour for emails: Settings → email accent, else the site's primary colour. */
+    function email_accent_color(): string
+    {
+        foreach ([setting('email_accent_color'), setting('primary_color')] as $hex) {
+            if ($hex && preg_match('/^#[0-9a-fA-F]{6}$/', $hex)) {
+                return $hex;
+            }
+        }
 
-        return '<div style="max-width:600px;margin:0 auto;font-family:sans-serif;">'
-            . '<div style="padding:24px 0;text-align:center;border-bottom:1px solid #e5e7eb;">' . $logoHtml . '</div>'
-            . '<div style="padding:24px 0;">' . $bodyHtml . '</div>'
-            . '<div style="padding:16px 0;text-align:center;font-size:12px;color:#9ca3af;border-top:1px solid #e5e7eb;">'
-            . '&copy; ' . date('Y') . ' ' . e($siteName) . '. All rights reserved.'
-            . ($footerExtra ? '<br>' . $footerExtra : '')
-            . '</div>'
-            . '</div>';
+        return '#4f46e5';
     }
 }
 

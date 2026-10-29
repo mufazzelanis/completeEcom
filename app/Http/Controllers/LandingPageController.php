@@ -179,6 +179,7 @@ class LandingPageController extends Controller
             'order_number' => $order->order_number,
             'customer'     => $order->shipping_name,
             'total'        => '৳' . number_format($order->total, 2),
+            '_order'       => $order,
         ]);
 
         if ($landingPage->thank_you_redirect_url) {

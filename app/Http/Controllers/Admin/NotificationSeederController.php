@@ -29,13 +29,14 @@ class NotificationSeederController extends Controller
         return [
             // ── order_placed ─────────────────────────────────────────────
             ['event_type' => 'order_placed', 'channel' => 'email', 'recipient' => 'customer',
-             'subject'    => 'Order Confirmed – {{order_number}}',
-             'body'       => "<p>Hi {{customer}},</p><p>Thank you for your order! Your order <strong>{{order_number}}</strong> has been received and is being processed.</p><p>Order Total: <strong>{{total}}</strong></p><p><a href=\"{{url}}\">View Order</a></p>",
+             // the order layout (OrderEmail) adds the headline, tracker, items, totals and buttons
+             'subject'    => 'Thanks for your order, {{first_name}}! (#{{order_number}})',
+             'body'       => "<p>Hi {{first_name}},</p><p>{{status_message}}</p>",
              'push_title' => null, 'is_active' => true],
 
             ['event_type' => 'order_placed', 'channel' => 'sms', 'recipient' => 'customer',
              'subject'    => null,
-             'body'       => 'ShopVista: Your order {{order_number}} ({{total}}) has been placed. Track: {{url}}',
+             'body'       => '{{site_name}}: Your order {{order_number}} ({{total}}) has been placed. Track: {{url}}',
              'push_title' => null, 'is_active' => true],
 
             ['event_type' => 'order_placed', 'channel' => 'push', 'recipient' => 'customer',
@@ -50,13 +51,13 @@ class NotificationSeederController extends Controller
 
             // ── order_status_changed ──────────────────────────────────────
             ['event_type' => 'order_status_changed', 'channel' => 'email', 'recipient' => 'customer',
-             'subject'    => 'Order {{order_number}} is now {{new_status}}',
-             'body'       => "<p>Hi {{customer}},</p><p>Your order <strong>{{order_number}}</strong> status has been updated from <em>{{old_status}}</em> to <strong>{{new_status}}</strong>.</p><p><a href=\"{{url}}\">View Order Details</a></p>",
+             'subject'    => '{{status_subject}} – Order #{{order_number}}',
+             'body'       => "<p>Hi {{first_name}},</p><p>{{status_message}}</p>",
              'push_title' => null, 'is_active' => true],
 
             ['event_type' => 'order_status_changed', 'channel' => 'sms', 'recipient' => 'customer',
              'subject'    => null,
-             'body'       => 'ShopVista: Order {{order_number}} is now {{new_status}}. Track: {{url}}',
+             'body'       => '{{site_name}}: Order {{order_number}} is now {{new_status}}. Track: {{url}}',
              'push_title' => null, 'is_active' => true],
 
             ['event_type' => 'order_status_changed', 'channel' => 'push', 'recipient' => 'customer',
@@ -93,8 +94,8 @@ class NotificationSeederController extends Controller
 
             // ── new_order (admin) ─────────────────────────────────────────
             ['event_type' => 'new_order', 'channel' => 'email', 'recipient' => 'admin',
-             'subject'    => 'New Order {{order_number}} – {{total}}',
-             'body'       => "<p>New order received!</p><p>Order: <strong>{{order_number}}</strong><br>Customer: <strong>{{customer}}</strong><br>Total: <strong>{{total}}</strong></p>",
+             'subject'    => '🛒 New order #{{order_number}} – {{total}} ({{customer}})',
+             'body'       => "<p><strong>{{customer}}</strong> ({{phone}}) just placed an order for <strong>{{total}}</strong>.</p>",
              'push_title' => null, 'is_active' => true],
 
             ['event_type' => 'new_order', 'channel' => 'push', 'recipient' => 'admin',

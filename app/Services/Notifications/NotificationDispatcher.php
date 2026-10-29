@@ -3,6 +3,7 @@
 namespace App\Services\Notifications;
 
 use App\Models\NotificationLog;
+use App\Models\Order;
 use App\Models\NotificationPreference;
 use App\Models\NotificationTemplate;
 use App\Models\User;
@@ -41,8 +42,16 @@ class NotificationDispatcher
         after_response(fn () => static::dispatch('admin', $eventType, null, $vars));
     }
 
+    /**
+     * $vars may carry the Order as '_order' (and '_context' extras): order emails then get the
+     * full layout (OrderEmail) and every order placeholder is filled in. Placeholders every
+     * template can use: {{customer}}, {{first_name}}, {{site_name}}, plus the event's own.
+     */
     private static function dispatch(string $recipient, string $eventType, ?User $user, array $vars): void
     {
+        $order = ($vars['_order'] ?? null) instanceof Order ? $vars['_order'] : null;
+        $vars = static::templateVars($eventType, $user, $vars);
+
         $eventConfig = config("notifications.events.{$eventType}", []);
         $channels    = $eventConfig['channels'] ?? [];
         $group       = self::EVENT_GROUP[$eventType] ?? 'order';
@@ -93,7 +102,7 @@ class NotificationDispatcher
 
             match ($channel) {
                 'email' => self::dispatchEmail(
-                    $emailChannel, $recipient, $user, $eventType, $template
+                    $emailChannel, $recipient, $user, $eventType, $template, $order
                 ),
                 'sms' => self::dispatchSms(
                     $smsChannel, $recipient, $user, $eventType, $template
@@ -109,24 +118,49 @@ class NotificationDispatcher
         }
     }
 
+    /** Every placeholder value for a template: the defaults, the order's, then the caller's own (which win). */
+    public static function templateVars(string $eventType, ?User $user, array $vars): array
+    {
+        $order = ($vars['_order'] ?? null) instanceof Order ? $vars['_order'] : null;
+        $context = (array) ($vars['_context'] ?? []);
+        unset($vars['_order'], $vars['_context']);
+
+        $name = trim((string) ($user?->name ?? ''));
+
+        return array_merge(
+            ['customer' => $name ?: 'there', 'first_name' => $name ? strtok($name, ' ') : 'there', 'site_name' => setting('site_name', config('app.name'))],
+            $order ? OrderEmail::vars($eventType, $order, $user, $context) : [],
+            array_filter($vars, fn ($v) => $v !== null && $v !== ''),
+        );
+    }
+
     private static function dispatchEmail(
         EmailChannel $ch,
         string $recipient,
         ?User $user,
         string $eventType,
-        array $template
+        array $template,
+        ?Order $order = null
     ): void {
         if ($recipient === 'admin') {
             $to = config('notifications.admin_email');
         } else {
-            $to = $user?->email;
+            // a guest checkout's account may have no email; the one typed at checkout still counts
+            $to = $user?->email ?: $order?->guest_email;
         }
 
-        if (!$to) {
+        if (!$to || !filter_var($to, FILTER_VALIDATE_EMAIL)) {
             return;
         }
 
-        $ch->send($user?->id, $eventType, $to, $template['subject'] ?? '', $template['body']);
+        $body = $template['body'];
+        $preheader = null;
+        if ($order) {
+            $body = OrderEmail::body($eventType, $recipient, $body, $order);
+            $preheader = OrderEmail::preheader($eventType, $order);
+        }
+
+        $ch->send($user?->id, $eventType, $to, $template['subject'] ?? '', $body, $preheader);
     }
 
     private static function dispatchSms(

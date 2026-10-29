@@ -102,6 +102,11 @@ use Illuminate\Support\Facades\Route;
 
 // Search suggest (public)
 Route::get('/search/suggest', [SearchController::class, 'suggest'])->name('search.suggest');
+// Sample order emails to any inbox, for Postman/curl — needs EMAIL_TEST_TOKEN (off when unset)
+Route::post('/email-test', [\App\Http\Controllers\EmailPreviewController::class, 'send'])
+    ->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class])
+    ->middleware('throttle:5,1')
+    ->name('email-test');
 // Live-visitor heartbeat from storefront pages (Admin → Live Visitors)
 Route::post('/live/ping', [\App\Http\Controllers\LiveVisitorController::class, 'ping'])->middleware('throttle:60,1')->name('live.ping');
 

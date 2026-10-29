@@ -60,4 +60,9 @@ return [
         'redirect' => env('LINKEDIN_REDIRECT_URI', env('APP_URL').'/auth/linkedin/callback'),
     ],
 
+    // POST /email-test (EmailPreviewController) — empty = switched off
+    'email_test' => [
+        'token' => env('EMAIL_TEST_TOKEN'),
+    ],
+
 ];

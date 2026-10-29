@@ -78,7 +78,10 @@
             <textarea name="body" rows="6" required
                       class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 font-mono"
                       placeholder="Use @{{variable}} placeholders...">{{ old('body', $template->body ?? '') }}</textarea>
-            <p class="text-xs text-gray-400 mt-1">Available variables depend on the event type. Common: @{{order_number}}, @{{customer}}, @{{total}}, @{{status}}, @{{url}}, @{{ticket_number}}, @{{subject}}</p>
+            <p class="text-xs text-gray-400 mt-1">Every template: @{{customer}}, @{{first_name}}, @{{site_name}}.
+                Order events also: @{{order_number}}, @{{total}}, @{{status}}, @{{status_title}}, @{{status_message}}, @{{order_date}}, @{{item_count}}, @{{phone}}, @{{url}}, @{{track_url}}.
+                Others: @{{ticket_number}}, @{{subject}}, @{{return_number}}. A placeholder with no value is left out, never shown as-is.</p>
+            <p class="text-xs text-gray-400 mt-1">Order emails automatically wrap this text in the full branded layout — status headline, progress tracker, products with pictures, totals, delivery address, payment and a "Track your order" button — so keep it to a greeting and a short message.</p>
         </div>
 
         <div class="flex items-center gap-2">

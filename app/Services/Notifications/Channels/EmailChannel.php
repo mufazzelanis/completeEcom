@@ -13,13 +13,14 @@ class EmailChannel
         string $eventType,
         string $to,
         string $subject,
-        string $body
+        string $body,
+        ?string $preheader = null
     ): void {
         $status = 'sent';
         $error  = null;
 
         try {
-            $html = wrap_branded_email($body);
+            $html = wrap_branded_email($body, null, $preheader);
 
             Mail::send([], [], function (Message $message) use ($to, $subject, $html) {
                 $message->to($to)

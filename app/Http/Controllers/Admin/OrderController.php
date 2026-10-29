@@ -136,7 +136,7 @@ class OrderController extends Controller
                 'order_number' => $order->order_number,
                 'old_status' => ucfirst($old),
                 'new_status' => ucfirst($request->status),
-                'url' => route('orders.show', $order),
+                '_order' => $order,
             ]);
         }
 

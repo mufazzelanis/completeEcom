@@ -57,6 +57,13 @@ class OrderController extends Controller
         $order->update(['status' => 'cancelled']);
         OrderStockService::restoreIfNeeded($order, 'cancelled', auth()->id());
 
+        // confirmation for the customer (email / SMS / push per their preferences)
+        \App\Services\Notifications\NotificationDispatcher::customer('order_status_changed', $order->user ?? auth()->user(), [
+            'old_status' => 'Pending',
+            '_order' => $order,
+            '_context' => ['by_customer' => true],
+        ]);
+
         return back()->with('success', 'Order cancelled successfully.');
     }
 
