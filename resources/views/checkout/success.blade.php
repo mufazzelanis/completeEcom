@@ -4,17 +4,118 @@
 @section('content')
 <div id="confetti-container" class="pointer-events-none fixed inset-0 overflow-hidden z-[9998]" aria-hidden="true"></div>
 
-<div class="max-w-2xl mx-auto px-4 py-16 text-center">
-    <div id="thankyou-card" class="bg-white rounded-2xl shadow-sm p-12 dl-reveal">
-        <div class="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-            <svg class="w-10 h-10 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-            </svg>
-        </div>
-        <h1 class="text-2xl font-extrabold text-gray-900 mb-2">Order Placed Successfully!</h1>
-        <p class="text-gray-500 mb-2">Thank you for your order.</p>
-        <p class="text-orange-700 font-bold text-lg mb-6">{{ $order->order_number }}</p>
+@php
+    // Thank-you page. Colours come from the brand (Settings → Theme) through --ty-brand, with
+    // the success green fixed; everything is page-local CSS (ty-*) so it doesn't depend on which
+    // Tailwind classes happen to be in the compiled build, and has its own dark-mode rules.
+    $brand = setting('primary_color', '#ea580c');
+    $firstName = \Illuminate\Support\Str::of($order->shipping_name ?: auth()->user()->name)->trim()->explode(' ')->first();
+    $money = fn ($v) => '৳' . number_format((float) $v, fmod((float) $v, 1.0) == 0.0 ? 0 : 2);
+    $isCod = in_array(strtolower((string) $order->payment_method), ['cod', 'cash_on_delivery'], true);
+    $paymentLabel = \App\Services\Notifications\OrderEmail::paymentLabel($order->payment_method);
+    $itemCount = (int) $order->items->sum('quantity');
 
+    // estimated delivery window from Settings → Shipping → delivery days (e.g. "3-7")
+    preg_match_all('/\d+/', setting('delivery_days', '3-7'), $dayNums);
+    $dayNums = array_map('intval', $dayNums[0]) ?: [3, 7];
+    $placedAt = $order->created_at->copy()->timezone(setting('timezone', 'Asia/Dhaka'));
+    $etaFrom = $placedAt->copy()->addDays(min($dayNums));
+    $etaTo = $placedAt->copy()->addDays(max($dayNums));
+    $eta = $etaFrom->isSameDay($etaTo) ? $etaFrom->format('D, d M') : $etaFrom->format('D, d M') . ' – ' . $etaTo->format('D, d M');
+
+    $helpPhone = setting('company_phone');
+    $addressLine = collect([$order->shipping_address, $order->shipping_city, $order->shipping_state])->map(fn ($p) => trim((string) $p, " ,"))->filter()->unique()->implode(', ');
+@endphp
+
+<style>
+    .ty-wrap { --ty-brand: {{ $brand }}; --ty-ok: #10b981; --ty-card: #ffffff; --ty-soft: #f6f7fb; --ty-line: #eceef3; --ty-text: #111827; --ty-muted: #6b7280; max-width: 64rem; margin: 0 auto; padding: 2rem 1rem 4rem; }
+    .dark .ty-wrap { --ty-card: #111827; --ty-soft: #1a2233; --ty-line: #263044; --ty-text: #f3f4f6; --ty-muted: #9ca3af; }
+    .ty-card { background: var(--ty-card); border: 1px solid var(--ty-line); border-radius: 1.25rem; box-shadow: 0 10px 30px -18px rgba(15, 23, 42, .35); }
+    .ty-hero { position: relative; overflow: hidden; text-align: center; padding: 2.5rem 1.5rem 2rem; }
+    .ty-hero::before { content: ''; position: absolute; inset: 0 0 auto 0; height: 9rem; background: radial-gradient(60% 120% at 50% 0%, color-mix(in srgb, var(--ty-ok) 22%, transparent), transparent 70%); pointer-events: none; }
+    .ty-check { position: relative; width: 5.5rem; height: 5.5rem; margin: 0 auto 1.25rem; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: var(--ty-ok); color: #fff; box-shadow: 0 12px 30px -8px color-mix(in srgb, var(--ty-ok) 70%, transparent); }
+    .ty-check::after { content: ''; position: absolute; inset: -10px; border-radius: 50%; border: 3px solid color-mix(in srgb, var(--ty-ok) 35%, transparent); animation: ty-ring 2.2s ease-out infinite; }
+    .ty-check path { stroke-dasharray: 30; stroke-dashoffset: 30; animation: ty-draw .6s .35s ease-out forwards; }
+    @keyframes ty-draw { to { stroke-dashoffset: 0; } }
+    @keyframes ty-ring { 0% { transform: scale(.85); opacity: 1; } 100% { transform: scale(1.25); opacity: 0; } }
+    .ty-title { font-size: clamp(1.5rem, 4vw, 2rem); font-weight: 800; color: var(--ty-text); letter-spacing: -.02em; line-height: 1.2; }
+    .ty-sub { color: var(--ty-muted); margin-top: .5rem; font-size: .975rem; line-height: 1.6; }
+    .ty-sub strong { color: var(--ty-text); }
+    .ty-pill { display: inline-flex; align-items: center; gap: .5rem; margin-top: 1.25rem; padding: .5rem .6rem .5rem 1rem; border-radius: 999px; background: var(--ty-soft); border: 1px dashed color-mix(in srgb, var(--ty-brand) 45%, transparent); }
+    .ty-pill b { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--ty-brand); letter-spacing: .02em; font-size: .95rem; }
+    .ty-copy { border-radius: 999px; padding: .3rem .75rem; font-size: .75rem; font-weight: 700; background: var(--ty-brand); color: #fff; transition: transform .15s; }
+    .ty-copy:active { transform: scale(.95); }
+    .ty-meta { display: flex; flex-wrap: wrap; justify-content: center; gap: .5rem 1.25rem; margin-top: 1rem; font-size: .8rem; color: var(--ty-muted); }
+    .ty-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1.25rem; margin-top: 1.25rem; }
+    @media (min-width: 1024px) { .ty-grid { grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr); } .ty-side { position: sticky; top: 6rem; } }
+    .ty-sec { padding: 1.4rem 1.5rem; }
+    .ty-h { font-size: .78rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--ty-muted); margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center; }
+    .ty-steps { position: relative; }
+    .ty-step { position: relative; display: flex; gap: .9rem; padding-bottom: 1.15rem; }
+    .ty-step:last-child { padding-bottom: 0; }
+    .ty-step:not(:last-child)::before { content: ''; position: absolute; left: 1rem; top: 2.1rem; bottom: .15rem; width: 2px; transform: translateX(-1px); background: var(--ty-line); }
+    .ty-step.is-done:not(:last-child)::before { background: var(--ty-ok); }
+    .ty-dot { flex-shrink: 0; width: 2rem; height: 2rem; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: .95rem; background: var(--ty-soft); border: 2px solid var(--ty-line); color: var(--ty-muted); }
+    .ty-step.is-done .ty-dot { background: var(--ty-ok); border-color: var(--ty-ok); color: #fff; }
+    .ty-step.is-now .ty-dot { border-color: var(--ty-brand); color: var(--ty-brand); background: color-mix(in srgb, var(--ty-brand) 10%, var(--ty-card)); animation: ty-pulse 1.8s ease-in-out infinite; }
+    @keyframes ty-pulse { 0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--ty-brand) 40%, transparent); } 50% { box-shadow: 0 0 0 7px transparent; } }
+    .ty-step p { margin: 0; }
+    .ty-step .t { font-weight: 700; color: var(--ty-text); font-size: .95rem; line-height: 2rem; }
+    .ty-step .d { color: var(--ty-muted); font-size: .83rem; line-height: 1.5; margin-top: -.2rem; }
+    .ty-item { display: flex; gap: .9rem; align-items: center; padding: .8rem 0; border-top: 1px solid var(--ty-line); }
+    .ty-item:first-child { border-top: 0; padding-top: 0; }
+    .ty-thumb { position: relative; flex-shrink: 0; width: 3.75rem; height: 3.75rem; border-radius: .85rem; background: var(--ty-soft); border: 1px solid var(--ty-line); }
+    .ty-thumb img { width: 100%; height: 100%; object-fit: contain; border-radius: .85rem; padding: .2rem; }
+    .ty-qty { position: absolute; top: -.45rem; right: -.45rem; min-width: 1.35rem; height: 1.35rem; padding: 0 .3rem; border-radius: 999px; background: var(--ty-text); color: var(--ty-card); font-size: .7rem; font-weight: 800; display: flex; align-items: center; justify-content: center; }
+    .ty-row { display: flex; justify-content: space-between; gap: 1rem; font-size: .9rem; color: var(--ty-muted); padding: .2rem 0; }
+    .ty-row b { color: var(--ty-text); font-weight: 600; }
+    .ty-total { display: flex; justify-content: space-between; align-items: baseline; margin-top: .6rem; padding-top: .8rem; border-top: 1px dashed var(--ty-line); }
+    .ty-total span { font-weight: 700; color: var(--ty-text); }
+    .ty-total b { font-size: 1.6rem; font-weight: 800; color: var(--ty-brand); letter-spacing: -.02em; }
+    .ty-info { display: flex; gap: .8rem; padding: .9rem 0; border-top: 1px solid var(--ty-line); }
+    .ty-info .ic { flex-shrink: 0; width: 2.4rem; height: 2.4rem; border-radius: .8rem; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; background: var(--ty-soft); }
+    .ty-info .k { font-size: .72rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--ty-muted); }
+    .ty-info .v { color: var(--ty-text); font-weight: 600; font-size: .92rem; line-height: 1.45; margin-top: .1rem; }
+    .ty-info .n { color: var(--ty-muted); font-size: .82rem; line-height: 1.45; }
+    .ty-cod { margin-top: .5rem; padding: .6rem .8rem; border-radius: .8rem; font-size: .82rem; line-height: 1.45; background: color-mix(in srgb, #f59e0b 13%, var(--ty-card)); color: var(--ty-text); border: 1px solid color-mix(in srgb, #f59e0b 35%, transparent); }
+    .ty-btn { display: flex; align-items: center; justify-content: center; gap: .5rem; width: 100%; padding: .85rem 1rem; border-radius: .9rem; font-weight: 700; font-size: .95rem; transition: transform .15s, box-shadow .15s, background-color .15s; }
+    .ty-btn:hover { transform: translateY(-1px); }
+    .ty-btn-main { background: var(--ty-brand); color: #fff; box-shadow: 0 10px 22px -10px var(--ty-brand); }
+    .ty-btn-ghost { background: var(--ty-soft); color: var(--ty-text); border: 1px solid var(--ty-line); }
+    .ty-help { display: flex; align-items: center; gap: .75rem; padding: 1rem 1.25rem; font-size: .85rem; color: var(--ty-muted); }
+    .ty-help a { color: var(--ty-brand); font-weight: 700; }
+    .ty-acct > :last-child { margin-bottom: 0 !important; }
+    @media (prefers-reduced-motion: reduce) { .ty-check::after, .ty-step.is-now .ty-dot { animation: none; } .ty-check path { animation: none; stroke-dashoffset: 0; } }
+</style>
+
+<div class="ty-wrap">
+    <div id="thankyou-card" class="dl-reveal">
+        {{-- ── hero ─────────────────────────────────────────────────────── --}}
+        <div class="ty-card ty-hero">
+            <div class="ty-check" aria-hidden="true">
+                <svg width="44" height="44" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.6" d="M5 13l4 4L19 7"/></svg>
+            </div>
+            <h1 class="ty-title">Thank you, {{ $firstName }}! 🎉</h1>
+            <p class="ty-sub">Your order has been placed successfully.
+                @if($isCod)We'll call <strong>{{ $order->shipping_phone }}</strong> shortly to confirm it.@else We'll start preparing it right away.@endif
+            </p>
+
+            <div class="ty-pill" x-data="{ copied: false }">
+                <span class="text-xs" style="color: var(--ty-muted)">Order</span>
+                <b>{{ $order->order_number }}</b>
+                <button type="button" class="ty-copy"
+                        @click="navigator.clipboard?.writeText(@js($order->order_number)); copied = true; setTimeout(() => copied = false, 1600)"
+                        x-text="copied ? '✓ Copied' : 'Copy'">Copy</button>
+            </div>
+            <div class="ty-meta">
+                <span>🗓️ {{ $placedAt->format('d M Y, g:i A') }}</span>
+                <span>📦 {{ $itemCount }} {{ \Illuminate\Support\Str::plural('item', $itemCount) }}</span>
+                <span>🚚 Arrives {{ $eta }}</span>
+            </div>
+        </div>
+
+        @php $showAccountBox = ($accountCreated ?? false) || session('password_set') || session('can_set_password') === auth()->id(); @endphp
+        <div class="max-w-2xl mx-auto ty-acct" @if($showAccountBox) style="margin-top:1.25rem" @endif>
         @if($accountCreated ?? false)
             <div class="bg-green-50 border border-green-200 rounded-xl p-4 mb-6 text-left">
                 <div class="flex items-start gap-3">
@@ -99,27 +200,71 @@
                 </button>
             </form>
         @endif
-
-        <div class="bg-gray-50 rounded-xl p-6 text-left mb-8">
-            <div class="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                    <p class="text-gray-500">Payment Method</p>
-                    <p class="font-semibold capitalize text-gray-800">{{ $order->payment_method === 'cod' ? 'Cash on Delivery' : strtoupper($order->payment_method) }}</p>
-                </div>
-                <div>
-                    <p class="text-gray-500">Order Total</p>
-                    <p class="font-semibold text-gray-800">৳{{ number_format($order->total) }}</p>
-                </div>
-                <div class="col-span-2">
-                    <p class="text-gray-500">Shipping to</p>
-                    <p class="font-semibold text-gray-800">{{ $order->shipping_name }}, {{ $order->shipping_address }}, {{ $order->shipping_city }}</p>
-                </div>
-            </div>
         </div>
+
+        <div class="ty-grid">
+            <div class="space-y-5 min-w-0">
+                {{-- ── what happens next ────────────────────────────────── --}}
+                <div class="ty-card ty-sec">
+                    <div class="ty-h"><span>What happens next</span></div>
+                    <div class="ty-steps">
+                        <div class="ty-step is-done">
+                            <span class="ty-dot">✓</span>
+                            <div><p class="t">Order placed</p><p class="d">{{ $placedAt->format('d M, g:i A') }} — we've got it and sent you a confirmation.</p></div>
+                        </div>
+                        <div class="ty-step is-now">
+                            <span class="ty-dot">📞</span>
+                            <div><p class="t">{{ $isCod ? 'Confirmation call' : 'Order confirmation' }}</p>
+                                <p class="d">{{ $isCod ? 'Our team will call you to confirm the order — please keep your phone close.' : 'Our team is reviewing your order and payment.' }}</p></div>
+                        </div>
+                        <div class="ty-step">
+                            <span class="ty-dot">📦</span>
+                            <div><p class="t">Packed &amp; handed to courier</p><p class="d">Carefully packed and sent out — you'll get an update when it ships.</p></div>
+                        </div>
+                        <div class="ty-step">
+                            <span class="ty-dot">🏠</span>
+                            <div><p class="t">Delivered to your door</p><p class="d">Estimated <strong style="color: var(--ty-text)">{{ $eta }}</strong>{{ $isCod ? ' · pay the rider on delivery' : '' }}.</p></div>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- ── items ────────────────────────────────────────────── --}}
+                <div class="ty-card ty-sec">
+                    <div class="ty-h"><span>Your order</span><span style="text-transform:none; letter-spacing:0; font-weight:600">{{ $itemCount }} {{ \Illuminate\Support\Str::plural('item', $itemCount) }}</span></div>
+                    @foreach($order->items as $item)
+                        @php $img = $item->product?->image ? image_thumb($item->product->image, 200) : null; @endphp
+                        <div class="ty-item">
+                            <div class="ty-thumb">
+                                @if($img)<img src="{{ $img }}" alt="" loading="lazy">@endif
+                                <span class="ty-qty">{{ $item->quantity }}</span>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                @if($item->product)
+                                    <a href="{{ route('products.show', $item->product) }}" class="block font-semibold text-sm leading-snug hover:underline" style="color: var(--ty-text)">{{ $item->product_name }}</a>
+                                @else
+                                    <p class="font-semibold text-sm leading-snug" style="color: var(--ty-text)">{{ $item->product_name }}</p>
+                                @endif
+                                <p class="text-xs mt-0.5" style="color: var(--ty-muted)">{{ $item->variant_label ? $item->variant_label . ' · ' : '' }}{{ $item->quantity }} × {{ $money($item->price) }}</p>
+                            </div>
+                            <p class="font-bold text-sm whitespace-nowrap" style="color: var(--ty-text)">{{ $money($item->subtotal) }}</p>
+                        </div>
+                    @endforeach
+                    <div style="margin-top: .9rem; padding-top: .7rem; border-top: 1px solid var(--ty-line);">
+                        <div class="ty-row"><span>Subtotal</span><b>{{ $money($order->subtotal) }}</b></div>
+                        @if($order->discount > 0)
+                            <div class="ty-row" style="color:#10b981"><span>Discount{{ $order->coupon_code ? ' (' . $order->coupon_code . ')' : '' }}</span><b style="color:#10b981">−{{ $money($order->discount) }}</b></div>
+                        @endif
+                        <div class="ty-row"><span>Delivery charge</span><b>{{ $order->shipping > 0 ? $money($order->shipping) : 'Free' }}</b></div>
+                        @if($order->tax > 0)
+                            <div class="ty-row"><span>Tax</span><b>{{ $money($order->tax) }}</b></div>
+                        @endif
+                        <div class="ty-total"><span>Total</span><b>{{ $money($order->total) }}</b></div>
+                    </div>
+                </div>
 
         @php $digitalItems = $order->items->filter(fn ($item) => $item->product?->isDigital()); @endphp
         @if($digitalItems->isNotEmpty())
-        <div class="bg-indigo-50 border border-indigo-100 rounded-xl p-6 text-left mb-8">
+        <div class="bg-indigo-50 border border-indigo-100 rounded-2xl p-6 text-left">
             <h3 class="font-semibold text-indigo-800 mb-3 text-sm">Your digital downloads are ready</h3>
             <div class="space-y-2">
                 @foreach($digitalItems as $item)
@@ -135,14 +280,57 @@
             <p class="text-xs text-indigo-400 mt-3">If your payment needs manual verification, downloads unlock once it's confirmed.</p>
         </div>
         @endif
+            </div>
 
-        <div class="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-4 justify-center">
-            <a href="{{ route('orders.show', $order->id) }}" class="bg-orange-500 text-white px-6 py-3 rounded-xl font-bold hover:bg-orange-600 transition">
-                View Order Details
-            </a>
-            <a href="{{ route('shop.index') }}" class="border border-gray-200 text-gray-700 px-6 py-3 rounded-xl font-bold hover:bg-gray-50 transition">
-                Continue Shopping
-            </a>
+            {{-- ── side: delivery, payment, actions ─────────────────────── --}}
+            <div class="ty-side space-y-5 min-w-0">
+                <div class="ty-card ty-sec">
+                    <div class="ty-h" style="margin-bottom:.25rem"><span>Delivery &amp; payment</span></div>
+                    <div class="ty-info" style="border-top:0">
+                        <span class="ic">📍</span>
+                        <div class="min-w-0">
+                            <p class="k">Delivering to</p>
+                            <p class="v">{{ $order->shipping_name }}</p>
+                            <p class="n">{{ $addressLine }}</p>
+                            <p class="n">{{ $order->shipping_phone }}</p>
+                        </div>
+                    </div>
+                    <div class="ty-info">
+                        <span class="ic">{{ $isCod ? '💵' : '💳' }}</span>
+                        <div class="min-w-0 flex-1">
+                            <p class="k">Payment</p>
+                            <p class="v">{{ $paymentLabel }}</p>
+                            @if($order->payment_status === 'paid')
+                                <p class="n" style="color:#10b981; font-weight:700">✓ Paid</p>
+                            @elseif($isCod)
+                                <div class="ty-cod">Please keep <strong>{{ $money($order->total) }}</strong> ready for the rider.</div>
+                            @endif
+                        </div>
+                    </div>
+                    <div class="ty-info">
+                        <span class="ic">🚚</span>
+                        <div>
+                            <p class="k">Estimated delivery</p>
+                            <p class="v">{{ $eta }}</p>
+                        </div>
+                    </div>
+
+                    <div class="space-y-2.5" style="margin-top: .75rem">
+                        <a href="{{ route('orders.show', $order->id) }}" class="ty-btn ty-btn-main">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
+                            Track my order
+                        </a>
+                        <a href="{{ route('shop.index') }}" class="ty-btn ty-btn-ghost">Continue shopping →</a>
+                    </div>
+                </div>
+
+                @if($helpPhone)
+                    <div class="ty-card ty-help">
+                        <span style="font-size:1.4rem">🎧</span>
+                        <div>Questions about your order?<br>Call us at <a href="tel:{{ preg_replace('/[^0-9+]/', '', $helpPhone) }}">{{ $helpPhone }}</a></div>
+                    </div>
+                @endif
+            </div>
         </div>
     </div>
 </div>
