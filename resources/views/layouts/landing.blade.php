@@ -72,7 +72,23 @@
          site-wide setup. InitiateCheckout fires on order-form submit and Purchase on the
          thank-you state — see show.blade.php. --}}
     @if(!$isPreview && ($gaId || $adsConversionId))
-    <script async src="https://www.googletagmanager.com/gtag/js?id={{ $gaId ?: $adsConversionId }}"></script>
+    {{-- gtag.js after the page has loaded (or first touch/scroll) — same reason as layouts/app:
+         it was competing with the page's first image. gtag() below just queues until then. --}}
+    <script>
+    (function (w, d) {
+        var done = false, evs = ['scroll', 'pointerdown', 'keydown', 'touchstart'];
+        var load = function () {
+            if (done) return; done = true;
+            evs.forEach(function (e) { w.removeEventListener(e, load); });
+            var s = d.createElement('script'); s.async = true;
+            s.src = 'https://www.googletagmanager.com/gtag/js?id={{ $gaId ?: $adsConversionId }}';
+            d.head.appendChild(s);
+        };
+        evs.forEach(function (e) { w.addEventListener(e, load, { passive: true }); });
+        var idle = function () { (w.requestIdleCallback || function (f) { setTimeout(f, 200); })(load, { timeout: 1500 }); };
+        if (d.readyState === 'complete') idle(); else w.addEventListener('load', idle);
+    })(window, document);
+    </script>
     <script>
         window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());
         @if($gaId)gtag('config','{{ $gaId }}');@endif

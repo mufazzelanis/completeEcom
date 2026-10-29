@@ -263,14 +263,14 @@
                 @if($product->images->isNotEmpty())
                     <div class="flex gap-3 overflow-x-auto pb-1">
                         @if($product->image)
-                            <button @click="active = '{{ Storage::url($product->image) }}'"
+                            <button type="button" aria-label="Show image 1" @click="active = '{{ Storage::url($product->image) }}'"
                                 class="w-20 h-20 flex-shrink-0 rounded-lg overflow-hidden border-2 bg-gray-50 p-1.5 transition-colors"
                                 :class="active === '{{ Storage::url($product->image) }}' ? 'border-indigo-500' : 'border-gray-200 hover:border-indigo-300'">
                                 <img src="{{ image_thumb($product->image, 200) }}" alt="" class="w-full h-full object-contain">
                             </button>
                         @endif
                         @foreach($product->images as $img)
-                            <button @click="active = '{{ Storage::url($img->image) }}'"
+                            <button type="button" aria-label="Show image {{ $loop->iteration + ($product->image ? 1 : 0) }}" @click="active = '{{ Storage::url($img->image) }}'"
                                 class="w-20 h-20 flex-shrink-0 rounded-lg overflow-hidden border-2 bg-gray-50 p-1.5 transition-colors"
                                 :class="active === '{{ Storage::url($img->image) }}' ? 'border-indigo-500' : 'border-gray-200 hover:border-indigo-300'">
                                 <img src="{{ image_thumb($img->image, 200) }}" alt="" loading="lazy" class="w-full h-full object-contain">

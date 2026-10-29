@@ -67,9 +67,16 @@
         <div class="fbt-row">
             @foreach($fbtAll as $i => $p)
                 @if($i > 0)<span class="fbt-plus" aria-hidden="true">+</span>@endif
-                <a href="{{ $p->id === $product->id ? '#' : route('products.show', $p) }}" class="fbt-pic" :class="items[{{ $i }}].on ? 'is-on' : 'is-off'" @if($p->id === $product->id) onclick="return false" @endif>
-                    @if($p->image)<img src="{{ image_thumb($p->image, 200) }}" alt="" loading="lazy" width="84" height="84">@endif
-                </a>
+                @if($p->id === $product->id)
+                    {{-- this product itself — not a link to the page you're already on --}}
+                    <span class="fbt-pic" :class="items[{{ $i }}].on ? 'is-on' : 'is-off'">
+                        @if($p->image)<img src="{{ image_thumb($p->image, 200) }}" alt="" loading="lazy" width="84" height="84">@endif
+                    </span>
+                @else
+                    <a href="{{ route('products.show', $p) }}" class="fbt-pic" :class="items[{{ $i }}].on ? 'is-on' : 'is-off'" aria-label="{{ $p->name }}">
+                        @if($p->image)<img src="{{ image_thumb($p->image, 200) }}" alt="" loading="lazy" width="84" height="84">@endif
+                    </a>
+                @endif
             @endforeach
         </div>
 

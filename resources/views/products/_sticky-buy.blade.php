@@ -39,7 +39,8 @@
     .pd-sb-img { width: 2.6rem; height: 2.6rem; border-radius: .7rem; object-fit: contain; background: #f3f4f6; flex-shrink: 0; }
     .dark .pd-sb-img { background: #1f2937; }
     .pd-sb-price { flex: 1; min-width: 0; }
-    .pd-sb-label { font-size: .65rem; color: #9ca3af; line-height: 1; }
+    .pd-sb-label { font-size: .65rem; color: #6b7280; line-height: 1; }
+    .dark .pd-sb-label { color: #9ca3af; }
     .pd-sb-now { font-size: 1.05rem; font-weight: 800; color: #111827; line-height: 1.25; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .dark .pd-sb-now { color: #fff; }
     .pd-sb-now s { font-size: .75rem; font-weight: 500; color: #9ca3af; margin-left: .2rem; }

@@ -416,6 +416,27 @@ if (!function_exists('wrap_branded_email')) {
     }
 }
 
+if (!function_exists('image_dims')) {
+    /**
+     * [width, height] of a file on the public disk, read once and cached (keyed by path, so a
+     * new upload gets a new entry). For width/height attributes on images whose size isn't
+     * fixed — logos — so the browser reserves their space before they arrive.
+     */
+    function image_dims(?string $path): ?array
+    {
+        if (!$path) {
+            return null;
+        }
+
+        return \Illuminate\Support\Facades\Cache::rememberForever('image_dims:' . md5($path), function () use ($path) {
+            $full = \Illuminate\Support\Facades\Storage::disk('public')->path($path);
+            $size = is_file($full) ? @getimagesize($full) : false;
+
+            return $size ? [(int) $size[0], (int) $size[1]] : null;
+        });
+    }
+}
+
 if (!function_exists('whatsapp_chat_url')) {
     /**
      * Link that opens a WhatsApp chat with the shop, with $text already typed — built from

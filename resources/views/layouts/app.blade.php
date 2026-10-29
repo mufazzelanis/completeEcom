@@ -424,7 +424,28 @@ $pageTwitterImage = $meta('twitter_image', $pageOgImage);
          listener instead of firing inline, so every virtual navigation (not just the
          very first real one) still counts as a page view, with nothing double-counted. --}}
     @if($gaId || $adsConversionId)
-    <script async src="https://www.googletagmanager.com/gtag/js?id={{ $gaId ?: $adsConversionId }}"></script>
+    {{-- gtag.js (~176 KB) is fetched once the page has finished loading, or at the visitor's
+         first scroll/tap/key, whichever is first — not from <head>, where on a phone it competed
+         with the hero banner for bandwidth (PageSpeed: LCP image waited 1.6 s to even start).
+         Nothing is lost: gtag() below only queues into dataLayer, and gtag.js sends the whole
+         queue (config, page_view, ecommerce events) when it arrives. --}}
+    <script>
+    (function (w, d) {
+        if (w.__mvGtagQueued) return;
+        w.__mvGtagQueued = true;
+        var done = false, evs = ['scroll', 'pointerdown', 'keydown', 'touchstart'];
+        var load = function () {
+            if (done) return; done = true;
+            evs.forEach(function (e) { w.removeEventListener(e, load); });
+            var s = d.createElement('script'); s.async = true;
+            s.src = 'https://www.googletagmanager.com/gtag/js?id={{ $gaId ?: $adsConversionId }}';
+            d.head.appendChild(s);
+        };
+        evs.forEach(function (e) { w.addEventListener(e, load, { passive: true }); });
+        var idle = function () { (w.requestIdleCallback || function (f) { setTimeout(f, 200); })(load, { timeout: 1500 }); };
+        if (d.readyState === 'complete') idle(); else w.addEventListener('load', idle);
+    })(window, document);
+    </script>
     <script>
         window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());
         @if($googleEnhancedOn && $trackingData['google'])gtag('set','user_data',{!! Js::from($trackingData['google']) !!});@endif
@@ -731,9 +752,13 @@ $navCategories = \App\Models\Category::with(['children' => fn($q) => $q->active(
                      — clamping against it keeps a category near the right edge from rendering
                      partly off screen. --}}
                 @php $isActiveCat = request()->is('shop/category/'.$navCat->slug); @endphp
-                <div class="relative flex-shrink-0" x-data="{ open: false, top: 0, left: 0 }" x-show="{{ $loop->index }} < cutoffIndex" x-cloak>
+                {{-- seen: the panel's contents (sub-category rows, images, icons — ~145 KB across all
+                     menus) are only built on the first hover. Before, x-teleport built every menu
+                     into the page at startup, even on phones where these menus never show. --}}
+                <div class="relative flex-shrink-0" x-data="{ open: false, seen: false, top: 0, left: 0 }" x-show="{{ $loop->index }} < cutoffIndex" x-cloak>
                     <a href="{{ route('shop.category', $navCat->slug) }}"
                        @mouseenter="
+                            seen = true;
                             open = true;
                             const r = $el.getBoundingClientRect();
                             top = r.bottom;
@@ -771,6 +796,7 @@ $navCategories = \App\Models\Category::with(['children' => fn($q) => $q->active(
                                  "Shop {{ '$navCat->name' }}" label beneath it — the nav link
                                  you're hovering already says which category this is, so a second
                                  copy of the same name right below it was pure redundancy. --}}
+                            <template x-if="seen"><div>
                             <div class="h-1 bg-gradient-to-r from-orange-500 via-pink-500 to-orange-400"></div>
                             <div class="p-1.5 pt-2">
                                 @foreach($navCat->children as $child)
@@ -778,7 +804,7 @@ $navCategories = \App\Models\Category::with(['children' => fn($q) => $q->active(
                                        class="group flex items-center gap-3 px-2.5 py-2.5 rounded-lg hover:bg-orange-50 dark:hover:bg-orange-500/10 transition-colors duration-150">
                                         <span class="flex-shrink-0 w-9 h-9 rounded-lg bg-gradient-to-br from-orange-100 to-amber-50 dark:from-orange-500/20 dark:to-amber-500/10 flex items-center justify-center overflow-hidden group-hover:scale-105 transition-transform duration-200">
                                             @if($child->image)
-                                                <img src="{{ image_thumb($child->image, 96) }}" alt="" loading="lazy" decoding="async" class="w-full h-full object-cover">
+                                                <img src="{{ image_thumb($child->image, 96) }}" alt="" width="96" height="96" loading="lazy" decoding="async" class="w-full h-full object-cover">
                                             @else
                                                 <svg class="w-4 h-4 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><circle cx="7" cy="7" r="1.4" fill="currentColor" stroke="none"/></svg>
                                             @endif
@@ -800,6 +826,7 @@ $navCategories = \App\Models\Category::with(['children' => fn($q) => $q->active(
                                     <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
                                 </a>
                             </div>
+                            </div></template>
                         </div>
                     </template>
                     @endif
@@ -813,8 +840,8 @@ $navCategories = \App\Models\Category::with(['children' => fn($q) => $q->active(
                  links (real hrefs, no client-side string-building) with x-show just
                  toggling which copy of each one is visible. --}}
             <div class="relative flex-shrink-0" x-show="cutoffIndex < {{ $navCategories->count() }}" x-cloak
-                 x-data="{ open: false, top: 0, left: 0 }"
-                 @mouseenter="open = true; const r = $el.getBoundingClientRect(); top = r.bottom; left = Math.max(12, Math.min(r.left, window.innerWidth - 256 - 12));"
+                 x-data="{ open: false, seen: false, top: 0, left: 0 }"
+                 @mouseenter="seen = true; open = true; const r = $el.getBoundingClientRect(); top = r.bottom; left = Math.max(12, Math.min(r.left, window.innerWidth - 256 - 12));"
                  @mouseleave="open = false">
                 <button type="button" class="group relative inline-flex items-center gap-1 text-sm text-white whitespace-nowrap px-3 py-2.5 font-medium active:scale-95 tap-spring">
                     <span class="absolute inset-x-1 inset-y-1 rounded-lg bg-white/15 transition-transform duration-200 ease-out scale-0 group-hover:scale-100"></span>
@@ -832,6 +859,7 @@ $navCategories = \App\Models\Category::with(['children' => fn($q) => $q->active(
                          x-transition:leave-end="opacity-0"
                          x-bind:style="`position:fixed; top:${top}px; left:${left}px;`"
                          class="bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-300 shadow-2xl shadow-black/10 dark:shadow-black/50 rounded-xl w-64 z-[150] ring-1 ring-black/5 dark:ring-white/10 overflow-hidden">
+                        <template x-if="seen"><div>
                         <div class="h-1 bg-gradient-to-r from-orange-500 via-pink-500 to-orange-400"></div>
                         <div class="p-1.5 pt-2 max-h-[70vh] overflow-y-auto">
                             @foreach($navCategories as $navCat)
@@ -839,7 +867,7 @@ $navCategories = \App\Models\Category::with(['children' => fn($q) => $q->active(
                                class="group flex items-center gap-3 px-2.5 py-2.5 rounded-lg hover:bg-orange-50 dark:hover:bg-orange-500/10 transition-colors duration-150">
                                 <span class="flex-shrink-0 w-9 h-9 rounded-lg bg-gradient-to-br from-orange-100 to-amber-50 dark:from-orange-500/20 dark:to-amber-500/10 flex items-center justify-center overflow-hidden group-hover:scale-105 transition-transform duration-200">
                                     @if($navCat->image)
-                                        <img src="{{ image_thumb($navCat->image, 96) }}" alt="" loading="lazy" decoding="async" class="w-full h-full object-cover">
+                                        <img src="{{ image_thumb($navCat->image, 96) }}" alt="" width="96" height="96" loading="lazy" decoding="async" class="w-full h-full object-cover">
                                     @else
                                         <svg class="w-4 h-4 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><circle cx="7" cy="7" r="1.4" fill="currentColor" stroke="none"/></svg>
                                     @endif
@@ -851,6 +879,7 @@ $navCategories = \App\Models\Category::with(['children' => fn($q) => $q->active(
                             </a>
                             @endforeach
                         </div>
+                        </div></template>
                     </div>
                 </template>
             </div>
@@ -1230,6 +1259,7 @@ $navCategories = \App\Models\Category::with(['children' => fn($q) => $q->active(
     <div class="pointer-events-none absolute top-1/3 -right-20 w-72 h-72 bg-indigo-500/10 blur-3xl rounded-full"></div>
     @php
     $footerLogo  = setting_file_url('footer_logo', $logoUrl);
+    $footerLogoDims = image_dims(setting_file_url('footer_logo') ? setting('footer_logo') : setting('site_logo')); // width/height so it reserves its space
     $fbUrl       = setting('facebook_url', '');
     $ytUrl       = setting('youtube_url', '');
     $igUrl       = setting('instagram_url', '');
@@ -1305,7 +1335,8 @@ $navCategories = \App\Models\Category::with(['children' => fn($q) => $q->active(
             <div class="col-span-2 md:col-span-1">
                 <div class="flex items-center space-x-2 mb-4">
                     @if($footerLogo)
-                        <img src="{{ $footerLogo }}" alt="{{ $siteName }}" class="h-8 max-w-[120px] object-contain" loading="lazy" decoding="async">
+                        <img src="{{ $footerLogo }}" alt="{{ $siteName }}" class="h-8 max-w-[120px] object-contain" style="width:auto"
+                             @if($footerLogoDims) width="{{ $footerLogoDims[0] }}" height="{{ $footerLogoDims[1] }}" @endif loading="lazy" decoding="async">
                     @else
                         <div class="w-8 h-8 bg-gradient-to-br from-orange-500 to-red-500 rounded-lg flex items-center justify-center shadow-lg shadow-orange-900/30">
                             <span class="text-white font-bold">{{ strtoupper(substr($siteName,0,1)) }}</span>
@@ -1413,7 +1444,23 @@ $navCategories = \App\Models\Category::with(['children' => fn($q) => $q->active(
             </div>
         </div>
 
-        <div class="relative border-t border-white/10 mt-10 pt-6 text-center text-xs text-gray-500">
+        {{-- Every category as a plain link on every page. The header's hover menus now build
+             their contents only when opened (speed), so this is where Google — and anyone
+             scrolling down — still finds a link to every sub-category from every page. --}}
+        @if(isset($navCategories) && $navCategories->isNotEmpty())
+        <nav aria-label="All categories" class="relative border-t border-white/10 mt-10 pt-6">
+            <p class="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-3">Shop by category</p>
+            <div class="flex flex-wrap gap-x-4 gap-y-1.5 text-xs leading-relaxed">
+                @foreach($navCategories as $fc)
+                    <a href="{{ route('shop.category', $fc->slug) }}" class="font-semibold text-gray-300 hover:text-white">{{ $fc->name }}</a>
+                    @foreach($fc->children as $fcChild)
+                        <a href="{{ route('shop.category', $fcChild->slug) }}" class="text-gray-400 hover:text-gray-200">{{ $fcChild->name }}</a>
+                    @endforeach
+                @endforeach
+            </div>
+        </nav>
+        @endif
+        <div class="relative border-t border-white/10 mt-6 pt-6 text-center text-xs text-gray-500">
             {!! $copyright !!}
         </div>
     </div>

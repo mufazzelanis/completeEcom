@@ -1,7 +1,24 @@
 {{-- Logo — mobile and desktop resolve independently: mobile prefers site_logo_mobile,
      falling back to the main logo, then to the initials/site-name placeholder; desktop
      always uses the main logo (or the placeholder). This must NOT be nested so that a
-     mobile logo with no main logo set still renders on mobile. --}}
+     mobile logo with no main logo set still renders on mobile.
+     Speed: it's above the fold on every page, so it loads eagerly (not lazy) as a small
+     400px webp thumbnail instead of the full upload (PageSpeed flagged a 767px file shown at
+     149px), with its real width/height so the header never shifts while it arrives. --}}
+@php
+    $logoImg = function (?string $key) {
+        $path = $key ? setting($key) : null;
+        if (!$path || !\Illuminate\Support\Facades\Storage::disk('public')->exists($path)) {
+            return null;
+        }
+        $dims = image_dims($path);
+
+        return ['src' => image_thumb($path, 400), 'w' => $dims[0] ?? null, 'h' => $dims[1] ?? null];
+    };
+    $mainLogo = $logoUrl ? $logoImg('site_logo') : null;
+    $mobileLogo = ($logoMobileUrl ?? null) ? $logoImg('site_logo_mobile') : null;
+    $mobileLogo ??= $mainLogo;
+@endphp
 <a href="{{ route('home') }}" class="flex-shrink-0 flex items-center gap-2">
     {{-- h-9/max-w-[130px] (was h-12/190px) — the floating capsule (layouts/app.blade.php)
          added its own horizontal padding on top of this row's existing inset, and combined
@@ -10,10 +27,9 @@
          no overflow-x:hidden safety net (added alongside this), that overflow turned into the
          entire page shifting sideways on scroll — not just the header looking cramped. --}}
     <div class="md:hidden flex items-center gap-2">
-        @if($logoMobileUrl ?? null)
-            <img src="{{ $logoMobileUrl }}" alt="{{ $siteName }}" class="h-9 max-w-[130px] object-contain" loading="lazy" decoding="async">
-        @elseif($logoUrl)
-            <img src="{{ $logoUrl }}" alt="{{ $siteName }}" class="h-9 max-w-[130px] object-contain" loading="lazy" decoding="async">
+        @if($mobileLogo)
+            <img src="{{ $mobileLogo['src'] }}" alt="{{ $siteName }}" class="h-9 max-w-[130px] object-contain" style="width:auto"
+                 @if($mobileLogo['w']) width="{{ $mobileLogo['w'] }}" height="{{ $mobileLogo['h'] }}" @endif decoding="async">
         @else
             <div class="w-8 h-8 bg-gradient-to-br from-orange-500 to-red-500 rounded-lg flex items-center justify-center">
                 <span class="text-white font-bold text-lg">{{ strtoupper(substr($siteName,0,1)) }}</span>
@@ -22,8 +38,11 @@
         @endif
     </div>
     <div class="hidden md:flex items-center gap-2">
-        @if($logoUrl)
-            <img src="{{ $logoUrl }}" alt="{{ $siteName }}" class="h-16 max-w-[220px] object-contain" loading="lazy" decoding="async">
+        @if($mainLogo)
+            <img src="{{ $mainLogo['src'] }}" alt="{{ $siteName }}" class="h-16 max-w-[220px] object-contain" style="width:auto"
+                 @if($mainLogo['w']) width="{{ $mainLogo['w'] }}" height="{{ $mainLogo['h'] }}" @endif
+                 {{-- same file as the phone logo → already being fetched; a different one stays lazy so phones (where it's hidden) never download it --}}
+                 @if(($mobileLogo['src'] ?? null) !== $mainLogo['src']) loading="lazy" @endif decoding="async">
         @else
             <div class="w-8 h-8 bg-gradient-to-br from-orange-500 to-red-500 rounded-lg flex items-center justify-center">
                 <span class="text-white font-bold text-lg">{{ strtoupper(substr($siteName,0,1)) }}</span>

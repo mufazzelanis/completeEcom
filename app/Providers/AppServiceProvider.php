@@ -36,6 +36,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+
         // Build every generated URL (links, canonical tags, sitemap, redirects) from APP_URL
         // in production, never from the incoming request's path. On the live host the site
         // root internally rewrites into public/, and a request that reached Laravel as
