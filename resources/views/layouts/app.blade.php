@@ -236,7 +236,39 @@ $pageTwitterImage = $meta('twitter_image', $pageOgImage);
             document.documentElement.classList.toggle('dark', isDark);
         })();
     </script>
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
+    @php
+        // Homepage: the CSS it uses (resources/css/critical-home.css, built by
+        // scripts/critical-css.cjs) inline, and the full stylesheet loaded without holding up
+        // the first paint (PageSpeed "render-blocking"). Only when that file was generated for
+        // the stylesheet currently built — otherwise the normal blocking <link>, so a rebuild
+        // without re-running the script can never leave the page unstyled.
+        $criticalCss = null;
+        if (request()->routeIs('home') && is_file($criticalPath = resource_path('css/critical-home.css'))) {
+            $criticalCss = file_get_contents($criticalPath);
+            $appCssUrl = \Illuminate\Support\Facades\Vite::asset('resources/css/app.css');
+            if (!str_contains(strtok($criticalCss, "\n"), basename($appCssUrl))) {
+                $criticalCss = null;
+            }
+        }
+    @endphp
+    @if($criticalCss)
+        <style id="critical-home">{!! $criticalCss !!}</style>
+        {{-- the full stylesheet goes in right here (same place in the cascade, so the brand-colour
+             and theme <style> blocks below still override it), once, without blocking render;
+             Turbo keeps stylesheets across page changes, so other pages find it already loaded --}}
+        <script>
+        (function (d) {
+            var href = @js($appCssUrl);
+            if (d.querySelector('link[rel=stylesheet][href="' + href + '"]')) return;
+            var l = d.createElement('link'); l.rel = 'stylesheet'; l.href = href;
+            var s = d.currentScript; s.parentNode.insertBefore(l, s);
+        })(document);
+        </script>
+        <noscript><link rel="stylesheet" href="{{ $appCssUrl }}"></noscript>
+        @vite(['resources/js/app.js'])
+    @else
+        @vite(['resources/css/app.css', 'resources/js/app.js'])
+    @endif
     {{-- Brand Colors (Settings → Branding): the orange / pink / red Tailwind palettes are CSS
          variables (tailwind.config.js), so this one :root block re-themes every button, badge,
          gradient, shadow, hover and dark-mode tint built from them — Primary → orange,
