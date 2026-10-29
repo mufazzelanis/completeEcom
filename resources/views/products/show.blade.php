@@ -500,7 +500,7 @@
                 @endphp
                 @if($product->isVariable())
                     @if($product->available_stock > 0)
-                        <form action="{{ route('cart.add') }}" method="POST" data-show-loader class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 mb-6">
+                        <form id="pd-buy-form" action="{{ route('cart.add') }}" method="POST" data-show-loader class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 mb-6">
                             @csrf
                             <input type="hidden" name="product_id" value="{{ $product->id }}">
                             <input type="hidden" name="variant_combination_id" :value="selectedCombo ? selectedCombo.id : ''">
@@ -522,7 +522,7 @@
                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
                                     <span>Add to Cart</span>
                                 </button>
-                                <button type="submit" formaction="{{ route('checkout.buy-now') }}" :disabled="!selectedCombo"
+                                <button type="submit" data-buy-now formaction="{{ route('checkout.buy-now') }}" :disabled="!selectedCombo"
                                     data-loader-message="Preparing your order&hellip;"
                                     :class="!selectedCombo ? 'opacity-40 cursor-not-allowed' : 'hover:bg-indigo-700'"
                                     class="flex-1 bg-indigo-600 text-white py-3 rounded-xl font-semibold transition flex items-center justify-center space-x-2">
@@ -534,7 +534,7 @@
                     @endif
                 @else
                     @if($product->available_stock > 0)
-                        <form action="{{ route('cart.add') }}" method="POST" data-show-loader class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 mb-6">
+                        <form id="pd-buy-form" action="{{ route('cart.add') }}" method="POST" data-show-loader class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 mb-6">
                             @csrf
                             <input type="hidden" name="product_id" value="{{ $product->id }}">
                             {{-- self-start — the parent form is flex-col on mobile with items-stretch,
@@ -554,7 +554,7 @@
                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
                                     <span>Add to Cart</span>
                                 </button>
-                                <button type="submit" formaction="{{ route('checkout.buy-now') }}"
+                                <button type="submit" data-buy-now formaction="{{ route('checkout.buy-now') }}"
                                     data-loader-message="Preparing your order&hellip;"
                                     class="flex-1 bg-indigo-600 text-white py-3 rounded-xl font-semibold hover:bg-indigo-700 transition flex items-center justify-center space-x-2">
                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
@@ -563,6 +563,11 @@
                             </div>
                         </form>
                     @endif
+                @endif
+
+                @if($product->available_stock > 0)
+                    @include('partials.order-trust', ['class' => 'mb-6'])
+                    @include('products._sticky-buy')
                 @endif
 
                 <!-- Meta -->

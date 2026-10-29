@@ -211,6 +211,7 @@ Route::get('/wishlist', [WishlistController::class, 'index'])->name('wishlist.in
 // Checkout Routes
 Route::get('/checkout', [CheckoutController::class, 'index'])->name('checkout.index');
 Route::post('/checkout', [CheckoutController::class, 'store'])->name('checkout.store');
+Route::post('/checkout/lead', [CheckoutController::class, 'lead'])->middleware('throttle:30,1')->name('checkout.lead');
 Route::post('/checkout/phone/send', [\App\Http\Controllers\CheckoutPhoneController::class, 'send'])->middleware('throttle:12,10')->name('checkout.phone.send');
 Route::post('/checkout/phone/verify', [\App\Http\Controllers\CheckoutPhoneController::class, 'verify'])->middleware('throttle:20,10')->name('checkout.phone.verify');
 Route::get('/checkout/success/{order}', [CheckoutController::class, 'success'])->name('checkout.success');
@@ -230,6 +231,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/orders', [OrderController::class, 'index'])->name('orders.index');
     Route::get('/orders/{order}', [OrderController::class, 'show'])->name('orders.show');
     Route::post('/orders/{order}/cancel', [OrderController::class, 'cancel'])->name('orders.cancel');
+    Route::post('/orders/{order}/reorder', [OrderController::class, 'reorder'])->middleware('throttle:10,1')->name('orders.reorder');
     Route::get('/orders/{order}/download/{item}', [OrderController::class, 'download'])->name('orders.download');
 
     // Return requests
@@ -632,6 +634,12 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
 
     // Order invoice PDF + fraud re-check
     Route::get('orders/{order}/invoice', [AdminOrderController::class, 'invoice'])->name('orders.invoice');
+
+    // Incomplete checkouts (phone entered, no order) — call / WhatsApp / SMS follow-up
+    Route::get('checkout-leads', [\App\Http\Controllers\Admin\CheckoutLeadController::class, 'index'])->name('checkout-leads.index');
+    Route::patch('checkout-leads/{lead}', [\App\Http\Controllers\Admin\CheckoutLeadController::class, 'update'])->name('checkout-leads.update');
+    Route::post('checkout-leads/{lead}/sms', [\App\Http\Controllers\Admin\CheckoutLeadController::class, 'sms'])->middleware('throttle:20,1')->name('checkout-leads.sms');
+    Route::post('checkout-leads/settings', [\App\Http\Controllers\Admin\CheckoutLeadController::class, 'settings'])->name('checkout-leads.settings');
 
     // Custom invoices / quotations / receipts written by hand (no order, no stock change)
     Route::get('custom-invoices/lookup', [\App\Http\Controllers\Admin\CustomInvoiceController::class, 'lookup'])->name('custom-invoices.lookup');

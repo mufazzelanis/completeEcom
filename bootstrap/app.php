@@ -94,6 +94,13 @@ return Application::configure(basePath: dirname(__DIR__))
         // Live Visitors only ever looks back 30 minutes (visits-today: one day) — keep two days
         $schedule->call(fn () => \App\Models\LiveVisitor::where('last_seen_at', '<', now()->subDays(2))->delete())
             ->name('live-visitors:prune')->hourly();
+        // Incomplete checkouts: reminder SMS (only when switched on in that admin page), and
+        // old rows cleared out — unanswered after a month, finished ones after two
+        $schedule->command('checkout-leads:remind')->everyFiveMinutes()->between('09:00', '21:30')->timezone('Asia/Dhaka')->withoutOverlapping();
+        $schedule->call(function () {
+            \App\Models\CheckoutLead::whereIn('status', ['open', 'contacted'])->where('last_activity_at', '<', now()->subDays(30))->delete();
+            \App\Models\CheckoutLead::whereIn('status', ['recovered', 'dismissed'])->where('updated_at', '<', now()->subDays(60))->delete();
+        })->name('checkout-leads:prune')->dailyAt('03:30');
 
         $schedule->command('reviews:send-requests')->hourly()->between('10:00', '20:00')->timezone('Asia/Dhaka')->withoutOverlapping();
     })->create();

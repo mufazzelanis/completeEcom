@@ -687,10 +687,15 @@ $navCategories = \App\Models\Category::with(['children' => fn($q) => $q->active(
                         this.recalc();
                     });
                     let t;
-                    window.addEventListener('resize', () => { clearTimeout(t); t = setTimeout(() => this.recalc(), 150); });
+                    // removed again on the next Turbo visit — otherwise every page visited left one
+                    // behind, measuring a menu that's no longer on the page (a JS error on resize,
+                    // which on phones includes the keyboard opening)
+                    const onResize = () => { clearTimeout(t); t = setTimeout(() => this.recalc(), 150); };
+                    window.addEventListener('resize', onResize);
+                    document.addEventListener('turbo:before-render', () => window.removeEventListener('resize', onResize), { once: true });
                 },
                 recalc() {
-                    if (!this.itemWidths.length) return;
+                    if (!this.itemWidths.length || !this.$refs.track || !this.$refs.track.isConnected) return;
                     const containerWidth = this.$refs.track.clientWidth;
                     // Everything fits with room to spare — show it all, no 'More' needed
                     // (checked before reserving space for a button that wouldn't even show).

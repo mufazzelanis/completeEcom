@@ -130,6 +130,17 @@
                     </a>
                 @endif
             @endif
+
+            {{-- one tap to buy the same things again (in-stock items go to the cart) --}}
+            @if($order->status !== 'pending')
+                <form action="{{ route('orders.reorder', $order) }}" method="POST" class="mt-3" data-show-loader data-loader-message="Adding to your cart&hellip;">
+                    @csrf
+                    <button type="submit" class="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl text-sm font-semibold text-white transition hover:brightness-110" style="background: linear-gradient(135deg, #4f46e5, #7c3aed);">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                        Order again
+                    </button>
+                </form>
+            @endif
         </div>
     </div>
 </div>

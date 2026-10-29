@@ -68,6 +68,61 @@ class OrderController extends Controller
     }
 
     /**
+     * "Order again": puts this order's items back in the cart — same product and variant, as
+     * many as are still in stock (up to the original quantity) — and opens the cart. Items no
+     * longer sold, or out of stock, are skipped and named in the message.
+     */
+    public function reorder(Order $order)
+    {
+        abort_unless(auth()->check() && $order->user_id === auth()->id(), 403);
+        $order->load('items.product');
+
+        $added = 0;
+        $skipped = [];
+        foreach ($order->items as $item) {
+            $product = $item->product;
+            $combination = $item->product_variant_combination_id
+                ? \App\Models\ProductVariantCombination::where('id', $item->product_variant_combination_id)->where('is_active', true)->first()
+                : null;
+            $available = $combination ? (int) $combination->stock : (int) ($product?->available_stock ?? 0);
+            if (! $product || ! $product->is_active || ($product->isVariable() && ! $combination) || $available < 1) {
+                $skipped[] = $item->product_name;
+                continue;
+            }
+
+            $qty = min((int) $item->quantity, $available);
+            $line = \App\Models\Cart::where('user_id', auth()->id())->where('product_id', $product->id)
+                ->when($combination, fn ($q) => $q->where('product_variant_combination_id', $combination->id),
+                    fn ($q) => $q->whereNull('product_variant_combination_id'))
+                ->first();
+            if ($line) {
+                $line->update(['quantity' => max((int) $line->quantity, $qty)]);
+            } else {
+                \App\Models\Cart::create([
+                    'user_id' => auth()->id(),
+                    'product_id' => $product->id,
+                    'product_variant_combination_id' => $combination?->id,
+                    'quantity' => $qty,
+                ]);
+            }
+            $added++;
+        }
+        session()->forget('buy_now');
+        ActivityLogger::log('cart.add', "Re-ordered items from #{$order->order_number}", $order, ['added' => $added]);
+
+        if ($added === 0) {
+            return back()->with('error', 'Sorry — none of these items are available right now.');
+        }
+
+        return redirect()->route('cart.index')->with(
+            $skipped ? 'error' : 'success',
+            $skipped
+                ? "{$added} item(s) added to your cart. Not available right now: " . implode(', ', array_slice($skipped, 0, 3)) . (count($skipped) > 3 ? '…' : '')
+                : 'Items from your previous order are in your cart.'
+        );
+    }
+
+    /**
      * Delivers a digital product's file for an order the customer owns. Every
      * order has a user_id (guest checkout auto-creates and logs the customer
      * in — see CheckoutController::store()), so ownership alone is enough;

@@ -216,8 +216,59 @@ class CheckoutController extends Controller
         ));
     }
 
+    /**
+     * POST /checkout/lead — the checkout page sends what's typed so far once the phone number is
+     * a valid Bangladeshi mobile (debounced, and again on changes). Kept as one row per browser
+     * session with a snapshot of the cart, so Admin → Incomplete Checkouts can call them if no
+     * order follows. Bots, an empty cart and invalid numbers are quietly ignored.
+     */
+    public function lead(Request $request)
+    {
+        if (\App\Models\ActivityLog::automationSignal($request)) {
+            return response()->noContent();
+        }
+        $phone = \App\Support\PhoneValidator::normalize((string) $request->input('phone'));
+        if (! $phone || \App\Support\PhoneValidator::problem($phone)) {
+            return response()->noContent();
+        }
+        $items = $this->resolveCheckoutItems();
+        if ($items->isEmpty()) {
+            return response()->noContent();
+        }
+
+        $clean = fn ($key, $max) => mb_substr(trim(strip_tags((string) $request->input($key))), 0, $max) ?: null;
+        $lead = \App\Models\CheckoutLead::where('session_id', session()->getId())
+            ->whereIn('status', ['open', 'contacted'])
+            ->latest('id')
+            ->first() ?? new \App\Models\CheckoutLead(['session_id' => session()->getId(), 'status' => 'open']);
+
+        $lead->fill([
+            'user_id' => auth()->id(),
+            'name' => $clean('name', 255),
+            'phone' => $phone,
+            'address' => $clean('address', 500),
+            'city' => $clean('city', 100),
+            'zone' => in_array($request->input('zone'), ['dhaka', 'outside_dhaka'], true) ? $request->input('zone') : null,
+            'items' => $items->map(fn ($i) => [
+                'product_id' => $i->product_id,
+                'name' => $i->product?->name,
+                'variant' => $i->combination?->label,
+                'qty' => (int) $i->quantity,
+                'price' => (float) $i->unit_price,
+                'image' => $i->product?->image,
+                'slug' => $i->product?->slug,
+            ])->values()->all(),
+            'subtotal' => (float) $items->sum('subtotal'),
+            'ip_address' => $request->ip(),
+            'last_activity_at' => now(),
+        ])->save();
+
+        return response()->noContent();
+    }
+
     public function store(Request $request)
     {
+        $leadSessionId = session()->getId(); // before any auto-login below changes it
         $guestIdentifier = auth()->check() ? 'checkout:'.auth()->id() : 'checkout:'.session()->getId();
         if (RateLimiter::tooManyAttempts($guestIdentifier, 10)) {
             return back()->withErrors(['error' => 'Too many requests. Please wait a moment.']);
@@ -527,6 +578,13 @@ class CheckoutController extends Controller
             $order,
             ['phone' => $order->shipping_phone, 'name' => $order->shipping_name, 'total' => $order->total]
         );
+
+        // the incomplete-checkout row for this shopper (if any) becomes "Ordered"
+        try {
+            \App\Models\CheckoutLead::markRecovered($order, $leadSessionId);
+        } catch (\Throwable $e) {
+            report($e);
+        }
 
         $user = auth()->user();
         NotificationDispatcher::customer('order_placed', $user, [

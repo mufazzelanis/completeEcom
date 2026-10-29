@@ -93,9 +93,93 @@
     </div>
     @endauth
 
+    {{-- "Remember me on this device": the delivery details of the last order placed from this
+         browser are kept in its localStorage only (never sent anywhere else) and filled into the
+         empty fields next time — a returning customer just checks and taps Place Order. Skipped
+         when the page came back with validation errors (those fields hold what they just typed).
+         "Not you? Clear" forgets them. --}}
+    <script>
+    window.mvCheckoutMemory = {
+        key: 'mv_checkout_v1',
+        fields: ['shipping_name', 'shipping_phone', 'shipping_address', 'shipping_city', 'shipping_state', 'shipping_zip', 'shipping_email'],
+        read: function () { try { return JSON.parse(localStorage.getItem(this.key) || 'null'); } catch (e) { return null; } },
+        // Incomplete-checkout capture (Admin → Incomplete Checkouts): once the phone number is a
+        // valid BD mobile, what's typed so far is sent — 1.5 s after typing stops, only when it
+        // changed. The server ignores invalid numbers and empty carts.
+        lastLead: '',
+        leadTimer: null,
+        sendLead: function (form, cmp) {
+            var val = function (n) { var el = form.querySelector('[name="' + n + '"]'); return el ? el.value.trim() : ''; };
+            var phone = val('shipping_phone').replace(/[০-৯]/g, function (d) { return '০১২৩৪৫৬৭৮৯'.indexOf(d); }).replace(/\D/g, '').replace(/^(?:00)?88/, '');
+            if (!/^01[3-9]\d{8}$/.test(phone)) return;
+            var body = JSON.stringify({ phone: phone, name: val('shipping_name'), address: val('shipping_address'), city: val('shipping_city'), zone: cmp.zone });
+            if (body === this.lastLead) return;
+            this.lastLead = body;
+            var token = document.querySelector('meta[name="csrf-token"]');
+            fetch(@js(route('checkout.lead')), {
+                method: 'POST', credentials: 'same-origin', keepalive: true,
+                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': token ? token.content : @js(csrf_token()) },
+                body: body,
+            }).catch(function () {});
+        },
+        init: function (cmp, skipFill) {
+            var self = this, form = document.getElementById('checkout-form');
+            if (!form) return;
+            form.addEventListener('submit', function (e) { if (!e.defaultPrevented) { clearTimeout(self.leadTimer); self.save(form, cmp); } });
+            var queueLead = function () { clearTimeout(self.leadTimer); self.leadTimer = setTimeout(function () { self.sendLead(form, cmp); }, 1500); };
+            form.addEventListener('input', queueLead);
+            form.addEventListener('change', queueLead);
+            setTimeout(queueLead, 0); // details already filled in (remembered / logged in)
+            var data = skipFill ? null : this.read();
+            if (!data) return;
+            var filled = false;
+            this.fields.forEach(function (name) {
+                var el = form.querySelector('[name="' + name + '"]');
+                if (el && !el.value && data[name]) {
+                    el.value = data[name];
+                    el.dispatchEvent(new Event('input', { bubbles: true }));
+                    filled = true;
+                }
+            });
+            if (cmp.usesZones && (data.shipping_zone === 'dhaka' || data.shipping_zone === 'outside_dhaka')) cmp.zone = data.shipping_zone;
+            cmp.remembered = filled;
+        },
+        save: function (form, cmp) {
+            var data = { shipping_zone: cmp.zone, saved_at: Date.now() };
+            this.fields.forEach(function (name) { var el = form.querySelector('[name="' + name + '"]'); if (el && el.value.trim()) data[name] = el.value.trim(); });
+            try { localStorage.setItem(this.key, JSON.stringify(data)); } catch (e) {}
+        },
+        forget: function (cmp) {
+            var data = this.read() || {}, form = document.getElementById('checkout-form');
+            try { localStorage.removeItem(this.key); } catch (e) {}
+            this.fields.forEach(function (name) {
+                var el = form && form.querySelector('[name="' + name + '"]');
+                if (el && data[name] && el.value === data[name] && !el.readOnly) { el.value = ''; el.dispatchEvent(new Event('input', { bubbles: true })); }
+            });
+            cmp.remembered = false;
+        },
+    };
+    </script>
+
+    @php
+        // optional extras folded behind one "+ Add …" link so the form reads as name / phone / address
+        $extraFields = collect(['state', 'zip', 'notes'])->filter(fn ($f) => $checkoutFields[$f]['mode'] === 'optional');
+        $openExtras = $errors->hasAny(['shipping_state', 'shipping_zip', 'notes']) || old('shipping_state') || old('shipping_zip') || old('notes');
+    @endphp
     <form id="checkout-form" action="{{ route('checkout.store') }}" method="POST"
         data-show-loader data-loader-message="Placing your order&hellip;"
+        x-init="window.mvCheckoutMemory && mvCheckoutMemory.init($data, {{ $errors->any() || session()->hasOldInput() ? 'true' : 'false' }}); $watch('zone', z => autoCity(z)); autoCity(zone)"
         x-data="{
+            more: {{ $openExtras ? 'true' : 'false' }},
+            remembered: false,
+            // Inside Dhaka → City is obviously Dhaka; filled only into an empty box, and taken back
+            // out again if they switch to Outside Dhaka without having typed anything themselves
+            autoCity(z) {
+                const el = document.getElementById('shipping_city');
+                if (!el) return;
+                if (z === 'dhaka' && !el.value.trim()) { el.value = 'Dhaka'; el.dataset.auto = '1'; }
+                else if (z === 'outside_dhaka' && el.dataset.auto) { el.value = ''; delete el.dataset.auto; }
+            },
             cs: '{!! html_entity_decode(setting('currency_symbol', '৳')) !!}',
             selected: '{{ old('payment_method', $paymentMethods->first()?->slug) }}',
             zone: '{{ $defaultZone }}',
@@ -174,6 +258,12 @@
                 <div class="bg-white rounded-xl shadow-sm p-6">
                     <h2 class="text-lg font-bold text-gray-800 mb-4">Shipping Address</h2>
 
+                    <div x-show="remembered" x-cloak class="flex flex-wrap items-center justify-between gap-2 rounded-xl px-4 py-2.5 mb-4 text-sm"
+                         style="background: rgba(16, 185, 129, .1); border: 1px solid rgba(16, 185, 129, .3);">
+                        <span class="text-gray-700 dark:text-gray-200">✓ Filled in from your last order on this device — please check before ordering.</span>
+                        <button type="button" @click="mvCheckoutMemory.forget($data)" class="font-semibold underline text-gray-600 dark:text-gray-300">Not you? Clear</button>
+                    </div>
+
                     @if($addresses->isNotEmpty())
                         <div class="mb-4">
                             <label class="block text-sm font-medium text-gray-700 mb-2">Use saved address</label>
@@ -245,7 +335,7 @@
                             <label class="block text-sm font-medium text-gray-700 mb-1">{{ $checkoutFields['city']['label'] }}
                                 @if($checkoutFields['city']['mode'] === 'required')<span class="text-red-500">*</span>@else <span class="text-gray-400">(optional)</span>@endif
                             </label>
-                            <input type="text" name="shipping_city" id="shipping_city"
+                            <input type="text" name="shipping_city" id="shipping_city" @input="delete $el.dataset.auto"
                                 value="{{ old('shipping_city') }}" placeholder="{{ $checkoutFields['city']['placeholder'] }}"
                                 @if($checkoutFields['city']['mode'] === 'required') required @endif
                                 class="w-full border rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 {{ $errors->has('shipping_city') ? 'border-red-400 bg-red-50' : 'border-gray-200' }}">
@@ -255,7 +345,7 @@
                         @if($checkoutFields['email']['mode'] !== 'hidden')
                         <div class="sm:col-span-2">
                             <label class="block text-sm font-medium text-gray-700 mb-1">{{ $checkoutFields['email']['label'] }}
-                                @if($checkoutFields['email']['mode'] === 'required')<span class="text-red-500">*</span>@else <span class="text-gray-400">(optional)</span>@endif
+                                @if($checkoutFields['email']['mode'] === 'required')<span class="text-red-500">*</span>@else <span class="text-gray-400">(optional — we'll email your order updates)</span>@endif
                             </label>
                             <input type="email" name="shipping_email" id="shipping_email"
                                 value="{{ old('shipping_email', auth()->user()->email ?? '') }}"
@@ -286,7 +376,7 @@
                         </div>
                         @endif
                         @if($checkoutFields['state']['mode'] !== 'hidden')
-                        <div>
+                        <div @if($checkoutFields['state']['mode'] === 'optional') x-show="more" x-cloak @endif>
                             <label class="block text-sm font-medium text-gray-700 mb-1">{{ $checkoutFields['state']['label'] }}
                                 @if($checkoutFields['state']['mode'] === 'required')<span class="text-red-500">*</span>@endif
                             </label>
@@ -298,7 +388,7 @@
                         </div>
                         @endif
                         @if($checkoutFields['zip']['mode'] !== 'hidden')
-                        <div>
+                        <div @if($checkoutFields['zip']['mode'] === 'optional') x-show="more" x-cloak @endif>
                             <label class="block text-sm font-medium text-gray-700 mb-1">{{ $checkoutFields['zip']['label'] }}
                                 @if($checkoutFields['zip']['mode'] === 'required')<span class="text-red-500">*</span>@endif
                             </label>
@@ -310,7 +400,7 @@
                         </div>
                         @endif
                         @if($checkoutFields['country']['mode'] !== 'hidden')
-                        <div>
+                        <div x-show="more" x-cloak>
                             <label class="block text-sm font-medium text-gray-700 mb-1">{{ $checkoutFields['country']['label'] }}</label>
                             <input type="text" name="shipping_country" value="Bangladesh" readonly
                                 class="w-full border border-gray-100 rounded-lg px-4 py-2.5 text-sm bg-gray-50 text-gray-500">
@@ -320,8 +410,14 @@
                         @endif
                     </div>
 
+                    @if($extraFields->isNotEmpty())
+                        <button type="button" x-show="!more" @click="more = true" class="mt-4 block text-left text-sm font-semibold text-orange-600 hover:underline">
+                            + Add {{ $extraFields->map(fn ($f) => strtolower($checkoutFields[$f]['label']))->join(', ', ' or ') }} <span class="font-normal text-gray-400">(optional)</span>
+                        </button>
+                    @endif
+
                     @if($checkoutFields['notes']['mode'] !== 'hidden')
-                    <div class="mt-4">
+                    <div class="mt-4" @if($checkoutFields['notes']['mode'] === 'optional') x-show="more" x-cloak @endif>
                         <label class="block text-sm font-medium text-gray-700 mb-1">{{ $checkoutFields['notes']['label'] }}
                             @if($checkoutFields['notes']['mode'] === 'required')<span class="text-red-500">*</span>@else <span class="text-gray-400">(optional)</span>@endif
                         </label>
@@ -426,6 +522,7 @@
             <div class="lg:col-span-2">
                 <div class="bg-white rounded-xl shadow-sm p-6 lg:sticky lg:top-24">
                     <h2 class="text-lg font-bold text-gray-800 mb-4">Order Summary</h2>
+                    @include('partials.free-delivery-progress', ['subtotal' => $subtotal, 'class' => 'mb-4', 'showLink' => true])
 
                     <div class="space-y-3 mb-4 max-h-48 lg:max-h-64 overflow-y-auto">
                         @foreach($cartItems as $item)
@@ -488,6 +585,8 @@
                         </svg>
                         <span>Place Order</span>
                     </button>
+
+                    @include('partials.order-trust', ['class' => 'mt-5'])
 
                     <p class="text-xs text-gray-400 text-center mt-3">
                         By placing an order you agree to our Terms &amp; Conditions

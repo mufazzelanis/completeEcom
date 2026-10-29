@@ -135,6 +135,7 @@ $adminNavIndex = [
     ['label' => 'Pending Vendor Categories', 'url' => route('admin.categories.index'), 'group' => 'Vendors'],
     ['label' => 'Orders', 'url' => route('admin.orders.index'), 'group' => 'Sales'],
     ['label' => 'Custom Invoices', 'url' => route('admin.custom-invoices.index'), 'group' => 'Sales'],
+    ['label' => 'Incomplete Checkouts', 'url' => route('admin.checkout-leads.index'), 'group' => 'Sales'],
     ['label' => 'New Custom Invoice', 'url' => route('admin.custom-invoices.create'), 'group' => 'Sales'],
     ['label' => 'Returns', 'url' => route('admin.returns.index'), 'group' => 'Sales'],
     ['label' => 'Payments', 'url' => route('admin.payments.index'), 'group' => 'Sales'],
@@ -474,6 +475,13 @@ $adminNavIndex = [
                 class="flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium transition {{ request()->routeIs('admin.custom-invoices.*') ? 'bg-orange-600 text-white' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800' }}">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 14l2 2 4-4M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
                 <span>Custom Invoices</span>
+            </a>
+            <a href="{{ route('admin.checkout-leads.index') }}"
+                class="flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium transition {{ request()->routeIs('admin.checkout-leads.*') ? 'bg-orange-600 text-white' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800' }}">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+                <span class="flex-1">Incomplete Checkouts</span>
+                @php $openLeads = \Illuminate\Support\Facades\Cache::remember('admin_badge:checkout_leads', 120, fn () => \App\Models\CheckoutLead::where('status', 'open')->where('last_activity_at', '<', now()->subMinutes(\App\Models\CheckoutLead::ACTIVE_MINUTES))->where('last_activity_at', '>', now()->subDays(3))->count()); @endphp
+                @if($openLeads > 0)<span class="ml-auto bg-orange-500 text-white text-xs rounded-full px-1.5 py-0.5 font-semibold">{{ $openLeads > 99 ? '99+' : $openLeads }}</span>@endif
             </a>
             <a href="{{ route('admin.returns.index') }}"
                 class="flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium transition {{ request()->routeIs('admin.returns.*') ? 'bg-orange-600 text-white' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800' }}">

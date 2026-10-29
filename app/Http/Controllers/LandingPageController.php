@@ -175,6 +175,12 @@ class LandingPageController extends Controller
             ['phone' => $order->shipping_phone, 'name' => $order->shipping_name, 'total' => $order->total, 'landing_page' => $landingPage->title]
         );
 
+        try {
+            \App\Models\CheckoutLead::markRecovered($order, null); // they may have tried the normal checkout first
+        } catch (\Throwable $e) {
+            report($e);
+        }
+
         NotificationDispatcher::admin('new_order', [
             'order_number' => $order->order_number,
             'customer'     => $order->shipping_name,

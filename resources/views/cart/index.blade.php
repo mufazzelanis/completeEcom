@@ -158,6 +158,7 @@
 
                 <div class="bg-white rounded-2xl shadow-sm p-6">
                     <h3 class="font-semibold text-gray-800 mb-4">Order Summary</h3>
+                    @include('partials.free-delivery-progress', ['subtotal' => $subtotal, 'class' => 'mb-4'])
                     <div class="space-y-3 text-sm">
                         <div class="flex justify-between text-gray-600">
                             <span>Subtotal</span>
