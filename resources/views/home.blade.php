@@ -527,6 +527,13 @@
 </div>
 @endif
 
+{{-- ═══════════ RECENTLY VIEWED (returning visitors only — 2+ products in their history) ═══════════ --}}
+@if($recentlyViewed->count() >= 2)
+<div class="max-w-[1200px] mx-auto px-4 mt-6">
+    @include('partials.recently-viewed', ['items' => $recentlyViewed, 'title' => 'Continue shopping', 'min' => 2])
+</div>
+@endif
+
 {{-- ═══════════ HOMEPAGE PRODUCT SECTIONS (admin-managed) ═══════════ --}}
 @foreach($homeSections as $entry)
     @php

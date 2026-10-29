@@ -183,6 +183,35 @@ class ActivityLog extends Model
      *     "cors" for Turbo/fetch). Only checked for those engines; iPhone browsers (WebKit)
      *     added it later, so they're never flagged for missing it.
      */
+    /**
+     * How an event is shown in Admin → Activity Log: [plain label, icon, hex colour]. Hex rather
+     * than Tailwind classes so every event keeps its own colour in dark mode too (the dark theme
+     * flattened the old bg-*-100 badges into one colour). Shopping-funnel steps go cool → warm →
+     * green (view → cart → order); admin actions are coloured by what they did.
+     */
+    public static function eventMeta(string $event): array
+    {
+        return match (true) {
+            $event === 'product.view'          => ['Product view', '👁', '#3b82f6'],
+            $event === 'cart.add'              => ['Added to cart', '🛒', '#f59e0b'],
+            $event === 'cart.remove'           => ['Removed from cart', '➖', '#ef4444'],
+            $event === 'order.place'           => ['Order placed', '✅', '#10b981'],
+            $event === 'order.view'            => ['Order viewed', '📄', '#8b5cf6'],
+            $event === 'order.status_updated'  => ['Order status', '🔄', '#6366f1'],
+            $event === 'order.payment_updated' => ['Payment update', '💳', '#14b8a6'],
+            $event === 'order.fraud_rechecked' => ['Fraud check', '🛡️', '#f43f5e'],
+            $event === 'login'                 => ['Login', '🔑', '#22c55e'],
+            $event === 'logout'                => ['Logout', '🚪', '#94a3b8'],
+            str_starts_with($event, 'search')  => ['Search', '🔎', '#d946ef'],
+            str_contains($event, 'deleted')    => [\Illuminate\Support\Str::headline(str_replace('.', ' ', $event)), '🗑️', '#ef4444'],
+            str_contains($event, 'created')    => [\Illuminate\Support\Str::headline(str_replace('.', ' ', $event)), '➕', '#10b981'],
+            str_contains($event, 'updated')    => [\Illuminate\Support\Str::headline(str_replace('.', ' ', $event)), '✏️', '#0ea5e9'],
+            str_contains($event, 'sent')       => [\Illuminate\Support\Str::headline(str_replace('.', ' ', $event)), '📤', '#06b6d4'],
+            str_contains($event, 'payment')    => [\Illuminate\Support\Str::headline(str_replace('.', ' ', $event)), '💰', '#14b8a6'],
+            default                            => [\Illuminate\Support\Str::headline(str_replace('.', ' ', $event)), '•', '#64748b'],
+        };
+    }
+
     public static function automationSignal(\Illuminate\Http\Request $request): ?string
     {
         $ua = (string) $request->userAgent();

@@ -76,7 +76,14 @@ class ProductController extends Controller
             rawUserFields: $user ? ['name' => $user->name, 'email' => $user->email, 'phone' => $user->phone] : [],
         );
 
-        return view('products.show', compact('product', 'related', 'wishlisted', 'fbViewContentEventId'));
+        // Bundle box only for a product that itself goes to the cart in one tap
+        $fbt = !$product->isVariable() && !$product->isDigital() && $product->available_stock > 0
+            ? \App\Services\Personalization::frequentlyBoughtTogether($product)
+            : collect();
+        $recentlyViewed = \App\Services\Personalization::recentlyViewed($product->id, 12)
+            ->reject(fn ($p) => $related->contains('id', $p->id))->values();
+
+        return view('products.show', compact('product', 'related', 'wishlisted', 'fbViewContentEventId', 'fbt', 'recentlyViewed'));
     }
 
     public function storeReview(Request $request, Product $product)

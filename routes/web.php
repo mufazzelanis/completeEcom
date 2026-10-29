@@ -105,10 +105,10 @@ Route::get('/search/suggest', [SearchController::class, 'suggest'])->name('searc
 // Sample order emails to any inbox, for Postman/curl — needs EMAIL_TEST_TOKEN (off when unset)
 Route::post('/email-test', [\App\Http\Controllers\EmailPreviewController::class, 'send'])
     ->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class])
-    ->middleware('throttle:5,1')
+    ->middleware('throttle:5,1,post-email-test')
     ->name('email-test');
 // Live-visitor heartbeat from storefront pages (Admin → Live Visitors)
-Route::post('/live/ping', [\App\Http\Controllers\LiveVisitorController::class, 'ping'])->middleware('throttle:60,1')->name('live.ping');
+Route::post('/live/ping', [\App\Http\Controllers\LiveVisitorController::class, 'ping'])->middleware('throttle:60,1,post-live-ping')->name('live.ping');
 
 // SEO: sitemap + robots.txt (public/robots.txt removed so this route is actually reached)
 Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemap');
@@ -131,14 +131,14 @@ Route::get('/blog/{blogPost}', [BlogController::class, 'show'])->name('blog.show
 // Pages (public)
 Route::get('/faq', [PageController::class, 'faq'])->name('faq');
 Route::get('/contact', [PageController::class, 'contact'])->name('contact');
-Route::post('/contact', [PageController::class, 'sendContact'])->middleware('throttle:5,1')->name('contact.send');
+Route::post('/contact', [PageController::class, 'sendContact'])->middleware('throttle:5,1,post-contact')->name('contact.send');
 Route::get('/terms', [PageController::class, 'terms'])->name('terms');
 Route::get('/privacy', [PageController::class, 'privacy'])->name('privacy');
 Route::get('/about', [PageController::class, 'about'])->name('about');
 Route::get('/pages/{page}', [PageController::class, 'show'])->name('pages.show');
 
 // Newsletter (public)
-Route::post('/newsletter/subscribe', [NewsletterSubscriptionController::class, 'subscribe'])->middleware('throttle:5,1')->name('newsletter.subscribe');
+Route::post('/newsletter/subscribe', [NewsletterSubscriptionController::class, 'subscribe'])->middleware('throttle:5,1,post-newsletter-subscribe')->name('newsletter.subscribe');
 Route::get('/newsletter/unsubscribe/{token}', [NewsletterSubscriptionController::class, 'unsubscribe'])->name('newsletter.unsubscribe');
 Route::get('/email/unsubscribe/{token}', [EmailUnsubscribeController::class, 'unsubscribe'])->name('email.unsubscribe');
 
@@ -183,8 +183,8 @@ Route::get('/brand/{brand:slug}', [ShopController::class, 'brand'])->name('shop.
 Route::get('/products/{product}', [ProductController::class, 'show'])->name('products.show');
 // Post-delivery review link sent by reviews:send-requests (short, so it fits in one SMS)
 Route::get('/r/{token}', [\App\Http\Controllers\ReviewRequestController::class, 'show'])->where('token', '[A-Za-z0-9]{12}')->name('reviews.request');
-Route::post('/r/{token}', [\App\Http\Controllers\ReviewRequestController::class, 'store'])->where('token', '[A-Za-z0-9]{12}')->middleware('throttle:20,1')->name('reviews.request.store');
-Route::post('/products/{product}/review', [ProductController::class, 'storeReview'])->middleware(['auth', 'throttle:5,1'])->name('products.review');
+Route::post('/r/{token}', [\App\Http\Controllers\ReviewRequestController::class, 'store'])->where('token', '[A-Za-z0-9]{12}')->middleware('throttle:20,1,post-r-token')->name('reviews.request.store');
+Route::post('/products/{product}/review', [ProductController::class, 'storeReview'])->middleware(['auth', 'throttle:5,1,post-products-product-review'])->name('products.review');
 
 // Cart Routes
 Route::get('/cart', [CartController::class, 'index'])->name('cart.index');
@@ -195,6 +195,8 @@ Route::get('/cart', [CartController::class, 'index'])->name('cart.index');
 // visitor just lands on their cart instead of a broken-looking error screen.
 Route::get('/cart/add', fn () => redirect()->route('cart.index'));
 Route::post('/cart/add', [CartController::class, 'add'])->name('cart.add');
+Route::post('/cart/add-many', [CartController::class, 'addMany'])->middleware('throttle:20,1,post-cart-add-many')->name('cart.add-many');
+Route::post('/products/{product}/notify', [\App\Http\Controllers\StockAlertController::class, 'store'])->middleware('throttle:6,1,post-products-product-notify')->name('stock-alerts.store');
 Route::patch('/cart/{cart}', [CartController::class, 'update'])->name('cart.update');
 Route::delete('/cart/{cart}', [CartController::class, 'remove'])->name('cart.remove');
 Route::delete('/cart/product/{product}', [CartController::class, 'removeByProduct'])->name('cart.remove-by-product');
@@ -211,27 +213,27 @@ Route::get('/wishlist', [WishlistController::class, 'index'])->name('wishlist.in
 // Checkout Routes
 Route::get('/checkout', [CheckoutController::class, 'index'])->name('checkout.index');
 Route::post('/checkout', [CheckoutController::class, 'store'])->name('checkout.store');
-Route::post('/checkout/lead', [CheckoutController::class, 'lead'])->middleware('throttle:30,1')->name('checkout.lead');
-Route::post('/checkout/phone/send', [\App\Http\Controllers\CheckoutPhoneController::class, 'send'])->middleware('throttle:12,10')->name('checkout.phone.send');
-Route::post('/checkout/phone/verify', [\App\Http\Controllers\CheckoutPhoneController::class, 'verify'])->middleware('throttle:20,10')->name('checkout.phone.verify');
+Route::post('/checkout/lead', [CheckoutController::class, 'lead'])->middleware('throttle:30,1,post-checkout-lead')->name('checkout.lead');
+Route::post('/checkout/phone/send', [\App\Http\Controllers\CheckoutPhoneController::class, 'send'])->middleware('throttle:12,10,post-checkout-phone-send')->name('checkout.phone.send');
+Route::post('/checkout/phone/verify', [\App\Http\Controllers\CheckoutPhoneController::class, 'verify'])->middleware('throttle:20,10,post-checkout-phone-verify')->name('checkout.phone.verify');
 Route::get('/checkout/success/{order}', [CheckoutController::class, 'success'])->name('checkout.success');
 Route::post('/buy-now', [CheckoutController::class, 'buyNow'])->name('checkout.buy-now');
 
 // Guest Order Tracking
 Route::get('/track-order', [CheckoutController::class, 'guestTrackForm'])->name('guest.order.track.form');
-Route::post('/track-order', [CheckoutController::class, 'guestTrackLookup'])->middleware('throttle:10,1')->name('guest.order.track.lookup');
+Route::post('/track-order', [CheckoutController::class, 'guestTrackLookup'])->middleware('throttle:10,1,post-track-order')->name('guest.order.track.lookup');
 Route::get('/track-order/{order_number}/{token}', [CheckoutController::class, 'guestTrack'])->name('guest.order.track');
 
 Route::middleware('auth')->group(function () {
 
     // First password for an account just created at checkout (phone only) — see SetPasswordController
-    Route::post('/account/set-password', [\App\Http\Controllers\SetPasswordController::class, 'store'])->middleware('throttle:10,1')->name('account.set-password');
+    Route::post('/account/set-password', [\App\Http\Controllers\SetPasswordController::class, 'store'])->middleware('throttle:10,1,post-account-set-password')->name('account.set-password');
 
     // Orders
     Route::get('/orders', [OrderController::class, 'index'])->name('orders.index');
     Route::get('/orders/{order}', [OrderController::class, 'show'])->name('orders.show');
     Route::post('/orders/{order}/cancel', [OrderController::class, 'cancel'])->name('orders.cancel');
-    Route::post('/orders/{order}/reorder', [OrderController::class, 'reorder'])->middleware('throttle:10,1')->name('orders.reorder');
+    Route::post('/orders/{order}/reorder', [OrderController::class, 'reorder'])->middleware('throttle:10,1,post-orders-order-reorder')->name('orders.reorder');
     Route::get('/orders/{order}/download/{item}', [OrderController::class, 'download'])->name('orders.download');
 
     // Return requests
@@ -295,7 +297,7 @@ Route::middleware('auth')->group(function () {
         // App\Http\Controllers\TwoFactorController's docblock).
         Route::prefix('two-factor')->name('two-factor.')->group(function () {
             Route::get('/', [AccountTwoFactorController::class, 'show'])->name('show');
-            Route::post('/confirm', [AccountTwoFactorController::class, 'confirm'])->middleware('throttle:10,1')->name('confirm');
+            Route::post('/confirm', [AccountTwoFactorController::class, 'confirm'])->middleware('throttle:10,1,post-confirm')->name('confirm');
             Route::post('/disable', [AccountTwoFactorController::class, 'disable'])->name('disable');
             Route::post('/recovery-codes', [AccountTwoFactorController::class, 'regenerateRecoveryCodes'])->name('recovery-codes');
         });
@@ -321,7 +323,7 @@ Route::middleware('auth')->group(function () {
         // Two-factor authentication — opt-in, same reasoning as the customer account version.
         Route::prefix('two-factor')->name('two-factor.')->group(function () {
             Route::get('/', [SellerTwoFactorController::class, 'show'])->name('show');
-            Route::post('/confirm', [SellerTwoFactorController::class, 'confirm'])->middleware('throttle:10,1')->name('confirm');
+            Route::post('/confirm', [SellerTwoFactorController::class, 'confirm'])->middleware('throttle:10,1,post-confirm-2')->name('confirm');
             Route::post('/disable', [SellerTwoFactorController::class, 'disable'])->name('disable');
             Route::post('/recovery-codes', [SellerTwoFactorController::class, 'regenerateRecoveryCodes'])->name('recovery-codes');
         });
@@ -332,7 +334,7 @@ Route::middleware('auth')->group(function () {
     // the "must have 2FA" check that AdminMiddleware enforces once enabled.
     Route::prefix('admin/two-factor')->name('admin.two-factor.')->group(function () {
         Route::get('/', [AdminTwoFactorController::class, 'show'])->name('show');
-        Route::post('/confirm', [AdminTwoFactorController::class, 'confirm'])->middleware('throttle:10,1')->name('confirm');
+        Route::post('/confirm', [AdminTwoFactorController::class, 'confirm'])->middleware('throttle:10,1,post-confirm-3')->name('confirm');
         Route::post('/disable', [AdminTwoFactorController::class, 'disable'])->name('disable');
         Route::post('/recovery-codes', [AdminTwoFactorController::class, 'regenerateRecoveryCodes'])->name('recovery-codes');
     });
@@ -561,14 +563,14 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
             Route::get('/', [CrmDashboardController::class, 'index'])->name('dashboard');
             Route::get('analytics', [CrmDashboardController::class, 'analytics'])->name('analytics');
             Route::get('contacts', [CrmContactController::class, 'index'])->name('contacts.index');
-            Route::get('contacts/export', [CrmContactController::class, 'export'])->middleware('throttle:10,1')->name('contacts.export');
+            Route::get('contacts/export', [CrmContactController::class, 'export'])->middleware('throttle:10,1,get-contacts-export')->name('contacts.export');
             Route::get('contacts/{contact}', [CrmContactController::class, 'show'])->whereNumber('contact')->name('contacts.show');
             Route::get('leads', [CrmLeadController::class, 'index'])->name('leads.index');
             Route::get('leads/{lead}', [CrmLeadController::class, 'show'])->whereNumber('lead')->name('leads.show');
             Route::get('tasks', [CrmTaskController::class, 'index'])->name('tasks.index');
             Route::get('segments', [CrmSegmentController::class, 'index'])->name('segments.index');
             Route::get('segments/{segment}', [CrmSegmentController::class, 'show'])->whereNumber('segment')->name('segments.show');
-            Route::get('segments/{segment}/export', [CrmSegmentController::class, 'export'])->middleware('throttle:10,1')->whereNumber('segment')->name('segments.export');
+            Route::get('segments/{segment}/export', [CrmSegmentController::class, 'export'])->middleware('throttle:10,1,get-segments-segment-export')->whereNumber('segment')->name('segments.export');
         });
 
         Route::middleware('permission:crm.manage')->group(function () {
@@ -596,7 +598,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
             Route::delete('tasks/{task}', [CrmTaskController::class, 'destroy'])->name('tasks.destroy');
 
             Route::get('segments/create', [CrmSegmentController::class, 'create'])->name('segments.create');
-            Route::post('segments/preview', [CrmSegmentController::class, 'preview'])->middleware('throttle:60,1')->name('segments.preview');
+            Route::post('segments/preview', [CrmSegmentController::class, 'preview'])->middleware('throttle:60,1,post-segments-preview')->name('segments.preview');
             Route::post('segments/presets', [CrmSegmentController::class, 'installPresets'])->name('segments.presets');
             Route::post('segments', [CrmSegmentController::class, 'store'])->name('segments.store');
             Route::get('segments/{segment}/edit', [CrmSegmentController::class, 'edit'])->whereNumber('segment')->name('segments.edit');
@@ -605,7 +607,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
 
             Route::get('settings', [CrmDashboardController::class, 'settings'])->name('settings');
             Route::post('settings', [CrmDashboardController::class, 'saveSettings'])->name('settings.save');
-            Route::post('settings/sync', [CrmDashboardController::class, 'sync'])->middleware('throttle:3,1')->name('settings.sync');
+            Route::post('settings/sync', [CrmDashboardController::class, 'sync'])->middleware('throttle:3,1,post-settings-sync')->name('settings.sync');
             Route::post('tags', [CrmDashboardController::class, 'saveTag'])->name('tags.store');
             Route::put('tags/{tag}', [CrmDashboardController::class, 'saveTag'])->name('tags.update');
             Route::delete('tags/{tag}', [CrmDashboardController::class, 'deleteTag'])->name('tags.destroy');
@@ -638,8 +640,13 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     // Incomplete checkouts (phone entered, no order) — call / WhatsApp / SMS follow-up
     Route::get('checkout-leads', [\App\Http\Controllers\Admin\CheckoutLeadController::class, 'index'])->name('checkout-leads.index');
     Route::patch('checkout-leads/{lead}', [\App\Http\Controllers\Admin\CheckoutLeadController::class, 'update'])->name('checkout-leads.update');
-    Route::post('checkout-leads/{lead}/sms', [\App\Http\Controllers\Admin\CheckoutLeadController::class, 'sms'])->middleware('throttle:20,1')->name('checkout-leads.sms');
+    Route::post('checkout-leads/{lead}/sms', [\App\Http\Controllers\Admin\CheckoutLeadController::class, 'sms'])->middleware('throttle:20,1,post-checkout-leads-lead-sms')->name('checkout-leads.sms');
     Route::post('checkout-leads/settings', [\App\Http\Controllers\Admin\CheckoutLeadController::class, 'settings'])->name('checkout-leads.settings');
+
+    // "Notify me when it's back" requests
+    Route::get('stock-alerts', [\App\Http\Controllers\Admin\StockAlertController::class, 'index'])->name('stock-alerts.index');
+    Route::post('stock-alerts/{product}/notified', [\App\Http\Controllers\Admin\StockAlertController::class, 'notified'])->name('stock-alerts.notified');
+    Route::delete('stock-alerts/{alert}', [\App\Http\Controllers\Admin\StockAlertController::class, 'destroy'])->name('stock-alerts.destroy');
 
     // Custom invoices / quotations / receipts written by hand (no order, no stock change)
     Route::get('custom-invoices/lookup', [\App\Http\Controllers\Admin\CustomInvoiceController::class, 'lookup'])->name('custom-invoices.lookup');
@@ -809,4 +816,4 @@ require __DIR__.'/auth.php';
 // adding another bare single-segment route (or another require) below this one WOULD get
 // shadowed by it, so nothing else belongs after this in the file.
 Route::get('/{landingPage:slug}', [LandingPageController::class, 'show'])->name('landing.show');
-Route::post('/{landingPage:slug}', [LandingPageController::class, 'order'])->middleware('throttle:10,1')->name('landing.order');
+Route::post('/{landingPage:slug}', [LandingPageController::class, 'order'])->middleware('throttle:10,1,post-landingpage-slug')->name('landing.order');

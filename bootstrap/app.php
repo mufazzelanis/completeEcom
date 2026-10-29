@@ -101,6 +101,10 @@ return Application::configure(basePath: dirname(__DIR__))
             \App\Models\CheckoutLead::whereIn('status', ['open', 'contacted'])->where('last_activity_at', '<', now()->subDays(30))->delete();
             \App\Models\CheckoutLead::whereIn('status', ['recovered', 'dismissed'])->where('updated_at', '<', now()->subDays(60))->delete();
         })->name('checkout-leads:prune')->dailyAt('03:30');
+        // "Notify me when it's back": SMS the waiting shoppers once a product is restocked (daytime only)
+        $schedule->command('stock-alerts:send')->everyTenMinutes()->between('09:00', '21:30')->timezone('Asia/Dhaka')->withoutOverlapping();
+        $schedule->call(fn () => \App\Models\StockAlert::where('status', '!=', 'waiting')->where('updated_at', '<', now()->subDays(90))->delete())
+            ->name('stock-alerts:prune')->weekly();
 
         $schedule->command('reviews:send-requests')->hourly()->between('10:00', '20:00')->timezone('Asia/Dhaka')->withoutOverlapping();
     })->create();

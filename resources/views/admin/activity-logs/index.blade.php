@@ -84,7 +84,8 @@
             <select name="event_type" class="border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
                 <option value="">All Events</option>
                 @foreach($eventTypes as $e)
-                <option value="{{ $e }}" @selected(request('event_type') === $e)>{{ $e }}</option>
+                @php [$eLabel, $eIcon] = \App\Models\ActivityLog::eventMeta($e); @endphp
+                <option value="{{ $e }}" @selected(request('event_type') === $e)>{{ $eIcon }} {{ $eLabel }}</option>
                 @endforeach
             </select>
         </div>

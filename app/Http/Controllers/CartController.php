@@ -103,6 +103,52 @@ class CartController extends Controller
         ));
     }
 
+    /**
+     * "Add all to cart" on a product page's Frequently Bought Together box: one of each picked
+     * product, in one request. Same rules as add(): active, in stock, and simple products only
+     * (anything that needs a size/colour choice is skipped — the box never offers those anyway).
+     */
+    public function addMany(Request $request)
+    {
+        $data = $request->validate(['product_ids' => 'required|array|min:1|max:5', 'product_ids.*' => 'integer']);
+        $products = Product::active()->whereIn('id', array_unique($data['product_ids']))->get();
+
+        $added = [];
+        foreach ($products as $product) {
+            if ($product->isVariable() || $product->available_stock < 1) {
+                continue;
+            }
+            $line = $this->getCartQuery()->where('product_id', $product->id)->whereNull('product_variant_combination_id')->first();
+            if ($line) {
+                if ($line->quantity + 1 > $product->available_stock) {
+                    $added[] = $product; // already in the cart at the max — counts as "in your cart"
+                    continue;
+                }
+                $line->increment('quantity');
+            } else {
+                Cart::create([
+                    'user_id' => auth()->id(),
+                    'session_id' => auth()->check() ? null : session()->getId(),
+                    'product_id' => $product->id,
+                    'quantity' => 1,
+                ]);
+            }
+            $added[] = $product;
+        }
+        session()->forget('buy_now');
+
+        if ($added) {
+            ActivityLogger::log('cart.add', 'Added ' . count($added) . ' products together: ' . collect($added)->pluck('name')->implode(', '), $added[0], ['product_ids' => collect($added)->pluck('id')->all()]);
+        }
+
+        return response()->json([
+            'status' => $added ? 'added' : 'error',
+            'message' => $added ? count($added) . ' items added to your cart' : 'Sorry — these items just went out of stock.',
+            'cart_count' => (int) $this->getCartQuery()->sum('quantity'),
+            'items' => collect($added)->map(fn ($p) => ['item_id' => (string) $p->id, 'item_name' => $p->name, 'price' => (float) $p->final_price, 'quantity' => 1])->values(),
+        ], $added ? 200 : 422);
+    }
+
     public function add(Request $request)
     {
         $request->validate([

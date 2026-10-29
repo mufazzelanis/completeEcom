@@ -1,6 +1,11 @@
 {{-- The part of Admin → Activity Log that changes with the filters — count, cards, active
      filters and the table. Rendered on page load and, on every filter change, fetched on its own
      and swapped in without reloading the page (ActivityLogController returns just this for AJAX). --}}
+<style>
+    /* bot/crawler rows stay readable but step back, so real shoppers' activity stands out */
+    tr.al-bot { opacity: .55; }
+    tr.al-bot:hover { opacity: 1; }
+</style>
 @php
     // card link: filter by this event (keeping every other filter), or clear it if it's the active one
     $eventUrl = fn (string $event) => request()->fullUrlWithQuery(['event_type' => request('event_type') === $event ? null : $event, 'page' => null]);
@@ -34,15 +39,18 @@
         ['order.place', 'Orders Placed'],
         ['order.view', 'Order Views'],
     ] as [$event, $label])
-        @php $active = request('event_type') === $event; $isOrder = $event === 'order.place'; @endphp
+        @php $active = request('event_type') === $event; [, $icon, $hex] = \App\Models\ActivityLog::eventMeta($event); @endphp
+        {{-- same colour + icon as that event's badge in the table below, so the cards double as its legend --}}
         <a href="{{ $eventUrl($event) }}" data-al-link title="{{ $active ? 'Show all events again' : 'Show only ' . strtolower($label) }}"
-           class="block bg-white rounded-2xl shadow-sm p-4 transition hover:shadow-md hover:-translate-y-0.5 {{ $active ? 'ring-2 ring-indigo-500' : ($isOrder ? 'ring-1 ring-emerald-100' : '') }}">
-            <p class="text-xs uppercase tracking-wider font-medium {{ $isOrder ? 'text-emerald-600' : 'text-gray-400' }}">{{ $label }}</p>
+           class="relative overflow-hidden block bg-white rounded-2xl shadow-sm p-4 transition hover:shadow-md hover:-translate-y-0.5"
+           style="border-top: 3px solid {{ $hex }}; {{ $active ? "box-shadow: 0 0 0 2px {$hex};" : '' }}">
+            <span class="absolute -right-3 -top-3 w-14 h-14 rounded-full flex items-end justify-start pl-3 pb-3 text-lg" style="background: {{ $hex }}1a;" aria-hidden="true">{{ $icon }}</span>
+            <p class="text-xs uppercase tracking-wider font-semibold" style="color: {{ $hex }};">{{ $label }}</p>
             <p class="text-[11px] text-gray-400">{{ $periodLabel }}</p>
-            <p class="text-2xl font-bold mt-1 {{ $isOrder ? 'text-emerald-700' : 'text-gray-800' }}">{{ number_format($stats[$event]['count']) }}</p>
+            <p class="text-2xl font-bold mt-1 text-gray-800">{{ number_format($stats[$event]['count']) }}</p>
             @if($stats[$event]['bots'] > 0 && request('traffic') !== 'bots')
                 {{-- so crawler traffic doesn't read as real people --}}
-                <p class="text-[11px] text-gray-400 mt-1">incl. <span class="font-semibold text-orange-500">{{ number_format($stats[$event]['bots']) }}</span> bot/crawler</p>
+                <p class="text-[11px] text-gray-400 mt-1">incl. <span class="font-semibold" style="color:#f97316;">{{ number_format($stats[$event]['bots']) }}</span> bot/crawler</p>
             @endif
         </a>
     @endforeach
@@ -65,7 +73,10 @@
         </thead>
         <tbody class="divide-y divide-gray-50">
             @forelse($logs as $log)
-            <tr class="hover:bg-gray-50 transition">
+            @php [$evLabel, $evIcon, $evHex] = \App\Models\ActivityLog::eventMeta($log->event_type); @endphp
+            {{-- coloured left edge per event; bot rows faded so real shoppers stand out; orders tinted --}}
+            <tr class="hover:bg-gray-50 transition {{ $log->is_bot ? 'al-bot' : '' }}"
+                style="box-shadow: inset 3px 0 0 {{ $evHex }};{{ $log->event_type === 'order.place' && !$log->is_bot ? ' background: rgba(16,185,129,.07);' : '' }}">
                 <td class="px-5 py-3 whitespace-nowrap">
                     {{-- setTimezone — created_at is stored in app.timezone (UTC); shown
                          bare, every timestamp on this page read 6 hours behind an admin's
@@ -105,19 +116,6 @@
                 </td>
                 <td class="px-5 py-3">
                     @php
-                        $color = match(true) {
-                            $log->event_type === 'login' => 'bg-green-100 text-green-700',
-                            $log->event_type === 'logout' => 'bg-gray-100 text-gray-600',
-                            str_starts_with($log->event_type, 'product.') => 'bg-blue-100 text-blue-700',
-                            $log->event_type === 'order.place' => 'bg-emerald-100 text-emerald-700',
-                            str_starts_with($log->event_type, 'order.') => 'bg-purple-100 text-purple-700',
-                            $log->event_type === 'cart.add' => 'bg-orange-100 text-orange-700',
-                            $log->event_type === 'cart.remove' => 'bg-red-100 text-red-700',
-                            str_contains($log->event_type, 'deleted') => 'bg-red-100 text-red-700',
-                            str_contains($log->event_type, 'created') => 'bg-green-100 text-green-700',
-                            str_contains($log->event_type, 'updated') => 'bg-blue-100 text-blue-700',
-                            default => 'bg-gray-100 text-gray-700',
-                        };
                         // Which provider this particular login came through — set only on
                         // social sign-ins (see RecordLoginActivityListener); a plain password
                         // login has no login_provider key and shows no badge at all.
@@ -131,8 +129,10 @@
                             default => null,
                         };
                     @endphp
-                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium {{ $color }}">
-                        {{ $log->event_type }}
+                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold whitespace-nowrap"
+                          style="background: {{ $evHex }}1f; color: {{ $evHex }}; box-shadow: inset 0 0 0 1px {{ $evHex }}40;"
+                          title="{{ $log->event_type }}">
+                        <span aria-hidden="true">{{ $evIcon }}</span>{{ $evLabel }}
                     </span>
                     @if($log->source === 'audit')
                     <span class="block text-[10px] text-gray-400 mt-0.5">admin action</span>
@@ -145,7 +145,7 @@
                             default => 'Bot or crawler',
                         };
                     @endphp
-                    <span class="inline-flex items-center gap-0.5 text-[10px] text-orange-500 font-medium mt-0.5 cursor-help" title="{{ $botWhy }}">🤖 bot/crawler</span>
+                    <span class="inline-flex items-center gap-0.5 text-[10px] font-medium mt-0.5 cursor-help" style="color:#f97316;" title="{{ $botWhy }}">🤖 bot/crawler</span>
                     @elseif($providerBadge)
                     <span class="inline-flex items-center px-1.5 py-0 rounded-full text-[10px] font-medium mt-0.5 {{ $providerBadge[0] }}">via {{ $providerBadge[1] }}</span>
                     @endif

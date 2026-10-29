@@ -136,6 +136,7 @@ $adminNavIndex = [
     ['label' => 'Orders', 'url' => route('admin.orders.index'), 'group' => 'Sales'],
     ['label' => 'Custom Invoices', 'url' => route('admin.custom-invoices.index'), 'group' => 'Sales'],
     ['label' => 'Incomplete Checkouts', 'url' => route('admin.checkout-leads.index'), 'group' => 'Sales'],
+    ['label' => 'Stock Alerts', 'url' => route('admin.stock-alerts.index'), 'group' => 'Sales'],
     ['label' => 'New Custom Invoice', 'url' => route('admin.custom-invoices.create'), 'group' => 'Sales'],
     ['label' => 'Returns', 'url' => route('admin.returns.index'), 'group' => 'Sales'],
     ['label' => 'Payments', 'url' => route('admin.payments.index'), 'group' => 'Sales'],
@@ -482,6 +483,13 @@ $adminNavIndex = [
                 <span class="flex-1">Incomplete Checkouts</span>
                 @php $openLeads = \Illuminate\Support\Facades\Cache::remember('admin_badge:checkout_leads', 120, fn () => \App\Models\CheckoutLead::where('status', 'open')->where('last_activity_at', '<', now()->subMinutes(\App\Models\CheckoutLead::ACTIVE_MINUTES))->where('last_activity_at', '>', now()->subDays(3))->count()); @endphp
                 @if($openLeads > 0)<span class="ml-auto bg-orange-500 text-white text-xs rounded-full px-1.5 py-0.5 font-semibold">{{ $openLeads > 99 ? '99+' : $openLeads }}</span>@endif
+            </a>
+            <a href="{{ route('admin.stock-alerts.index') }}"
+                class="flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium transition {{ request()->routeIs('admin.stock-alerts.*') ? 'bg-orange-600 text-white' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800' }}">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+                <span class="flex-1">Stock Alerts</span>
+                @php $waitingAlerts = \Illuminate\Support\Facades\Cache::remember('admin_badge:stock_alerts', 300, fn () => \App\Models\StockAlert::where('status', 'waiting')->count()); @endphp
+                @if($waitingAlerts > 0)<span class="ml-auto bg-indigo-500 text-white text-xs rounded-full px-1.5 py-0.5 font-semibold">{{ $waitingAlerts > 99 ? '99+' : $waitingAlerts }}</span>@endif
             </a>
             <a href="{{ route('admin.returns.index') }}"
                 class="flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium transition {{ request()->routeIs('admin.returns.*') ? 'bg-orange-600 text-white' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800' }}">

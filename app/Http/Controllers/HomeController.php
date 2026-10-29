@@ -116,6 +116,10 @@ class HomeController extends Controller
             ->take(15)
             ->get());
 
+        // Per visitor (never cached): their own categories' banners first, and what they were looking at
+        $banners = \App\Services\Personalization::orderBanners($banners);
+        $recentlyViewed = \App\Services\Personalization::recentlyViewed(null, 12);
+
         $flashSale = FlashSale::current();
         $flashSaleProducts = collect();
         if ($flashSale) {
@@ -136,6 +140,7 @@ class HomeController extends Controller
             'flashSale',
             'flashSaleProducts',
             'testimonials',
+            'recentlyViewed',
         ));
     }
 

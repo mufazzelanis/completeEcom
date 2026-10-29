@@ -571,6 +571,8 @@
                         'waText' => "Hi, I'd like to order this:\n" . $product->name . ' — ৳' . number_format((float) ($product->isVariable() ? ($priceMin ?? $product->final_price) : $product->final_price)) . "\n" . route('products.show', $product),
                     ])
                     @include('products._sticky-buy')
+                @elseif(!$product->isDigital())
+                    @include('products._notify-stock')
                 @endif
 
                 <!-- Meta -->
@@ -698,8 +700,12 @@
         </div>
     </div>
 
-    <!-- Cross-sells -->
-    @if($product->crossSells->isNotEmpty())
+    <!-- Frequently bought together (bundle box) — the admin's cross-sells + real co-purchases.
+         The plain cross-sell grid below only remains for products the box can't bundle
+         (needs a variant choice / out of stock). -->
+    @if($fbt->isNotEmpty())
+        <div class="mt-10">@include('products._bought-together')</div>
+    @elseif($product->crossSells->isNotEmpty())
         <div class="mt-12">
             <h2 class="text-xl font-bold text-gray-900 mb-6">Frequently Bought Together</h2>
             <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
@@ -733,6 +739,8 @@
             </div>
         </div>
     @endif
+
+    @include('partials.recently-viewed', ['items' => $recentlyViewed, 'class' => 'mt-12'])
 </div>
 
 <script>
