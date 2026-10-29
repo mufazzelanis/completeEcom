@@ -547,7 +547,9 @@
         // All product sections now (was: from the third on) — on a phone every one of them is
         // below the first screen, and their cards were ~40% of the homepage HTML that has to
         // arrive before the hero banner even starts downloading on a slow connection.
-        $lazySection = $sec->source_type !== 'personalized';
+        // Personalized too: the card request carries the visitor's own session, so they still get
+        // their own picks — it was the single biggest block (~73 KB) left in the homepage HTML.
+        $lazySection = true;
     @endphp
     {{-- revealedExtra: how many of the beyond-product_limit "overflow" products are currently
          shown, staged in batches of $step (2 desktop rows' worth) per click instead of all at
@@ -691,8 +693,11 @@ $reviewThemes = [
         <p class="text-gray-500 dark:text-gray-500 text-xs md:text-sm mt-1">Real reviews from real, happy buyers</p>
     </div>
     <div class="relative marquee-pause" style="-webkit-mask-image:linear-gradient(to right, transparent, black 5%, black 95%, transparent); mask-image:linear-gradient(to right, transparent, black 5%, black 95%, transparent);">
-        <div class="flex gap-4 w-max animate-marquee">
-            @foreach($testimonials->concat($testimonials) as $review)
+        {{-- each review once in the HTML; the second copy the seamless loop needs is cloned here
+             in the browser (it used to be sent twice — ~37 KB of duplicate markup) --}}
+        <div class="flex gap-4 w-max animate-marquee"
+             x-data x-init="[...$el.children].forEach(c => { const k = c.cloneNode(true); k.setAttribute('aria-hidden', 'true'); k.querySelectorAll('a,button').forEach(x => x.setAttribute('tabindex', '-1')); $el.appendChild(k); })">
+            @foreach($testimonials as $review)
                 @php $theme = $reviewThemes[$loop->index % count($reviewThemes)]; @endphp
                 <div class="flex-shrink-0 w-72 bg-gradient-to-br {{ $theme['bg'] }} rounded-2xl shadow-md ring-1 {{ $theme['ring'] }} overflow-hidden relative">
                     <div class="h-1.5 bg-gradient-to-r {{ $theme['bar'] }}"></div>
