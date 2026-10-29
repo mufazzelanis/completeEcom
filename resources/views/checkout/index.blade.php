@@ -586,7 +586,10 @@
                         <span>Place Order</span>
                     </button>
 
-                    @include('partials.order-trust', ['class' => 'mt-5'])
+                    @include('partials.order-trust', [
+                        'class' => 'mt-5',
+                        'waText' => "Hi, I'd like to order:\n" . $cartItems->map(fn ($i) => '• ' . $i->product->name . ($i->combination?->label ? ' (' . $i->combination->label . ')' : '') . ' × ' . $i->quantity)->implode("\n") . "\nTotal: ৳" . number_format($base),
+                    ])
 
                     <p class="text-xs text-gray-400 text-center mt-3">
                         By placing an order you agree to our Terms &amp; Conditions

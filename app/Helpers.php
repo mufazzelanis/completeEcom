@@ -416,6 +416,34 @@ if (!function_exists('wrap_branded_email')) {
     }
 }
 
+if (!function_exists('whatsapp_chat_url')) {
+    /**
+     * Link that opens a WhatsApp chat with the shop, with $text already typed — built from
+     * Settings → Social → WhatsApp (Chat Link), else the company phone. Null when neither is
+     * set. Lets the storefront offer "order on WhatsApp" without printing the number on the page.
+     */
+    function whatsapp_chat_url(?string $text = null): ?string
+    {
+        $digits = null;
+        $link = trim((string) setting('whatsapp_link', ''));
+        if ($link !== '') {
+            if (preg_match('~wa\.me/\+?(\d{8,15})~', $link, $m) || preg_match('~[?&]phone=\+?(\d{8,15})~', $link, $m)) {
+                $digits = $m[1];
+            } elseif (filter_var($link, FILTER_VALIDATE_URL)) {
+                return $link; // some other chat link (e.g. a wa.me/message/… short link) — use as is
+            }
+        }
+        if (!$digits && ($phone = preg_replace('/\D/', '', (string) setting('company_phone')))) {
+            $digits = str_starts_with($phone, '01') ? '88' . $phone : $phone;
+        }
+        if (!$digits) {
+            return null;
+        }
+
+        return 'https://wa.me/' . $digits . ($text ? '?text=' . rawurlencode($text) : '');
+    }
+}
+
 if (!function_exists('email_accent_color')) {
     /** Brand colour for emails: Settings → email accent, else the site's primary colour. */
     function email_accent_color(): string
