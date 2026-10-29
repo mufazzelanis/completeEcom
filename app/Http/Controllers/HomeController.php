@@ -80,16 +80,7 @@ class HomeController extends Controller
 
         // "Just For You" reuses the New Arrivals section's overflow (whatever comes after
         // what that section itself displays) so the two blocks never repeat products.
-        $newArrivalsEntry = $homeSections->first(fn ($entry) => $entry['section']->source_type === 'new_arrivals');
-        $justForYou = collect();
-        if ($newArrivalsEntry) {
-            $justForYou = $this->remember('just_for_you', fn () => Product::with('category', 'brand', 'reviews', 'activeFlashSaleProduct')
-                ->active()
-                ->latest()
-                ->skip($newArrivalsEntry['section']->product_limit)
-                ->take(10)
-                ->get());
-        }
+        $justForYou = $this->justForYouProducts($homeSections);
 
         $banners = $this->remember('banners', fn () => Banner::active()
             ->position('hero')
@@ -142,6 +133,32 @@ class HomeController extends Controller
             'testimonials',
             'recentlyViewed',
         ));
+    }
+
+    /** "Just For You" reuses the New Arrivals section's overflow, so the two blocks never repeat products. */
+    private function justForYouProducts($homeSections = null)
+    {
+        $newArrivals = $homeSections
+            ? $homeSections->first(fn ($entry) => $entry['section']->source_type === 'new_arrivals')['section'] ?? null
+            : HomeSection::where('is_active', true)->where('source_type', 'new_arrivals')->orderBy('sort_order')->first();
+        if (!$newArrivals) {
+            return collect();
+        }
+
+        return $this->remember('just_for_you', fn () => Product::with('category', 'brand', 'reviews', 'activeFlashSaleProduct')
+            ->active()
+            ->latest()
+            ->skip($newArrivals->product_limit)
+            ->take(10)
+            ->get());
+    }
+
+    /** "Just For You" cards, fetched as the visitor scrolls near the bottom of the homepage. */
+    public function justForYou()
+    {
+        return response()->json([
+            'html' => $this->justForYouProducts()->map(fn ($product) => view('partials.product-card', ['product' => $product])->render())->implode(''),
+        ])->header('X-Robots-Tag', 'noindex');
     }
 
     /**

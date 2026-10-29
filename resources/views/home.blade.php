@@ -544,7 +544,10 @@
         // was the main source of PageSpeed's Total Blocking Time on phones. Google renders
         // IntersectionObserver lazy-loading, so these products stay visible to it. Personalized
         // sections differ per visitor and stay server-rendered.
-        $lazySection = $loop->index >= 2 && $sec->source_type !== 'personalized';
+        // All product sections now (was: from the third on) — on a phone every one of them is
+        // below the first screen, and their cards were ~40% of the homepage HTML that has to
+        // arrive before the hero banner even starts downloading on a slow connection.
+        $lazySection = $sec->source_type !== 'personalized';
     @endphp
     {{-- revealedExtra: how many of the beyond-product_limit "overflow" products are currently
          shown, staged in batches of $step (2 desktop rows' worth) per click instead of all at
@@ -810,9 +813,22 @@ $reviewThemes = [
             <h2 class="text-lg font-extrabold text-gray-900 px-6">{{ setting('just_for_you_title', 'Just For You') }}</h2>
             <div class="h-px bg-gray-200 flex-1"></div>
         </div>
-        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 reveal-group">
+        {{-- cards arrive as the visitor scrolls near (same as the product sections above) — the
+             bottom of the page was 10 full product cards in the initial HTML --}}
+        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3" data-track-list="Home: Just for you"
+             x-data="{ init() {
+                if (!this.$el.querySelector('[data-skeleton]')) return;
+                const io = new IntersectionObserver((entries) => {
+                    if (!entries.some(e => e.isIntersecting)) return;
+                    io.disconnect();
+                    fetch('{{ route('home.just-for-you') }}', { headers: { 'Accept': 'application/json' } })
+                        .then(r => r.json()).then(d => { this.$el.innerHTML = d.html; })
+                        .catch(() => { this.$el.innerHTML = ''; });
+                }, { rootMargin: '800px 0px' });
+                io.observe(this.$el);
+             } }">
             @foreach($justForYou as $product)
-                @include('partials.product-card', ['product' => $product])
+                <div data-skeleton class="rounded-xl bg-gray-100 dark:bg-gray-800" style="aspect-ratio: 3 / 5"></div>
             @endforeach
         </div>
         <div class="text-center mt-6">

@@ -236,39 +236,7 @@ $pageTwitterImage = $meta('twitter_image', $pageOgImage);
             document.documentElement.classList.toggle('dark', isDark);
         })();
     </script>
-    @php
-        // Homepage: the CSS it uses (resources/css/critical-home.css, built by
-        // scripts/critical-css.cjs) inline, and the full stylesheet loaded without holding up
-        // the first paint (PageSpeed "render-blocking"). Only when that file was generated for
-        // the stylesheet currently built — otherwise the normal blocking <link>, so a rebuild
-        // without re-running the script can never leave the page unstyled.
-        $criticalCss = null;
-        if (request()->routeIs('home') && is_file($criticalPath = resource_path('css/critical-home.css'))) {
-            $criticalCss = file_get_contents($criticalPath);
-            $appCssUrl = \Illuminate\Support\Facades\Vite::asset('resources/css/app.css');
-            if (!str_contains(strtok($criticalCss, "\n"), basename($appCssUrl))) {
-                $criticalCss = null;
-            }
-        }
-    @endphp
-    @if($criticalCss)
-        <style id="critical-home">{!! $criticalCss !!}</style>
-        {{-- the full stylesheet goes in right here (same place in the cascade, so the brand-colour
-             and theme <style> blocks below still override it), once, without blocking render;
-             Turbo keeps stylesheets across page changes, so other pages find it already loaded --}}
-        <script>
-        (function (d) {
-            var href = @js($appCssUrl);
-            if (d.querySelector('link[rel=stylesheet][href="' + href + '"]')) return;
-            var l = d.createElement('link'); l.rel = 'stylesheet'; l.href = href;
-            var s = d.currentScript; s.parentNode.insertBefore(l, s);
-        })(document);
-        </script>
-        <noscript><link rel="stylesheet" href="{{ $appCssUrl }}"></noscript>
-        @vite(['resources/js/app.js'])
-    @else
-        @vite(['resources/css/app.css', 'resources/js/app.js'])
-    @endif
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
     {{-- Brand Colors (Settings → Branding): the orange / pink / red Tailwind palettes are CSS
          variables (tailwind.config.js), so this one :root block re-themes every button, badge,
          gradient, shadow, hover and dark-mode tint built from them — Primary → orange,
@@ -815,10 +783,16 @@ $navCategories = \App\Models\Category::with(['children' => fn($q) => $q->active(
                 {{-- seen: the panel's contents (sub-category rows, images, icons — ~145 KB across all
                      menus) are only built on the first hover. Before, x-teleport built every menu
                      into the page at startup, even on phones where these menus never show. --}}
-                <div class="relative flex-shrink-0" x-data="{ open: false, seen: false, top: 0, left: 0 }" x-show="{{ $loop->index }} < cutoffIndex" x-cloak>
+                <div class="relative flex-shrink-0" x-data="{ open: false, top: 0, left: 0, panel: '', loading: false,
+                        async load() {
+                            if (this.panel || this.loading) return;
+                            this.loading = true;
+                            try { const r = await fetch('{{ route('nav.panel', $navCat->slug) }}'); if (r.ok) this.panel = await r.text(); } catch (e) {}
+                            this.loading = false;
+                        } }" x-show="{{ $loop->index }} < cutoffIndex" x-cloak>
                     <a href="{{ route('shop.category', $navCat->slug) }}"
                        @mouseenter="
-                            seen = true;
+                            @if($navCat->children->count() > 0) load(); @endif
                             open = true;
                             const r = $el.getBoundingClientRect();
                             top = r.bottom;
@@ -856,37 +830,9 @@ $navCategories = \App\Models\Category::with(['children' => fn($q) => $q->active(
                                  "Shop {{ '$navCat->name' }}" label beneath it — the nav link
                                  you're hovering already says which category this is, so a second
                                  copy of the same name right below it was pure redundancy. --}}
-                            <template x-if="seen"><div>
-                            <div class="h-1 bg-gradient-to-r from-orange-500 via-pink-500 to-orange-400"></div>
-                            <div class="p-1.5 pt-2">
-                                @foreach($navCat->children as $child)
-                                    <a href="{{ route('shop.category', $child->slug) }}"
-                                       class="group flex items-center gap-3 px-2.5 py-2.5 rounded-lg hover:bg-orange-50 dark:hover:bg-orange-500/10 transition-colors duration-150">
-                                        <span class="flex-shrink-0 w-9 h-9 rounded-lg bg-gradient-to-br from-orange-100 to-amber-50 dark:from-orange-500/20 dark:to-amber-500/10 flex items-center justify-center overflow-hidden group-hover:scale-105 transition-transform duration-200">
-                                            @if($child->image)
-                                                <img src="{{ image_thumb($child->image, 96) }}" alt="" width="96" height="96" loading="lazy" decoding="async" class="w-full h-full object-cover">
-                                            @else
-                                                <svg class="w-4 h-4 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><circle cx="7" cy="7" r="1.4" fill="currentColor" stroke="none"/></svg>
-                                            @endif
-                                        </span>
-                                        <span class="flex-1 min-w-0">
-                                            <span class="block text-sm font-medium text-gray-700 dark:text-gray-200 group-hover:text-orange-700 dark:group-hover:text-orange-400 transition-colors truncate">{{ $child->name }}</span>
-                                            @if($child->products_count > 0)
-                                                <span class="block text-[11px] text-gray-400 dark:text-gray-500">{{ $child->products_count }} products</span>
-                                            @endif
-                                        </span>
-                                        <svg class="w-3.5 h-3.5 flex-shrink-0 text-gray-300 dark:text-gray-600 opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 group-hover:text-orange-500 transition-all duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
-                                    </a>
-                                @endforeach
-                            </div>
-                            <div class="p-1.5 pt-0">
-                                <a href="{{ route('shop.category', $navCat->slug) }}"
-                                   class="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg text-xs font-semibold text-orange-600 dark:text-orange-400 bg-orange-50/60 dark:bg-orange-500/10 hover:bg-orange-100 dark:hover:bg-orange-500/20 transition-colors">
-                                    View All {{ $navCat->name }}
-                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
-                                </a>
-                            </div>
-                            </div></template>
+                            {{-- contents fetched on the first hover (partials/storefront/nav-panel) — not in the page HTML --}}
+                            <div x-html="panel"></div>
+                            <div x-show="!panel" class="p-4 space-y-2" aria-hidden="true"><div class="h-9 rounded-lg bg-gray-100 dark:bg-gray-800 animate-pulse"></div><div class="h-9 rounded-lg bg-gray-100 dark:bg-gray-800 animate-pulse"></div></div>
                         </div>
                     </template>
                     @endif

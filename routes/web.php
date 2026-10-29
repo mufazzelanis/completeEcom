@@ -175,6 +175,8 @@ Route::get('/sync', function (\Illuminate\Http\Request $request) {
 // Frontend Routes
 Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::get('/home-sections/{section}/products', [HomeController::class, 'sectionProducts'])->name('home.section-products');
+Route::get('/home/just-for-you', [HomeController::class, 'justForYou'])->name('home.just-for-you');
+Route::get('/nav/panel/{slug}', [\App\Http\Controllers\NavPanelController::class, 'show'])->name('nav.panel');
 Route::get('/shop', [ShopController::class, 'index'])->name('shop.index');
 Route::get('/categories', [ShopController::class, 'categories'])->name('categories.index');
 Route::get('/brands', [ShopController::class, 'brands'])->name('brands.index');
