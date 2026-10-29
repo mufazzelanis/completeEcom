@@ -36,6 +36,12 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // app.js (Alpine + Turbo, ~40 KB): no high-priority <link rel=modulepreload> and a
+        // low-priority <script>, so on a slow phone connection the stylesheet and the hero
+        // banner (the LCP image) get the bandwidth first. A module script never blocks
+        // rendering, so nothing waits on it — it simply arrives a moment later.
+        \Illuminate\Support\Facades\Vite::usePreloadTagAttributes(fn ($src) => str_ends_with($src, '.js') ? false : []);
+        \Illuminate\Support\Facades\Vite::useScriptTagAttributes(['fetchpriority' => 'low']);
 
         // Build every generated URL (links, canonical tags, sitemap, redirects) from APP_URL
         // in production, never from the incoming request's path. On the live host the site

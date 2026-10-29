@@ -85,7 +85,9 @@
             d.head.appendChild(s);
         };
         evs.forEach(function (e) { w.addEventListener(e, load, { passive: true }); });
-        var idle = function () { (w.requestIdleCallback || function (f) { setTimeout(f, 200); })(load, { timeout: 1500 }); };
+        // otherwise 6 s after the page has loaded — almost every visitor touches or scrolls long
+        // before that, and it keeps gtag's ~190 ms of script work out of the page's start-up
+        var idle = function () { setTimeout(load, 6000); };
         if (d.readyState === 'complete') idle(); else w.addEventListener('load', idle);
     })(window, document);
     </script>

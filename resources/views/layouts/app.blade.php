@@ -468,7 +468,9 @@ $pageTwitterImage = $meta('twitter_image', $pageOgImage);
             d.head.appendChild(s);
         };
         evs.forEach(function (e) { w.addEventListener(e, load, { passive: true }); });
-        var idle = function () { (w.requestIdleCallback || function (f) { setTimeout(f, 200); })(load, { timeout: 1500 }); };
+        // otherwise 6 s after the page has loaded — almost every visitor touches or scrolls long
+        // before that, and it keeps gtag's ~190 ms of script work out of the page's start-up
+        var idle = function () { setTimeout(load, 6000); };
         if (d.readyState === 'complete') idle(); else w.addEventListener('load', idle);
     })(window, document);
     </script>
@@ -1482,7 +1484,8 @@ $navCategories = \App\Models\Category::with(['children' => fn($q) => $q->active(
                 @foreach($navCategories as $fc)
                     <a href="{{ route('shop.category', $fc->slug) }}" class="font-semibold text-gray-300 hover:text-white">{{ $fc->name }}</a>
                     @foreach($fc->children as $fcChild)
-                        <a href="{{ route('shop.category', $fcChild->slug) }}" class="text-gray-400 hover:text-gray-200">{{ $fcChild->name }}</a>
+                        {{-- "Health: Food Supplements" for screen readers/Google — two categories can share a name under different parents --}}
+                        <a href="{{ route('shop.category', $fcChild->slug) }}" class="text-gray-400 hover:text-gray-200" aria-label="{{ $fc->name }}: {{ $fcChild->name }}">{{ $fcChild->name }}</a>
                     @endforeach
                 @endforeach
             </div>
