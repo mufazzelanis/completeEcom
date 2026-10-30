@@ -101,13 +101,11 @@
                 </span>
             @endif
 
-            @if($product->available_stock <= 0)
-                <div class="absolute inset-0 bg-black/40 flex items-center justify-center">
-                    <span class="bg-white text-gray-800 text-xs font-bold px-3 py-1.5 rounded-full">SOLD OUT</span>
-                </div>
-            @endif
+            {{-- No "sold out" overlay on cards: every card looks orderable, and stock (with
+                 pre-order / notify-me) is shown on the product page itself. --}}
         </div>
     </a>
+    @php $cardInStock = $product->available_stock > 0; @endphp
 
     {{-- Quick add-to-cart — toggles this product in/out of the cart via AJAX, no page
          reload, so a customer browsing the grid can select several products without
@@ -120,7 +118,7 @@
          anchored to the image's own bottom edge regardless of how tall the card ends up
          being, and it sits outside the <a> above so its tap target doesn't nest inside
          the "go to product" link. --}}
-    @if($product->isSimple() && $product->available_stock > 0)
+    @if($product->isSimple())
         @php
             $quickAddStyle = setting('add_to_cart_button_style', 'icon');
             $addToCartText = setting('add_to_cart_button_text', 'Add to Cart');
@@ -128,6 +126,16 @@
             $checkIconSvg = '<svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>';
         @endphp
         <div class="relative z-10 flex justify-end px-3 -mt-5 pointer-events-none">
+            @unless($cardInStock)
+                {{-- out of stock: same-looking button, opens the product page (stock / pre-order shown there) --}}
+                <a href="{{ route('products.show', $product->slug) }}"
+                   style="background-image: {{ $addToCartGradient }}; color: {{ $addToCartTextColor }};"
+                   class="quick-add-btn pointer-events-auto {{ $quickAddStyle === 'text' ? 'pl-2.5 pr-3.5 h-10' : 'w-10 h-10' }} rounded-full shadow-lg ring-4 ring-white bg-[length:200%_auto] hover:bg-right flex items-center justify-center gap-1 transition-all duration-500 active:scale-90"
+                   title="{{ $addToCartText }}" aria-label="{{ $addToCartText }} — {{ $product->name }}">
+                    <span class="quick-add-icon">{!! $cartIconSvg !!}</span>
+                    @if($quickAddStyle === 'text')<span class="text-[10px] font-bold whitespace-nowrap quick-add-label">{{ $addToCartText }}</span>@endif
+                </a>
+            @else
             <button onclick="toggleCartItem({{ $product->id }}, this)"
                 data-in-cart="{{ $isInCart ? 'true' : 'false' }}"
                 data-product-name="{{ $product->name }}"
@@ -145,6 +153,7 @@
                     <span class="text-[10px] font-bold whitespace-nowrap quick-add-label">{{ $isInCart ? 'Added' : $addToCartText }}</span>
                 @endif
             </button>
+            @endunless
         </div>
     @endif
 
@@ -182,7 +191,7 @@
                 <p class="text-[10px] text-orange-700 mt-1 font-medium">Only {{ $product->available_stock }} left - order soon</p>
             @endif
 
-            @if($product->isVariable() && $product->available_stock > 0)
+            @if($product->isVariable())
                 {{-- Variable products need a color/size picked first — no matrix here
                      on the card, so send the customer to the product page to choose. --}}
                 <a href="{{ route('products.show', $product->slug) }}"
@@ -205,6 +214,15 @@
                         {{ setting('buy_now_button_text', 'Buy Now') }}
                     </button>
                 </form>
+            @else
+                {{-- out of stock: identical button, but it opens the product page — that is
+                     where the customer sees the stock status and can pre-order / get notified --}}
+                <a href="{{ route('products.show', $product->slug) }}"
+                    style="background-image: {{ $orderButtonGradient }}; color: {{ $orderButtonTextColor }};"
+                    class="inline-flex items-center gap-1 bg-[length:200%_auto] hover:bg-right text-[11px] font-bold pl-2 pr-3 py-1 rounded-full shadow-sm hover:shadow-md transition-all duration-500 mt-2">
+                    <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z"/></svg>
+                    {{ setting('buy_now_button_text', 'Buy Now') }}
+                </a>
             @endif
         </div>
     </div>

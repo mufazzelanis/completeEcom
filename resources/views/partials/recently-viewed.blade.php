@@ -62,16 +62,13 @@
                 <a href="{{ route('products.show', $p) }}" class="rv-card">
                     <div class="rv-img">
                         @if($p->image)<img src="{{ image_thumb($p->image, 300) }}" alt="{{ $p->name }}" loading="lazy" decoding="async" width="160" height="160">@endif
-                        @if($off >= 1 && $p->available_stock > 0)<span class="rv-off">-{{ $off }}%</span>@endif
+                        @if($off >= 1)<span class="rv-off">-{{ $off }}%</span>@endif
                     </div>
                     <p class="rv-name">{{ $p->name }}</p>
+                    {{-- Lists always look orderable; stock (and pre-order) is shown on the product page --}}
                     <div class="rv-foot">
-                        @if($p->available_stock > 0)
-                            <span class="rv-price">৳{{ number_format($now) }}</span>
-                            @if($off >= 1)<span class="rv-was">৳{{ number_format($was) }}</span>@endif
-                        @else
-                            <span class="rv-out">Out of stock</span>
-                        @endif
+                        <span class="rv-price">৳{{ number_format($now) }}</span>
+                        @if($off >= 1)<span class="rv-was">৳{{ number_format($was) }}</span>@endif
                     </div>
                 </a>
             @endforeach
