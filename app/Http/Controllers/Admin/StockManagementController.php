@@ -7,6 +7,7 @@ use App\Models\Product;
 use App\Models\StockAdjustment;
 use App\Models\StockReason;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class StockManagementController extends Controller
 {
@@ -15,31 +16,112 @@ class StockManagementController extends Controller
      * all N matching" to bulk-apply across pages) — kept in exactly one place so the two can
      * never quietly drift out of sync with each other.
      */
-    private function filteredProducts(Request $request)
+    /**
+     * Quick stock buckets shown as chips (with live counts) — [label, min, max]; null = open.
+     * "below" (each product's own low_stock_threshold) and "fast" (running out at the current
+     * sales speed) are handled separately in applyStock().
+     */
+    public const STOCK_BUCKETS = [
+        'out'   => ['Out of stock', 0, 0],
+        's1'    => ['Only 1 left', 1, 1],
+        's2'    => ['2 left', 2, 2],
+        's3'    => ['3 left', 3, 3],
+        'low'   => ['1 – 5', 1, 5],
+        'b6'    => ['6 – 10', 6, 10],
+        'b11'   => ['11 – 20', 11, 20],
+        'ok'    => ['More than 20', 21, null],
+    ];
+
+    /** Units sold per product in the last 30 days (cancelled/refunded orders don't count). */
+    private function soldSubquery()
     {
-        $query = Product::with('category')
-            ->orderBy('stock', 'asc');
+        return DB::table('order_items')
+            ->join('orders', 'orders.id', '=', 'order_items.order_id')
+            ->where('orders.created_at', '>=', now()->subDays(30))
+            ->whereNotIn('orders.status', ['cancelled', 'refunded'])
+            ->groupBy('order_items.product_id')
+            ->select('order_items.product_id', DB::raw('SUM(order_items.quantity) as sold_30d'));
+    }
+
+    /** Every filter except the stock one — the chips' counts are computed under these. */
+    private function baseFiltered(Request $request)
+    {
+        $query = Product::query()
+            ->leftJoinSub($this->soldSubquery(), 'sales', 'sales.product_id', '=', 'products.id')
+            ->select('products.*', DB::raw('COALESCE(sales.sold_30d, 0) as sold_30d'));
 
         if ($request->filled('search')) {
-            $q = $request->search;
-            $query->where(function ($qr) use ($q) {
-                $qr->where('name', 'like', "%$q%")
-                   ->orWhere('sku', 'like', "%$q%");
-            });
-        }
-        if ($request->filled('stock_filter')) {
-            match($request->stock_filter) {
-                'out'  => $query->where('stock', 0),
-                'low'  => $query->where('stock', '>', 0)->where('stock', '<=', 5),
-                'ok'   => $query->where('stock', '>', 5),
-                default => null,
-            };
+            $q = '%' . addcslashes(trim($request->search), '%_\\') . '%';
+            $query->where(fn ($qr) => $qr->where('products.name', 'like', $q)->orWhere('products.sku', 'like', $q));
         }
         if ($request->filled('category')) {
-            $query->where('category_id', $request->category);
+            // a top-level category includes its sub-categories
+            $ids = \App\Models\Category::where('parent_id', $request->category)->pluck('id')->push((int) $request->category);
+            $query->where(fn ($qr) => $qr->whereIn('products.category_id', $ids)->orWhereIn('products.subcategory_id', $ids));
+        }
+        if ($request->filled('brand')) {
+            $query->where('products.brand_id', $request->brand);
+        }
+        if ($request->input('status') === 'active') {
+            $query->where('products.is_active', true);
+        } elseif ($request->input('status') === 'inactive') {
+            $query->where('products.is_active', false);
         }
 
         return $query;
+    }
+
+    private function applyStock($query, Request $request)
+    {
+        $bucket = $request->input('stock_filter');
+        if (isset(self::STOCK_BUCKETS[$bucket])) {
+            [, $min, $max] = self::STOCK_BUCKETS[$bucket];
+            $query->where('products.stock', '>=', $min);
+            if ($max !== null) {
+                $query->where('products.stock', '<=', $max);
+            }
+        } elseif ($bucket === 'below') {
+            $query->whereColumn('products.stock', '<=', 'products.low_stock_threshold');
+        } elseif ($bucket === 'fast') {
+            // at the last 30 days' pace this runs out within 14 days (and it does sell)
+            $query->whereRaw('COALESCE(sales.sold_30d, 0) > 0')->whereRaw('products.stock * 30 <= COALESCE(sales.sold_30d, 0) * 14');
+        }
+        // custom range: "exactly 3" is min 3 + max 3
+        if ($request->filled('min') && is_numeric($request->min)) {
+            $query->where('products.stock', '>=', (int) $request->min);
+        }
+        if ($request->filled('max') && is_numeric($request->max)) {
+            $query->where('products.stock', '<=', (int) $request->max);
+        }
+
+        return $query;
+    }
+
+    private function filteredProducts(Request $request)
+    {
+        $query = $this->applyStock($this->baseFiltered($request)->with('category'), $request);
+
+        return match ($request->input('sort')) {
+            'stock_desc' => $query->orderByDesc('products.stock'),
+            'name'       => $query->orderBy('products.name'),
+            'selling'    => $query->orderByDesc('sold_30d')->orderBy('products.stock'),
+            'newest'     => $query->latest('products.created_at'),
+            default      => $query->orderBy('products.stock')->orderBy('products.name'),
+        };
+    }
+
+    /** How many products fall in each chip, under the other filters currently applied. */
+    private function bucketCounts(Request $request): array
+    {
+        $counts = [];
+        foreach (array_keys(self::STOCK_BUCKETS) as $key) {
+            $counts[$key] = $this->applyStock($this->baseFiltered($request), new Request(['stock_filter' => $key]))->count();
+        }
+        $counts['below'] = $this->applyStock($this->baseFiltered($request), new Request(['stock_filter' => 'below']))->count();
+        $counts['fast'] = $this->applyStock($this->baseFiltered($request), new Request(['stock_filter' => 'fast']))->count();
+        $counts['all'] = $this->baseFiltered($request)->count();
+
+        return $counts;
     }
 
     public function index(Request $request)
@@ -51,7 +133,10 @@ class StockManagementController extends Controller
             ->orderBy('sort_order')
             ->get(['id', 'label']);
 
-        return view('admin.stock_management.index', compact('products', 'categories', 'reasons'));
+        $brands = \App\Models\Brand::orderBy('name')->get(['id', 'name']);
+        $counts = $this->bucketCounts($request);
+
+        return view('admin.stock_management.index', compact('products', 'categories', 'reasons', 'brands', 'counts'));
     }
 
     /**
@@ -62,7 +147,7 @@ class StockManagementController extends Controller
     public function ids(Request $request)
     {
         return response()->json([
-            'ids' => $this->filteredProducts($request)->pluck('id'),
+            'ids' => $this->filteredProducts($request)->pluck('products.id'),
         ]);
     }
 

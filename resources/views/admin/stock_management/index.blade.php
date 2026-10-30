@@ -27,28 +27,90 @@
 <div class="mb-4 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-xl text-sm">{{ session('success') }}</div>
 @endif
 
-{{-- Filters --}}
-<div class="bg-white rounded-2xl shadow-sm p-4 mb-4">
-    <form method="GET" class="flex flex-wrap gap-3 items-center">
-        <input type="text" name="search" value="{{ request('search') }}" placeholder="Product name or SKU…"
-            class="border border-gray-200 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 w-56">
-        <select name="stock_filter" class="border border-gray-200 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
-            <option value="">All Stock Levels</option>
-            <option value="out"  {{ request('stock_filter') === 'out'  ? 'selected' : '' }}>Out of Stock (0)</option>
-            <option value="low"  {{ request('stock_filter') === 'low'  ? 'selected' : '' }}>Low Stock (≤5)</option>
-            <option value="ok"   {{ request('stock_filter') === 'ok'   ? 'selected' : '' }}>In Stock (>5)</option>
-        </select>
-        <select name="category" class="border border-gray-200 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
-            <option value="">All Categories</option>
-            @foreach($categories as $cat)
-            <option value="{{ $cat->id }}" {{ request('category') == $cat->id ? 'selected' : '' }}>{{ $cat->name }}</option>
-            @endforeach
-        </select>
+{{-- Filters: one-click stock chips (with how many products each would show, under the other
+     filters) + search / category / brand / status / exact range / sort. Then "Select all N
+     matching" below → one bulk change for the whole filtered list. --}}
+@php
+    $chip = fn ($key) => request()->fullUrlWithQuery(['stock_filter' => request('stock_filter') === $key ? null : $key, 'min' => null, 'max' => null, 'page' => null]);
+    $chipColors = ['out' => '#ef4444', 's1' => '#f97316', 's2' => '#f97316', 's3' => '#f59e0b', 'low' => '#f59e0b', 'b6' => '#eab308', 'b11' => '#84cc16', 'ok' => '#10b981', 'below' => '#e11d48', 'fast' => '#8b5cf6'];
+    $chips = collect(\App\Http\Controllers\Admin\StockManagementController::STOCK_BUCKETS)->map(fn ($b) => $b[0])
+        ->put('below', 'Below its alert level')->put('fast', '🔥 Running out soon');
+    $active = request('stock_filter');
+@endphp
+<div class="bg-white dark:bg-gray-900 rounded-2xl shadow-sm p-4 mb-4 space-y-4">
+    <div class="flex flex-wrap gap-2">
+        <a href="{{ request()->fullUrlWithQuery(['stock_filter' => null, 'min' => null, 'max' => null, 'page' => null]) }}"
+           class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-semibold transition"
+           style="{{ !$active && !request()->filled('min') && !request()->filled('max') ? 'background:#4f46e5;color:#fff' : 'background:#4f46e51a;color:#6366f1' }}">
+            All <span class="text-xs opacity-80">{{ number_format($counts['all']) }}</span>
+        </a>
+        @foreach($chips as $key => $label)
+            @php $c = $chipColors[$key]; $on = $active === $key; @endphp
+            <a href="{{ $chip($key) }}" title="{{ $key === 'fast' ? 'At the last 30 days\' sales speed, these run out within 14 days' : ($key === 'below' ? 'Stock at or below the product\'s own low-stock alert level' : '') }}"
+               class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-semibold transition {{ $counts[$key] ? '' : 'opacity-50' }}"
+               style="{{ $on ? "background:{$c};color:#fff" : "background:{$c}1a;color:{$c}" }}">
+                {{ $label }} <span class="text-xs {{ $on ? 'opacity-90' : 'opacity-80' }}">{{ number_format($counts[$key]) }}</span>
+            </a>
+        @endforeach
+    </div>
+
+    <form method="GET" class="flex flex-wrap gap-3 items-end">
+        @if($active)<input type="hidden" name="stock_filter" value="{{ $active }}">@endif
+        <div>
+            <label class="block text-xs font-medium text-gray-500 uppercase mb-1">Search</label>
+            <input type="text" name="search" value="{{ request('search') }}" placeholder="Product name or SKU…"
+                class="border border-gray-200 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 w-56">
+        </div>
+        <div>
+            <label class="block text-xs font-medium text-gray-500 uppercase mb-1">Stock between</label>
+            <div class="flex items-center gap-1.5">
+                <input type="number" name="min" min="0" value="{{ request('min') }}" placeholder="Min" class="border border-gray-200 rounded-xl px-3 py-2 text-sm w-20 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                <span class="text-gray-400">–</span>
+                <input type="number" name="max" min="0" value="{{ request('max') }}" placeholder="Max" class="border border-gray-200 rounded-xl px-3 py-2 text-sm w-20 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            </div>
+        </div>
+        <div>
+            <label class="block text-xs font-medium text-gray-500 uppercase mb-1">Category</label>
+            <select name="category" class="border border-gray-200 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                <option value="">All Categories</option>
+                @foreach($categories as $cat)
+                <option value="{{ $cat->id }}" {{ request('category') == $cat->id ? 'selected' : '' }}>{{ $cat->name }}</option>
+                @endforeach
+            </select>
+        </div>
+        <div>
+            <label class="block text-xs font-medium text-gray-500 uppercase mb-1">Brand</label>
+            <select name="brand" class="border border-gray-200 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 max-w-[11rem]">
+                <option value="">All Brands</option>
+                @foreach($brands as $brand)
+                <option value="{{ $brand->id }}" {{ request('brand') == $brand->id ? 'selected' : '' }}>{{ $brand->name }}</option>
+                @endforeach
+            </select>
+        </div>
+        <div>
+            <label class="block text-xs font-medium text-gray-500 uppercase mb-1">Status</label>
+            <select name="status" class="border border-gray-200 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                <option value="">Any</option>
+                <option value="active" @selected(request('status') === 'active')>Active</option>
+                <option value="inactive" @selected(request('status') === 'inactive')>Hidden</option>
+            </select>
+        </div>
+        <div>
+            <label class="block text-xs font-medium text-gray-500 uppercase mb-1">Sort</label>
+            <select name="sort" class="border border-gray-200 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                <option value="">Lowest stock first</option>
+                <option value="stock_desc" @selected(request('sort') === 'stock_desc')>Highest stock first</option>
+                <option value="selling" @selected(request('sort') === 'selling')>Best selling (30 days)</option>
+                <option value="name" @selected(request('sort') === 'name')>Name A–Z</option>
+                <option value="newest" @selected(request('sort') === 'newest')>Newest</option>
+            </select>
+        </div>
         <button type="submit" class="bg-indigo-600 text-white px-4 py-2 rounded-xl text-sm hover:bg-indigo-700 transition">Filter</button>
-        @if(request()->hasAny(['search','stock_filter','category']))
+        @if(request()->hasAny(['search','stock_filter','category','brand','status','sort','min','max']))
         <a href="{{ route('admin.stock-management.index') }}" class="px-4 py-2 border border-gray-200 rounded-xl text-sm text-gray-600 hover:bg-gray-50 transition">Clear</a>
         @endif
     </form>
+    <p class="text-xs text-gray-400">Tip: pick a filter, then <strong>Select all {{ number_format($products->total()) }} matching</strong> below and apply one change to all of them at once — e.g. everything with 1–3 left → increase by 20.</p>
 </div>
 
 <div x-data="{
@@ -136,6 +198,7 @@
                     <th class="px-6 py-3 text-left">Product</th>
                     <th class="px-6 py-3 text-left">SKU</th>
                     <th class="px-6 py-3 text-center w-28">Current</th>
+                    <th class="px-6 py-3 text-center w-24" title="Units sold in the last 30 days (cancelled/refunded orders not counted)">Sold 30d</th>
                     <th class="px-6 py-3 text-center w-36">New Stock</th>
                     <th class="px-6 py-3 text-left">Reason</th>
                     <th class="px-6 py-3 text-right w-24">Quick Set</th>
@@ -165,6 +228,18 @@
                         @elseif($product->stock <= 5)
                         <span class="ml-1 text-xs bg-orange-100 text-orange-700 px-1.5 py-0.5 rounded-full">Low</span>
                         @endif
+                        @if(!$product->is_active)<span class="block text-[10px] text-gray-400">hidden</span>@endif
+                    </td>
+                    <td class="px-6 py-3 text-center">
+                        @php
+                            $sold = (int) $product->sold_30d;
+                            $daysLeft = $sold > 0 ? (int) floor($product->stock / ($sold / 30)) : null;
+                        @endphp
+                        <span class="text-sm font-semibold {{ $sold ? 'text-gray-900 dark:text-gray-100' : 'text-gray-300' }}">{{ $sold }}</span>
+                        @if($daysLeft !== null)
+                            <span class="block text-[11px] font-medium" style="color: {{ $daysLeft <= 7 ? '#dc2626' : ($daysLeft <= 14 ? '#d97706' : '#6b7280') }};"
+                                  title="At this pace">~{{ $daysLeft }} {{ \Illuminate\Support\Str::plural('day', $daysLeft) }} left</span>
+                        @endif
                     </td>
                     <td class="px-6 py-3 text-center">
                         <input type="number" name="products[{{ $index }}][stock]" min="0"
@@ -186,7 +261,7 @@
                     </td>
                 </tr>
                 @empty
-                <tr><td colspan="7" class="px-6 py-12 text-center text-gray-400 text-sm">No products found.</td></tr>
+                <tr><td colspan="8" class="px-6 py-12 text-center text-gray-400 text-sm">No products found.</td></tr>
                 @endforelse
             </tbody>
         </table>
