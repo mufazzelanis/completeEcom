@@ -88,6 +88,40 @@ class CheckoutController extends Controller
         return redirect()->route('checkout.index');
     }
 
+    /**
+     * The product page's pre-order sheet (products/_preorder.blade.php): details + bKash/Nagad
+     * advance in one form. Sets up the pre-order exactly like preorder() and then places it
+     * through store(), so every rule (phone check, fraud guard, emails, stock) is the same as
+     * at checkout. A problem sends the customer back to the product page, where the sheet
+     * reopens (old input `_po_sheet`) showing what to fix.
+     */
+    public function placePreorder(Request $request)
+    {
+        $request->validate([
+            'product_id' => 'required|exists:products,id',
+            'quantity' => 'required|integer|min:1|max:10',
+            'zone' => 'nullable|in:dhaka,outside_dhaka',
+        ]);
+        $product = Product::findOrFail($request->product_id);
+        if (! $product->canPreorder()) {
+            return back()->with('error', $product->available_stock > 0 ? 'Good news — this is in stock, you can order it normally.' : 'Pre-orders aren\'t available for this product.');
+        }
+
+        $zone = ShippingCalculator::usesZones() ? ($request->input('zone') ?: ShippingCalculator::ZONE_DHAKA) : $request->input('zone');
+        session(['buy_now' => ['product_id' => $product->id, 'variant_combination_id' => null, 'quantity' => (int) $request->quantity, 'preorder' => true, 'zone' => $zone]]);
+        $request->merge(['shipping_zone' => $zone]);
+
+        try {
+            $response = $this->store($request);
+        } finally {
+            // placed → store() already cleared it; not placed → don't leave a pre-order
+            // waiting in the session to hijack the customer's next normal checkout
+            session()->forget('buy_now');
+        }
+
+        return $response;
+    }
+
     /** A pre-order's advance: the area's delivery charge from Settings → Shipping (free-delivery threshold ignored). */
     public static function preorderAdvanceBase(?string $zone): float
     {
@@ -194,7 +228,8 @@ class CheckoutController extends Controller
             return redirect()->route('cart.index')->with('error', 'Your cart is empty.');
         }
         // the admin switched one of these to "out of stock" after it went into the cart
-        if ($blocked = $cartItems->first(fn ($item) => $item->product?->marked_out_of_stock)) {
+        // (a pre-order is exactly how a switched-off product is still sold — never blocked here)
+        if (! $this->isPreorder() && $blocked = $cartItems->first(fn ($item) => $item->product?->marked_out_of_stock)) {
             return redirect()->route('cart.index')->with('error', '"' . $blocked->product->name . '" is currently out of stock — please remove it from your cart to continue.');
         }
 
@@ -409,7 +444,8 @@ class CheckoutController extends Controller
             return redirect()->route('cart.index')->with('error', 'Your cart is empty.');
         }
         // the admin switched one of these to "out of stock" after it went into the cart
-        if ($blocked = $cartItems->first(fn ($item) => $item->product?->marked_out_of_stock)) {
+        // (a pre-order is exactly how a switched-off product is still sold — never blocked here)
+        if (! $this->isPreorder() && $blocked = $cartItems->first(fn ($item) => $item->product?->marked_out_of_stock)) {
             return redirect()->route('cart.index')->with('error', '"' . $blocked->product->name . '" is currently out of stock — please remove it from your cart to continue.');
         }
 

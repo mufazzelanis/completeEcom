@@ -221,6 +221,7 @@ Route::post('/checkout/phone/verify', [\App\Http\Controllers\CheckoutPhoneContro
 Route::get('/checkout/success/{order}', [CheckoutController::class, 'success'])->name('checkout.success');
 Route::post('/buy-now', [CheckoutController::class, 'buyNow'])->name('checkout.buy-now');
 Route::post('/preorder', [CheckoutController::class, 'preorder'])->middleware('throttle:20,1,post-preorder')->name('checkout.preorder');
+Route::post('/preorder/place', [CheckoutController::class, 'placePreorder'])->middleware('throttle:10,1,post-preorder-place')->name('checkout.preorder.place');
 
 // Guest Order Tracking
 Route::get('/track-order', [CheckoutController::class, 'guestTrackForm'])->name('guest.order.track.form');
