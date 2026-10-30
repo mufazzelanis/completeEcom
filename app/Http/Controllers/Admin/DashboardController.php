@@ -8,6 +8,7 @@ use App\Models\OrderItem;
 use App\Models\Product;
 use App\Models\User;
 use App\Models\Category;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class DashboardController extends Controller
@@ -35,7 +36,8 @@ class DashboardController extends Controller
             'out_of_stock'      => Product::where('is_active', true)->where('stock', 0)->count(),
         ];
 
-        $recentOrders = Order::with('user')->latest()->take(10)->get();
+        $recentOrders = $this->recentOrders('all');
+        $orderTabCounts = $this->orderTabCounts();
 
         // Top sellers by actual paid revenue — unit price comes from the live
         // product record, total comes from summed order_items.subtotal, so both
@@ -53,6 +55,49 @@ class DashboardController extends Controller
             ->with('product:id,price,sale_price,image')
             ->get();
 
-        return view('admin.dashboard', compact('stats', 'recentOrders', 'topProducts'));
+        return view('admin.dashboard', compact('stats', 'recentOrders', 'orderTabCounts', 'topProducts'));
+    }
+
+    /** Dashboard "Recent orders" tabs. */
+    public const ORDER_TABS = ['all' => 'All', 'pending' => 'To confirm', 'processing' => 'To ship', 'shipped' => 'On the way', 'today' => 'Today'];
+
+    private function recentOrders(string $tab)
+    {
+        $q = Order::with(['user:id,name', 'items:id,order_id,product_id,product_name,quantity', 'items.product:id,image'])
+            ->withCount('items');
+        match ($tab) {
+            'pending', 'processing', 'shipped' => $q->where('status', $tab),
+            'today' => $q->where('created_at', '>=', now(setting('timezone', 'Asia/Dhaka'))->startOfDay()->utc()),
+            default => null,
+        };
+
+        return $q->latest()->take(8)->get();
+    }
+
+    private function orderTabCounts(): array
+    {
+        $by = Order::whereIn('status', ['pending', 'processing', 'shipped'])->selectRaw('status, COUNT(*) c')->groupBy('status')->pluck('c', 'status');
+
+        return [
+            'all' => null,
+            'pending' => (int) ($by['pending'] ?? 0),
+            'processing' => (int) ($by['processing'] ?? 0),
+            'shipped' => (int) ($by['shipped'] ?? 0),
+            'today' => Order::where('created_at', '>=', now(setting('timezone', 'Asia/Dhaka'))->startOfDay()->utc())->count(),
+        ];
+    }
+
+    /** Tab switch + the 45-second live refresh of the dashboard's recent orders. */
+    public function orders(Request $request)
+    {
+        $tab = array_key_exists($request->tab, self::ORDER_TABS) ? $request->tab : 'all';
+        $orders = $this->recentOrders($tab);
+
+        return response()->json([
+            'html' => view('admin.dashboard._orders', ['orders' => $orders, 'newSince' => (int) $request->since])->render(),
+            'ids' => $orders->pluck('id'),
+            'counts' => $this->orderTabCounts(),
+            'latest' => (int) Order::max('id'),
+        ]);
     }
 }

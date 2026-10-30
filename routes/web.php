@@ -346,6 +346,7 @@ Route::middleware('auth')->group(function () {
 // Admin Routes
 Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(function () {
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('dashboard/orders', [DashboardController::class, 'orders'])->name('dashboard.orders');
 
     // Admin alerts — header bell, sound, and phone push for new orders / subscribers
     Route::prefix('alerts')->name('alerts.')->group(function () {

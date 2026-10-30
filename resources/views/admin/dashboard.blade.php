@@ -186,55 +186,140 @@
 </div>
 
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-    <!-- Recent Orders -->
-    <div class="dash-in lg:col-span-2 bg-white dark:bg-gray-900 rounded-2xl shadow-sm dark:shadow-none ring-1 ring-gray-100 dark:ring-gray-800" style="animation-delay: 220ms">
-        <div class="flex items-center justify-between p-6 border-b border-gray-100 dark:border-gray-800">
-            <h2 class="font-semibold text-gray-800 dark:text-gray-100">Recent Orders</h2>
-            <a href="{{ route('admin.orders.index') }}" class="text-orange-600 dark:text-orange-400 text-sm font-medium hover:text-orange-700 dark:hover:text-orange-300 transition">View All</a>
+    <!-- Recent Orders — live: tabs, one-tap next step, quick view, refreshes every 45s -->
+    <style>
+        .do-tabs { display: flex; gap: .35rem; overflow-x: auto; scrollbar-width: none; padding: .75rem 1.25rem; border-bottom: 1px solid #f1f5f9; }
+        .do-tabs::-webkit-scrollbar { display: none; }
+        .do-tab { flex-shrink: 0; display: inline-flex; align-items: center; gap: .35rem; padding: .35rem .75rem; border-radius: 999px; font-size: .8rem; font-weight: 600; color: #4b5563; background: #f8fafc; border: 1px solid #eef2f7; white-space: nowrap; }
+        .do-tab:hover { border-color: #fdba74; }
+        .do-tab.is-on { background: #111827; border-color: #111827; color: #fff; }
+        .do-tab i { font-style: normal; font-size: .7rem; font-weight: 800; padding: 0 .4rem; border-radius: 999px; background: #fff; color: #111827; min-width: 1.2rem; text-align: center; }
+        .do-tab i.is-hot { background: #f97316; color: #fff; }
+        .do-tab.is-on i { background: rgba(255,255,255,.2); color: #fff; }
+        .do-list { min-height: 12rem; }
+        .do-row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; align-items: center; gap: .85rem; padding: .8rem 1.25rem; border-bottom: 1px solid #f8fafc; cursor: pointer; transition: background-color .15s; }
+        .do-row:last-child { border-bottom: 0; }
+        .do-row:hover { background: #fffaf5; }
+        .do-row.is-open { background: #fff7ed; box-shadow: inset 3px 0 0 #f97316; }
+        .do-row.is-new { animation: doNew 2.5s ease-out; }
+        @keyframes doNew { 0%, 40% { background: #ffedd5; } 100% { background: transparent; } }
+        .do-av { width: 2.4rem; height: 2.4rem; border-radius: 999px; color: #fff; font-weight: 800; font-size: .85rem; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .do-main { min-width: 0; }
+        .do-name { display: flex; align-items: center; gap: .35rem; font-size: .9rem; font-weight: 700; color: #111827; min-width: 0; }
+        .do-tag { flex-shrink: 0; font-size: .6rem; font-weight: 800; padding: .08rem .4rem; border-radius: 999px; letter-spacing: .03em; }
+        .do-meta { font-size: .75rem; color: #9ca3af; margin-top: .1rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .do-num { color: #ea580c; font-weight: 700; }
+        .do-thumbs { display: flex; margin-top: .35rem; }
+        .do-thumbs img, .do-thumbs span { width: 1.5rem; height: 1.5rem; border-radius: .4rem; object-fit: cover; border: 2px solid #fff; background: #f3f4f6; margin-left: -.3rem; font-size: .6rem; font-weight: 700; color: #6b7280; display: inline-flex; align-items: center; justify-content: center; }
+        .do-thumbs > :first-child { margin-left: 0; }
+        .do-side { text-align: right; display: flex; flex-direction: column; align-items: flex-end; gap: .2rem; }
+        .do-total { font-size: .95rem; font-weight: 800; color: #111827; }
+        .do-pay { font-size: .7rem; color: #6b7280; display: inline-flex; align-items: center; gap: .3rem; white-space: nowrap; }
+        .do-dot { width: .45rem; height: .45rem; border-radius: 999px; }
+        .do-acts { display: flex; align-items: center; gap: .4rem; }
+        .do-go { font-size: .75rem; font-weight: 700; padding: .4rem .7rem; border-radius: .65rem; background: #059669; color: #fff; white-space: nowrap; transition: background-color .15s; }
+        .do-go:hover { background: #047857; }
+        .do-go:disabled { opacity: .5; }
+        .do-eye { width: 2rem; height: 2rem; border-radius: .65rem; display: inline-flex; align-items: center; justify-content: center; color: #ea580c; background: #fff7ed; }
+        .do-eye:hover { background: #ffedd5; }
+        .do-empty { text-align: center; padding: 2.5rem 1rem; }
+        .do-live { display: inline-flex; align-items: center; gap: .35rem; font-size: .7rem; font-weight: 700; color: #059669; background: #ecfdf5; padding: .15rem .55rem; border-radius: 999px; }
+        .do-live b { width: .45rem; height: .45rem; border-radius: 999px; background: #10b981; animation: doPulse 1.6s infinite; }
+        @keyframes doPulse { 0% { box-shadow: 0 0 0 0 rgba(16,185,129,.5); } 70% { box-shadow: 0 0 0 6px rgba(16,185,129,0); } 100% { box-shadow: 0 0 0 0 rgba(16,185,129,0); } }
+        .dark .do-tab { background: #1f2937; border-color: #374151; color: #d1d5db; }
+        .dark .do-tab.is-on { background: #f97316; border-color: #f97316; }
+        .dark .do-tab i { background: #111827; color: #e5e7eb; }
+        .dark .do-tabs, .dark .do-row { border-color: #1f2937; }
+        .dark .do-row:hover { background: rgba(249,115,22,.06); }
+        .dark .do-row.is-open { background: rgba(249,115,22,.1); }
+        .dark .do-name, .dark .do-total { color: #f9fafb; }
+        .dark .do-thumbs img, .dark .do-thumbs span { border-color: #111827; background: #1f2937; }
+        @media (max-width: 640px) {
+            .do-row { grid-template-columns: auto minmax(0, 1fr) auto; grid-template-areas: "av main side" "av acts acts"; padding: .8rem 1rem; gap: .5rem .7rem; align-items: start; }
+            .do-av { grid-area: av; width: 2.1rem; height: 2.1rem; }
+            .do-main { grid-area: main; } .do-side { grid-area: side; } .do-acts { grid-area: acts; justify-content: flex-end; }
+            .do-hide-s { display: none; }
+            .do-tabs { padding: .65rem 1rem; }
+        }
+    </style>
+    <script>
+        window.dashOrders = function (cfg) {
+            return withOrderDrawer(cfg, {
+                tab: 'all', counts: cfg.counts, latest: cfg.latest, busy: null, refreshing: false, timer: null,
+                init() {
+                    const m = location.hash.match(/^#order-(\d+)$/);
+                    if (m) this.show(+m[1]);
+                    this.timer = setInterval(() => { if (document.visibilityState === 'visible' && !this.open) this.load(true); }, 45000);
+                    this._onUpdate = () => this.load();
+                    window.addEventListener('order-updated', this._onUpdate);
+                },
+                destroy() { clearInterval(this.timer); window.removeEventListener('order-updated', this._onUpdate); },
+                async load(poll = false) {
+                    if (this.refreshing) return;
+                    this.refreshing = true;
+                    try {
+                        const since = poll ? this.latest : 0;
+                        const r = await fetch(cfg.url + '?tab=' + this.tab + '&since=' + since, { headers: { Accept: 'application/json' } });
+                        if (!r.ok) return;
+                        const d = await r.json();
+                        if (poll && d.latest > this.latest) {
+                            const n = d.latest - this.latest;
+                            ordersListToast(true, '🔔 ' + n + ' new order' + (n > 1 ? 's' : '') + ' just came in');
+                        }
+                        this.$refs.list.innerHTML = d.html;
+                        this.ids = d.ids; this.counts = d.counts; this.latest = Math.max(this.latest, d.latest);
+                    } finally { this.refreshing = false; }
+                },
+                pick(t) { if (t === this.tab) return; this.tab = t; this.load(); },
+                rowClick(e, id) {
+                    const hit = e.target.closest('a, button, input, select, label');
+                    if (hit && e.currentTarget.contains(hit)) return;
+                    this.show(id);
+                },
+                async advance(id, status) {
+                    this.busy = id;
+                    try {
+                        const r = await fetch(cfg.statusUrl.replace('__ID__', id), { method: 'PATCH', headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content }, body: JSON.stringify({ status }) });
+                        if (!r.ok) throw new Error();
+                        ordersListToast(true, '✓ Order moved to ' + ({ processing: 'Confirmed', shipped: 'Shipped', delivered: 'Delivered' })[status]);
+                        await this.load();
+                    } catch (e) { ordersListToast(false, 'Could not update — please try again.'); } finally { this.busy = null; }
+                },
+            });
+        };
+    </script>
+    @include('admin.orders._quickview', ['part' => 'assets'])
+
+    <div class="lg:col-span-2 min-w-0"
+         x-data="dashOrders(@js([
+            'ids' => $recentOrders->pluck('id'),
+            'counts' => $orderTabCounts,
+            'latest' => (int) \App\Models\Order::max('id'),
+            'url' => route('admin.dashboard.orders'),
+            'quickUrl' => route('admin.orders.quick', '__ID__'),
+            'statusUrl' => route('admin.orders.status', '__ID__'),
+         ]))" @keydown.window="key($event)" @keydown.escape.window="close()" @oq-open="show($event.detail)">
+    <div class="dash-in bg-white dark:bg-gray-900 rounded-2xl shadow-sm dark:shadow-none ring-1 ring-gray-100 dark:ring-gray-800 overflow-hidden" style="animation-delay: 220ms">
+        <div class="flex items-center justify-between gap-3 px-5 pt-5 pb-1">
+            <div class="flex items-center gap-2.5">
+                <h2 class="font-semibold text-gray-800 dark:text-gray-100">Recent Orders</h2>
+                <span class="do-live" title="Updates by itself every 45 seconds"><b></b>Live</span>
+            </div>
+            <a href="{{ route('admin.orders.index') }}" class="text-orange-600 dark:text-orange-400 text-sm font-medium hover:text-orange-700 transition">View all →</a>
         </div>
-        <div class="overflow-x-auto">
-            <table class="w-full">
-                <thead>
-                    <tr class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider border-b border-gray-100 dark:border-gray-800">
-                        <th class="px-6 py-3 text-left">Order</th>
-                        <th class="px-6 py-3 text-left">Customer</th>
-                        <th class="px-6 py-3 text-left">Total</th>
-                        <th class="px-6 py-3 text-left">Status</th>
-                        <th class="px-6 py-3 text-left">Payment</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-gray-50 dark:divide-gray-800/60">
-                    @forelse($recentOrders as $order)
-                        @php
-                            $custName = $order->user->name ?? 'Guest';
-                            $avatarPalette = ['bg-blue-500', 'bg-emerald-500', 'bg-violet-500', 'bg-amber-500', 'bg-rose-500', 'bg-cyan-500'];
-                            $avatarColor = $avatarPalette[crc32($custName) % count($avatarPalette)];
-                        @endphp
-                        <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition cursor-pointer" onclick="window.location='{{ route('admin.orders.show', $order->id) }}'">
-                            <td class="px-6 py-4">
-                                <a href="{{ route('admin.orders.show', $order->id) }}" class="font-medium text-orange-600 dark:text-orange-400 text-sm hover:text-orange-700 dark:hover:text-orange-300">{{ $order->order_number }}</a>
-                                <p class="text-xs text-gray-400 dark:text-gray-500">{{ $order->created_at->diffForHumans() }}</p>
-                            </td>
-                            <td class="px-6 py-4">
-                                <div class="flex items-center gap-2.5">
-                                    <span class="w-7 h-7 rounded-full flex items-center justify-center text-white text-[11px] font-bold flex-shrink-0 {{ $avatarColor }}">{{ strtoupper(substr($custName, 0, 1)) }}</span>
-                                    <span class="text-sm text-gray-600 dark:text-gray-300 truncate">{{ $custName }}</span>
-                                </div>
-                            </td>
-                            <td class="px-6 py-4 text-sm font-semibold text-gray-900 dark:text-gray-100">৳{{ number_format($order->total) }}</td>
-                            <td class="px-6 py-4">
-                                <span class="px-2 py-1 rounded-full text-xs font-medium capitalize {{ $order->status_badge }}">{{ $order->status }}</span>
-                            </td>
-                            <td class="px-6 py-4">
-                                <span class="px-2 py-1 rounded-full text-xs font-medium capitalize {{ $order->payment_status_badge }}">{{ $order->payment_status }}</span>
-                            </td>
-                        </tr>
-                    @empty
-                        <tr><td colspan="5" class="px-6 py-10 text-center text-sm text-gray-400 dark:text-gray-500">No orders yet.</td></tr>
-                    @endforelse
-                </tbody>
-            </table>
+        <div class="do-tabs">
+            @foreach(\App\Http\Controllers\Admin\DashboardController::ORDER_TABS as $key => $label)
+                <button type="button" class="do-tab" :class="tab === '{{ $key }}' && 'is-on'" @click="pick('{{ $key }}')">
+                    {{ $label }}
+                    @if($key !== 'all')<i :class="{{ $key === 'pending' ? 'counts.pending > 0' : 'false' }} && 'is-hot'" x-text="counts['{{ $key }}']">{{ $orderTabCounts[$key] }}</i>@endif
+                </button>
+            @endforeach
         </div>
+        <div class="do-list" x-ref="list" :class="refreshing && 'ob-loading'">
+            @include('admin.dashboard._orders', ['orders' => $recentOrders, 'newSince' => 0])
+        </div>
+    </div>
+        @include('admin.orders._quickview', ['part' => 'drawer'])
     </div>
 
     <!-- Top Products -->
