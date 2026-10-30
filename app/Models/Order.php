@@ -12,7 +12,7 @@ class Order extends Model
         'user_id', 'crm_contact_id', 'guest_email', 'guest_token', 'payment_id', 'order_number', 'status', 'subtotal', 'discount', 'shipping', 'tax', 'total',
         'coupon_code', 'payment_method', 'payment_status', 'payment_charge',
         'shipping_name', 'shipping_phone', 'shipping_address', 'shipping_city',
-        'shipping_state', 'shipping_zip', 'shipping_country', 'shipping_zone', 'notes',
+        'shipping_state', 'shipping_zip', 'shipping_country', 'shipping_zone', 'notes', 'admin_note',
         'fraud_score', 'fraud_flags', 'is_fraud_flagged', 'fraud_checked_at',
         'points_awarded_at', 'points_redeemed', 'points_discount_value',
         'landing_page_id', 'landing_page_data',

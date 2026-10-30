@@ -439,6 +439,9 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::resource('orders', AdminOrderController::class)->only(['index', 'show', 'update']);
     Route::delete('orders/{order}', [AdminOrderController::class, 'destroy'])->middleware('permission:orders.delete')->name('orders.destroy');
     Route::patch('orders/{order}/status', [AdminOrderController::class, 'updateStatus'])->name('orders.status');
+    Route::get('orders/{order}/quick', [AdminOrderController::class, 'quick'])->name('orders.quick');
+    Route::patch('orders/{order}/note', [AdminOrderController::class, 'note'])->name('orders.note');
+    Route::post('orders/bulk-status', [AdminOrderController::class, 'bulkStatus'])->name('orders.bulk-status');
     Route::resource('users', AdminUserController::class)->except(['destroy']);
     Route::delete('users/{user}', [AdminUserController::class, 'destroy'])->middleware('permission:users.delete')->name('users.destroy');
     // Roles & Permissions management is itself the privilege-escalation surface —

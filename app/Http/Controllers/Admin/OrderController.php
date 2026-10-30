@@ -15,32 +15,235 @@ use Illuminate\Http\Request;
 
 class OrderController extends Controller
 {
-    public function index(Request $request)
-    {
-        $query = Order::with(['user', 'payment']);
+    public const STATUSES = ['pending', 'processing', 'shipped', 'delivered', 'cancelled', 'refunded'];
 
-        if ($request->filled('status')) {
-            $statuses = explode(',', $request->status);
-            count($statuses) > 1 ? $query->whereIn('status', $statuses) : $query->where('status', $request->status);
-        }
+    private const FILTER_MEMORY = 'admin.orders.filters';
+
+    /** Everything but the status tab — so the tabs can show how many orders each status has. */
+    private function filteredOrders(Request $request)
+    {
+        $query = Order::query();
 
         if ($request->filled('payment_status')) {
             $query->where('payment_status', $request->payment_status);
         }
-
+        if ($request->filled('payment_method')) {
+            $query->where('payment_method', $request->payment_method);
+        }
         if ($request->filled('fraud')) {
             $query->where('is_fraud_flagged', true);
         }
-
-        if ($request->filled('search')) {
-            $query->where('order_number', 'like', '%'.$request->search.'%')
-                ->orWhereHas('user', fn ($q) => $q->where('name', 'like', '%'.$request->search.'%'));
+        if ($request->boolean('preorder')) {
+            $query->where('is_preorder', true);
+        }
+        if ($request->filled('source')) {
+            $query->where('source', $request->source);
         }
 
-        $orders = $query->latest()->paginate(15);
+        // date range — quick ranges or from/to
+        $tz = setting('timezone', 'Asia/Dhaka');
+        $today = now($tz)->startOfDay();
+        [$from, $to] = match ($request->get('range')) {
+            'today' => [$today, null],
+            'yesterday' => [$today->copy()->subDay(), $today],
+            '7d' => [$today->copy()->subDays(6), null],
+            '30d' => [$today->copy()->subDays(29), null],
+            'month' => [$today->copy()->startOfMonth(), null],
+            default => [
+                $request->filled('from') ? \Carbon\Carbon::parse($request->from, $tz)->startOfDay() : null,
+                $request->filled('to') ? \Carbon\Carbon::parse($request->to, $tz)->addDay()->startOfDay() : null,
+            ],
+        };
+        if ($from) {
+            $query->where('created_at', '>=', $from->copy()->utc());
+        }
+        if ($to) {
+            $query->where('created_at', '<', $to->copy()->utc());
+        }
+
+        // Search: order number, customer name, phone (any format: 01711…, +8801711…, 1711…), email
+        if ($request->filled('search')) {
+            $s = trim($request->search);
+            $digits = preg_replace('/\D/', '', $s);
+            $tail = strlen($digits) >= 6 ? substr($digits, -10) : null;
+            $query->where(function ($q) use ($s, $tail) {
+                $q->where('order_number', 'like', "%{$s}%")
+                    ->orWhere('shipping_name', 'like', "%{$s}%")
+                    ->orWhere('guest_email', 'like', "%{$s}%")
+                    ->orWhereHas('user', fn ($u) => $u->where('name', 'like', "%{$s}%")->orWhere('email', 'like', "%{$s}%"));
+                if ($tail) {
+                    $q->orWhere('shipping_phone', 'like', "%{$tail}%");
+                }
+                if (ctype_digit(ltrim($s, '#'))) {
+                    $q->orWhere('id', (int) ltrim($s, '#'));
+                }
+            });
+        }
+
+        return $query;
+    }
+
+    private function applyStatusFilter($query, ?string $status)
+    {
+        if ($status) {
+            $statuses = explode(',', $status);
+            count($statuses) > 1 ? $query->whereIn('status', $statuses) : $query->where('status', $status);
+        }
+
+        return $query;
+    }
+
+    public function index(Request $request)
+    {
+        // Sticky filters: the list comes back as it was left after opening an order, changing a
+        // status, or coming back from the sidebar — until "Clear" (?reset=1).
+        if ($request->boolean('reset')) {
+            session()->forget(self::FILTER_MEMORY);
+
+            return redirect()->route('admin.orders.index');
+        }
+        // any query string at all (even "?status=") is an explicit choice; only a bare URL restores
+        $params = array_filter($request->query(), fn ($v) => $v !== null && $v !== '');
+        if ($request->query()) {
+            $params ? session([self::FILTER_MEMORY => $params]) : session()->forget(self::FILTER_MEMORY);
+        } elseif ($saved = session(self::FILTER_MEMORY)) {
+            return redirect()->route('admin.orders.index', $saved);
+        }
+
+        $base = $this->filteredOrders($request);
+        $statusCounts = (clone $base)->selectRaw('status, COUNT(*) as c')->groupBy('status')->pluck('c', 'status');
+
+        $query = $this->applyStatusFilter(clone $base, $request->status)
+            ->with(['user:id,name,email,phone', 'payment', 'items:id,order_id,product_id,product_name,quantity', 'items.product:id,image'])
+            ->withCount('items');
+
+        match ($request->get('sort')) {
+            'oldest' => $query->oldest(),
+            'total_desc' => $query->orderByDesc('total'),
+            'total_asc' => $query->orderBy('total'),
+            default => $query->latest(),
+        };
+
+        $perPage = in_array((int) $request->per_page, [15, 30, 50, 100], true) ? (int) $request->per_page : 15;
+        $orders = $query->paginate($perPage)->withQueryString();
         $flaggedCount = Order::where('is_fraud_flagged', true)->count();
 
-        return view('admin.orders.index', compact('orders', 'flaggedCount'));
+        // today at a glance
+        $tz = setting('timezone', 'Asia/Dhaka');
+        $todayStart = now($tz)->startOfDay()->utc();
+        $today = Order::where('created_at', '>=', $todayStart)->whereNotIn('status', ['cancelled', 'refunded'])
+            ->selectRaw('COUNT(*) as c, COALESCE(SUM(total),0) as s')->first();
+        $summary = [
+            'today_orders' => (int) $today->c,
+            'today_sales' => (float) $today->s,
+            'pending' => Order::where('status', 'pending')->count(),
+            'to_ship' => Order::where('status', 'processing')->count(),
+            'unverified' => \App\Models\Payment::where('status', 'pending_verification')->count(),
+        ];
+        $paymentMethods = Order::query()->whereNotNull('payment_method')->distinct()->orderBy('payment_method')->pluck('payment_method');
+
+        return view('admin.orders.index', compact('orders', 'flaggedCount', 'statusCounts', 'summary', 'paymentMethods'));
+    }
+
+    /**
+     * The Orders list's quick view (eye icon): customer, their order history across every
+     * order with the same phone/account, courier record, items, money, timeline and actions —
+     * rendered as one panel so the list never has to be left.
+     */
+    public function quick(Order $order)
+    {
+        $order->load(['user', 'items.product:id,name,slug,image', 'payment', 'createdBy:id,name']);
+
+        if (! $order->fraud_checked_at) {
+            $fraud = app(FraudDetectionService::class)->analyze($order);
+            $order->update([
+                'fraud_score' => $fraud['score'],
+                'fraud_flags' => $fraud['flags'],
+                'is_fraud_flagged' => $fraud['score'] >= 50,
+                'fraud_checked_at' => now(),
+            ]);
+            $order->refresh()->load(['user', 'items.product:id,name,slug,image', 'payment', 'createdBy:id,name']);
+            $this->notifyIfFraudFlagged($order, $fraud);
+        }
+
+        // every order from this customer — same account or same phone (last 10 digits)
+        $tail = substr(preg_replace('/\D/', '', (string) $order->shipping_phone), -10);
+        $history = Order::query()
+            ->where(function ($q) use ($order, $tail) {
+                $q->whereRaw('1 = 0');
+                if ($order->user_id) {
+                    $q->orWhere('user_id', $order->user_id);
+                }
+                if (strlen($tail) >= 8) {
+                    $q->orWhere('shipping_phone', 'like', "%{$tail}");
+                }
+            })
+            ->latest()
+            ->get(['id', 'order_number', 'status', 'total', 'created_at']);
+        $stats = [
+            'orders' => $history->count(),
+            'delivered' => $history->where('status', 'delivered')->count(),
+            'cancelled' => $history->whereIn('status', ['cancelled', 'refunded'])->count(),
+            'spent' => (float) $history->where('status', 'delivered')->sum('total'),
+            'first' => $history->last()?->created_at,
+        ];
+        $closed = $stats['delivered'] + $stats['cancelled'];
+        $stats['rate'] = $closed ? (int) round($stats['delivered'] / $closed * 100) : null;
+
+        $timeline = \App\Models\AuditLog::with('user:id,name')
+            ->where('model_type', Order::class)->where('model_id', $order->id)
+            ->latest()->limit(15)->get(['id', 'user_id', 'action', 'description', 'new_values', 'created_at']);
+
+        $courierCheck = $order->shipping_phone
+            ? app(CourierFraudCheckService::class)->lastCheck($order->shipping_phone)
+            : null;
+
+        ActivityLogger::log('order.view', "Admin viewed order #{$order->order_number} (quick view)", $order);
+
+        return response()->json([
+            'id' => $order->id,
+            'status' => $order->status,
+            'payment_status' => $order->payment_status,
+            'html' => view('admin.orders._quick', [
+                'order' => $order,
+                'stats' => $stats,
+                'history' => $history->where('id', '!=', $order->id)->take(6),
+                'timeline' => $timeline,
+                'courierCheck' => $courierCheck,
+            ])->render(),
+        ]);
+    }
+
+    /** Internal staff note on the order (auto-saved from the quick view). */
+    public function note(Request $request, Order $order)
+    {
+        $data = $request->validate(['admin_note' => 'nullable|string|max:2000']);
+        $order->forceFill(['admin_note' => $data['admin_note'] ?? null])->saveQuietly();
+
+        return response()->json(['message' => 'Note saved.']);
+    }
+
+    /** Status for many orders at once (list bulk bar) — same rules as a single update. */
+    public function bulkStatus(Request $request)
+    {
+        $data = $request->validate([
+            'ids' => 'required|array|min:1|max:200',
+            'ids.*' => 'integer|exists:orders,id',
+            'status' => 'required|in:' . implode(',', self::STATUSES),
+        ]);
+
+        $changed = 0;
+        foreach (Order::with('user')->whereIn('id', $data['ids'])->get() as $order) {
+            if ($order->status !== $data['status']) {
+                $this->applyStatus($order, $data['status']);
+                $changed++;
+            }
+        }
+
+        return response()->json([
+            'message' => $changed . ' order(s) marked ' . ucfirst($data['status']) . ($changed < count($data['ids']) ? ' (' . (count($data['ids']) - $changed) . ' already were).' : '.'),
+            'status' => $data['status'],
+        ]);
     }
 
     public function show(Order $order)
@@ -107,44 +310,50 @@ class OrderController extends Controller
     public function updateStatus(Request $request, Order $order)
     {
         $request->validate([
-            'status' => 'required|in:pending,processing,shipped,delivered,cancelled,refunded',
+            'status' => 'required|in:' . implode(',', self::STATUSES),
         ]);
 
+        $this->applyStatus($order, $request->status);
+
+        if ($request->expectsJson()) {
+            return response()->json(['message' => 'Order status updated.', 'status' => $order->status, 'payment_status' => $order->payment_status]);
+        }
+
+        return back()->with('success', 'Order status updated.');
+    }
+
+    /** One status change with all its side effects (refund sync, stock, audit, customer notice). */
+    private function applyStatus(Order $order, string $status): void
+    {
         $old = $order->status;
 
-        $order->update(['status' => $request->status]);
+        $order->update(['status' => $status]);
 
-        if ($request->status === 'refunded' && $order->payment_status !== 'refunded') {
+        if ($status === 'refunded' && $order->payment_status !== 'refunded') {
             $order->update(['payment_status' => 'refunded']);
             $this->syncPaymentRecord($order, 'refunded');
         }
 
-        if (in_array($request->status, ['cancelled', 'refunded'], true)) {
-            OrderStockService::restoreIfNeeded($order, $request->status, auth()->id());
+        if (in_array($status, ['cancelled', 'refunded'], true)) {
+            OrderStockService::restoreIfNeeded($order, $status, auth()->id());
         }
 
         AuditLogger::log(
             'order.status_updated',
-            "Order {$order->order_number} status changed from {$old} to {$request->status}",
+            "Order {$order->order_number} status changed from {$old} to {$status}",
             $order,
             ['status' => $old],
-            ['status' => $request->status]
+            ['status' => $status]
         );
 
         if ($order->user) {
             NotificationDispatcher::customer('order_status_changed', $order->user, [
                 'order_number' => $order->order_number,
                 'old_status' => ucfirst($old),
-                'new_status' => ucfirst($request->status),
+                'new_status' => ucfirst($status),
                 '_order' => $order,
             ]);
         }
-
-        if ($request->expectsJson()) {
-            return response()->json(['message' => 'Order status updated.', 'status' => $order->status]);
-        }
-
-        return back()->with('success', 'Order status updated.');
     }
 
     private function syncPaymentRecord(Order $order, string $paymentStatus): void
