@@ -3,7 +3,8 @@
 // not a re-triggering scroll effect. All the actual animation (timing,
 // distance, stagger) lives in CSS; this file only decides *when* to flip the
 // class. See layouts/app.blade.php's <style> block for the `.reveal` rules.
-document.addEventListener('DOMContentLoaded', () => {
+// turbo:load fires on the first load and after every Turbo page change
+document.addEventListener('turbo:load', () => {
     const targets = document.querySelectorAll('.reveal, .reveal-group');
     if (!targets.length) {
         return;

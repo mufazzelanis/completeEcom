@@ -51,15 +51,40 @@ Alpine.start();
 // 1. `DOMContentLoaded` only ever fires once per real page load — a few dozen
 //    existing <script> blocks (admin dashboards' Chart.js setup, report pages,
 //    the settings AJAX-save handler, etc.) use it to run their one-time setup.
-//    Re-dispatching it on every turbo:load (after the first, which already had
-//    a real DOMContentLoaded) means none of that code needs to change at all.
-let firstTurboLoad = true;
-document.addEventListener('turbo:load', () => {
-    if (firstTurboLoad) {
-        firstTurboLoad = false;
+//    Each Turbo page's inline scripts re-run and register their handler again, so
+//    re-dispatching the real event would also re-run every handler from every page
+//    visited before (one more copy per navigation — the panel got slower the longer
+//    it stayed open). Instead, handlers registered after the real load are queued for
+//    the page that registered them and run once on its turbo:load, then dropped.
+//    Module code (datepicker, scroll-reveal) hooks turbo:load itself.
+let realDomReady = document.readyState === 'complete';
+document.addEventListener('DOMContentLoaded', () => { realDomReady = true; }, { once: true });
+const nativeAddListener = document.addEventListener;
+let pageReadyQueue = [];
+document.addEventListener = function (type, listener, options) {
+    if (type === 'DOMContentLoaded' && realDomReady && this === document) {
+        pageReadyQueue.push(listener);
         return;
     }
-    document.dispatchEvent(new Event('DOMContentLoaded'));
+    return nativeAddListener.call(this, type, listener, options);
+};
+document.addEventListener('turbo:load', () => {
+    const queue = pageReadyQueue;
+    pageReadyQueue = [];
+    const event = new Event('DOMContentLoaded');
+    queue.forEach((listener) => {
+        try { typeof listener === 'function' ? listener.call(document, event) : listener.handleEvent(event); }
+        catch (e) { console.error(e); }
+    });
+});
+
+// 1b. x-teleport'd panels (header mega-menus, dropdowns) sit directly under <body>, away from
+//     the component they belong to. Turbo's page-cache snapshot would keep copies of them
+//     without that component, and showing the snapshot (back to the home page, etc.) made
+//     Alpine evaluate them scope-less — a burst of "panel / top / seen is not defined"
+//     errors. They are rebuilt from the template on render anyway, so drop them first.
+document.addEventListener('turbo:before-cache', () => {
+    [...document.body.children].forEach((el) => { if (el._x_teleportBack) el.remove(); });
 });
 
 // 2. Each layout's own pre-paint <script> (in <head>, evaluated before first

@@ -318,6 +318,21 @@
 <script>
     // Products list: selection + bulk actions, the quick-edit panel, and in-place refresh.
     // Every save is a fetch — the page never reloads, so filters, page and scroll stay put.
+    // the row's Available / Out of stock switch (admin/products/_row.blade.php)
+    window.stockSwitch = function (url, out) {
+        return {
+            out, busy: false,
+            async flip() {
+                if (this.busy) return; this.busy = true;
+                try {
+                    const r = await fetch(url, { method: 'PATCH', headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content }, body: JSON.stringify({ out: !this.out }) });
+                    const d = await r.json();
+                    if (r.ok) { this.out = d.out; this.$dispatch('pl-toast', d.message); }
+                } finally { this.busy = false; }
+            },
+        };
+    };
+
     window.productList = function (cfg) {
         const headers = () => ({ 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content });
         const FIELDS = ['name', 'category_id', 'subcategory_id', 'brand_id', 'price', 'sale_price', 'stock', 'is_active', 'is_featured', 'marked_out_of_stock'];

@@ -45,6 +45,12 @@ class SearchController extends Controller
         ]);
     }
 
+    /** Admin header quick-search: the list of admin pages, fetched once per session. */
+    public function adminNavIndex()
+    {
+        return response()->json(\App\Support\AdminNavIndex::all())->header('Cache-Control', 'private, max-age=3600');
+    }
+
     public function adminSuggest(Request $request)
     {
         $q = trim($request->get('q', ''));

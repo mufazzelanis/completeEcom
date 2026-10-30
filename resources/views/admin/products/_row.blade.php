@@ -25,8 +25,8 @@
     @if($isManualReorder) data-product-id="{{ $product->id }}" draggable="true" @endif>
     <td class="pl-c-chk px-6 py-4">
         <input type="checkbox" value="{{ $product->id }}" aria-label="Select {{ $product->name }}"
-               :checked="selected.includes({{ $product->id }})"
-               @change="$event.target.checked ? selected.push({{ $product->id }}) : selected = selected.filter(i => i !== {{ $product->id }})"
+               :checked="selected.includes(+$el.value)"
+               @change="$event.target.checked ? selected.push(+$el.value) : selected = selected.filter(i => i !== +$el.value)"
                class="rounded text-indigo-600">
     </td>
     <td class="pl-c-prod px-6 py-4">
@@ -82,15 +82,8 @@
         <button type="button" class="pl-link {{ $product->stock === 0 ? 'text-red-600' : ($product->isLowStock() ? 'text-yellow-600' : 'text-gray-800') }} font-semibold text-sm" @click="edit($el, 'stock')" title="Change stock">{{ $product->stock }}</button>
         {{-- Available / Out of stock switch — shoppers see "Out of stock" and can't order
              while it's off; the stock number above is left exactly as it is --}}
-        <div class="mt-1.5" x-data="{ out: {{ $product->marked_out_of_stock ? 'true' : 'false' }}, busy: false,
-                async flip() {
-                    if (this.busy) return; this.busy = true;
-                    try {
-                        const r = await fetch(@js(route('admin.products.stock-switch', $product->id)), { method: 'PATCH', headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content }, body: JSON.stringify({ out: !this.out }) });
-                        const d = await r.json();
-                        if (r.ok) { this.out = d.out; $dispatch('pl-toast', d.message); }
-                    } finally { this.busy = false; }
-                } }">
+        <div class="mt-1.5" x-data="stockSwitch($el.dataset.url, $el.dataset.out === '1')"
+             data-url="{{ route('admin.products.stock-switch', $product->id) }}" data-out="{{ $product->marked_out_of_stock ? '1' : '0' }}">
             <button type="button" role="switch" :aria-checked="(!out).toString()" @click="flip()" :disabled="busy"
                     class="inline-flex items-center gap-1.5 rounded-full pl-1 pr-2 py-0.5 text-[11px] font-semibold transition"
                     :style="out ? 'background:#ef44441f;color:#dc2626' : 'background:#10b9811f;color:#059669'"

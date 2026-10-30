@@ -65,16 +65,27 @@
                 ['click', 'keydown', 'touchstart'].forEach((evt) =>
                     window.addEventListener(evt, () => this.unlockAudio(), { once: true, passive: true }));
 
+                // Turbo builds a fresh bell on every page change while window/document live on,
+                // so the timer and listeners are session-wide singletons that always talk to the
+                // bell currently on the page — one poll every pollMs, however many pages were visited.
+                window.__aaBell = this;
                 await this.poll();
-                this.polling = setInterval(() => this.poll(), cfg.pollMs);
-                document.addEventListener('visibilitychange', () => { if (!document.hidden) this.poll(); });
-
-                if ('serviceWorker' in navigator) {
-                    navigator.serviceWorker.addEventListener('message', (event) => {
-                        const msg = event.data || {};
-                        if (msg.type === 'alert-arrived') this.poll();
-                        if (msg.type === 'navigate' && msg.url) window.location.href = msg.url;
-                    });
+                clearInterval(window.__aaPoll);   // after the await, so two quick inits can never both leave a timer
+                window.__aaPoll = setInterval(() => {
+                    const bell = window.__aaBell;   // left the admin (no bell on the page any more) → stop
+                    if (!bell || !document.body.contains(bell.$el)) return clearInterval(window.__aaPoll);
+                    bell.poll();
+                }, cfg.pollMs);
+                if (!window.__aaBound) {
+                    window.__aaBound = true;
+                    document.addEventListener('visibilitychange', () => { if (!document.hidden && window.__aaBell) window.__aaBell.poll(); });
+                    if ('serviceWorker' in navigator) {
+                        navigator.serviceWorker.addEventListener('message', (event) => {
+                            const msg = event.data || {};
+                            if (msg.type === 'alert-arrived' && window.__aaBell) window.__aaBell.poll();
+                            if (msg.type === 'navigate' && msg.url) window.location.href = msg.url;
+                        });
+                    }
                 }
 
                 this.initPush();
@@ -89,7 +100,7 @@
                     });
                     // Logged out / session expired: stop hammering the server with requests
                     // that can only bounce to the login page.
-                    if (res.redirected || res.status === 401 || res.status === 419) return clearInterval(this.polling);
+                    if (res.redirected || res.status === 401 || res.status === 419) return clearInterval(window.__aaPoll);
                     if (!res.ok) return;
                     const data = await res.json();
 
@@ -341,7 +352,7 @@
     };
 </script>
 
-<div x-data="adminAlerts()" x-init="init()" @keydown.escape.window="open = false" class="relative">
+<div x-data="adminAlerts()" @keydown.escape.window="open = false" class="relative">
     <button type="button" @click="toggle()"
             class="relative p-2 rounded-lg text-gray-500 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition"
             :aria-label="unread ? 'Alerts, ' + unread + ' unread' : 'Alerts'" aria-haspopup="true" :aria-expanded="open">

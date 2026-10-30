@@ -365,6 +365,8 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
 
     // Admin search suggest
     Route::get('search/suggest', [SearchController::class, 'adminSuggest'])->name('search.suggest');
+    // header quick-search page list (layouts/admin.blade.php) — fetched once per session
+    Route::get('nav-index', [SearchController::class, 'adminNavIndex'])->name('nav-index');
 
     // Homepage Sections (homepage builder)
     Route::resource('home-sections', AdminHomeSectionController::class)->except(['show']);

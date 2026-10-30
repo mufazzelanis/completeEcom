@@ -94,7 +94,8 @@ function enhanceAll(root = document) {
     root.querySelectorAll('input[type="date"], input[type="datetime-local"]').forEach(enhance);
 }
 
-document.addEventListener('DOMContentLoaded', () => enhanceAll());
+// turbo:load fires on the first load and after every Turbo page change
+document.addEventListener('turbo:load', () => enhanceAll());
 
 // Some admin forms (variant matrices, repeatable line items) add rows — and their date
 // fields — dynamically via Alpine after page load, with no other hook to enhance them from.

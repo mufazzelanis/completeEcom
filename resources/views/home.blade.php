@@ -108,11 +108,12 @@
             const evs = ['scroll', 'pointerdown', 'keydown', 'touchstart'];
             const start = () => {
                 evs.forEach(ev => window.removeEventListener(ev, start));
-                setInterval(() => { this.rotated = true; this.current = (this.current + 1) % this.total }, 5000);
+                this.timer = setInterval(() => { this.rotated = true; this.current = (this.current + 1) % this.total }, 5000);
             };
             evs.forEach(ev => window.addEventListener(ev, start, { passive: true, once: true }));
             @endif
         },
+        destroy() { clearInterval(this.timer); },   // Turbo page change — stop the autoplay
         onTouchStart(e) { this.touchX = e.changedTouches[0].clientX; },
         onTouchEnd(e) {
             if (this.touchX === null) return;
@@ -368,8 +369,9 @@
     end: '{{ $flashSale->ends_at->toIso8601String() }}',
     init() {
         this.update();
-        setInterval(() => this.update(), 1000);
+        this.timer = setInterval(() => this.update(), 1000);
     },
+    destroy() { clearInterval(this.timer); },
     update() {
         let diff = Math.max(0, Math.floor((new Date(this.end) - new Date()) / 1000));
         this.hours = Math.floor(diff / 3600);
@@ -443,6 +445,7 @@
                     this.$refs.track.addEventListener('scroll', () => this.updateEdges(), { passive: true });
                     this.timer = setInterval(() => { if (!this.paused) this.step(1, true); }, 3500);
                 },
+                destroy() { clearInterval(this.timer); },
                 updateEdges() {
                     const el = this.$refs.track;
                     this.atStart = el.scrollLeft <= 4;
@@ -753,6 +756,7 @@ $reviewThemes = [
                     this.$refs.track.addEventListener('scroll', () => this.updateEdges(), { passive: true });
                     this.timer = setInterval(() => { if (!this.paused) this.step(1, true); }, 3000);
                 },
+                destroy() { clearInterval(this.timer); },
                 updateEdges() {
                     const el = this.$refs.track;
                     this.atStart = el.scrollLeft <= 4;

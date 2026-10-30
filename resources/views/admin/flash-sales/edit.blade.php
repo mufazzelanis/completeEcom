@@ -162,6 +162,7 @@ function countdown(endTime) {
             this.tick();
             this.timer = setInterval(() => this.tick(), 1000);
         },
+        destroy() { clearInterval(this.timer); },
         tick() {
             const diff = Math.max(0, new Date(endTime) - new Date());
             const h = Math.floor(diff / 3600000);

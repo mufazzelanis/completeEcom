@@ -269,11 +269,11 @@
                     $avatarColor = $avatarPalette[crc32($custName) % count($avatarPalette)];
                     $created = $order->created_at->timezone($tz);
                 @endphp
-                <tr class="ob-row transition" @click="rowClick($event, {{ $order->id }})"
-                    :class="{ 'is-open': current === {{ $order->id }}, 'is-sel': selected.includes({{ $order->id }}) }">
+                <tr class="ob-row transition" data-id="{{ $order->id }}" @click="rowClick($event, +$el.dataset.id)"
+                    :class="{ 'is-open': current === +$el.dataset.id, 'is-sel': selected.includes(+$el.dataset.id) }">
                     <td class="ob-c-chk pl-5 pr-2 py-4">
                         <input type="checkbox" class="rounded" aria-label="Select {{ $order->order_number }}"
-                               :checked="selected.includes({{ $order->id }})" @change="toggle({{ $order->id }})">
+                               :checked="selected.includes(+$el.closest('tr').dataset.id)" @change="toggle(+$el.closest('tr').dataset.id)">
                     </td>
                     <td class="ob-c-ord px-4 py-4">
                         <div class="flex flex-wrap items-center gap-1.5">
@@ -311,13 +311,9 @@
                     </td>
                     <td class="ob-c-pay px-4 py-4 text-center">
                         <div class="flex items-center justify-center gap-1.5">
-                            <div x-data="inlineStatusDropdown({
-                                    url: '{{ route('admin.orders.update', $order->id) }}',
-                                    method: 'PUT', field: 'payment_status',
-                                    current: '{{ $order->payment_status }}',
-                                    options: { pending: 'Pending', paid: 'Paid', failed: 'Failed', refunded: 'Refunded' },
-                                    badgeMap: PAYMENT_BADGE_CLASSES,
-                                 })" @order-updated.window="if ($event.detail.id === {{ $order->id }} && $event.detail.payment_status) current = $event.detail.payment_status">
+                            <div x-data="inlineStatusDropdown({ url: $el.dataset.url, method: 'PUT', field: 'payment_status', current: $el.dataset.current, options: PAYMENT_OPTIONS, badgeMap: PAYMENT_BADGE_CLASSES })"
+                                 data-url="{{ route('admin.orders.update', $order->id) }}" data-current="{{ $order->payment_status }}"
+                                 @order-updated.window="if ($event.detail.id === +$el.closest('tr').dataset.id && $event.detail.payment_status) current = $event.detail.payment_status">
                                 <button type="button" @click="toggle($event)" :disabled="saving"
                                         class="inline-flex items-center gap-1 pl-2.5 pr-1.5 py-1 rounded-full text-xs font-medium capitalize transition disabled:opacity-60"
                                         :class="badgeMap[current]">
@@ -328,7 +324,7 @@
                                     <div x-show="open" x-cloak @click.outside="close()" :style="panelStyle"
                                          class="fixed z-[200] w-36 bg-white dark:bg-gray-800 rounded-xl shadow-xl ring-1 ring-gray-200 dark:ring-gray-700 py-1.5 text-sm"
                                          x-transition:enter="transition ease-out duration-100" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100">
-                                        <template x-for="(label, key) in options" :key="key">
+                                        <template x-for="(label, key) in (open ? options : {})" :key="key">
                                             <button type="button" @click="select(key)"
                                                     class="w-full flex items-center justify-between px-3.5 py-2 text-left capitalize hover:bg-gray-50 dark:hover:bg-gray-700/60 transition-colors"
                                                     :class="key === current ? 'text-gray-900 dark:text-white font-semibold' : 'text-gray-600 dark:text-gray-300'">
@@ -349,13 +345,9 @@
                         </div>
                     </td>
                     <td class="ob-c-status px-4 py-4 text-center">
-                        <div x-data="inlineStatusDropdown({
-                                url: '{{ route('admin.orders.status', $order->id) }}',
-                                method: 'PATCH', field: 'status',
-                                current: '{{ $order->status }}',
-                                options: { pending: 'Pending', processing: 'Processing', shipped: 'Shipped', delivered: 'Delivered', cancelled: 'Cancelled', refunded: 'Refunded' },
-                                badgeMap: STATUS_BADGE_CLASSES,
-                             })" @order-updated.window="if ($event.detail.id === {{ $order->id }} && $event.detail.status) current = $event.detail.status" class="inline-block">
+                        <div x-data="inlineStatusDropdown({ url: $el.dataset.url, method: 'PATCH', field: 'status', current: $el.dataset.current, options: STATUS_OPTIONS, badgeMap: STATUS_BADGE_CLASSES })"
+                             data-url="{{ route('admin.orders.status', $order->id) }}" data-current="{{ $order->status }}"
+                             @order-updated.window="if ($event.detail.id === +$el.closest('tr').dataset.id && $event.detail.status) current = $event.detail.status" class="inline-block">
                             <button type="button" @click="toggle($event)" :disabled="saving"
                                     class="inline-flex items-center gap-1 pl-2.5 pr-1.5 py-1 rounded-full text-xs font-medium capitalize transition disabled:opacity-60"
                                     :class="badgeMap[current]">
@@ -366,7 +358,7 @@
                                 <div x-show="open" x-cloak @click.outside="close()" :style="panelStyle"
                                      class="fixed z-[200] w-36 bg-white dark:bg-gray-800 rounded-xl shadow-xl ring-1 ring-gray-200 dark:ring-gray-700 py-1.5 text-sm"
                                      x-transition:enter="transition ease-out duration-100" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100">
-                                    <template x-for="(label, key) in options" :key="key">
+                                    <template x-for="(label, key) in (open ? options : {})" :key="key">
                                         <button type="button" @click="select(key)"
                                                 class="w-full flex items-center justify-between px-3.5 py-2 text-left capitalize hover:bg-gray-50 dark:hover:bg-gray-700/60 transition-colors"
                                                 :class="key === current ? 'text-gray-900 dark:text-white font-semibold' : 'text-gray-600 dark:text-gray-300'">
@@ -384,7 +376,7 @@
                     </td>
                     <td class="ob-c-act px-4 py-4 text-center">
                         <div class="flex items-center justify-center gap-1.5">
-                            <button type="button" class="ob-eye" @click="show({{ $order->id }})" title="Quick view — customer & order details" aria-label="Quick view {{ $order->order_number }}">
+                            <button type="button" class="ob-eye" @click="show(+$el.closest('tr').dataset.id)" title="Quick view — customer & order details" aria-label="Quick view {{ $order->order_number }}">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
                             </button>
                             <a href="{{ route('admin.orders.show', $order->id) }}" class="ob-hide-m w-8 h-8 rounded-lg inline-flex items-center justify-center text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition" title="Full details">
@@ -429,6 +421,8 @@
         cancelled:  'bg-red-100 text-red-800 dark:bg-red-500/15 dark:text-red-400',
         refunded:   'bg-gray-100 text-gray-800 dark:bg-gray-500/15 dark:text-gray-400',
     };
+    window.STATUS_OPTIONS = { pending: 'Pending', processing: 'Processing', shipped: 'Shipped', delivered: 'Delivered', cancelled: 'Cancelled', refunded: 'Refunded' };
+    window.PAYMENT_OPTIONS = { pending: 'Pending', paid: 'Paid', failed: 'Failed', refunded: 'Refunded' };
     window.PAYMENT_BADGE_CLASSES = {
         pending:  'bg-yellow-100 text-yellow-800 dark:bg-yellow-500/15 dark:text-yellow-400',
         paid:     'bg-green-100 text-green-800 dark:bg-green-500/15 dark:text-green-400',
