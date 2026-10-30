@@ -196,6 +196,10 @@
             subtotal: {{ $subtotal }},
             discount: {{ $discount }},
             shippingByZone: {{ Js::from($shippingByZone) }},
+            advanceByZone: {{ Js::from($advanceByZone ?? []) }},
+            flatAdvance: {{ (float) ($flatAdvance ?? 0) }},
+            // pre-order: what's sent now (the area's delivery charge + the method's fee)
+            get advanceNow() { return (this.usesZones ? (this.advanceByZone[this.zone] ?? 0) : this.flatAdvance) + (parseFloat(this.current.charge) || 0) },
             flatShipping: {{ $usesZones ? 0 : $shipping }},
             methods:  {{ Js::from($paymentMethods->map(fn($m) => [
                 'slug'           => $m->slug,
@@ -507,11 +511,11 @@
                             <div class="mt-2 grid grid-cols-2 gap-3 text-center">
                                 <div class="rounded-lg bg-white dark:bg-gray-900 p-3">
                                     <p class="text-[11px] uppercase tracking-wide text-gray-500">Send now by <span x-text="current.name"></span></p>
-                                    <p class="text-2xl font-extrabold" style="color:#6d28d9;" x-text="cs + Math.round(shipping + (parseFloat(current.charge) || 0)).toLocaleString('en-US')"></p>
+                                    <p class="text-2xl font-extrabold" style="color:#6d28d9;" x-text="cs + Math.round(advanceNow).toLocaleString('en-US')"></p>
                                 </div>
                                 <div class="rounded-lg bg-white dark:bg-gray-900 p-3">
                                     <p class="text-[11px] uppercase tracking-wide text-gray-500">Pay on delivery</p>
-                                    <p class="text-2xl font-extrabold text-gray-900 dark:text-white" x-text="cs + Math.round(total - shipping - (parseFloat(current.charge) || 0)).toLocaleString('en-US')"></p>
+                                    <p class="text-2xl font-extrabold text-gray-900 dark:text-white" x-text="cs + Math.max(0, Math.round(total - advanceNow)).toLocaleString('en-US')"></p>
                                 </div>
                             </div>
                             <ol class="mt-3 text-xs text-gray-600 dark:text-gray-300 space-y-1 list-decimal list-inside">

@@ -76,15 +76,28 @@ class CheckoutController extends Controller
         $request->validate([
             'product_id' => 'required|exists:products,id',
             'quantity' => 'required|integer|min:1|max:10',
+            'zone' => 'nullable|in:dhaka,outside_dhaka',
         ]);
         $product = Product::findOrFail($request->product_id);
         if (! $product->canPreorder()) {
             return back()->with('error', $product->available_stock > 0 ? 'Good news — this is in stock, you can order it normally.' : 'Pre-orders aren\'t available for this product.');
         }
 
-        session(['buy_now' => ['product_id' => $product->id, 'variant_combination_id' => null, 'quantity' => (int) $request->quantity, 'preorder' => true]]);
+        session(['buy_now' => ['product_id' => $product->id, 'variant_combination_id' => null, 'quantity' => (int) $request->quantity, 'preorder' => true, 'zone' => $request->input('zone')]]);
 
         return redirect()->route('checkout.index');
+    }
+
+    /** A pre-order's advance: the area's delivery charge from Settings → Shipping (free-delivery threshold ignored). */
+    public static function preorderAdvanceBase(?string $zone): float
+    {
+        if (! ShippingCalculator::usesZones()) {
+            return (float) setting('flat_rate_amount', 60);
+        }
+
+        return $zone === ShippingCalculator::ZONE_OUTSIDE_DHAKA
+            ? (float) setting('outside_dhaka_charge', 120)
+            : (float) setting('dhaka_charge', 60);
     }
 
     private function isPreorder(): bool
@@ -206,7 +219,8 @@ class CheckoutController extends Controller
             'dhaka'         => ShippingCalculator::calculate($subtotal, ShippingCalculator::ZONE_DHAKA),
             'outside_dhaka' => ShippingCalculator::calculate($subtotal, ShippingCalculator::ZONE_OUTSIDE_DHAKA),
         ];
-        $defaultZone = old('shipping_zone', 'dhaka');
+        // a pre-order arrives with the delivery area already picked on the product page
+        $defaultZone = old('shipping_zone', data_get(session('buy_now'), 'zone') ?: 'dhaka');
         $shipping = $usesZones ? $shippingByZone[$defaultZone] : ShippingCalculator::calculate($subtotal);
 
         // Pre-order: only bKash / Nagad, and their fee is on the advance (the delivery charge) — that's all that's paid now
@@ -215,14 +229,20 @@ class CheckoutController extends Controller
             ? Product::preorderPaymentMethods()
             : PaymentMethod::where('is_active', true)->orderBy('sort_order')->get();
         $addresses = auth()->check() ? auth()->user()->addresses : collect();
-        $chargeBase = fn ($zoneShipping) => $isPreorder ? $zoneShipping : $subtotal - $discount + $zoneShipping;
+        // pre-order advance = the area's normal delivery rate (even when the order itself ships free)
+        $advanceByZone = [
+            'dhaka' => self::preorderAdvanceBase(ShippingCalculator::ZONE_DHAKA),
+            'outside_dhaka' => self::preorderAdvanceBase(ShippingCalculator::ZONE_OUTSIDE_DHAKA),
+        ];
+        $flatAdvance = self::preorderAdvanceBase(null);
+        $chargeBase = fn ($zoneShipping, $zone = null) => $isPreorder ? ($usesZones ? $advanceByZone[$zone ?? $defaultZone] : $flatAdvance) : $subtotal - $discount + $zoneShipping;
 
         $methodCharges = $paymentMethods->mapWithKeys(fn ($m) => [
             $m->slug => $m->calculateCharge($chargeBase($shipping)),
         ]);
         $methodChargesByZone = $usesZones ? [
-            'dhaka'         => $paymentMethods->mapWithKeys(fn ($m) => [$m->slug => $m->calculateCharge($chargeBase($shippingByZone['dhaka']))]),
-            'outside_dhaka' => $paymentMethods->mapWithKeys(fn ($m) => [$m->slug => $m->calculateCharge($chargeBase($shippingByZone['outside_dhaka']))]),
+            'dhaka'         => $paymentMethods->mapWithKeys(fn ($m) => [$m->slug => $m->calculateCharge($chargeBase($shippingByZone['dhaka'], 'dhaka'))]),
+            'outside_dhaka' => $paymentMethods->mapWithKeys(fn ($m) => [$m->slug => $m->calculateCharge($chargeBase($shippingByZone['outside_dhaka'], 'outside_dhaka'))]),
         ] : null;
 
         $base = $subtotal - $discount + $shipping;
@@ -251,7 +271,7 @@ class CheckoutController extends Controller
             'cartItems', 'subtotal', 'discount', 'shipping', 'total',
             'coupon', 'promoCode', 'addresses', 'paymentMethods', 'methodCharges', 'base',
             'usesZones', 'shippingByZone', 'defaultZone', 'methodChargesByZone',
-            'pointsBalance', 'pointsRedeemed', 'pointsDiscount', 'checkoutFields', 'fbInitiateCheckoutEventId', 'isPreorder'
+            'pointsBalance', 'pointsRedeemed', 'pointsDiscount', 'checkoutFields', 'fbInitiateCheckoutEventId', 'isPreorder', 'advanceByZone', 'flatAdvance'
         ));
     }
 
@@ -431,9 +451,10 @@ class CheckoutController extends Controller
         $shipping = ShippingCalculator::calculate($subtotal, $shippingZone);
         $base = $subtotal - $discount + $shipping;
         // pre-order: the method's fee applies to what's paid now (the delivery charge), not the whole order
-        $paymentCharge = $paymentMethod->calculateCharge($isPreorder ? $shipping : $base);
+        $advanceBase = $isPreorder ? self::preorderAdvanceBase($shippingZone) : 0;
+        $paymentCharge = $paymentMethod->calculateCharge($isPreorder ? $advanceBase : $base);
         $total = $base + $paymentCharge;
-        $advance = $isPreorder ? round($shipping + $paymentCharge, 2) : 0;
+        $advance = $isPreorder ? round($advanceBase + $paymentCharge, 2) : 0;
 
         if ($paymentMethod->min_amount && $total < $paymentMethod->min_amount) {
             return back()->withErrors(['payment_method' => "Minimum order amount for {$paymentMethod->name} is ৳{$paymentMethod->min_amount}."]);
