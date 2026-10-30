@@ -205,7 +205,7 @@ $adminNavIndex = [
 ];
 @endphp
 
-<div class="flex h-screen overflow-hidden" x-data>
+<div class="relative flex h-screen overflow-hidden" x-data>
     <!-- Mobile Sidebar Overlay -->
     <div x-show="$store.adminSidebar.open" x-cloak
          class="fixed inset-0 bg-black/50 z-40 lg:hidden"
@@ -1086,7 +1086,7 @@ $adminNavIndex = [
         @endif
 
         <!-- Page Content -->
-        <main class="flex-1 overflow-y-auto p-4 sm:p-6 pb-24 lg:pb-6">
+        <main class="relative flex-1 overflow-y-auto p-4 sm:p-6 pb-24 lg:pb-6">
             @yield('content')
         </main>
     </div>

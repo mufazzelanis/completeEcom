@@ -127,7 +127,7 @@
             // Product Readiness checklist + Live Preview — lifted up here (rather than kept
             // in each field's own local x-data, as these used to be) so one set of fields
             // can be read from several sibling cards at once.
-            name: '{{ old('name','') }}',
+            name: {{ Js::from((string) old('name', '')) }},
             shortDescription: {{ Js::from(old('short_description', '')) }},
             descriptionLength: {{ strlen(trim(strip_tags(old('description', '')))) }},
             price: '{{ old('price','') }}',

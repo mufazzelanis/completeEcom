@@ -44,7 +44,7 @@
                 </thead>
                 <tbody class="divide-y divide-gray-50">
                     @forelse($tags as $tag)
-                    <tr class="hover:bg-gray-50" x-data="{ editing: false, name: '{{ $tag->name }}' }">
+                    <tr class="hover:bg-gray-50" x-data="{ editing: false, name: {{ Js::from($tag->name) }} }">
                         <td class="px-6 py-3">
                             <div x-show="!editing" class="text-sm font-medium text-gray-800">{{ $tag->name }}</div>
                             <form x-show="editing" x-cloak action="{{ route('admin.tags.update', $tag) }}" method="POST" class="flex items-center gap-2">

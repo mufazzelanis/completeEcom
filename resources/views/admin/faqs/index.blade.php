@@ -2,7 +2,7 @@
 @section('title', 'FAQs')
 
 @section('content')
-<div x-data="faqManager()" class="space-y-6">
+<div class="space-y-6">
     {{-- Add FAQ Form --}}
     <div class="bg-white rounded-2xl shadow-sm p-6">
         <h3 class="text-sm font-semibold text-gray-700 mb-4">Add New FAQ</h3>

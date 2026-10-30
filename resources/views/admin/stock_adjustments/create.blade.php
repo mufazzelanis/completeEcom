@@ -18,11 +18,11 @@
         <form action="{{ route('admin.stock-adjustments.store') }}" method="POST"
             x-data="{
                 type: '{{ old('type', $selectedType) }}',
-                productId: '{{ old('product_id') }}',
+                productId: {{ Js::from((string) old('product_id')) }},
                 products: {{ Js::from($products) }},
                 reasons: {{ Js::from($reasons) }},
                 reasonId: '',
-                reason: '{{ old('reason') }}',
+                reason: {{ Js::from((string) old('reason')) }},
                 get currentStock() {
                     const p = this.products.find(p => p.id == this.productId);
                     return p ? p.stock : null;

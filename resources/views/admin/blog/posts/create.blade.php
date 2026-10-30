@@ -4,12 +4,12 @@
 @section('content')
 <div class="max-w-4xl"
     x-data="{
-        title: '{{ old('title', '') }}',
-        slug: '{{ old('slug', '') }}',
+        title: {{ Js::from((string) old('title', '')) }},
+        slug: {{ Js::from((string) old('slug', '')) }},
         slugTouched: {{ old('slug') ? 'true' : 'false' }},
-        excerpt: '{{ old('excerpt', '') }}',
-        metaTitle: '{{ old('meta_title', '') }}',
-        metaDesc: '{{ old('meta_description', '') }}',
+        excerpt: {{ Js::from((string) old('excerpt', '')) }},
+        metaTitle: {{ Js::from((string) old('meta_title', '')) }},
+        metaDesc: {{ Js::from((string) old('meta_description', '')) }},
         blogUrl: '{{ rtrim(url('/blog'), '/') }}/',
         slugify(str) {
             return (str || '').toString().toLowerCase().trim()

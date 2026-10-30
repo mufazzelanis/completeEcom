@@ -30,7 +30,7 @@
         ->merge(range(max(1, $current - $onEachSide), min($last, $current + $onEachSide)))
         ->unique()->sort()->values();
 @endphp
-<nav role="navigation" aria-label="{{ __('Pagination Navigation') }}" class="flex flex-col items-center gap-3">
+<nav role="navigation" aria-label="{{ __('Pagination Navigation') }}" class="relative flex flex-col items-center gap-3">
     <div class="flex flex-wrap items-center justify-center gap-1.5">
         {{-- Previous --}}
         @if ($paginator->onFirstPage())

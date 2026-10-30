@@ -6,7 +6,7 @@
      page they should land on now, and the 404 log of broken addresses that still get visits.
      Applied by the CustomRedirects middleware before any page loads. --}}
 <div x-data="{
-        tab: '{{ request('tab', 'redirects') }}',
+        tab: {{ Js::from((string) request('tab', 'redirects')) }},
         source: @js(old('_redirect_id') ? '' : old('source', '')),
         target: @js(old('_redirect_id') ? '' : old('target', '')),
         code: '{{ old('_redirect_id') ? '301' : old('status_code', '301') }}',

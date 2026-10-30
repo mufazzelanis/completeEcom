@@ -39,7 +39,11 @@
 
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Email Body (HTML) <span class="text-red-500">*</span></label>
-                <div x-data="{ tab: 'edit' }">
+                <div x-data="{ tab: 'edit' }" x-init="$watch('tab', val => {
+                        if (val !== 'preview') return;
+                        const doc = document.getElementById('preview-frame').contentDocument;
+                        doc.open(); doc.write(document.getElementById('content').value); doc.close();
+                    })">
                     <div class="flex gap-1 mb-2">
                         <button type="button" @click="tab = 'edit'" :class="tab==='edit' ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-600'" class="px-3 py-1.5 rounded-lg text-xs font-medium transition">Edit</button>
                         <button type="button" @click="tab = 'preview'" :class="tab==='preview' ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-600'" class="px-3 py-1.5 rounded-lg text-xs font-medium transition">Preview</button>
@@ -51,16 +55,6 @@
                     <div x-show="tab === 'preview'" x-cloak class="border border-gray-200 rounded-xl overflow-hidden bg-white">
                         <iframe id="preview-frame" class="w-full h-96" frameborder="0"></iframe>
                     </div>
-                    <script>
-                    document.addEventListener('alpine:init', () => {
-                        document.querySelector('[x-data]').__x.$watch('tab', val => {
-                            if (val === 'preview') {
-                                const doc = document.getElementById('preview-frame').contentDocument;
-                                doc.open(); doc.write(document.getElementById('content').value); doc.close();
-                            }
-                        });
-                    });
-                    </script>
                 </div>
                 @error('content')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
                 <p class="text-xs text-gray-400 mt-1">Write HTML email content. Use <code>@{{ $name }}</code> for recipient name and <code>@{{ $email }}</code> for recipient email — both are automatically replaced per recipient. An unsubscribe link is added to every email automatically, so you don't need to include your own.</p>

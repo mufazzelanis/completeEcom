@@ -57,7 +57,7 @@
                 </thead>
                 <tbody class="divide-y divide-gray-50">
                     @forelse($attributes as $attr)
-                    <tr class="hover:bg-gray-50 transition" x-data="{ editing: false, name: '{{ $attr->name }}', sort: {{ $attr->sort_order }} }">
+                    <tr class="hover:bg-gray-50 transition" x-data="{ editing: false, name: {{ Js::from($attr->name) }}, sort: {{ $attr->sort_order }} }">
                         <td class="px-6 py-3">
                             <div x-show="!editing" class="text-sm font-medium text-gray-800" x-text="name"></div>
                             <form x-show="editing" x-cloak action="{{ route('admin.attributes.update', $attr) }}" method="POST" class="flex items-center gap-2">
