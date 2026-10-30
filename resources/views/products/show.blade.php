@@ -50,8 +50,8 @@
         'PreOrder' => 'https://schema.org/PreOrder', 'BackOrder' => 'https://schema.org/BackOrder',
         'Discontinued' => 'https://schema.org/Discontinued', 'SoldOut' => 'https://schema.org/SoldOut',
     ];
-    $schemaAvailability = $availabilityMap[$product->schema_availability]
-        ?? ($product->stock > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock');
+    $schemaAvailability = $product->marked_out_of_stock ? 'https://schema.org/OutOfStock' : $availabilityMap[$product->schema_availability]
+        ?? ($product->available_stock > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock');
 
     // Merchant listings (Google Shopping) shipping/return info, read from the same
     // Shipping and Orders settings checkout uses so the schema never drifts from them.
@@ -104,7 +104,7 @@
 <meta property="product:price:currency" content="{{ setting('currency_code', 'BDT') }}">
 @if($product->brand)<meta property="product:brand" content="{{ $product->brand->name }}">@endif
 @if($product->sku)<meta property="product:retailer_item_id" content="{{ $product->sku }}">@endif
-<meta property="product:availability" content="{{ $product->stock > 0 ? 'in stock' : 'out of stock' }}">
+<meta property="product:availability" content="{{ $product->available_stock > 0 ? 'in stock' : 'out of stock' }}">
 
 {{-- Product structured data --}}
 <script type="application/ld+json">
@@ -188,7 +188,7 @@
             ]) : collect();
             $combinationsJs = $product->isVariable() ? $product->combinations->where('is_active', true)->map(fn ($c) => [
                 'id' => $c->id, 'color_id' => $c->product_color_id, 'size_id' => $c->product_size_id,
-                'sku' => $c->sku, 'price' => $c->price !== null ? (float) $c->price : null, 'stock' => $c->stock,
+                'sku' => $c->sku, 'price' => $c->price !== null ? (float) $c->price : null, 'stock' => $product->marked_out_of_stock ? 0 : $c->stock,
             ])->values() : collect();
             $basePrice = (float) ($product->sale_price ?? $product->price);
             $comboPrices = $combinationsJs->map(fn ($c) => $c['price'] ?? $basePrice);
@@ -572,6 +572,9 @@
                     ])
                     @include('products._sticky-buy')
                 @elseif(!$product->isDigital())
+                    @if($product->canPreorder())
+                        @include('products._preorder')
+                    @endif
                     @include('products._notify-stock')
                 @endif
 

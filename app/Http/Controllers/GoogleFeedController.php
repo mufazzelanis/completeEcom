@@ -64,8 +64,8 @@ class GoogleFeedController extends Controller
     {
         $price = (float) $product->price;
         $salePrice = $product->sale_price !== null ? (float) $product->sale_price : null;
-        $availability = self::AVAILABILITY[$product->schema_availability]
-            ?? ($product->stock > 0 ? 'in_stock' : 'out_of_stock');
+        $availability = $product->marked_out_of_stock ? 'out_of_stock' : self::AVAILABILITY[$product->schema_availability]
+            ?? ($product->available_stock > 0 ? 'in_stock' : 'out_of_stock');
         $description = trim(preg_replace('/\s+/', ' ', strip_tags((string) ($product->description ?: $product->short_description))))
             ?: $product->name;
 

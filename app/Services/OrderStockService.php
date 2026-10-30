@@ -27,6 +27,10 @@ class OrderStockService
         if (! in_array($newStatus, self::TERMINAL, true)) {
             return;
         }
+        // a pre-order never took stock (there was none), so cancelling it gives none back
+        if ($order->is_preorder) {
+            return;
+        }
 
         if (StockAdjustment::where('order_id', $order->id)->where('type', 'return_in')->exists()) {
             return;

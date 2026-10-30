@@ -80,6 +80,8 @@ class StockManagementController extends Controller
             if ($max !== null) {
                 $query->where('products.stock', '<=', $max);
             }
+        } elseif ($bucket === 'marked') {
+            $query->where('products.marked_out_of_stock', true); // switched to out of stock by hand
         } elseif ($bucket === 'below') {
             $query->whereColumn('products.stock', '<=', 'products.low_stock_threshold');
         } elseif ($bucket === 'fast') {
@@ -118,6 +120,7 @@ class StockManagementController extends Controller
             $counts[$key] = $this->applyStock($this->baseFiltered($request), new Request(['stock_filter' => $key]))->count();
         }
         $counts['below'] = $this->applyStock($this->baseFiltered($request), new Request(['stock_filter' => 'below']))->count();
+        $counts['marked'] = $this->applyStock($this->baseFiltered($request), new Request(['stock_filter' => 'marked']))->count();
         $counts['fast'] = $this->applyStock($this->baseFiltered($request), new Request(['stock_filter' => 'fast']))->count();
         $counts['all'] = $this->baseFiltered($request)->count();
 

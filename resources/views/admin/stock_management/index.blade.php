@@ -32,9 +32,9 @@
      matching" below → one bulk change for the whole filtered list. --}}
 @php
     $chip = fn ($key) => request()->fullUrlWithQuery(['stock_filter' => request('stock_filter') === $key ? null : $key, 'min' => null, 'max' => null, 'page' => null]);
-    $chipColors = ['out' => '#ef4444', 's1' => '#f97316', 's2' => '#f97316', 's3' => '#f59e0b', 'low' => '#f59e0b', 'b6' => '#eab308', 'b11' => '#84cc16', 'ok' => '#10b981', 'below' => '#e11d48', 'fast' => '#8b5cf6'];
+    $chipColors = ['out' => '#ef4444', 's1' => '#f97316', 's2' => '#f97316', 's3' => '#f59e0b', 'low' => '#f59e0b', 'b6' => '#eab308', 'b11' => '#84cc16', 'ok' => '#10b981', 'below' => '#e11d48', 'fast' => '#8b5cf6', 'marked' => '#64748b'];
     $chips = collect(\App\Http\Controllers\Admin\StockManagementController::STOCK_BUCKETS)->map(fn ($b) => $b[0])
-        ->put('below', 'Below its alert level')->put('fast', '🔥 Running out soon');
+        ->put('below', 'Below its alert level')->put('fast', '🔥 Running out soon')->put('marked', '⏸ Switched off');
     $active = request('stock_filter');
 @endphp
 <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-sm p-4 mb-4 space-y-4">
@@ -229,6 +229,7 @@
                         <span class="ml-1 text-xs bg-orange-100 text-orange-700 px-1.5 py-0.5 rounded-full">Low</span>
                         @endif
                         @if(!$product->is_active)<span class="block text-[10px] text-gray-400">hidden</span>@endif
+                        @if($product->marked_out_of_stock)<span class="block text-[10px] font-semibold" style="color:#dc2626" title="Switched to Out of stock in Products — the number above is untouched">⏸ shown out of stock</span>@endif
                     </td>
                     <td class="px-6 py-3 text-center">
                         @php

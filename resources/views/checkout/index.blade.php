@@ -10,7 +10,16 @@
 
 @section('content')
 <div class="max-w-[1200px] mx-auto px-4 py-8">
-    <h1 class="text-2xl font-extrabold text-gray-900 mb-6">Checkout</h1>
+    <h1 class="text-2xl font-extrabold text-gray-900 mb-6">{{ ($isPreorder ?? false) ? 'Pre-order' : 'Checkout' }}</h1>
+    @if($isPreorder ?? false)
+        <div class="mb-6 rounded-2xl p-4 flex items-start gap-3" style="background: linear-gradient(135deg, rgba(124,58,237,.12), rgba(236,72,153,.08)); border: 1px solid rgba(124,58,237,.25);">
+            <span class="text-2xl">📦</span>
+            <div class="text-sm text-gray-700 dark:text-gray-200">
+                <p class="font-bold text-gray-900 dark:text-white">You're pre-ordering an item that's out of stock right now</p>
+                <p>Pay just the <strong>delivery charge</strong> now by bKash / Nagad to book it — the rest is paid when it reaches you. {{ setting('preorder_note', 'We ship as soon as the new stock arrives — usually within 7–15 days. We\'ll call you to confirm.') }}</p>
+            </div>
+        </div>
+    @endif
 
     @if($errors->any())
         <div class="bg-red-50 border border-red-200 rounded-xl p-4 mb-6">
@@ -490,6 +499,29 @@
                         </template>
                         <p class="text-xs text-blue-700 whitespace-pre-line" x-text="current.instructions"></p>
                     </div>
+
+                    @if($isPreorder ?? false)
+                        {{-- pre-order: only the delivery charge (+ the method's fee) is sent now --}}
+                        <div class="rounded-xl p-4 mb-4" style="background: rgba(124,58,237,.08); border: 1px solid rgba(124,58,237,.3);">
+                            <p class="text-sm font-bold" style="color:#6d28d9;">📦 Pre-order — pay only the delivery charge now</p>
+                            <div class="mt-2 grid grid-cols-2 gap-3 text-center">
+                                <div class="rounded-lg bg-white dark:bg-gray-900 p-3">
+                                    <p class="text-[11px] uppercase tracking-wide text-gray-500">Send now by <span x-text="current.name"></span></p>
+                                    <p class="text-2xl font-extrabold" style="color:#6d28d9;" x-text="cs + Math.round(shipping + (parseFloat(current.charge) || 0)).toLocaleString('en-US')"></p>
+                                </div>
+                                <div class="rounded-lg bg-white dark:bg-gray-900 p-3">
+                                    <p class="text-[11px] uppercase tracking-wide text-gray-500">Pay on delivery</p>
+                                    <p class="text-2xl font-extrabold text-gray-900 dark:text-white" x-text="cs + Math.round(total - shipping - (parseFloat(current.charge) || 0)).toLocaleString('en-US')"></p>
+                                </div>
+                            </div>
+                            <ol class="mt-3 text-xs text-gray-600 dark:text-gray-300 space-y-1 list-decimal list-inside">
+                                <li>Open <strong x-text="current.name"></strong> → <strong>Send Money</strong> to the number above</li>
+                                <li>Send exactly the "Send now" amount</li>
+                                <li>Type the <strong>Transaction ID</strong> and the number you sent from below</li>
+                            </ol>
+                            <p class="mt-2 text-xs text-gray-500">{{ setting('preorder_note', 'We ship as soon as the new stock arrives — usually within 7–15 days. We\'ll call you to confirm.') }}</p>
+                        </div>
+                    @endif
 
                     <div x-show="needsTxn(current.type)" x-cloak class="space-y-3">
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">

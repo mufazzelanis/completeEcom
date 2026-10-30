@@ -104,6 +104,7 @@
                 <option value="in"  {{ request('stock_status') === 'in'  ? 'selected' : '' }}>In Stock</option>
                 <option value="low" {{ request('stock_status') === 'low' ? 'selected' : '' }}>Low Stock</option>
                 <option value="out" {{ request('stock_status') === 'out' ? 'selected' : '' }}>Out of Stock</option>
+                <option value="marked" {{ request('stock_status') === 'marked' ? 'selected' : '' }}>Switched off (shown out of stock)</option>
             </select>
 
             <label class="flex items-center gap-1.5 border border-gray-200 rounded-xl px-3 py-2 cursor-pointer text-sm text-gray-700 hover:bg-gray-50 select-none">
@@ -231,6 +232,8 @@
             <button type="submit" name="bulk_action" value="activate" class="text-sm text-green-700 hover:text-green-900 font-medium px-2 py-1 rounded-lg hover:bg-white transition">Activate</button>
             <button type="submit" name="bulk_action" value="deactivate" class="text-sm text-gray-600 hover:text-gray-800 font-medium px-2 py-1 rounded-lg hover:bg-white transition">Deactivate</button>
             <button type="submit" name="bulk_action" value="feature" class="text-sm text-yellow-700 hover:text-yellow-900 font-medium px-2 py-1 rounded-lg hover:bg-white transition">Mark Featured</button>
+            <button type="submit" name="bulk_action" value="mark_out" class="text-sm font-medium px-2 py-1 rounded-lg hover:bg-white transition" style="color:#dc2626">Show Out of Stock</button>
+            <button type="submit" name="bulk_action" value="mark_available" class="text-sm font-medium px-2 py-1 rounded-lg hover:bg-white transition" style="color:#059669">Show Available</button>
             <button type="submit" name="bulk_action" value="unfeature" class="text-sm text-gray-600 hover:text-gray-800 font-medium px-2 py-1 rounded-lg hover:bg-white transition">Unmark Featured</button>
             <button type="button"
                     @click="showConfirmModal(`Delete ${selected.length} product(s)? This can't be undone.`).then(ok => {
@@ -318,6 +321,27 @@
                     </td>
                     <td class="px-6 py-4 text-center">
                         <span class="{{ $product->stock === 0 ? 'text-red-600' : ($product->isLowStock() ? 'text-yellow-600' : 'text-gray-800') }} font-semibold text-sm">{{ $product->stock }}</span>
+                        {{-- Available / Out of stock switch — shoppers see "Out of stock" and can't order
+                             while it's off; the stock number above is left exactly as it is --}}
+                        <div class="mt-1.5" x-data="{ out: {{ $product->marked_out_of_stock ? 'true' : 'false' }}, busy: false,
+                                async flip() {
+                                    if (this.busy) return; this.busy = true;
+                                    try {
+                                        const r = await fetch(@js(route('admin.products.stock-switch', $product->id)), { method: 'PATCH', headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content }, body: JSON.stringify({ out: !this.out }) });
+                                        const d = await r.json();
+                                        if (r.ok) { this.out = d.out; window.showToast ? showToast(d.message) : null; }
+                                    } finally { this.busy = false; }
+                                } }">
+                            <button type="button" role="switch" :aria-checked="(!out).toString()" @click="flip()" :disabled="busy"
+                                    class="inline-flex items-center gap-1.5 rounded-full pl-1 pr-2 py-0.5 text-[11px] font-semibold transition"
+                                    :style="out ? 'background:#ef44441f;color:#dc2626' : 'background:#10b9811f;color:#059669'"
+                                    :title="out ? 'Customers see Out of stock — click to make it available' : 'Customers can order — click to show it as Out of stock'">
+                                <span class="relative inline-block w-6 h-3.5 rounded-full transition" :style="out ? 'background:#fca5a5' : 'background:#6ee7b7'">
+                                    <span class="absolute top-0.5 w-2.5 h-2.5 rounded-full bg-white shadow transition-all" :style="out ? 'left:2px' : 'left:12px'"></span>
+                                </span>
+                                <span x-text="out ? 'Out of stock' : 'Available'">{{ $product->marked_out_of_stock ? 'Out of stock' : 'Available' }}</span>
+                            </button>
+                        </div>
                     </td>
                     <td class="px-6 py-4 text-center">
                         <span class="px-2 py-1 rounded-full text-xs font-medium {{ $product->is_active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700' }}">

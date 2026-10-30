@@ -220,6 +220,7 @@ Route::post('/checkout/phone/send', [\App\Http\Controllers\CheckoutPhoneControll
 Route::post('/checkout/phone/verify', [\App\Http\Controllers\CheckoutPhoneController::class, 'verify'])->middleware('throttle:20,10,post-checkout-phone-verify')->name('checkout.phone.verify');
 Route::get('/checkout/success/{order}', [CheckoutController::class, 'success'])->name('checkout.success');
 Route::post('/buy-now', [CheckoutController::class, 'buyNow'])->name('checkout.buy-now');
+Route::post('/preorder', [CheckoutController::class, 'preorder'])->middleware('throttle:20,1,post-preorder')->name('checkout.preorder');
 
 // Guest Order Tracking
 Route::get('/track-order', [CheckoutController::class, 'guestTrackForm'])->name('guest.order.track.form');
@@ -403,6 +404,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::resource('products', AdminProductController::class);
     Route::post('products/{product}/duplicate', [AdminProductController::class, 'duplicate'])->name('products.duplicate');
     Route::post('products/bulk-action', [AdminProductController::class, 'bulkAction'])->name('products.bulk-action');
+    Route::patch('products/{product}/stock-switch', [AdminProductController::class, 'toggleStockSwitch'])->name('products.stock-switch');
     Route::patch('products/{product}/move-up', [AdminProductController::class, 'moveUp'])->name('products.move-up');
     Route::patch('products/{product}/move-down', [AdminProductController::class, 'moveDown'])->name('products.move-down');
     Route::post('products/reorder', [AdminProductController::class, 'reorder'])->name('products.reorder');

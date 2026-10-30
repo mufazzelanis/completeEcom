@@ -42,6 +42,7 @@ class Product extends Model
         'sitemap_priority' => 'decimal:2',
         'is_active' => 'boolean',
         'is_featured' => 'boolean',
+        'marked_out_of_stock' => 'boolean',
         'noindex' => 'boolean',
         'nofollow' => 'boolean',
         'nosnippet' => 'boolean',
@@ -174,6 +175,29 @@ class Product extends Model
         return $this->type === 'digital';
     }
 
+    /**
+     * Out of stock but can be pre-ordered: Settings → pre-orders on, a physical product with no
+     * size/colour choice, and at least one bKash / Nagad (mobile banking) method active to take
+     * the delivery-charge advance.
+     */
+    public function canPreorder(): bool
+    {
+        return setting('preorder_enabled', '1') === '1'
+            && $this->is_active
+            && $this->available_stock <= 0
+            && !$this->isDigital()
+            && !$this->isVariable()
+            && static::preorderPaymentMethods()->isNotEmpty();
+    }
+
+    /** Active mobile-banking methods (bKash, Nagad, Rocket…) — how a pre-order's advance is paid. */
+    public static function preorderPaymentMethods()
+    {
+        static $methods = null;
+
+        return $methods ??= PaymentMethod::where('is_active', true)->where('type', 'mobile_banking')->orderBy('sort_order')->get();
+    }
+
     public function isBundle(): bool
     {
         return $this->type === 'bundle';
@@ -219,8 +243,16 @@ class Product extends Model
         return $this->sale_price ?? $this->price;
     }
 
+    /**
+     * What can actually be sold right now. 0 while the admin has the product switched to
+     * "out of stock" (marked_out_of_stock) — every storefront check (cards, product page,
+     * cart, checkout, landing pages, feeds) goes through this, so one switch covers them all.
+     */
     public function getAvailableStockAttribute()
     {
+        if ($this->marked_out_of_stock) {
+            return 0;
+        }
         if (! $this->isBundle()) {
             return $this->stock;
         }

@@ -84,7 +84,7 @@ class OrderController extends Controller
             $combination = $item->product_variant_combination_id
                 ? \App\Models\ProductVariantCombination::where('id', $item->product_variant_combination_id)->where('is_active', true)->first()
                 : null;
-            $available = $combination ? (int) $combination->stock : (int) ($product?->available_stock ?? 0);
+            $available = $product?->marked_out_of_stock ? 0 : ($combination ? (int) $combination->stock : (int) ($product?->available_stock ?? 0));
             if (! $product || ! $product->is_active || ($product->isVariable() && ! $combination) || $available < 1) {
                 $skipped[] = $item->product_name;
                 continue;

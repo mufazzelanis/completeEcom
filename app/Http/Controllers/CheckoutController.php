@@ -51,7 +51,7 @@ class CheckoutController extends Controller
             }
         }
 
-        $availableQty = $combination ? $combination->stock : $product->available_stock;
+        $availableQty = $product->marked_out_of_stock ? 0 : ($combination ? $combination->stock : $product->available_stock);
 
         if ($availableQty < $request->quantity) {
             return back()->with('error', 'Insufficient stock.');
@@ -66,6 +66,32 @@ class CheckoutController extends Controller
         return redirect()->route('checkout.index');
     }
 
+    /**
+     * POST /preorder — "Pre-order" on an out-of-stock product page. Same one-product checkout as
+     * Buy Now, flagged as a pre-order: the checkout then offers only bKash / Nagad and asks for
+     * just the delivery charge up front; the rest is paid on delivery.
+     */
+    public function preorder(Request $request)
+    {
+        $request->validate([
+            'product_id' => 'required|exists:products,id',
+            'quantity' => 'required|integer|min:1|max:10',
+        ]);
+        $product = Product::findOrFail($request->product_id);
+        if (! $product->canPreorder()) {
+            return back()->with('error', $product->available_stock > 0 ? 'Good news — this is in stock, you can order it normally.' : 'Pre-orders aren\'t available for this product.');
+        }
+
+        session(['buy_now' => ['product_id' => $product->id, 'variant_combination_id' => null, 'quantity' => (int) $request->quantity, 'preorder' => true]]);
+
+        return redirect()->route('checkout.index');
+    }
+
+    private function isPreorder(): bool
+    {
+        return (bool) data_get(session('buy_now'), 'preorder');
+    }
+
     private function resolveCheckoutItems()
     {
         if ($buyNow = session('buy_now')) {
@@ -74,7 +100,11 @@ class CheckoutController extends Controller
                 ? ProductVariantCombination::with(['color', 'size'])->find($buyNow['variant_combination_id'])
                 : null;
 
-            $availableQty = $combination ? $combination->stock : $product?->available_stock;
+            $availableQty = $product?->marked_out_of_stock ? 0 : ($combination ? $combination->stock : $product?->available_stock);
+            if (! empty($buyNow['preorder'])) {
+                // a pre-order needs no stock — only that the product can still be pre-ordered
+                $availableQty = $product?->canPreorder() ? PHP_INT_MAX : 0;
+            }
 
             if (! $product || $availableQty === null || $availableQty < $buyNow['quantity']) {
                 session()->forget('buy_now');
@@ -150,6 +180,10 @@ class CheckoutController extends Controller
         if ($cartItems->isEmpty()) {
             return redirect()->route('cart.index')->with('error', 'Your cart is empty.');
         }
+        // the admin switched one of these to "out of stock" after it went into the cart
+        if ($blocked = $cartItems->first(fn ($item) => $item->product?->marked_out_of_stock)) {
+            return redirect()->route('cart.index')->with('error', '"' . $blocked->product->name . '" is currently out of stock — please remove it from your cart to continue.');
+        }
 
         $subtotal = $cartItems->sum('subtotal');
         $coupon = session('coupon');
@@ -175,15 +209,20 @@ class CheckoutController extends Controller
         $defaultZone = old('shipping_zone', 'dhaka');
         $shipping = $usesZones ? $shippingByZone[$defaultZone] : ShippingCalculator::calculate($subtotal);
 
-        $paymentMethods = PaymentMethod::where('is_active', true)->orderBy('sort_order')->get();
+        // Pre-order: only bKash / Nagad, and their fee is on the advance (the delivery charge) — that's all that's paid now
+        $isPreorder = $this->isPreorder();
+        $paymentMethods = $isPreorder
+            ? Product::preorderPaymentMethods()
+            : PaymentMethod::where('is_active', true)->orderBy('sort_order')->get();
         $addresses = auth()->check() ? auth()->user()->addresses : collect();
+        $chargeBase = fn ($zoneShipping) => $isPreorder ? $zoneShipping : $subtotal - $discount + $zoneShipping;
 
         $methodCharges = $paymentMethods->mapWithKeys(fn ($m) => [
-            $m->slug => $m->calculateCharge($subtotal - $discount + $shipping),
+            $m->slug => $m->calculateCharge($chargeBase($shipping)),
         ]);
         $methodChargesByZone = $usesZones ? [
-            'dhaka'         => $paymentMethods->mapWithKeys(fn ($m) => [$m->slug => $m->calculateCharge($subtotal - $discount + $shippingByZone['dhaka'])]),
-            'outside_dhaka' => $paymentMethods->mapWithKeys(fn ($m) => [$m->slug => $m->calculateCharge($subtotal - $discount + $shippingByZone['outside_dhaka'])]),
+            'dhaka'         => $paymentMethods->mapWithKeys(fn ($m) => [$m->slug => $m->calculateCharge($chargeBase($shippingByZone['dhaka']))]),
+            'outside_dhaka' => $paymentMethods->mapWithKeys(fn ($m) => [$m->slug => $m->calculateCharge($chargeBase($shippingByZone['outside_dhaka']))]),
         ] : null;
 
         $base = $subtotal - $discount + $shipping;
@@ -212,7 +251,7 @@ class CheckoutController extends Controller
             'cartItems', 'subtotal', 'discount', 'shipping', 'total',
             'coupon', 'promoCode', 'addresses', 'paymentMethods', 'methodCharges', 'base',
             'usesZones', 'shippingByZone', 'defaultZone', 'methodChargesByZone',
-            'pointsBalance', 'pointsRedeemed', 'pointsDiscount', 'checkoutFields', 'fbInitiateCheckoutEventId'
+            'pointsBalance', 'pointsRedeemed', 'pointsDiscount', 'checkoutFields', 'fbInitiateCheckoutEventId', 'isPreorder'
         ));
     }
 
@@ -331,6 +370,11 @@ class CheckoutController extends Controller
             ->where('is_active', true)
             ->firstOrFail();
 
+        $isPreorder = $this->isPreorder();
+        if ($isPreorder && $paymentMethod->type !== 'mobile_banking') {
+            return back()->withInput()->withErrors(['payment_method' => 'For a pre-order, please pay the delivery charge by bKash or Nagad.']);
+        }
+
         if ($paymentMethod->requiresVerification()) {
             $request->validate([
                 'transaction_id' => 'required|string|min:6|max:100',
@@ -343,6 +387,10 @@ class CheckoutController extends Controller
 
         if ($cartItems->isEmpty()) {
             return redirect()->route('cart.index')->with('error', 'Your cart is empty.');
+        }
+        // the admin switched one of these to "out of stock" after it went into the cart
+        if ($blocked = $cartItems->first(fn ($item) => $item->product?->marked_out_of_stock)) {
+            return redirect()->route('cart.index')->with('error', '"' . $blocked->product->name . '" is currently out of stock — please remove it from your cart to continue.');
         }
 
         $subtotal = $cartItems->sum('subtotal');
@@ -382,8 +430,10 @@ class CheckoutController extends Controller
         $shippingZone = ShippingCalculator::usesZones() ? $request->shipping_zone : null;
         $shipping = ShippingCalculator::calculate($subtotal, $shippingZone);
         $base = $subtotal - $discount + $shipping;
-        $paymentCharge = $paymentMethod->calculateCharge($base);
+        // pre-order: the method's fee applies to what's paid now (the delivery charge), not the whole order
+        $paymentCharge = $paymentMethod->calculateCharge($isPreorder ? $shipping : $base);
         $total = $base + $paymentCharge;
+        $advance = $isPreorder ? round($shipping + $paymentCharge, 2) : 0;
 
         if ($paymentMethod->min_amount && $total < $paymentMethod->min_amount) {
             return back()->withErrors(['payment_method' => "Minimum order amount for {$paymentMethod->name} is ৳{$paymentMethod->min_amount}."]);
@@ -432,7 +482,7 @@ class CheckoutController extends Controller
         $order = DB::transaction(function () use (
             $request, $cartItems, $subtotal, $discount, $shipping, $shippingZone,
             $paymentCharge, $total, $couponCode, $couponId, $promoCodeId, $pointsRedeemed, $pointsDiscountValue, $paymentMethod, $isBuyNow,
-            $guestToken
+            $guestToken, $isPreorder, $advance
         ) {
             if ($couponId) {
                 Coupon::where('id', $couponId)
@@ -472,6 +522,8 @@ class CheckoutController extends Controller
                 'shipping_zip' => $request->shipping_zip,
                 'shipping_country' => $request->shipping_country ?? 'Bangladesh',
                 'notes' => $request->notes,
+                'is_preorder' => $isPreorder,
+                'advance_amount' => $advance,
             ]);
 
             ReferralService::maybeReward($order);
@@ -509,7 +561,9 @@ class CheckoutController extends Controller
                     'download_expires_at' => ($item->product->isDigital() && $item->product->download_expiry_days)
                         ? now()->addDays($item->product->download_expiry_days) : null,
                 ]);
-                if ($item->product->isBundle()) {
+                if ($isPreorder) {
+                    // nothing in stock to take — the order waits for the restock
+                } elseif ($item->product->isBundle()) {
                     foreach ($item->product->bundleItems as $bundleItem) {
                         $before = $bundleItem->itemProduct->stock;
                         $bundleItem->itemProduct->decrement('stock', $bundleItem->quantity * $item->quantity);
@@ -544,7 +598,7 @@ class CheckoutController extends Controller
                 'payment_method_id' => $paymentMethod->id,
                 'payment_method_slug' => $paymentMethod->slug,
                 'payment_method_name' => $paymentMethod->name,
-                'amount' => $total,
+                'amount' => $isPreorder ? $advance : $total, // pre-order: only the advance is paid now
                 'charge' => $paymentCharge,
                 'status' => $initialStatus,
                 'transaction_id' => $request->transaction_id,

@@ -94,7 +94,7 @@ class HomeSection extends Model
 
         match ($this->source_type) {
             'featured'     => $query->featured()->latest(),
-            'top_selling'  => $query->where('stock', '>', 0)->orderByDesc('views'),
+            'top_selling'  => $query->where('stock', '>', 0)->where('marked_out_of_stock', false)->orderByDesc('views'),
             'on_sale'      => $query->whereNotNull('sale_price')->orderByDesc('updated_at'),
             default        => $query->latest(), // 'new_arrivals' and 'category'
         };

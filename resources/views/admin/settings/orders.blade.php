@@ -47,6 +47,37 @@
     </div>
 </div>
 
+{{-- Pre-orders: out-of-stock products get a "Pre-order" button — the shopper pays only the
+     delivery charge by bKash / Nagad (Payment Methods → their numbers) and the rest on delivery --}}
+@php $poMethods = \App\Models\PaymentMethod::where('is_active', true)->where('type', 'mobile_banking')->get(['name', 'account_number']); @endphp
+<div class="bg-white rounded-xl shadow-sm border p-6 space-y-4">
+    <div class="flex items-center justify-between">
+        <h3 class="font-semibold text-gray-800">📦 Pre-orders</h3>
+        <label class="flex items-center gap-2 cursor-pointer">
+            <input type="hidden" name="preorder_enabled" value="0">
+            <input type="checkbox" name="preorder_enabled" value="1" class="rounded text-orange-600" @checked(setting('preorder_enabled', '1') == '1')>
+            <span class="text-sm text-gray-700">Allow pre-orders on out-of-stock products</span>
+        </label>
+    </div>
+    <p class="text-sm text-gray-500">The customer pays only the delivery charge now by bKash / Nagad (Send Money + Transaction ID), the rest on delivery. Works for products without size/colour options. Pre-orders don't change stock.</p>
+    <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Delivery time note (shown to customers)</label>
+        <input type="text" name="preorder_note" maxlength="200" value="{{ setting('preorder_note', 'We ship as soon as the new stock arrives — usually within 7–15 days. We\'ll call you to confirm.') }}"
+               class="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500">
+    </div>
+    <div class="text-sm rounded-lg px-4 py-3 {{ $poMethods->isEmpty() ? 'bg-red-50 text-red-700' : 'bg-gray-50 text-gray-600' }}">
+        @if($poMethods->isEmpty())
+            ⚠️ No bKash / Nagad payment method is active, so the Pre-order button stays hidden. Turn one on in <a href="{{ route('admin.payment-methods.index') }}" class="underline font-semibold">Payment Methods</a>.
+        @else
+            Advance is paid to:
+            @foreach($poMethods as $m)
+                <strong>{{ $m->name }}</strong> {{ $m->account_number ?: '— ⚠️ number not set' }}@if(!$loop->last) · @endif
+            @endforeach
+            — <a href="{{ route('admin.payment-methods.index') }}" class="underline">edit numbers</a>
+        @endif
+    </div>
+</div>
+
 <div class="bg-white rounded-xl shadow-sm border p-6 space-y-4">
     <h2 class="text-base font-semibold text-gray-900 pb-2 border-b">Phone Number Check (fake-order protection)</h2>
     @php

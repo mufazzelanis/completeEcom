@@ -87,7 +87,8 @@ class ProductController extends Controller
             match($request->stock_status) {
                 'out' => $query->where('stock', 0),
                 'low' => $query->where('stock', '>', 0)->whereRaw('stock <= COALESCE(low_stock_threshold, 5)'),
-                'in'  => $query->where('stock', '>', 0),
+                'in'  => $query->where('stock', '>', 0)->where('marked_out_of_stock', false),
+                'marked' => $query->where('marked_out_of_stock', true), // switched off by hand, stock untouched
                 default => null,
             };
         }
@@ -510,12 +511,29 @@ class ProductController extends Controller
      * NULL the single-product destroy() already relies on, so old orders keep their
      * line items even once the product itself is gone.
      */
+    /**
+     * The Products list's "Available / Out of stock" switch: shows the product as out of stock
+     * to customers (and blocks ordering it) without touching the real stock count. Turning it
+     * back on makes the same stock sellable again — and "Notify me" shoppers get their message.
+     */
+    public function toggleStockSwitch(Request $request, Product $product)
+    {
+        $out = $request->has('out') ? $request->boolean('out') : !$product->marked_out_of_stock;
+        $product->forceFill(['marked_out_of_stock' => $out])->save();
+        \App\Services\AuditLogger::log('product.stock_switch', ($out ? 'Marked out of stock: ' : 'Marked available again: ') . $product->name, $product);
+
+        return response()->json([
+            'out' => $out,
+            'message' => $out ? "\"{$product->name}\" now shows as Out of stock." : "\"{$product->name}\" is available again ({$product->stock} in stock).",
+        ]);
+    }
+
     public function bulkAction(Request $request)
     {
         $validated = $request->validate([
             'ids' => 'required|array|min:1',
             'ids.*' => 'integer|exists:products,id',
-            'bulk_action' => 'required|in:activate,deactivate,feature,unfeature,delete',
+            'bulk_action' => 'required|in:activate,deactivate,feature,unfeature,mark_out,mark_available,delete',
         ]);
 
         $query = Product::whereIn('id', $validated['ids']);
@@ -536,6 +554,8 @@ class ProductController extends Controller
             'deactivate' => $query->update(['is_active' => false]),
             'feature' => $query->update(['is_featured' => true]),
             'unfeature' => $query->update(['is_featured' => false]),
+            // one by one so model events fire (homepage/shop caches refresh right away)
+            'mark_out', 'mark_available' => $query->get()->each(fn ($p) => $p->forceFill(['marked_out_of_stock' => $validated['bulk_action'] === 'mark_out'])->save()),
             'delete' => null,
         };
 
@@ -544,6 +564,8 @@ class ProductController extends Controller
             'deactivate' => "$count product(s) deactivated.",
             'feature' => "$count product(s) marked as Featured.",
             'unfeature' => "$count product(s) unmarked as Featured.",
+            'mark_out' => "$count product(s) now show as Out of stock.",
+            'mark_available' => "$count product(s) are available again.",
             'delete' => ($count - $archived) . ' product(s) deleted.'
                 . ($archived ? " $archived couldn't be deleted (other records depend on them), so they were deactivated instead." : ''),
         ];

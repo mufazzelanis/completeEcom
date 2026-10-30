@@ -74,6 +74,7 @@
                     <td class="px-6 py-4">
                         <div class="flex items-center gap-2">
                             <a href="{{ route('admin.orders.show', $order->id) }}" class="font-semibold text-orange-600 dark:text-orange-400 text-sm hover:text-orange-700 dark:hover:text-orange-300">{{ $order->order_number }}</a>
+                            @if($order->is_preorder)<span class="ml-1 text-[10px] font-bold px-1.5 py-0.5 rounded-full text-white" style="background:#7c3aed;" title="Pre-order — advance ৳{{ number_format($order->advance_amount) }} paid, collect the rest on delivery">PRE-ORDER</span>@endif
                             @if($order->source === 'phone')
                             <span title="Manually entered — phone/offline order" class="text-[10px] font-semibold bg-purple-50 dark:bg-purple-500/15 text-purple-600 dark:text-purple-400 px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
                                 <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>

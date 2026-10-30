@@ -82,7 +82,7 @@ class ShopController extends Controller
         }
 
         if ($request->boolean('in_stock')) {
-            $query->where('stock', '>', 0);
+            $query->where('stock', '>', 0)->where('marked_out_of_stock', false);
         }
 
         if ($request->boolean('on_sale')) {

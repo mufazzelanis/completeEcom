@@ -18,6 +18,7 @@ class Order extends Model
         'landing_page_id', 'landing_page_data',
         'source', 'created_by',
         'delivered_at', 'review_requested_at', 'review_token',
+        'is_preorder', 'advance_amount',
     ];
 
     protected $casts = [
@@ -29,6 +30,8 @@ class Order extends Model
         'points_discount_value'  => 'decimal:2',
         'fraud_flags'            => 'array',
         'is_fraud_flagged'       => 'boolean',
+        'is_preorder'            => 'boolean',
+        'advance_amount'         => 'decimal:2',
         'fraud_checked_at'       => 'datetime',
         'points_awarded_at'      => 'datetime',
         'landing_page_data'      => 'array',

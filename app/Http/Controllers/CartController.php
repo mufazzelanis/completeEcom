@@ -176,7 +176,7 @@ class CartController extends Controller
             }
         }
 
-        $availableQty = $combination ? $combination->stock : $product->available_stock;
+        $availableQty = $product->marked_out_of_stock ? 0 : ($combination ? $combination->stock : $product->available_stock);
 
         if ($availableQty < $request->quantity) {
             if ($request->wantsJson()) {

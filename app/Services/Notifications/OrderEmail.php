@@ -68,7 +68,9 @@ class OrderEmail
         $paid = $order->payment_status === 'paid';
 
         return match ($stage) {
-            'placed' => "Thank you for shopping with {$site}! We've received your order and our team will confirm it shortly. We'll keep you updated by email at every step.",
+            'placed' => $order->is_preorder
+                ? "Your pre-order with {$site} is booked! We've received your advance of " . self::money($order->advance_amount) . " (we'll verify the payment shortly). We'll ship it as soon as the new stock arrives — the remaining " . self::money($order->total - $order->advance_amount) . " is paid on delivery."
+                : "Thank you for shopping with {$site}! We've received your order and our team will confirm it shortly. We'll keep you updated by email at every step.",
             'pending' => "Your order is pending confirmation. Our team will confirm it shortly.",
             'processing' => "Good news — your order is confirmed and our team is now packing it with care. We'll let you know as soon as it ships.",
             'shipped' => "Your order has been handed over to our delivery partner and is on its way to you. Please keep your phone reachable so the rider can contact you.",

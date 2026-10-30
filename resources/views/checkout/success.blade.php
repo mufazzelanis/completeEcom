@@ -110,8 +110,15 @@
             <div class="ty-meta">
                 <span>🗓️ {{ $placedAt->format('d M Y, g:i A') }}</span>
                 <span>📦 {{ $itemCount }} {{ \Illuminate\Support\Str::plural('item', $itemCount) }}</span>
-                <span>🚚 Arrives {{ $eta }}</span>
+                @unless($order->is_preorder)<span>🚚 Arrives {{ $eta }}</span>@endunless
             </div>
+            @if($order->is_preorder)
+                <div class="mt-4 mx-auto max-w-lg rounded-xl p-3 text-sm text-left" style="background: rgba(124,58,237,.1); border: 1px solid rgba(124,58,237,.3);">
+                    <p class="font-bold" style="color:#7c3aed;">📦 Pre-order booked</p>
+                    <p style="color: var(--ty-text)">Advance <strong>৳{{ number_format($order->advance_amount) }}</strong> received by {{ \App\Services\Notifications\OrderEmail::paymentLabel($order->payment_method) }} (we'll verify it shortly) · pay <strong>৳{{ number_format($order->total - $order->advance_amount) }}</strong> on delivery.</p>
+                    <p class="text-xs mt-1" style="color: var(--ty-muted)">{{ setting('preorder_note', 'We ship as soon as the new stock arrives — usually within 7–15 days. We\'ll call you to confirm.') }}</p>
+                </div>
+            @endif
         </div>
 
         @php $showAccountBox = ($accountCreated ?? false) || session('password_set') || session('can_set_password') === auth()->id(); @endphp
