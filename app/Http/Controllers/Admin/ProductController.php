@@ -60,13 +60,14 @@ class ProductController extends Controller
             });
         }
         if ($request->filled('category')) {
-            $query->where('category_id', $request->category);
+            // a sub-category in the filter matches products filed under it too
+            $query->where(fn ($q) => $q->where('category_id', $request->category)->orWhere('subcategory_id', $request->category));
         }
         if ($request->filled('type')) {
             $query->where('type', $request->type);
         }
         if ($request->filled('brand')) {
-            $query->where('brand_id', $request->brand);
+            $request->brand === 'none' ? $query->whereNull('brand_id') : $query->where('brand_id', $request->brand);
         }
         if ($request->filled('status')) {
             $query->where('is_active', $request->status === 'active');
@@ -96,9 +97,27 @@ class ProductController extends Controller
         return $query;
     }
 
+    /** Session key for the Products list's last filters/page (see index()). */
+    private const FILTER_MEMORY = 'admin.products.filters';
+
     public function index(Request $request)
     {
-        $query = $this->filteredProducts($request)->with(['category', 'brand', 'seller']);
+        // Sticky filters: the list comes back exactly as it was left (filters, sort, page) after
+        // editing, deleting, duplicating or a bulk action — or coming back from the sidebar —
+        // until "Clear" (?reset=1) forgets them.
+        if ($request->boolean('reset')) {
+            session()->forget(self::FILTER_MEMORY);
+
+            return redirect()->route('admin.products.index');
+        }
+        $params = array_filter($request->query(), fn ($v) => $v !== null && $v !== '');
+        if ($params) {
+            session([self::FILTER_MEMORY => $params]);
+        } elseif ($saved = session(self::FILTER_MEMORY)) {
+            return redirect()->route('admin.products.index', $saved);
+        }
+
+        $query = $this->filteredProducts($request)->with(['category', 'brand', 'seller', 'subcategory']);
 
         $sortBy = $request->get('sort_by', 'latest');
         match($sortBy) {
@@ -432,8 +451,16 @@ class ProductController extends Controller
         return redirect()->route('admin.products.edit', $product)->with('success', 'Product updated successfully.');
     }
 
-    public function destroy(Product $product)
+    public function destroy(Request $request, Product $product)
     {
+        if ($request->wantsJson()) {
+            $deleted = $this->deleteOrArchive($product);
+
+            return response()->json(['message' => $deleted
+                ? "\"{$product->name}\" deleted."
+                : "\"{$product->name}\" couldn't be deleted because other records still depend on it, so it was deactivated instead."]);
+        }
+
         if ($this->deleteOrArchive($product)) {
             return redirect()->route('admin.products.index')->with('success', 'Product deleted.');
         }
@@ -528,16 +555,141 @@ class ProductController extends Controller
         ]);
     }
 
+    /**
+     * Quick edit from the Products list (the row's ⚡ panel): name, category, brand, prices,
+     * stock and the switches, saved without leaving the list. Only the fields sent are
+     * touched. Stock changes go through the same ledger as Stock Management's quick update.
+     * Returns the re-rendered row so the list updates in place — filters, page and scroll
+     * position stay exactly where they were.
+     */
+    public function quickUpdate(Request $request, Product $product)
+    {
+        // JSON-only endpoint; errors go back as 422 field errors for the panel
+        // (bootstrap/app.php renders JSON automatically only for api/*)
+        try {
+            $v = $this->validateQuickUpdate($request, $product);
+        } catch (ValidationException $e) {
+            return response()->json(['message' => collect($e->errors())->flatten()->first(), 'errors' => $e->errors()], 422);
+        }
+
+        $before = (int) $product->stock;
+        $stock = $v['stock'] ?? null;
+        unset($v['stock']);
+        if (isset($v['name']) && $v['name'] !== $product->name) {
+            $v['slug'] = $this->uniqueSlug(Str::slug($v['name']), $product->id);
+        }
+
+        DB::transaction(function () use ($product, $v, $stock, $before) {
+            $product->fill($v);
+            if ($stock !== null && (int) $stock !== $before) {
+                $product->stock = (int) $stock;
+                \App\Models\StockAdjustment::create([
+                    'product_id' => $product->id,
+                    'type' => $stock > $before ? 'manual_in' : 'manual_out',
+                    'quantity' => abs($stock - $before),
+                    'stock_before' => $before,
+                    'stock_after' => (int) $stock,
+                    'reference' => 'QUICK-' . date('Ymd'),
+                    'reason' => 'Quick edit (Products list)',
+                    'adjusted_by' => auth()->id(),
+                ]);
+            }
+            $changed = array_keys($product->getDirty());
+            $product->save();
+            if ($changed) {
+                \App\Services\AuditLogger::log('product.quick_edit', 'Quick edit: ' . $product->name . ' (' . implode(', ', $changed) . ')', $product);
+            }
+        });
+
+        return response()->json([
+            'message' => "\"{$product->name}\" saved.",
+            'row' => $this->renderRow($product),
+        ]);
+    }
+
+    private function validateQuickUpdate(Request $request, Product $product): array
+    {
+        $v = $request->validate([
+            'name' => 'sometimes|required|string|max:255',
+            'category_id' => 'sometimes|required|exists:categories,id',
+            'subcategory_id' => 'sometimes|nullable|exists:categories,id',
+            'brand_id' => 'sometimes|nullable|exists:brands,id',
+            'price' => 'sometimes|required|numeric|min:0',
+            'sale_price' => 'sometimes|nullable|numeric|min:0',
+            'stock' => 'sometimes|required|integer|min:0',
+            'is_active' => 'sometimes|boolean',
+            'is_featured' => 'sometimes|boolean',
+            'marked_out_of_stock' => 'sometimes|boolean',
+        ]);
+
+        // a lower regular price is checked against the sale price already saved, too
+        $price = (float) ($v['price'] ?? $product->price);
+        $sale = array_key_exists('sale_price', $v) ? $v['sale_price'] : $product->sale_price;
+        if ($sale !== null && (float) $sale >= $price) {
+            throw ValidationException::withMessages([array_key_exists('sale_price', $v) ? 'sale_price' : 'price' => 'Sale price (৳' . number_format((float) $sale) . ') must be lower than the regular price (৳' . number_format($price) . ').']);
+        }
+        if (array_key_exists('subcategory_id', $v) && $v['subcategory_id']) {
+            $parent = $v['category_id'] ?? $product->category_id;
+            if ((int) Category::whereKey($v['subcategory_id'])->value('parent_id') !== (int) $parent) {
+                throw ValidationException::withMessages(['subcategory_id' => 'That sub-category belongs to a different category.']);
+            }
+        }
+        // a new category without a sub-category clears the old one (it belonged to the old category)
+        if (isset($v['category_id']) && (int) $v['category_id'] !== (int) $product->category_id && !array_key_exists('subcategory_id', $v)) {
+            $v['subcategory_id'] = null;
+        }
+        // variable products keep stock per colour/size (products.stock mirrors those)
+        if ($product->type === 'variable') {
+            unset($v['stock']);
+        }
+
+        return $v;
+    }
+
+    /** One list row, as index() draws it — for in-place updates. */
+    private function renderRow(Product $product): string
+    {
+        $product->refresh()->load(['category', 'brand', 'seller', 'subcategory']);
+
+        return view('admin.products._row', [
+            'product' => $product,
+            'categories' => $this->categoryTree(),
+            'isManualReorder' => false,
+        ])->render();
+    }
+
     public function bulkAction(Request $request)
     {
-        $validated = $request->validate([
+        $rules = [
             'ids' => 'required|array|min:1',
             'ids.*' => 'integer|exists:products,id',
-            'bulk_action' => 'required|in:activate,deactivate,feature,unfeature,mark_out,mark_available,delete',
-        ]);
+            'bulk_action' => 'required|in:activate,deactivate,feature,unfeature,mark_out,mark_available,set_category,set_brand,delete',
+            'category_id' => 'required_if:bulk_action,set_category|nullable|exists:categories,id',
+            'brand_id' => 'nullable|exists:brands,id',
+        ];
+        if ($response = $this->validateProduct($request, $rules)) {
+            return $response;   // 422 JSON for the list's fetch
+        }
+        $validated = $request->validate($rules);
 
         $query = Product::whereIn('id', $validated['ids']);
         $count = count($validated['ids']);
+
+        // Category / brand for many at once — one by one so model events (cache refresh) fire.
+        // A sub-category picked here files the product under its parent + that sub-category.
+        if ($validated['bulk_action'] === 'set_category') {
+            $cat = Category::find($validated['category_id']);
+            $fields = $cat->parent_id
+                ? ['category_id' => $cat->parent_id, 'subcategory_id' => $cat->id]
+                : ['category_id' => $cat->id, 'subcategory_id' => null];
+            $query->get()->each(fn ($p) => $p->forceFill($fields)->save());
+            $label = $cat->name;
+        }
+        if ($validated['bulk_action'] === 'set_brand') {
+            $brandId = $validated['brand_id'] ?? null;
+            $query->get()->each(fn ($p) => $p->forceFill(['brand_id' => $brandId])->save());
+            $label = $brandId ? Brand::whereKey($brandId)->value('name') : null;
+        }
 
         // Delete goes product by product (not one bulk query) so a single product with
         // inventory history no longer fails the whole batch with a 500 — it's archived
@@ -556,10 +708,12 @@ class ProductController extends Controller
             'unfeature' => $query->update(['is_featured' => false]),
             // one by one so model events fire (homepage/shop caches refresh right away)
             'mark_out', 'mark_available' => $query->get()->each(fn ($p) => $p->forceFill(['marked_out_of_stock' => $validated['bulk_action'] === 'mark_out'])->save()),
-            'delete' => null,
+            'set_category', 'set_brand', 'delete' => null,
         };
 
         $messages = [
+            'set_category' => "$count product(s) moved to " . ($label ?? '') . '.',
+            'set_brand' => ($label ?? null) ? "Brand set to $label for $count product(s)." : "Brand removed from $count product(s).",
             'activate' => "$count product(s) activated.",
             'deactivate' => "$count product(s) deactivated.",
             'feature' => "$count product(s) marked as Featured.",
@@ -570,6 +724,11 @@ class ProductController extends Controller
                 . ($archived ? " $archived couldn't be deleted (other records depend on them), so they were deactivated instead." : ''),
         ];
 
+        if ($request->wantsJson()) {
+            return response()->json(['message' => $messages[$validated['bulk_action']]]);
+        }
+
+        // index() restores the remembered filters/page
         return redirect()->route('admin.products.index')->with('success', $messages[$validated['bulk_action']]);
     }
 

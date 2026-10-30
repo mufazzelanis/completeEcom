@@ -405,6 +405,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::post('products/{product}/duplicate', [AdminProductController::class, 'duplicate'])->name('products.duplicate');
     Route::post('products/bulk-action', [AdminProductController::class, 'bulkAction'])->name('products.bulk-action');
     Route::patch('products/{product}/stock-switch', [AdminProductController::class, 'toggleStockSwitch'])->name('products.stock-switch');
+    Route::patch('products/{product}/quick', [AdminProductController::class, 'quickUpdate'])->name('products.quick-update');
     Route::patch('products/{product}/move-up', [AdminProductController::class, 'moveUp'])->name('products.move-up');
     Route::patch('products/{product}/move-down', [AdminProductController::class, 'moveDown'])->name('products.move-down');
     Route::post('products/reorder', [AdminProductController::class, 'reorder'])->name('products.reorder');
