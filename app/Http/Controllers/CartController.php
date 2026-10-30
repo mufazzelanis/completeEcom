@@ -80,7 +80,8 @@ class CartController extends Controller
             $discount += $pointsDiscount;
         }
 
-        $shipping = $subtotal > 0 ? ShippingCalculator::calculate($subtotal, ShippingCalculator::ZONE_DHAKA) : 0;
+        // same area checkout pre-selects (Outside Dhaka), so the total doesn't jump at checkout
+        $shipping = $subtotal > 0 ? ShippingCalculator::calculate($subtotal, ShippingCalculator::ZONE_OUTSIDE_DHAKA) : 0;
         $total = $subtotal - $discount + $shipping;
 
         $cartProductIds = $cartItems->pluck('product_id');

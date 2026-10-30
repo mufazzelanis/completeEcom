@@ -61,6 +61,12 @@
     </div>
     <p class="text-sm text-gray-500">The customer pays only the delivery charge now by bKash / Nagad (Send Money + Transaction ID), the rest on delivery. Works for products without size/colour options. Pre-orders don't change stock.</p>
     <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Pre-order delivery time (days)</label>
+        <input type="text" name="preorder_days" maxlength="10" value="{{ setting('preorder_days', '7-15') }}" placeholder="7-15"
+               class="w-40 border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500">
+        <p class="text-xs text-gray-400 mt-1">Used for the "Expected delivery" date on the order confirmation page of a pre-order (regular orders use Shipping → delivery days). Keep it in line with the note below.</p>
+    </div>
+    <div>
         <label class="block text-sm font-medium text-gray-700 mb-1">Delivery time note (shown to customers)</label>
         <input type="text" name="preorder_note" maxlength="200" value="{{ setting('preorder_note', 'We ship as soon as the new stock arrives — usually within 7–15 days. We\'ll call you to confirm.') }}"
                class="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500">

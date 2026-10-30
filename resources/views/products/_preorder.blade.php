@@ -108,7 +108,7 @@
 </style>
 <div class="mb-4 rounded-2xl overflow-hidden" style="border: 1px solid rgba(124,58,237,.3);"
      x-data="{
-        q: {{ (int) old('quantity', 1) }}, zone: @js(old('zone', $poZones ? 'dhaka' : null) ?: 'dhaka'), zones: {{ $poZones ? 'true' : 'false' }},
+        q: {{ (int) old('quantity', 1) }}, zone: @js(old('zone') ?: 'outside_dhaka'), zones: {{ $poZones ? 'true' : 'false' }},
         rates: @js($poRates), price: {{ $poPrice }}, freeMin: @js($poFree),
         pay: @js($poPay), method: @js(old('payment_method', $poPay[0]['slug'] ?? null)),
         sheet: {{ $poReopen ? 'true' : 'false' }}, step: {{ $poPayErrors ? 2 : 1 }}, sending: false,
@@ -211,7 +211,7 @@
         <div class="grid grid-cols-2 gap-2 text-center">
             <div class="rounded-xl p-3" style="background: rgba(124,58,237,.08);">
                 <p class="text-[11px] uppercase tracking-wide text-gray-500 dark:text-gray-400">Pay now</p>
-                <p class="text-xl font-extrabold" style="color:#7c3aed;" x-text="money(rate)">৳{{ number_format($poZones ? $poRates['dhaka'] : $poRates['flat']) }}</p>
+                <p class="text-xl font-extrabold" style="color:#7c3aed;" x-text="money(rate)">৳{{ number_format($poZones ? $poRates['outside_dhaka'] : $poRates['flat']) }}</p>
                 <p class="text-[11px] text-gray-500 dark:text-gray-400">delivery charge · {{ $poMethods }}</p>
             </div>
             <div class="rounded-xl p-3 bg-gray-50 dark:bg-gray-800">

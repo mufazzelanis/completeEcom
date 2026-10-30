@@ -177,7 +177,7 @@
                             </div>
                         @endif
                         <div class="flex justify-between text-gray-600">
-                            <span>Shipping</span>
+                            <span>Shipping @if(\App\Services\ShippingCalculator::usesZones() && $shipping > 0)<span class="text-xs text-gray-400">(Outside Dhaka · Inside Dhaka ৳{{ number_format(\App\Services\ShippingCalculator::calculate($subtotal, \App\Services\ShippingCalculator::ZONE_DHAKA)) }})</span>@endif</span>
                             <span>{{ $shipping > 0 ? '৳' . number_format($shipping) : 'Free' }}</span>
                         </div>
                         <div class="border-t border-gray-100 pt-3 flex justify-between font-bold text-gray-900 text-base">

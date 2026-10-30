@@ -15,8 +15,12 @@
     $paymentLabel = \App\Services\Notifications\OrderEmail::paymentLabel($order->payment_method);
     $itemCount = (int) $order->items->sum('quantity');
 
-    // estimated delivery window from Settings → Shipping → delivery days (e.g. "3-7")
-    preg_match_all('/\d+/', setting('delivery_days', '3-7'), $dayNums);
+    // estimated delivery window from Settings → Shipping → delivery days (e.g. "3-7");
+    // a pre-order waits for new stock, so it uses Settings → Orders → Pre-orders → delivery time
+    $isPre = (bool) $order->is_preorder;
+    $preDue = $isPre ? max(0, (float) $order->total - (float) $order->advance_amount) : 0;
+    $preVerified = $isPre && ($order->payment?->status === 'completed' || $order->payment_status === 'paid');
+    preg_match_all('/\d+/', $isPre ? setting('preorder_days', '7-15') : setting('delivery_days', '3-7'), $dayNums);
     $dayNums = array_map('intval', $dayNums[0]) ?: [3, 7];
     $placedAt = $order->created_at->copy()->timezone(setting('timezone', 'Asia/Dhaka'));
     $etaFrom = $placedAt->copy()->addDays(min($dayNums));
@@ -96,8 +100,13 @@
                 <svg width="44" height="44" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.6" d="M5 13l4 4L19 7"/></svg>
             </div>
             <h1 class="ty-title">Thank you, {{ $firstName }}! 🎉</h1>
-            <p class="ty-sub">Your order has been placed successfully.
-                @if($isCod)We'll call <strong>{{ $order->shipping_phone }}</strong> shortly to confirm it.@else We'll start preparing it right away.@endif
+            <p class="ty-sub">
+                @if($isPre)
+                    Your pre-order is booked. We'll verify your advance, and ship it as soon as the new stock arrives — we'll call <strong>{{ $order->shipping_phone }}</strong> before sending it.
+                @else
+                    Your order has been placed successfully.
+                    @if($isCod)We'll call <strong>{{ $order->shipping_phone }}</strong> shortly to confirm it.@else We'll start preparing it right away.@endif
+                @endif
             </p>
 
             <div class="ty-pill" x-data="{ copied: false }">
@@ -110,12 +119,12 @@
             <div class="ty-meta">
                 <span>🗓️ {{ $placedAt->format('d M Y, g:i A') }}</span>
                 <span>📦 {{ $itemCount }} {{ \Illuminate\Support\Str::plural('item', $itemCount) }}</span>
-                @unless($order->is_preorder)<span>🚚 Arrives {{ $eta }}</span>@endunless
+                <span>🚚 {{ $isPre ? 'Expected' : 'Arrives' }} {{ $eta }}</span>
             </div>
             @if($order->is_preorder)
                 <div class="mt-4 mx-auto max-w-lg rounded-xl p-3 text-sm text-left" style="background: rgba(124,58,237,.1); border: 1px solid rgba(124,58,237,.3);">
                     <p class="font-bold" style="color:#7c3aed;">📦 Pre-order booked</p>
-                    <p style="color: var(--ty-text)">Advance <strong>৳{{ number_format($order->advance_amount) }}</strong> received by {{ \App\Services\Notifications\OrderEmail::paymentLabel($order->payment_method) }} (we'll verify it shortly) · pay <strong>৳{{ number_format($order->total - $order->advance_amount) }}</strong> on delivery.</p>
+                    <p style="color: var(--ty-text)">Advance <strong>৳{{ number_format($order->advance_amount) }}</strong> {{ $preVerified ? 'received' : 'sent' }} by {{ $paymentLabel }}{{ $preVerified ? '' : ' (we\'ll verify it shortly)' }} · pay <strong>৳{{ number_format($order->total - $order->advance_amount) }}</strong> on delivery.</p>
                     <p class="text-xs mt-1" style="color: var(--ty-muted)">{{ setting('preorder_note', 'We ship as soon as the new stock arrives — usually within 7–15 days. We\'ll call you to confirm.') }}</p>
                 </div>
             @endif
@@ -215,6 +224,26 @@
                 <div class="ty-card ty-sec">
                     <div class="ty-h"><span>What happens next</span></div>
                     <div class="ty-steps">
+                        @if($isPre)
+                        {{-- a pre-order's real path: advance check → stock arrives → ship → deliver --}}
+                        <div class="ty-step is-done">
+                            <span class="ty-dot">✓</span>
+                            <div><p class="t">Pre-order booked</p><p class="d">{{ $placedAt->format('d M, g:i A') }} — your item is reserved from the next stock.</p></div>
+                        </div>
+                        <div class="ty-step {{ $preVerified ? 'is-done' : 'is-now' }}">
+                            <span class="ty-dot">{{ $preVerified ? '✓' : '💳' }}</span>
+                            <div><p class="t">{{ $preVerified ? 'Advance verified' : 'Advance verification' }}</p>
+                                <p class="d">{{ $preVerified ? 'We\'ve received your ' . $money($order->advance_amount) . ' advance — thank you!' : 'We\'re checking your ' . $money($order->advance_amount) . ' ' . $paymentLabel . ' payment (TrxID). Usually within a few hours.' }}</p></div>
+                        </div>
+                        <div class="ty-step {{ $preVerified ? 'is-now' : '' }}">
+                            <span class="ty-dot">📦</span>
+                            <div><p class="t">New stock arrives — we call you</p><p class="d">As soon as it's in, we pack yours first and call {{ $order->shipping_phone }} to confirm.</p></div>
+                        </div>
+                        <div class="ty-step">
+                            <span class="ty-dot">🏠</span>
+                            <div><p class="t">Delivered to your door</p><p class="d">Expected <strong style="color: var(--ty-text)">{{ $eta }}</strong>{{ $preDue > 0 ? ' · pay ' . $money($preDue) . ' to the rider' : '' }}.</p></div>
+                        </div>
+                        @else
                         <div class="ty-step is-done">
                             <span class="ty-dot">✓</span>
                             <div><p class="t">Order placed</p><p class="d">{{ $placedAt->format('d M, g:i A') }} — we've got it and sent you a confirmation.</p></div>
@@ -232,6 +261,7 @@
                             <span class="ty-dot">🏠</span>
                             <div><p class="t">Delivered to your door</p><p class="d">Estimated <strong style="color: var(--ty-text)">{{ $eta }}</strong>{{ $isCod ? ' · pay the rider on delivery' : '' }}.</p></div>
                         </div>
+                        @endif
                     </div>
                 </div>
 
@@ -266,6 +296,10 @@
                             <div class="ty-row"><span>Tax</span><b>{{ $money($order->tax) }}</b></div>
                         @endif
                         <div class="ty-total"><span>Total</span><b>{{ $money($order->total) }}</b></div>
+                        @if($isPre)
+                            <div class="ty-row" style="color:#7c3aed"><span>Advance {{ $preVerified ? 'paid' : 'sent' }} ({{ $paymentLabel }})</span><b style="color:#7c3aed">−{{ $money($order->advance_amount) }}</b></div>
+                            <div class="ty-row"><span><strong style="color: var(--ty-text)">Pay on delivery</strong></span><b>{{ $money($preDue) }}</b></div>
+                        @endif
                     </div>
                 </div>
 
@@ -307,7 +341,12 @@
                         <div class="min-w-0 flex-1">
                             <p class="k">Payment</p>
                             <p class="v">{{ $paymentLabel }}</p>
-                            @if($order->payment_status === 'paid')
+                            @if($isPre)
+                                <p class="n" style="{{ $preVerified ? 'color:#10b981;' : 'color:#d97706;' }} font-weight:700">
+                                    {{ $preVerified ? '✓ Advance ' . $money($order->advance_amount) . ' received' : '⏳ Advance ' . $money($order->advance_amount) . ' — verifying' }}
+                                </p>
+                                @if($preDue > 0)<div class="ty-cod">Pay the remaining <strong>{{ $money($preDue) }}</strong> to the rider on delivery.</div>@endif
+                            @elseif($order->payment_status === 'paid')
                                 <p class="n" style="color:#10b981; font-weight:700">✓ Paid</p>
                             @elseif($isCod)
                                 <div class="ty-cod">Please keep <strong>{{ $money($order->total) }}</strong> ready for the rider.</div>
@@ -317,8 +356,9 @@
                     <div class="ty-info">
                         <span class="ic">🚚</span>
                         <div>
-                            <p class="k">Estimated delivery</p>
+                            <p class="k">{{ $isPre ? 'Expected delivery (pre-order)' : 'Estimated delivery' }}</p>
                             <p class="v">{{ $eta }}</p>
+                            @if($isPre)<p class="n">Ships when the new stock arrives — we'll call you to confirm the exact day.</p>@endif
                         </div>
                     </div>
 
