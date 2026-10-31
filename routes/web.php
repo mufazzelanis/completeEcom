@@ -446,6 +446,9 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::patch('orders/{order}/status', [AdminOrderController::class, 'updateStatus'])->name('orders.status');
     Route::get('orders/{order}/quick', [AdminOrderController::class, 'quick'])->name('orders.quick');
     Route::patch('orders/{order}/note', [AdminOrderController::class, 'note'])->name('orders.note');
+    Route::post('orders/{order}/remarks', [\App\Http\Controllers\Admin\OrderRemarkController::class, 'store'])->name('orders.remarks.store');
+    Route::patch('order-remarks/{remark}/pin', [\App\Http\Controllers\Admin\OrderRemarkController::class, 'pin'])->name('orders.remarks.pin');
+    Route::delete('order-remarks/{remark}', [\App\Http\Controllers\Admin\OrderRemarkController::class, 'destroy'])->name('orders.remarks.destroy');
     Route::post('orders/bulk-status', [AdminOrderController::class, 'bulkStatus'])->name('orders.bulk-status');
     Route::resource('users', AdminUserController::class)->except(['destroy']);
     Route::delete('users/{user}', [AdminUserController::class, 'destroy'])->middleware('permission:users.delete')->name('users.destroy');

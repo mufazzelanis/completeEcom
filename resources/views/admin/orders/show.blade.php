@@ -105,6 +105,10 @@ $rc = $riskColors[$riskLevel];
                 </div>
             </div>
         </div>
+
+        {{-- Remarks: who called / wrote what, when — with status & payment changes in the same list --}}
+        @include('admin.orders._remarks-js')
+        @include('admin.orders._remarks', ['order' => $order])
     </div>
 
     <div class="space-y-6">

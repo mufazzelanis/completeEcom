@@ -130,6 +130,9 @@
         </div>
     </div>
 
+    {{-- Remarks: who called / wrote what, when — with status & payment changes in the same list --}}
+    @include('admin.orders._remarks', ['order' => $order])
+
     {{-- Delivery address --}}
     <div class="oq-card">
         <div class="flex items-center justify-between gap-2 mb-1">
@@ -200,16 +203,6 @@
         </div>
     </div>
 
-    {{-- Internal note --}}
-    <div class="oq-card">
-        <div class="flex items-center justify-between">
-            <label for="oq-note-{{ $order->id }}" class="text-xs font-bold uppercase tracking-wide text-gray-500">Internal note</label>
-            <span class="text-[11px] text-gray-400" x-text="noteState"></span>
-        </div>
-        <textarea id="oq-note-{{ $order->id }}" x-model="note" @input.debounce.900ms="saveNote()" rows="2" class="oq-textarea"
-                  placeholder="Only staff see this — e.g. “Called, confirmed for Friday”"></textarea>
-    </div>
-
     {{-- Other orders by this customer --}}
     @if($history->isNotEmpty())
     <div class="oq-card">
@@ -226,23 +219,6 @@
         </div>
     </div>
     @endif
-
-    {{-- Timeline --}}
-    <div class="oq-card">
-        <span class="text-xs font-bold uppercase tracking-wide text-gray-500">Timeline</span>
-        <ol class="oq-tl mt-2">
-            @foreach($timeline as $t)
-                <li><span class="oq-tl-dot"></span>
-                    <p class="text-sm text-gray-700 dark:text-gray-200">{{ \Illuminate\Support\Str::of($t->description)->replace('Order ' . $order->order_number . ' ', '')->ucfirst() }}</p>
-                    <p class="oq-line">{{ $t->created_at->timezone($tz)->format('d M, g:i A') }}@if($t->user) · {{ $t->user->name }}@endif</p>
-                </li>
-            @endforeach
-            <li><span class="oq-tl-dot" style="background:#f97316"></span>
-                <p class="text-sm text-gray-700 dark:text-gray-200">Order placed ({{ $methodLabel }})</p>
-                <p class="oq-line">{{ $order->created_at->timezone($tz)->format('d M, g:i A') }}</p>
-            </li>
-        </ol>
-    </div>
 
     {{-- Footer actions --}}
     <div class="oq-foot">

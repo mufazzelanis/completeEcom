@@ -115,7 +115,7 @@ class OrderController extends Controller
 
         $query = $this->applyStatusFilter(clone $base, $request->status)
             ->with(['user:id,name,email,phone', 'payment', 'items:id,order_id,product_id,product_name,quantity', 'items.product:id,image'])
-            ->withCount('items');
+            ->with('latestRemark')->withCount(['items', 'remarks']);
 
         match ($request->get('sort')) {
             'oldest' => $query->oldest(),
@@ -190,9 +190,6 @@ class OrderController extends Controller
         $closed = $stats['delivered'] + $stats['cancelled'];
         $stats['rate'] = $closed ? (int) round($stats['delivered'] / $closed * 100) : null;
 
-        $timeline = \App\Models\AuditLog::with('user:id,name')
-            ->where('model_type', Order::class)->where('model_id', $order->id)
-            ->latest()->limit(15)->get(['id', 'user_id', 'action', 'description', 'new_values', 'created_at']);
 
         $courierCheck = $order->shipping_phone
             ? app(CourierFraudCheckService::class)->lastCheck($order->shipping_phone)
@@ -208,7 +205,6 @@ class OrderController extends Controller
                 'order' => $order,
                 'stats' => $stats,
                 'history' => $history->where('id', '!=', $order->id)->take(6),
-                'timeline' => $timeline,
                 'courierCheck' => $courierCheck,
             ])->render(),
         ]);

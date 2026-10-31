@@ -200,6 +200,7 @@
         };
     };
 </script>
+@include('admin.orders._remarks-js')
 @else
 {{-- Quick view drawer --}}
 <div class="ob-ov" x-show="open" x-cloak @click.self="close()" x-transition.opacity role="dialog" aria-modal="true" aria-label="Order quick view">

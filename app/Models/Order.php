@@ -100,6 +100,17 @@ class Order extends Model
         return $this->belongsTo(User::class, 'created_by');
     }
 
+    /** Staff remarks (call outcomes, courier notes…), newest first. */
+    public function remarks()
+    {
+        return $this->hasMany(OrderRemark::class)->latest();
+    }
+
+    public function latestRemark()
+    {
+        return $this->hasOne(OrderRemark::class)->latestOfMany();
+    }
+
     public function items()
     {
         return $this->hasMany(OrderItem::class);

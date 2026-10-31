@@ -287,7 +287,18 @@
                             @elseif($order->fraud_checked_at && $order->fraud_score >= 20)
                                 <span class="text-xs text-yellow-500 font-medium" title="Medium fraud risk — Score: {{ $order->fraud_score }}">⚠</span>
                             @endif
-                            @if($order->admin_note)<span title="Note: {{ $order->admin_note }}" class="text-xs">📝</span>@endif
+                            {{-- remarks: count + latest line on hover, and the call-back time if the last call said "call later";
+                                 kept live by the drawer's "order-remark" event --}}
+                            @php
+                                $lr = $order->latestRemark;
+                                $fu = $lr && $lr->outcome === 'call_later' && $lr->follow_up_at ? $lr->follow_up_at : null;
+                            @endphp
+                            <span x-data="{ n: {{ (int) $order->remarks_count }}, latest: @js($lr?->summary()), fu: @js($fu?->timezone($tz)->format('d M, g:i A')), late: {{ $fu && $fu->isPast() ? 'true' : 'false' }} }"
+                                  @order-remark.window="if ($event.detail.id === +$el.closest('tr').dataset.id) { n = $event.detail.count; latest = $event.detail.latest; fu = $event.detail.followUp; late = false }"
+                                  class="inline-flex items-center gap-1">
+                                <span x-show="n > 0" x-cloak class="text-[10px] font-bold px-1.5 py-0.5 rounded-full" style="background:#eef2ff;color:#4338ca" :title="latest" x-text="'💬 ' + n"></span>
+                                <span x-show="fu" x-cloak class="text-[10px] font-bold px-1.5 py-0.5 rounded-full" :style="late ? 'background:#fee2e2;color:#b91c1c' : 'background:#fef3c7;color:#92400e'" :title="'Call back ' + fu" x-text="'⏰ ' + fu"></span>
+                            </span>
                         </div>
                         <div class="ob-thumbs">
                             @foreach($order->items->take(3) as $it)
