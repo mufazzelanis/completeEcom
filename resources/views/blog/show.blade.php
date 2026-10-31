@@ -124,6 +124,21 @@
                     <span x-text="copied ? 'Link copied!' : 'Share'"></span>
                 </button>
             </div>
+
+            {{-- products the article is about (BlogController::productsFor) — links from the post into the shop --}}
+            @if(isset($shopProducts) && $shopProducts->isNotEmpty())
+            <section class="mt-8 pt-6 border-t border-gray-100 dark:border-gray-800" aria-labelledby="blog-shop-h">
+                <div class="flex items-center justify-between gap-3 mb-4">
+                    <h2 id="blog-shop-h" class="text-lg font-bold text-gray-900 dark:text-gray-100">🛍️ Shop the products in this article</h2>
+                    <a href="{{ route('shop.index') }}" class="text-sm font-semibold text-orange-700 hover:underline whitespace-nowrap">View all →</a>
+                </div>
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    @foreach($shopProducts as $product)
+                        @include('partials.product-card', ['product' => $product])
+                    @endforeach
+                </div>
+            </section>
+            @endif
         </article>
 
         {{-- Sidebar --}}

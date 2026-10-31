@@ -112,6 +112,7 @@ Route::post('/live/ping', [\App\Http\Controllers\LiveVisitorController::class, '
 
 // SEO: sitemap + robots.txt (public/robots.txt removed so this route is actually reached)
 Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemap');
+Route::get('/indexnow.txt', [SitemapController::class, 'indexNowKey'])->name('indexnow.key');
 // Google Merchant Center product feed (scheduled daily fetch) — see GoogleFeedController.
 Route::get('/google-feed.xml', [\App\Http\Controllers\GoogleFeedController::class, 'index'])->name('google-feed');
 // Only reached when the thumb file doesn't exist yet (otherwise the web server serves it
@@ -624,6 +625,14 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
             Route::put('tags/{tag}', [CrmDashboardController::class, 'saveTag'])->name('tags.update');
             Route::delete('tags/{tag}', [CrmDashboardController::class, 'deleteTag'])->name('tags.destroy');
         });
+    });
+    // SEO Insights — Google Search Console keywords/positions per product, with a to-do list
+    Route::prefix('seo-insights')->name('seo-insights.')->middleware('permission:reports.view')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Admin\SeoInsightsController::class, 'index'])->name('index');
+        Route::post('connect', [\App\Http\Controllers\Admin\SeoInsightsController::class, 'connect'])->name('connect');
+        Route::post('test', [\App\Http\Controllers\Admin\SeoInsightsController::class, 'test'])->name('test');
+        Route::post('sync', [\App\Http\Controllers\Admin\SeoInsightsController::class, 'sync'])->name('sync');
+        Route::post('disconnect', [\App\Http\Controllers\Admin\SeoInsightsController::class, 'disconnect'])->name('disconnect');
     });
     // Reports & Analytics
     Route::prefix('reports')->name('reports.')->middleware('permission:reports.view')->group(function () {

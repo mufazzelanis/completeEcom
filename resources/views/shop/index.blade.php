@@ -56,14 +56,38 @@
 
 @push('meta')
 @if(isset($category) || isset($currentBrand))
+@php
+    // Breadcrumb trail (Google shows it as the result's path: mitavin.com › Shop › Baby Care) and
+    // the products listed on this page as an ItemList, both inside the CollectionPage.
+    $crumbs = [['Home', route('home')]];
+    if (isset($category)) {
+        $crumbs[] = ['Shop', route('shop.index')];
+        if ($category->parent) $crumbs[] = [$category->parent->name, route('shop.category', $category->parent->slug)];
+        $crumbs[] = [$category->name, route('shop.category', $category->slug)];
+    } else {
+        $crumbs[] = ['Brands', route('brands.index')];
+        $crumbs[] = [$currentBrand->name, route('shop.brand', $currentBrand)];
+    }
+    $listed = collect(isset($products) && method_exists($products, 'items') ? $products->items() : []);
+    $offset = isset($products) && method_exists($products, 'firstItem') ? max(0, ($products->firstItem() ?? 1) - 1) : 0;
+@endphp
 <script type="application/ld+json">
-{!! json_encode([
+{!! json_encode(array_filter([
     '@@context' => 'https://schema.org',
     '@type' => 'CollectionPage',
     'name' => $shopSeoTitle,
     'description' => $shopSeoDesc,
     'url' => $shopCanonical,
-], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}
+    'breadcrumb' => [
+        '@type' => 'BreadcrumbList',
+        'itemListElement' => collect($crumbs)->values()->map(fn ($c, $i) => ['@type' => 'ListItem', 'position' => $i + 1, 'name' => $c[0], 'item' => $c[1]])->all(),
+    ],
+    'mainEntity' => $listed->isEmpty() ? null : [
+        '@type' => 'ItemList',
+        'numberOfItems' => isset($products) && method_exists($products, 'total') ? $products->total() : $listed->count(),
+        'itemListElement' => $listed->values()->map(fn ($p, $i) => ['@type' => 'ListItem', 'position' => $offset + $i + 1, 'url' => route('products.show', $p->slug), 'name' => $p->name])->all(),
+    ],
+]), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}
 </script>
 @endif
 @endpush

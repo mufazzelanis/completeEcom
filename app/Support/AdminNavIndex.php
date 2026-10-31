@@ -60,6 +60,7 @@ class AdminNavIndex
             ['label' => 'Coupons', 'url' => route('admin.coupons.index'), 'group' => 'Sales'],
             ['label' => 'Fraud Checker', 'url' => route('admin.fraud-checker.index'), 'group' => 'Fraud Checker'],
             ['label' => 'Reports Overview', 'url' => route('admin.reports.index'), 'group' => 'Reports'],
+            ['label' => 'SEO Insights (Google Search Console keywords)', 'url' => route('admin.seo-insights.index'), 'group' => 'Reports'],
             ['label' => 'Sales Report', 'url' => route('admin.reports.sales'), 'group' => 'Reports'],
             ['label' => 'Revenue Report', 'url' => route('admin.reports.revenue'), 'group' => 'Reports'],
             ['label' => 'Product Report', 'url' => route('admin.reports.products'), 'group' => 'Reports'],

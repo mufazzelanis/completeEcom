@@ -15,6 +15,29 @@
     @endif
     <div id="ajax-error-summary" class="hidden bg-red-50 border border-red-200 rounded-xl p-4 mb-6 text-sm text-red-600"></div>
 
+    {{-- What people search on Google to find this product (Admin → SEO Insights) — right here
+         while writing the description / SEO title, so the real words customers use go in. --}}
+    @php $gscQueries = \App\Http\Controllers\Admin\SeoInsightsController::forProduct($product->id); @endphp
+    @if($gscQueries->isNotEmpty())
+    <details class="mb-6 rounded-xl border border-indigo-100 bg-indigo-50/60 dark:bg-indigo-500/10 dark:border-indigo-900" open>
+        <summary class="px-4 py-3 cursor-pointer text-sm font-bold text-indigo-900 dark:text-indigo-200 flex items-center justify-between gap-2">
+            <span>🔎 Google searches that show this product <span class="font-medium text-indigo-600 dark:text-indigo-300">(last 90 days)</span></span>
+            <a href="{{ route('admin.seo-insights.index') }}" class="text-xs font-semibold text-indigo-600 hover:underline">SEO Insights →</a>
+        </summary>
+        <div class="px-4 pb-4">
+            <div class="flex flex-wrap gap-1.5">
+                @foreach($gscQueries as $q)
+                    <span class="inline-flex items-center gap-1 rounded-full bg-white dark:bg-gray-900 border border-indigo-100 dark:border-indigo-900 px-2.5 py-1 text-xs text-gray-700 dark:text-gray-200"
+                          title="{{ number_format($q->i) }} impressions · {{ $q->c }} clicks">
+                        {{ $q->q }} <b style="color:{{ $q->p <= 3 ? '#059669' : ($q->p <= 10 ? '#2563eb' : ($q->p <= 20 ? '#d97706' : '#6b7280')) }}">#{{ number_format($q->p, 0) }}</b>
+                    </span>
+                @endforeach
+            </div>
+            <p class="text-xs text-indigo-800/80 dark:text-indigo-300/80 mt-2">Use these exact words naturally in the <b>SEO title</b>, the first paragraph of the <b>description</b> and a short FAQ. #number = average Google position (1–10 is page 1).</p>
+        </div>
+    </details>
+    @endif
+
     <form action="{{ route('admin.products.update', $product) }}" method="POST" enctype="multipart/form-data" id="product-form"
         x-data="{
             productType: '{{ old('type', $product->type ?? 'simple') }}',

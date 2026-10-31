@@ -18,6 +18,8 @@ class SitemapController extends Controller
         }
 
         $urls = [];
+        // absolute URL for an image path (Google Images reads <image:loc> from the sitemap)
+        $img = fn (?string $path) => $path ? (str_starts_with($path, 'http') ? $path : url(\Illuminate\Support\Facades\Storage::url($path))) : null;
 
         $urls[] = ['loc' => route('home'), 'changefreq' => 'daily', 'priority' => '1.0'];
         $urls[] = ['loc' => route('shop.index'), 'changefreq' => 'daily', 'priority' => '0.9'];
@@ -27,6 +29,7 @@ class SitemapController extends Controller
             $urls[] = [
                 'loc' => route('shop.category', $category->slug),
                 'lastmod' => $category->updated_at->toAtomString(),
+                'images' => array_filter([$img($category->image)]),
                 'changefreq' => 'weekly',
                 'priority' => '0.8',
             ];
@@ -45,24 +48,27 @@ class SitemapController extends Controller
         // latter check, a vendor's still-pending/rejected product (which defaults to
         // is_active=true) would get listed here and then 404 when Google crawls it,
         // since ProductController::show() blocks non-approved products.
-        Product::active()->where('noindex', false)->chunk(200, function ($products) use (&$urls) {
+        Product::active()->where('noindex', false)->with('images:id,product_id,image,sort_order')->chunk(200, function ($products) use (&$urls, $img) {
             foreach ($products as $product) {
                 $urls[] = [
                     'loc' => $product->canonical_url ?: route('products.show', $product),
                     'lastmod' => $product->updated_at->toAtomString(),
                     'changefreq' => $product->sitemap_changefreq ?: 'weekly',
                     'priority' => number_format((float) ($product->sitemap_priority ?? 0.5), 1),
+                    // main photo + up to 4 gallery photos → product images can rank in Google Images
+                    'images' => array_values(array_unique(array_filter([$img($product->image), ...$product->images->sortBy('sort_order')->take(4)->map(fn ($i) => $img($i->image))->all()]))),
                 ];
             }
         });
 
-        BlogPost::published()->chunk(200, function ($posts) use (&$urls) {
+        BlogPost::published()->chunk(200, function ($posts) use (&$urls, $img) {
             foreach ($posts as $post) {
                 $urls[] = [
                     'loc' => route('blog.show', $post),
                     'lastmod' => $post->updated_at->toAtomString(),
                     'changefreq' => 'monthly',
                     'priority' => '0.6',
+                    'images' => array_filter([$img($post->image)]),
                 ];
             }
         });
@@ -145,6 +151,12 @@ class SitemapController extends Controller
         }
 
         return response(implode("\n", $lines), 200)->header('Content-Type', 'text/plain');
+    }
+
+    /** IndexNow ownership proof (App\Services\IndexNow) — the key as plain text. */
+    public function indexNowKey()
+    {
+        return response(\App\Services\IndexNow::key(), 200)->header('Content-Type', 'text/plain; charset=utf-8');
     }
 
     public function adsTxt()

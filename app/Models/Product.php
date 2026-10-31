@@ -61,6 +61,13 @@ class Product extends Model
                 $product->slug = Str::slug($product->name);
             }
         });
+        // a live product added or its page content changed → let IndexNow engines recrawl it now
+        static::saved(function ($product) {
+            if ($product->is_active && $product->approval_status === 'approved' && ! $product->noindex
+                && ($product->wasRecentlyCreated || $product->wasChanged(['name', 'slug', 'price', 'sale_price', 'description', 'short_description', 'image', 'is_active', 'marked_out_of_stock', 'meta_title', 'meta_description']))) {
+                \App\Services\IndexNow::submit(route('products.show', $product->slug));
+            }
+        });
         // Last chance to name any inventory-ledger row that doesn't carry its own copy yet
         // (e.g. inserted by raw query) before ON DELETE SET NULL detaches it from this product.
         static::deleting(function ($product) {

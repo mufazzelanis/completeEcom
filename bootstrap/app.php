@@ -98,6 +98,8 @@ return Application::configure(basePath: dirname(__DIR__))
         // Keeps the homepage personalized section's source tables (product_views,
         // search_queries) from growing forever — see the command's own docblock.
         $schedule->command('personalization:prune')->dailyAt('02:00');
+        // Search Console → Admin → SEO Insights (no-op until connected there)
+        $schedule->command('seo:search-console-sync')->dailyAt('07:30')->timezone('Asia/Dhaka')->withoutOverlapping();
 
         // Post-delivery review requests (SMS + email) — daytime only, Bangladesh time, so
         // nobody gets a text at night; each order is asked once (see the command's docblock).
