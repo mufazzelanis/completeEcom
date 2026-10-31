@@ -5,6 +5,10 @@
     /* bot/crawler rows stay readable but step back, so real shoppers' activity stands out */
     tr.al-bot { opacity: .55; }
     tr.al-bot:hover { opacity: 1; }
+    .al-cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+    @media (min-width: 768px) { .al-cards { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+    @media (min-width: 1280px) { .al-cards { grid-template-columns: repeat(6, minmax(0, 1fr)); } }
+    .al-ipn { display: inline-flex; align-items: center; gap: .2rem; margin-top: .2rem; font-family: ui-sans-serif, system-ui, sans-serif; font-size: 10px; font-weight: 800; padding: .05rem .4rem; border-radius: 999px; white-space: nowrap; }
 </style>
 @php
     // card link: filter by this event (keeping every other filter), or clear it if it's the active one
@@ -31,7 +35,19 @@
 
 {{-- Counts for the selected period and filters (Traffic, Role, User, Search) — click a card to
      show only that event, click it again to show everything --}}
-<div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+<div class="al-cards mb-6">
+    {{-- unique visitors: different IPs active under the same filters, people vs bots --}}
+    @php $vis = $stats['visitors'] ?? ['count' => 0, 'humans' => 0, 'bots' => 0]; @endphp
+    <div class="relative overflow-hidden block bg-white rounded-2xl shadow-sm p-4" style="border-top: 3px solid #0ea5e9;"
+         title="Different IP addresses that did anything on the site in this period">
+        <span class="absolute -right-3 -top-3 w-14 h-14 rounded-full flex items-end justify-start pl-3 pb-3 text-lg" style="background: #0ea5e91a;" aria-hidden="true">👥</span>
+        <p class="text-xs uppercase tracking-wider font-semibold" style="color: #0ea5e9;">Visitors (IP)</p>
+        <p class="text-[11px] text-gray-400">{{ $periodLabel }}</p>
+        <p class="text-2xl font-bold mt-1 text-gray-800">{{ number_format(request('traffic') === 'bots' ? $vis['bots'] : (request('traffic') === 'humans' ? $vis['humans'] : $vis['count'])) }}</p>
+        @if(! request('traffic') && $vis['bots'] > 0)
+            <p class="text-[11px] text-gray-400 mt-1"><span class="font-semibold" style="color:#059669;">{{ number_format($vis['humans']) }}</span> people · <span class="font-semibold" style="color:#f97316;">{{ number_format($vis['bots']) }}</span> bot</p>
+        @endif
+    </div>
     @foreach([
         ['login', 'Logins'],
         ['product.view', 'Product Views'],
@@ -196,6 +212,18 @@
                     @if($log->ip_address)
                         <a href="{{ request()->fullUrlWithQuery(['ip' => $log->ip_address, 'page' => null]) }}" data-al-link
                            class="hover:text-indigo-600 hover:underline" title="Show everything from this IP">{{ $log->ip_address }}</a>
+                        {{-- how active this visitor (IP) was in the period, and first-time vs returning --}}
+                        @if($ipc = $ipCounts[$log->ip_address] ?? null)
+                            <span class="block">
+                                <a href="{{ request()->fullUrlWithQuery(['ip' => $log->ip_address, 'page' => null]) }}" data-al-link class="al-ipn"
+                                   style="{{ $ipc['count'] >= 50 ? 'background:#fff7ed;color:#c2410c' : 'background:#eef2ff;color:#4338ca' }}"
+                                   title="{{ number_format($ipc['count']) }} actions from this IP — {{ $periodLabel }}">{{ number_format($ipc['count']) }}×</a>
+                                @if($ipc['new'] !== null)
+                                <span class="al-ipn" style="{{ $ipc['new'] ? 'background:#ecfdf5;color:#047857' : 'background:#f3f4f6;color:#6b7280' }}"
+                                      title="{{ $ipc['new'] ? 'First visit ever falls in this period' : 'Has visited before this period' }}">{{ $ipc['new'] ? 'New' : 'Returning' }}</span>
+                                @endif
+                            </span>
+                        @endif
                     @else
                         —
                     @endif

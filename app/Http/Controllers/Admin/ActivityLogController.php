@@ -62,6 +62,7 @@ class ActivityLogController extends Controller
             'query' => $request->except('page'),
         ]);
         $ipLocations = $this->batchIpLocations($rows->pluck('ip_address')->filter()->unique());
+        $ipCounts = $this->ipCounts($request, $rows->pluck('ip_address')->filter()->unique()->values(), $start, $end);
 
         $eventTypes = Cache::remember('activity_log:event_types', 600, fn () => DB::table('activity_logs')->distinct()->pluck('event')
             ->merge(DB::table('audit_logs')->distinct()->pluck('action'))->filter()->unique()->sort()->values()->all());
@@ -73,7 +74,7 @@ class ActivityLogController extends Controller
         $stats = $this->eventStats($request, $start, $end);
         $periodLabel = $this->periodLabel($request);
         $activeFilters = $this->activeFilters($request, $logUsers);
-        $data = compact('logs', 'eventTypes', 'logUsers', 'stats', 'periodLabel', 'ipLocations', 'activeFilters');
+        $data = compact('logs', 'eventTypes', 'logUsers', 'stats', 'periodLabel', 'ipLocations', 'activeFilters', 'ipCounts');
 
         // A filter change from the page itself (fetch, no reload) gets just the results block
         return $request->ajax()
@@ -89,23 +90,54 @@ class ActivityLogController extends Controller
     private function eventStats(Request $request, ?Carbon $start, ?Carbon $end): array
     {
         $events = ['login', 'product.view', 'cart.add', 'order.place', 'order.view'];
-        $empty = array_fill_keys($events, ['count' => 0, 'bots' => 0]);
+        $empty = array_fill_keys($events, ['count' => 0, 'bots' => 0]) + ['visitors' => ['count' => 0, 'humans' => 0, 'bots' => 0]];
         if ($request->input('source') === 'audit') {
             return $empty; // admin actions only — none of these are site activity
         }
 
-        $key = 'activity_log:stats:' . md5(json_encode([$request->only(['search', 'role', 'user_id', 'traffic', 'ip', 't_from', 't_to']), $start?->timestamp, $end?->timestamp]));
+        $key = 'activity_log:stats2:' . md5(json_encode([$request->only(['search', 'role', 'user_id', 'traffic', 'ip', 't_from', 't_to']), $start?->timestamp, $end?->timestamp]));
 
         return Cache::remember($key, 60, function () use ($request, $start, $end, $events, $empty) {
             $withoutEvent = $request->duplicate($request->except('event_type'));
             $query = $this->filtered(DB::table('activity_logs')->leftJoin('users', 'users.id', '=', 'activity_logs.user_id'), $withoutEvent, $start, $end, 'activity_logs', 'event');
 
-            return $query->whereIn('activity_logs.event', $events)
+            // unique visitors = distinct IPs doing anything on the site under the same filters
+            $ips = (clone $query)->whereNotNull('activity_logs.ip_address')
+                ->selectRaw('COUNT(DISTINCT activity_logs.ip_address) total, COUNT(DISTINCT CASE WHEN activity_logs.is_bot = 0 THEN activity_logs.ip_address END) humans, COUNT(DISTINCT CASE WHEN activity_logs.is_bot = 1 THEN activity_logs.ip_address END) bots')
+                ->first();
+
+            return array_replace($query->whereIn('activity_logs.event', $events)
                 ->groupBy('activity_logs.event')
                 ->selectRaw('activity_logs.event as event, COUNT(*) as total, SUM(activity_logs.is_bot) as bots')
                 ->get()
-                ->reduce(fn ($carry, $row) => array_replace($carry, [$row->event => ['count' => (int) $row->total, 'bots' => (int) $row->bots]]), $empty);
+                ->reduce(fn ($carry, $row) => array_replace($carry, [$row->event => ['count' => (int) $row->total, 'bots' => (int) $row->bots]]), $empty),
+                ['visitors' => ['count' => (int) $ips->total, 'humans' => (int) $ips->humans, 'bots' => (int) $ips->bots]]);
         });
+    }
+
+    /**
+     * For the IPs on this page: how many site actions each made in the selected period (any
+     * event — the event/search/IP filters don't narrow it), and whether the period holds its
+     * very first visit ever ("new" vs returning). One grouped query on the (ip_address,
+     * created_at) index each.
+     */
+    private function ipCounts(Request $request, $ips, ?Carbon $start, ?Carbon $end): array
+    {
+        if ($ips->isEmpty() || $request->input('source') === 'audit') {
+            return [];
+        }
+        $inPeriod = DB::table('activity_logs')->whereIn('ip_address', $ips)
+            ->when($start, fn ($q) => $q->where('created_at', '>=', $start))
+            ->when($end, fn ($q) => $q->where('created_at', '<=', $end))
+            ->groupBy('ip_address')->selectRaw('ip_address, COUNT(*) c')->pluck('c', 'ip_address');
+        $firstSeen = DB::table('activity_logs')->whereIn('ip_address', $ips)
+            ->groupBy('ip_address')->selectRaw('ip_address, MIN(created_at) f')->pluck('f', 'ip_address');
+
+        return $ips->mapWithKeys(fn ($ip) => [$ip => [
+            'count' => (int) ($inPeriod[$ip] ?? 0),
+            // "all time" has no "before", so new vs returning only means something with a period
+            'new' => $start ? isset($firstSeen[$ip]) && Carbon::parse($firstSeen[$ip])->gte($start) : null,
+        ]])->all();
     }
 
     /** "Today", "This month", … for the card captions; "All time" with no period. */

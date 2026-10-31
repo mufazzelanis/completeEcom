@@ -72,6 +72,16 @@
 </div>
 @endif
 
+@if($live->isEmpty() && empty($topProducts) && $left->isEmpty())
+{{-- quiet moment: one slim line instead of three empty boxes, so the traffic report below stays in view --}}
+<div class="bg-white dark:bg-gray-900 rounded-2xl px-5 py-4 shadow-sm flex items-center gap-3">
+    <span class="text-2xl">🌙</span>
+    <div class="min-w-0">
+        <p class="font-semibold text-gray-800 dark:text-gray-200">Nobody on the site right now</p>
+        <p class="text-xs text-gray-500 dark:text-gray-400">Visitors appear here within seconds of opening any page — this updates by itself.</p>
+    </div>
+</div>
+@else
 <div class="lv-grid">
     {{-- ── Visitors ─────────────────────────────────────────────────────── --}}
     <div class="lv-main space-y-3">
@@ -159,8 +169,8 @@
                 </ol>
             </div>
         @empty
-            <div class="bg-white dark:bg-gray-900 rounded-2xl p-12 text-center shadow-sm">
-                <div class="text-5xl mb-3">🌙</div>
+            <div class="bg-white dark:bg-gray-900 rounded-2xl p-6 text-center shadow-sm">
+                <div class="text-3xl mb-2">🌙</div>
                 <p class="font-semibold text-gray-800 dark:text-gray-200">Nobody on the site right now</p>
                 <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Visitors appear here within seconds of opening any page.</p>
             </div>
@@ -205,3 +215,4 @@
         </div>
     </div>
 </div>
+@endif

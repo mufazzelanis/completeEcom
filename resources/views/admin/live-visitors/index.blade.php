@@ -123,17 +123,31 @@
             <h1 class="text-xl font-bold text-gray-800 dark:text-gray-100">Live &amp; Traffic</h1>
             <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Who's on the store right now — and how visits turn into orders</p>
         </div>
-        <div class="flex items-center gap-2 text-sm">
-            <span class="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 font-bold" style="background:#ecfdf5;color:#047857">
-                <span class="relative flex h-2.5 w-2.5"><span class="animate-ping absolute inline-flex h-full w-full rounded-full" style="background:#34d399;opacity:.7"></span><span class="relative inline-flex rounded-full h-2.5 w-2.5" style="background:#10b981"></span></span>
-                <span x-text="liveCount + ' on site now'">{{ $live->count() }} on site now</span>
-            </span>
+        <div class="flex flex-wrap items-center gap-2 text-sm">
+            <span class="text-xs tabular-nums" :style="failed ? 'color:#ef4444' : 'color:#94a3b8'"
+                  x-text="failed ? 'Connection problem — retrying…' : (paused ? 'Paused' : 'Updated ' + updated + 's ago')"></span>
+            <button type="button" @click="paused = !paused; if (!paused) refresh()"
+                    class="rounded-full px-3 py-1.5 font-medium transition"
+                    :style="paused ? 'background:#f59e0b;color:#fff' : 'background:#f59e0b1a;color:#d97706'">
+                <span x-text="paused ? '▶ Resume' : '⏸ Pause'"></span>
+            </button>
             <button type="button" @click="toggleTeam()"
                     class="rounded-full px-3 py-1.5 font-medium transition"
                     :style="team ? 'background:#6366f1;color:#fff' : 'background:#6366f11a;color:#6366f1'">
                 <span x-text="team ? '✓ Including team' : 'Include team'"></span>
             </button>
         </div>
+    </div>
+
+    {{-- ───────── right now (first — it's the part that changes by the second) ───────── --}}
+    <div x-ref="feed" class="mb-8">
+        @include('admin.live-visitors._feed')
+    </div>
+
+    {{-- ───────── traffic & sales for a date range ───────── --}}
+    <div class="flex flex-wrap items-baseline gap-2 mb-3 pt-6 border-t border-gray-200 dark:border-gray-800">
+        <h2 class="text-lg font-bold text-gray-800 dark:text-gray-100">📊 Traffic &amp; sales</h2>
+        <span class="text-sm text-gray-400">{{ $s['label'] }}</span>
     </div>
 
     {{-- ───────── range ───────── --}}
@@ -335,24 +349,6 @@
                 <p class="text-sm text-gray-400 py-4 text-center">Nobody left at checkout in this range.</p>
             @endforelse
         </div>
-    </div>
-
-    {{-- ───────── right now ───────── --}}
-    <div class="flex flex-wrap items-center justify-between gap-3 mb-3">
-        <h2 class="text-lg font-bold text-gray-800 dark:text-gray-100">🟢 Right now</h2>
-        <div class="flex items-center gap-2 text-sm">
-            <span class="text-xs tabular-nums" :style="failed ? 'color:#ef4444' : 'color:#94a3b8'"
-                  x-text="failed ? 'Connection problem — retrying…' : (paused ? 'Paused' : 'Updated ' + updated + 's ago')"></span>
-            <button type="button" @click="paused = !paused; if (!paused) refresh()"
-                    class="rounded-full px-3 py-1.5 font-medium transition"
-                    :style="paused ? 'background:#f59e0b;color:#fff' : 'background:#f59e0b1a;color:#d97706'">
-                <span x-text="paused ? '▶ Resume' : '⏸ Pause'"></span>
-            </button>
-        </div>
-    </div>
-
-    <div x-ref="feed">
-        @include('admin.live-visitors._feed')
     </div>
 
     <p class="text-xs text-gray-400 mt-6">
