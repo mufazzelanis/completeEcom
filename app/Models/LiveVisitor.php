@@ -70,6 +70,7 @@ class LiveVisitor extends Model
      * without a CSS rebuild and reads well on both the light and dark admin themes.
      */
     public const PAGE_TYPES = [
+        'ordered'  => ['Order placed', '#16a34a', '🎉'],
         'checkout' => ['Checkout', '#10b981', '💳'],
         'cart'     => ['Cart', '#f59e0b', '🛒'],
         'product'  => ['Product', '#6366f1', '🧴'],

@@ -8,6 +8,7 @@ use App\Models\Cart;
 use App\Models\Category;
 use App\Models\LiveVisitor;
 use App\Models\Product;
+use App\Models\VisitorSession;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
@@ -55,11 +56,14 @@ class LiveVisitorController extends Controller
             ]);
         }
         // a visitor coming back after a break starts a new session (journey + time on site)
+        $newSession = !$visitor->exists || !$visitor->session_id;
         if ($visitor->exists && $visitor->last_seen_at && $visitor->last_seen_at->lt($now->copy()->subMinutes(30))) {
             $visitor->first_seen_at = $now;
             $visitor->path = [];
             $visitor->source = ActivityLog::channelFromReferrer($data['ref'] ?? null);
+            $newSession = true;
         }
+        $pageChanged = $visitor->url !== $url;
         if ($visitor->url !== $url) {
             $path = $visitor->path ?? [];
             $path[] = ['t' => $type, 'title' => $title, 'url' => $url, 'at' => $now->toIso8601String()];
@@ -81,11 +85,54 @@ class LiveVisitorController extends Controller
             'cart_total' => (float) $cartItems->sum(fn ($i) => $i->unit_price * $i->quantity),
             'pings' => ($visitor->pings ?? 0) + 1,
             'last_seen_at' => $now,
-        ])->save();
+        ]);
+        $this->trackSession($visitor, $newSession, $pageChanged, $type, $url, $now);
+        $visitor->save();
 
         $this->lookupGeo((string) $request->ip());
 
         return response()->noContent();
+    }
+
+    /**
+     * The visit this heartbeat belongs to (visitor_sessions): how it started, how far it got
+     * (product → cart → checkout → order), pages seen and how long it lasted — the history behind
+     * Admin → Live Visitors' funnel, sources and peak hours.
+     */
+    private function trackSession(LiveVisitor $visitor, bool $new, bool $pageChanged, string $type, string $url, $now): void
+    {
+        $session = $new ? null : VisitorSession::find($visitor->session_id);
+        if (!$session) {
+            $user = auth()->user();
+            $session = new VisitorSession([
+                'visitor_key' => $visitor->visitor_key,
+                'user_id' => $user?->id,
+                'is_team' => (bool) ($user && $user->canAccessAdmin()),
+                'source' => $visitor->source,
+                'device' => $visitor->device,
+                'landing_type' => $type,
+                'landing_url' => $url,
+                'started_at' => $now,
+            ]);
+            $pageChanged = true;
+        }
+        if ($pageChanged) {
+            $session->pages = ($session->pages ?? 0) + 1;
+        }
+        $session->fill([
+            'reached_product' => $session->reached_product || $type === 'product',
+            'reached_cart' => $session->reached_cart || $type === 'cart' || $visitor->cart_count > 0,
+            'reached_checkout' => $session->reached_checkout || in_array($type, ['checkout', 'ordered'], true),
+            'ordered' => $session->ordered || $type === 'ordered',
+            'cart_max' => max((float) $session->cart_max, (float) $visitor->cart_total),
+            'last_seen_at' => $now,
+        ]);
+        if (auth()->id() && !$session->user_id) {
+            $session->user_id = auth()->id();
+            $session->is_team = auth()->user()->canAccessAdmin();
+        }
+        $session->save();
+        $visitor->session_id = $session->id;
     }
 
     /** [page type, product (on a product page), readable label] from the URL. */
@@ -102,6 +149,7 @@ class LiveVisitorController extends Controller
             $path === '/shop' && !empty($q['search']) => ['search', null, 'Search: “' . Str::limit((string) $q['search'], 60) . '”'],
             in_array($path, ['/shop', '/brands', '/categories'], true) => ['shop', null, 'Shop'],
             $path === '/cart' => ['cart', null, 'Cart'],
+            str_starts_with($path, '/checkout/success') => ['ordered', null, 'Order placed'],
             str_starts_with($path, '/checkout') => ['checkout', null, 'Checkout'],
             str_starts_with($path, '/blog') => ['blog', null, 'Blog'],
             (bool) preg_match('#^/(orders|account|profile|wishlist|track-order|login|register)#', $path) => ['account', null, 'Account'],

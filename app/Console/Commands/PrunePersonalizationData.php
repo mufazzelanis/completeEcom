@@ -27,7 +27,10 @@ class PrunePersonalizationData extends Command
         $views = ProductView::where('viewed_at', '<', $cutoff)->delete();
         $searches = SearchQuery::where('searched_at', '<', $cutoff)->delete();
 
-        $this->info("Pruned {$views} product view(s) and {$searches} search quer(y/ies) older than {$cutoff->toDateString()}.");
+        // visit history (Admin → Live & Traffic) is kept longer — a year and a bit, for year-on-year
+        $sessions = \App\Models\VisitorSession::where('started_at', '<', now()->subDays(400))->delete();
+
+        $this->info("Pruned {$views} product view(s), {$searches} search quer(y/ies) older than {$cutoff->toDateString()} and {$sessions} visit(s) older than 400 days.");
 
         return self::SUCCESS;
     }
