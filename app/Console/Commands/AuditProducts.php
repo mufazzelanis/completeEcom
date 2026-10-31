@@ -43,8 +43,13 @@ class AuditProducts extends Command
 
         $this->section(
             'Duplicate product names (likely accidental re-imports)',
-            $allProducts->groupBy(fn ($p) => mb_strtolower(trim((string) $p->name)))->filter(fn ($g) => $g->count() > 1 && $touchesRecent($g)),
-            fn ($g) => $g->map(fn ($p) => "#{$p->id} {$p->name} ({$p->slug})")->implode("\n      "),
+            // letters+digits only, so "ISIS PHARMA …" / "ISISPHARMA …" and "Eyes 15ml" / "Eyes15ml" pair up;
+            // already-retired duplicates (redirect set) don't count
+            $allProducts->filter(fn ($p) => blank($p->redirect_url))
+                ->groupBy(fn ($p) => preg_replace('/[^\p{L}\p{N}]+/u', '', mb_strtolower((string) $p->name)))
+                ->filter(fn ($g, $key) => $key !== '' && $g->count() > 1 && $touchesRecent($g)),
+            fn ($g) => $g->map(fn ($p) => "#{$p->id} {$p->name} ({$p->slug})" . ($p->is_active ? '' : ' [inactive]'))->implode("\n      ")
+                . "\n      → keep one, retire the rest: php artisan products:redirect-duplicate {duplicateId} {keepId}",
             $limit
         );
 

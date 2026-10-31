@@ -64,8 +64,18 @@ class GoogleFeedController extends Controller
     {
         $price = (float) $product->price;
         $salePrice = $product->sale_price !== null ? (float) $product->sale_price : null;
-        $availability = $product->marked_out_of_stock ? 'out_of_stock' : self::AVAILABILITY[$product->schema_availability]
+        // a stored "InStock" (everyone's default) follows the real stock — same rule as the product page
+        $explicit = $product->schema_availability !== 'InStock' ? (self::AVAILABILITY[$product->schema_availability] ?? null) : null;
+        $availability = $product->marked_out_of_stock ? 'out_of_stock' : $explicit
             ?? ($product->available_stock > 0 ? 'in_stock' : 'out_of_stock');
+        // out of stock but taking pre-orders (same as the product page's schema). Google requires
+        // an availability_date with "preorder": the far end of the pre-order delivery window.
+        $availableOn = null;
+        if ($availability === 'out_of_stock' && $product->canPreorder()) {
+            $availability = 'preorder';
+            preg_match_all('/\d+/', setting('preorder_days', '7-15'), $days);
+            $availableOn = now()->addDays(max(array_map('intval', $days[0]) ?: [15]))->startOfDay()->toIso8601String();
+        }
         $description = trim(preg_replace('/\s+/', ' ', strip_tags((string) ($product->description ?: $product->short_description))))
             ?: $product->name;
 
@@ -82,6 +92,9 @@ class GoogleFeedController extends Controller
             $xml->writeElement('g:additional_image_link', url(Storage::url($image->image)));
         }
         $xml->writeElement('g:availability', $availability);
+        if ($availableOn) {
+            $xml->writeElement('g:availability_date', $availableOn);
+        }
         $xml->writeElement('g:price', number_format($price, 2, '.', '') . " {$currency}");
         if ($salePrice !== null && $salePrice < $price) {
             $xml->writeElement('g:sale_price', number_format($salePrice, 2, '.', '') . " {$currency}");

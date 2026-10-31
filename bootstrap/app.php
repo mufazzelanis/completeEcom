@@ -47,6 +47,20 @@ return Application::configure(basePath: dirname(__DIR__))
         // Count storefront 404s (Settings → Redirects → 404 log) so broken links that still get
         // visits can be redirected; returning nothing keeps the normal 404 page.
         $exceptions->render(function (\Symfony\Component\HttpKernel\Exception\NotFoundHttpException $e, Request $request) {
+            // A product/category/brand URL that no longer matches exactly (slug edited, size
+            // dropped, duplicate's "-2") → 301 to the closest live one, so the old URL's Google
+            // ranking and backlinks carry over instead of ending in a 404 (App\Support\SlugMatcher).
+            if ($request->isMethod('GET') && preg_match('#^(products|shop/category|brand)/([^/]+)$#', trim($request->path(), '/'), $m)) {
+                $target = match ($m[1]) {
+                    'products' => ($p = \App\Support\SlugMatcher::product($m[2])) ? route('products.show', $p) : null,
+                    'shop/category' => ($c = \App\Support\SlugMatcher::category($m[2])) ? route('shop.category', $c) : null,
+                    'brand' => ($b = \App\Support\SlugMatcher::brand($m[2])) ? route('shop.brand', $b) : null,
+                };
+                if ($target && rtrim($target, '/') !== rtrim($request->url(), '/')) {
+                    return redirect()->to($target, 301);
+                }
+            }
+
             \App\Models\NotFoundLog::record($request);
 
             return null;

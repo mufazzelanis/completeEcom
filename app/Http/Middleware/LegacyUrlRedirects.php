@@ -5,6 +5,7 @@ namespace App\Http\Middleware;
 use App\Models\Brand;
 use App\Models\Category;
 use App\Models\Product;
+use App\Support\SlugMatcher;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -40,7 +41,7 @@ class LegacyUrlRedirects
     private const GONE_PATTERNS = [
         '#^feed(?:/|$)#', '#^comments/feed#', '#^(?:product-category|product-tag|tag|category|author)/.+/feed$#',
         '#^wp-json(?:/|$)#', '#^xmlrpc\.php$#', '#^wp-(?:content|includes)/#', '#^my-account(?:/|$)#',
-        '#^product-tag/#', '#^tag/#', '#^author/#', '#^category/#', '#^shop/page/\d+$#', '#^page/\d+$#',
+        '#^product-tag/#', '#^tag/#', '#^author/#', '#^category/#',
         '#^\d{4}/\d{2}(?:/|$)#',
     ];
 
@@ -63,6 +64,18 @@ class LegacyUrlRedirects
         $path = trim($request->path(), '/');
         if ($target = $this->counterpart($path)) {
             return redirect()->to($target, 301);
+        }
+
+        // 2b. old paginated shop / tag pages → the closest living page (keeps their link value)
+        if (preg_match('#^(?:shop/)?page/\d+$#', $path)) {
+            return redirect()->to(route('shop.index'), 301);
+        }
+        if (preg_match('#^product-tag/([^/]+)$#', $path, $t)) {
+            $target = ($c = SlugMatcher::category($t[1])) ? route('shop.category', $c)
+                : (($b = SlugMatcher::brand($t[1])) ? route('shop.brand', $b) : null);
+            if ($target) {
+                return redirect()->to($target, 301);
+            }
         }
 
         // 3. WordPress-only paths → gone
@@ -97,12 +110,13 @@ class LegacyUrlRedirects
         }
         $slug = basename($m[2]);
 
+        // exact slug first, then the closest live match (SlugMatcher — strict, sizes must agree)
         $url = match ($m[1]) {
-            'product'          => ($p = Product::active()->where('slug', $slug)->first()) ? route('products.show', $p) : null,
-            'product-category' => ($c = Category::where('slug', $slug)->where('is_active', true)->first()) ? route('shop.category', $c) : null,
+            'product'          => ($p = Product::active()->where('slug', $slug)->first() ?? SlugMatcher::product($slug)) ? route('products.show', $p) : null,
+            'product-category' => ($c = Category::where('slug', $slug)->where('is_active', true)->first() ?? SlugMatcher::category($slug)) ? route('shop.category', $c) : null,
             // /brand/{slug} is a real route here — only its nested WooCommerce form is legacy
             'product-brand', 'brand' => str_contains($m[2], '/') || $m[1] === 'product-brand'
-                ? (($b = Brand::where('slug', $slug)->first()) ? route('shop.brand', $b) : null)
+                ? (($b = Brand::where('slug', $slug)->first() ?? SlugMatcher::brand($slug)) ? route('shop.brand', $b) : null)
                 : false,
         };
 

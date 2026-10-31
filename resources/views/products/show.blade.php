@@ -50,8 +50,17 @@
         'PreOrder' => 'https://schema.org/PreOrder', 'BackOrder' => 'https://schema.org/BackOrder',
         'Discontinued' => 'https://schema.org/Discontinued', 'SoldOut' => 'https://schema.org/SoldOut',
     ];
-    $schemaAvailability = $product->marked_out_of_stock ? 'https://schema.org/OutOfStock' : $availabilityMap[$product->schema_availability]
+    // "InStock" is what every product carries by default (form/import), so it means "follow the
+    // real stock" — only a deliberate other choice (PreOrder, BackOrder, Discontinued…) overrides it;
+    // claiming InStock on an empty shelf is an availability mismatch Google penalises
+    $explicitAvailability = $product->schema_availability !== 'InStock' ? ($availabilityMap[$product->schema_availability] ?? null) : null;
+    $schemaAvailability = $product->marked_out_of_stock ? 'https://schema.org/OutOfStock' : $explicitAvailability
         ?? ($product->available_stock > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock');
+    // out of stock but taking pre-orders: that's what Google should show ("Pre-order"), and the
+    // listing stays eligible for Shopping instead of reading as unavailable
+    if ($schemaAvailability === 'https://schema.org/OutOfStock' && $product->canPreorder()) {
+        $schemaAvailability = 'https://schema.org/PreOrder';
+    }
 
     // Merchant listings (Google Shopping) shipping/return info, read from the same
     // Shipping and Orders settings checkout uses so the schema never drifts from them.

@@ -128,7 +128,8 @@ $defaultDescription = match (true) {
 };
 $pageDescription = $meta('meta_description', $defaultDescription);
 $pageKeywords    = $meta('meta_keywords', setting('seo_keywords', ''));
-$pageCanonical   = $meta('canonical', url()->current());
+// paginated lists keep their page number (page 2's canonical is page 2 — Google's own guidance)
+$pageCanonical   = $meta('canonical', url()->current() . ((int) request('page') > 1 ? '?page=' . (int) request('page') : ''));
 $pageOgType      = $meta('og_type', 'website');
 $pageOgImage     = $meta('og_image', $logoUrl ?: '');
 $pageOgTitle     = $meta('og_title', $pageTitle);
