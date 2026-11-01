@@ -53,7 +53,10 @@ return Application::configure(basePath: dirname(__DIR__))
             headers: Request::HEADER_X_FORWARDED_FOR | Request::HEADER_X_FORWARDED_PROTO,
         );
         $middleware->web(prepend: [\App\Http\Middleware\ServerTiming::class, ForceHttps::class]);
-        $middleware->web(append: [SetLocale::class, MaintenanceMode::class, SecurityHeaders::class]);
+        // Link: rel=preload headers for the Vite CSS/JS — Cloudflare Early Hints replays them as a
+        // 103 response straight from its edge, so the browser starts fetching the (edge-cached)
+        // assets while the origin is still building the page.
+        $middleware->web(append: [SetLocale::class, MaintenanceMode::class, SecurityHeaders::class, \Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets::class]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(
