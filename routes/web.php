@@ -221,6 +221,7 @@ Route::post('/checkout', [CheckoutController::class, 'store'])->name('checkout.s
 Route::post('/pv', fn (\Illuminate\Http\Request $request) => response()->noContent(
     \App\Support\PageView::consume((string) $request->input('t')) ? 204 : 202
 ))->middleware('throttle:60,1,post-pv')->withoutMiddleware(\Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class)->name('page-view');
+Route::post('/promo-popups/{promoPopup}/track', \App\Http\Controllers\PromoPopupTrackController::class)->middleware('throttle:60,1,post-promo-track')->name('promo-popups.track');
 Route::post('/checkout/lead', [CheckoutController::class, 'lead'])->middleware('throttle:30,1,post-checkout-lead')->name('checkout.lead');
 Route::post('/checkout/phone/send', [\App\Http\Controllers\CheckoutPhoneController::class, 'send'])->middleware('throttle:12,10,post-checkout-phone-send')->name('checkout.phone.send');
 Route::post('/checkout/phone/verify', [\App\Http\Controllers\CheckoutPhoneController::class, 'verify'])->middleware('throttle:20,10,post-checkout-phone-verify')->name('checkout.phone.verify');
@@ -747,6 +748,13 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     // Marketing — Overview
     // Route::view (not a closure) so this survives `php artisan route:cache`.
     Route::view('marketing', 'admin.marketing.index')->name('marketing.index');
+
+    // Marketing — Promo Popups
+    Route::get('promo-popups/products', [\App\Http\Controllers\Admin\PromoPopupController::class, 'products'])->name('promo-popups.products');
+    Route::resource('promo-popups', \App\Http\Controllers\Admin\PromoPopupController::class)->except(['show']);
+    Route::patch('promo-popups/{promoPopup}/toggle', [\App\Http\Controllers\Admin\PromoPopupController::class, 'toggle'])->name('promo-popups.toggle');
+    Route::post('promo-popups/{promoPopup}/duplicate', [\App\Http\Controllers\Admin\PromoPopupController::class, 'duplicate'])->name('promo-popups.duplicate');
+    Route::post('promo-popups/{promoPopup}/reset', [\App\Http\Controllers\Admin\PromoPopupController::class, 'resetStats'])->name('promo-popups.reset');
 
     // Marketing — Flash Sales
     Route::resource('flash-sales', AdminFlashSaleController::class)->except(['show']);

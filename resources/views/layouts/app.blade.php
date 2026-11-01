@@ -1480,6 +1480,7 @@ $navCategories = \App\Support\StorefrontCache::remember('nav_categories', fn () 
 </footer>
 
 @include('partials.storefront.bottom-nav')
+@include('partials.storefront.promo-popup')
 
 {{-- Back to Top — mirrors the "Chat with us" FAB on the opposite corner (both float at
      bottom-20 on mobile, bottom-6 on desktop, same circle size) so the two read as one

@@ -21,6 +21,18 @@
         <p class="text-sm text-gray-500 mt-1">Shared discount codes for all customers</p>
     </a>
 
+    {{-- Promo Popups --}}
+    <a href="{{ route('admin.promo-popups.index') }}" class="bg-white rounded-2xl shadow-sm p-6 hover:shadow-md transition group">
+        <div class="flex items-start justify-between mb-4">
+            <div class="w-12 h-12 bg-orange-100 rounded-2xl flex items-center justify-center group-hover:bg-orange-200 transition">
+                <svg class="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="3" stroke-width="2"/><rect x="7" y="8" width="10" height="8" rx="1.5" stroke-width="2"/></svg>
+            </div>
+            <span class="text-2xl font-bold text-gray-800">{{ \App\Models\PromoPopup::live()->count() }}</span>
+        </div>
+        <h3 class="font-semibold text-gray-800">Promo Popups</h3>
+        <p class="text-sm text-gray-500 mt-1">Offer popups on product pages — picture, text, coupon, countdown</p>
+    </a>
+
     {{-- Promo Codes --}}
     <a href="{{ route('admin.promo-codes.index') }}" class="bg-white rounded-2xl shadow-sm p-6 hover:shadow-md transition group">
         <div class="flex items-start justify-between mb-4">

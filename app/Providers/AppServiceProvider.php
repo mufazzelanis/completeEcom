@@ -61,7 +61,7 @@ class AppServiceProvider extends ServiceProvider
         foreach ([
             \App\Models\Category::class, \App\Models\Brand::class,
             \App\Models\Banner::class, \App\Models\HomeSection::class, \App\Models\Review::class,
-            \App\Models\Page::class, \App\Models\PaymentMethod::class,
+            \App\Models\Page::class, \App\Models\PaymentMethod::class, \App\Models\PromoPopup::class,
         ] as $model) {
             $model::saved($bumpHomeCache);
             $model::deleted($bumpHomeCache);
@@ -91,6 +91,8 @@ class AppServiceProvider extends ServiceProvider
         Order::observe(OrderAlertObserver::class);
         Order::observe(TelegramOrderObserver::class);
         Order::observe(CrmOrderObserver::class);
+        // an order placed within a day of clicking a promo popup is credited to that popup
+        Order::created(fn (Order $order) => \App\Models\PromoPopup::attributeOrder($order));
         User::observe(CrmUserObserver::class);
 
         // Named limiters, one per purpose. The unnamed `throttle:N,M` form keys every route
