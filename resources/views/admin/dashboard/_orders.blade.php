@@ -32,6 +32,7 @@
                 @endforeach
                 @if($order->items_count > 4)<span>+{{ $order->items_count - 4 }}</span>@endif
             </div>
+            @include('admin.orders._remark-line')
         </div>
         <div class="do-side">
             <p class="do-total">৳{{ number_format($order->total) }}</p>

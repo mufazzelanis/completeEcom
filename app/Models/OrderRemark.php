@@ -47,6 +47,29 @@ class OrderRemark extends Model
         return self::TYPES[$this->type] ?? self::TYPES['note'];
     }
 
+    /**
+     * The order lists' "last remark" line (admin/orders/_remark-line): tag, short text, who/when,
+     * and the call-back time when the call ended with "call later". Plain data — the line is
+     * re-drawn client-side from the same shape after every add / pin / delete.
+     */
+    public function listLine(): array
+    {
+        $tz = setting('timezone', 'Asia/Dhaka');
+        [$label, $emoji, $color] = ($this->outcome ? self::OUTCOMES[$this->outcome] ?? null : null) ?? $this->meta();
+        $fu = $this->outcome === 'call_later' && $this->follow_up_at ? $this->follow_up_at : null;
+
+        return [
+            'tag' => $emoji . ' ' . $label,
+            'color' => $color,
+            'body' => $this->body ? \Illuminate\Support\Str::limit(preg_replace('/\s+/u', ' ', $this->body), 160) : null,
+            'who' => $this->user?->name ?? 'Staff',
+            'ago' => $this->created_at ? $this->created_at->diffForHumans(null, true, true) . ' ago' : '',
+            'at' => $this->created_at?->timezone($tz)->format('d M, g:i A'),
+            'fu' => $fu ? $fu->timezone($tz)->format($fu->timezone($tz)->isToday() ? '\T\o\d\a\y g:i A' : 'd M, g:i A') : null,
+            'late' => $fu ? $fu->isPast() : false,
+        ];
+    }
+
     /** One line for lists / tooltips: "📞 No answer — rang twice". */
     public function summary(): string
     {

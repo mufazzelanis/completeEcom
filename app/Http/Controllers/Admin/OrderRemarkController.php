@@ -64,12 +64,13 @@ class OrderRemarkController extends Controller
     private function payload(Order $order): array
     {
         $timeline = OrderTimeline::for($order);
-        $latest = $order->remarks()->first();
+        $latest = $order->remarks()->with('user:id,name')->first();
 
         return [
             'html' => view('admin.orders._remarks-list', ['order' => $order] + $timeline)->render(),
             'count' => $timeline['count'],
             'latest' => $latest?->summary(),
+            'line' => $latest?->listLine(), // the order lists' last-remark line (_remark-line)
             'followUp' => $latest?->outcome === 'call_later' && $latest->follow_up_at
                 ? $latest->follow_up_at->timezone(setting('timezone', 'Asia/Dhaka'))->format('d M, g:i A') : null,
         ];

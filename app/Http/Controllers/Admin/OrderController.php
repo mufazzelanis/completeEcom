@@ -39,6 +39,12 @@ class OrderController extends Controller
         if ($request->filled('source')) {
             $query->where('source', $request->source);
         }
+        // remark filters: calls promised for today or already overdue / pending orders nobody has noted yet
+        match ($request->get('remark')) {
+            'due' => $this->callBackDue($query),
+            'none' => $query->doesntHave('remarks'),
+            default => null,
+        };
 
         // date range — quick ranges or from/to
         $tz = setting('timezone', 'Asia/Dhaka');
@@ -83,6 +89,18 @@ class OrderController extends Controller
         return $query;
     }
 
+    /**
+     * Open orders whose latest remark is a "call later" due by the end of today (store time),
+     * overdue ones included — the morning call list.
+     */
+    private function callBackDue($query)
+    {
+        $endOfToday = now(setting('timezone', 'Asia/Dhaka'))->endOfDay()->utc();
+
+        return $query->whereNotIn('status', ['delivered', 'cancelled', 'refunded'])
+            ->whereHas('latestRemark', fn ($r) => $r->where('outcome', 'call_later')->where('follow_up_at', '<=', $endOfToday));
+    }
+
     private function applyStatusFilter($query, ?string $status)
     {
         if ($status) {
@@ -115,13 +133,16 @@ class OrderController extends Controller
 
         $query = $this->applyStatusFilter(clone $base, $request->status)
             ->with(['user:id,name,email,phone', 'payment', 'items:id,order_id,product_id,product_name,quantity', 'items.product:id,image'])
-            ->with('latestRemark')->withCount(['items', 'remarks']);
+            ->with('latestRemark.user:id,name')->withCount(['items', 'remarks']);
 
         match ($request->get('sort')) {
             'oldest' => $query->oldest(),
             'total_desc' => $query->orderByDesc('total'),
             'total_asc' => $query->orderBy('total'),
-            default => $query->latest(),
+            // the call list runs earliest promised call first
+            default => $request->get('remark') === 'due'
+                ? $query->orderBy(\App\Models\OrderRemark::select('follow_up_at')->whereColumn('order_id', 'orders.id')->latest('id')->limit(1))
+                : $query->latest(),
         };
 
         $perPage = in_array((int) $request->per_page, [15, 30, 50, 100], true) ? (int) $request->per_page : 15;
@@ -139,6 +160,9 @@ class OrderController extends Controller
             'pending' => Order::where('status', 'pending')->count(),
             'to_ship' => Order::where('status', 'processing')->count(),
             'unverified' => \App\Models\Payment::where('status', 'pending_verification')->count(),
+            // remark quick filters
+            'call_due' => $this->callBackDue(Order::query())->count(),
+            'no_remark' => Order::where('status', 'pending')->doesntHave('remarks')->count(),
         ];
         $paymentMethods = Order::query()->whereNotNull('payment_method')->distinct()->orderBy('payment_method')->pluck('payment_method');
 

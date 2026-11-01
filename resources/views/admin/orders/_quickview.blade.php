@@ -100,7 +100,9 @@
                 const m = location.hash.match(/^#order-(\d+)$/);
                 if (m) this.show(+m[1]);
             },
-            async show(id) {
+            async show(id, focus = null) {
+                // $dispatch('oq-open', { id, focus: 'remarks' }) from a remark line opens at the remarks box
+                if (id && typeof id === 'object') ({ id, focus = null } = id);
                 this.open = true; this.current = id; this.loading = true;
                 history.replaceState(history.state, '', location.pathname + location.search + '#order-' + id);
                 try {
@@ -109,7 +111,20 @@
                     const d = await r.json();
                     if (this.current !== id) return;   // a newer one was asked for meanwhile
                     this.html = d.html;
-                    this.$nextTick(() => this.$refs.body && (this.$refs.body.scrollTop = 0));
+                    this.$nextTick(() => {
+                        const body = this.$refs.body;
+                        if (!body) return;
+                        body.scrollTop = 0;
+                        const card = focus === 'remarks' && body.querySelector('.rm-card');
+                        if (card) {
+                            setTimeout(() => {
+                                body.scrollTop = card.getBoundingClientRect().top - body.getBoundingClientRect().top - 12;
+                                card.classList.add('rm-flash');
+                                // keyboard on phones would cover the box — focus only with a mouse
+                                if (matchMedia('(hover: hover)').matches) card.querySelector('textarea')?.focus({ preventScroll: true });
+                            }, 60);
+                        }
+                    });
                 } catch (e) {
                     this.html = '<p style="padding:2rem;text-align:center;color:#dc2626">Could not load this order — please try again.</p>';
                 } finally { this.loading = false; }

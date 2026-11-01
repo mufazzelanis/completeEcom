@@ -51,6 +51,26 @@
     .dark .rm-item:hover { background: #1f2937; }
     .dark .rm-item.is-pinned { background: rgba(245,158,11,.1); border-color: rgba(245,158,11,.3); }
     @media (hover: none) { .rm-acts { opacity: .8; } }
+    /* last-remark line in the order lists (_remark-line) */
+    .rl { margin-top: .4rem; max-width: 19rem; }
+    .rl-box { display: block; width: 100%; text-align: left; padding: .35rem .5rem; border-radius: .6rem; background: #f8fafc; border: 1px solid #eef2f7; transition: border-color .15s, background-color .15s; }
+    .rl-box:hover { border-color: #c7d2fe; background: #eef2ff; }
+    .rl-top { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; font-size: .76rem; line-height: 1.35; color: #374151; word-break: break-word; }
+    .rl-tag { display: inline-block; font-size: .66rem; font-weight: 800; padding: 0 .4rem; border-radius: 999px; margin-right: .3rem; white-space: nowrap; }
+    .rl-meta { display: flex; flex-wrap: wrap; align-items: center; gap: .25rem .45rem; margin-top: .2rem; font-size: .66rem; color: #9ca3af; }
+    .rl-n { font-weight: 700; color: #4338ca; }
+    .rl-fu { font-weight: 800; padding: 0 .4rem; border-radius: .4rem; background: #fef3c7; color: #92400e; }
+    .rl-fu.is-late { background: #fee2e2; color: #b91c1c; }
+    .rl-add { font-size: .72rem; font-weight: 700; color: #6366f1; padding: .15rem .45rem; border-radius: .5rem; border: 1px dashed #c7d2fe; }
+    .rl-add:hover { background: #eef2ff; }
+    .dark .rl-box { background: #0b1220; border-color: #1f2937; }
+    .dark .rl-box:hover { background: #1e1b4b; border-color: #3730a3; }
+    .dark .rl-top { color: #d1d5db; }
+    .dark .rl-add { border-color: #3730a3; color: #a5b4fc; }
+    @media (max-width: 767px) { .rl { max-width: none; } }
+    /* quick view opened from a remark line: briefly highlight the remarks box */
+    .rm-card.rm-flash { animation: rmFlash 1.6s ease-out; }
+    @keyframes rmFlash { 0%, 40% { box-shadow: 0 0 0 3px rgba(129,140,248,.55); } 100% { box-shadow: 0 0 0 0 rgba(129,140,248,0); } }
 </style>
 <script>
     window.orderRemarks = function (cfg) {
@@ -84,7 +104,7 @@
                 this.$refs.list.innerHTML = d.html;
                 this.count = d.count;
                 // orders list row: remark count / latest line / call-back badge
-                window.dispatchEvent(new CustomEvent('order-remark', { detail: { id: cfg.orderId, count: d.count, latest: d.latest, followUp: d.followUp } }));
+                window.dispatchEvent(new CustomEvent('order-remark', { detail: { id: cfg.orderId, count: d.count, latest: d.latest, followUp: d.followUp, line: d.line } }));
                 return d;
             },
             async add(outcome = null) {

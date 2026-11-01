@@ -63,8 +63,8 @@ class DashboardController extends Controller
 
     private function recentOrders(string $tab)
     {
-        $q = Order::with(['user:id,name', 'items:id,order_id,product_id,product_name,quantity', 'items.product:id,image'])
-            ->withCount('items');
+        $q = Order::with(['user:id,name', 'items:id,order_id,product_id,product_name,quantity', 'items.product:id,image', 'latestRemark.user:id,name'])
+            ->withCount(['items', 'remarks']);
         match ($tab) {
             'pending', 'processing', 'shipped' => $q->where('status', $tab),
             'today' => $q->where('created_at', '>=', now(setting('timezone', 'Asia/Dhaka'))->startOfDay()->utc()),

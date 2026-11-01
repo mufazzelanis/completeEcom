@@ -27,6 +27,7 @@
         'fraud' => request('fraud') ? 'Fraud flagged' : null,
         'preorder' => request('preorder') ? 'Pre-orders' : null,
         'source' => request('source') ? ucfirst(request('source')) . ' orders' : null,
+        'remark' => ['due' => '⏰ Call back due', 'none' => '💬 No remark yet'][request('remark')] ?? null,
     ]);
 @endphp
 
@@ -43,6 +44,8 @@
     .ob-tab.is-on { background: #111827; color: #fff; border-color: #111827; }
     .ob-tab i { font-style: normal; font-size: .72rem; font-weight: 700; padding: .05rem .45rem; border-radius: 999px; background: #f3f4f6; color: #374151; }
     .ob-tab.is-on i { background: rgba(255,255,255,.2); color: #fff; }
+    .ob-tab-sep { flex-shrink: 0; width: 1px; margin: .3rem .2rem; background: #e5e7eb; }
+    .dark .ob-tab-sep { background: #374151; }
     .ob-in { border: 1px solid #e5e7eb; background: #f9fafb; color: #1f2937; border-radius: .75rem; padding: .5rem .75rem; font-size: .875rem; }
     .ob-in:focus { outline: none; border-color: #fb923c; box-shadow: 0 0 0 3px rgba(249,115,22,.12); }
     .ob-in.is-set { border-color: #fdba74; background: #fff7ed; color: #9a3412; font-weight: 600; }
@@ -172,6 +175,15 @@
             {{ $label }} <i>{{ number_format($count) }}</i>
         </a>
     @endforeach
+    {{-- remark quick filters: today's promised call-backs, and pending orders nobody has noted yet --}}
+    <span class="ob-tab-sep" aria-hidden="true"></span>
+    @php $rm = request('remark'); @endphp
+    <a href="{{ $rm === 'due' ? $link([], ['remark']) : $link(['remark' => 'due'], ['status']) }}" class="ob-tab {{ $rm === 'due' ? 'is-on' : '' }}" title="Orders whose last call said “call later” — due today or overdue">
+        ⏰ Call back due <i @if($summary['call_due'] && $rm !== 'due') style="background:#fee2e2;color:#b91c1c" @endif>{{ number_format($summary['call_due']) }}</i>
+    </a>
+    <a href="{{ $rm === 'none' ? $link([], ['remark', 'status']) : $link(['remark' => 'none', 'status' => 'pending']) }}" class="ob-tab {{ $rm === 'none' ? 'is-on' : '' }}" title="Pending orders with no remark yet — nobody has called them">
+        💬 No remark yet <i>{{ number_format($summary['no_remark']) }}</i>
+    </a>
 </div>
 
 {{-- Filters — apply as soon as one changes; remembered until "Clear" --}}
@@ -180,6 +192,7 @@
       class="ob-filters flex items-center flex-wrap gap-2 mb-3 bg-white dark:bg-gray-900 ring-1 ring-gray-100 dark:ring-gray-800 rounded-2xl shadow-sm p-3">
     @if(request('status'))<input type="hidden" name="status" value="{{ request('status') }}">@endif
     @if(request('fraud'))<input type="hidden" name="fraud" value="1">@endif
+    @if(request('remark'))<input type="hidden" name="remark" value="{{ request('remark') }}">@endif
     <div class="relative flex-1 ob-search" style="min-width: 14rem;">
         <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
         <input type="search" name="search" value="{{ request('search') }}" placeholder="Order no, name, phone or email…" enterkeyhint="search"
@@ -287,18 +300,6 @@
                             @elseif($order->fraud_checked_at && $order->fraud_score >= 20)
                                 <span class="text-xs text-yellow-500 font-medium" title="Medium fraud risk — Score: {{ $order->fraud_score }}">⚠</span>
                             @endif
-                            {{-- remarks: count + latest line on hover, and the call-back time if the last call said "call later";
-                                 kept live by the drawer's "order-remark" event --}}
-                            @php
-                                $lr = $order->latestRemark;
-                                $fu = $lr && $lr->outcome === 'call_later' && $lr->follow_up_at ? $lr->follow_up_at : null;
-                            @endphp
-                            <span x-data="{ n: {{ (int) $order->remarks_count }}, latest: @js($lr?->summary()), fu: @js($fu?->timezone($tz)->format('d M, g:i A')), late: {{ $fu && $fu->isPast() ? 'true' : 'false' }} }"
-                                  @order-remark.window="if ($event.detail.id === +$el.closest('tr').dataset.id) { n = $event.detail.count; latest = $event.detail.latest; fu = $event.detail.followUp; late = false }"
-                                  class="inline-flex items-center gap-1">
-                                <span x-show="n > 0" x-cloak class="text-[10px] font-bold px-1.5 py-0.5 rounded-full" style="background:#eef2ff;color:#4338ca" :title="latest" x-text="'💬 ' + n"></span>
-                                <span x-show="fu" x-cloak class="text-[10px] font-bold px-1.5 py-0.5 rounded-full" :style="late ? 'background:#fee2e2;color:#b91c1c' : 'background:#fef3c7;color:#92400e'" :title="'Call back ' + fu" x-text="'⏰ ' + fu"></span>
-                            </span>
                         </div>
                         <div class="ob-thumbs">
                             @foreach($order->items->take(3) as $it)
@@ -315,6 +316,7 @@
                                 @if($order->shipping_phone)<p class="text-xs text-gray-500">{{ $order->shipping_phone }}</p>@endif
                             </div>
                         </div>
+                        @include('admin.orders._remark-line')
                     </td>
                     <td class="ob-c-total px-4 py-4 text-right">
                         <p class="font-bold text-gray-900 dark:text-gray-100 text-sm">৳{{ number_format($order->total) }}</p>
