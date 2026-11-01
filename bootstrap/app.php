@@ -52,7 +52,7 @@ return Application::configure(basePath: dirname(__DIR__))
             ],
             headers: Request::HEADER_X_FORWARDED_FOR | Request::HEADER_X_FORWARDED_PROTO,
         );
-        $middleware->web(prepend: [ForceHttps::class]);
+        $middleware->web(prepend: [\App\Http\Middleware\ServerTiming::class, ForceHttps::class]);
         $middleware->web(append: [SetLocale::class, MaintenanceMode::class, SecurityHeaders::class]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
