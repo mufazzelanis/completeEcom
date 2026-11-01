@@ -20,9 +20,9 @@ class LandingPageController extends Controller
         abort_if($landingPage->status !== 'published', 404);
 
         $landingPage->load('product');
-        $landingPage->increment('views_count');
+        $pageViewToken = \App\Support\PageView::record('landing', $landingPage->id); // not on a hover-prefetch
 
-        return view('landing.show', compact('landingPage'));
+        return view('landing.show', compact('landingPage', 'pageViewToken'));
     }
 
     public function order(Request $request, LandingPage $landingPage)

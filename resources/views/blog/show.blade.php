@@ -176,4 +176,5 @@
         </aside>
     </div>
 </div>
+@include('partials.page-view-beacon')
 @endsection

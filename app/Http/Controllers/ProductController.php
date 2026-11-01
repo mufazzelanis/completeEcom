@@ -3,10 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\Product;
-use App\Models\ProductView;
 use App\Models\Review;
-use App\Services\ActivityLogger;
-use App\Services\Facebook\ConversionsApi;
+use App\Support\PageView;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
@@ -23,17 +21,13 @@ class ProductController extends Controller
             abort(404);
         }
 
-        $product->increment('views');
-        // Per-visitor history behind the homepage personalized section
-        // (HomeSection::getPersonalizedProducts()) — separate from the view counter and the
-        // admin audit log, neither of which can answer "what has THIS visitor looked at."
-        // Both writes run after the page is sent, so the visitor never waits on them.
-        $viewerId = auth()->id();
-        $viewerSession = session()->getId();
-        after_response(function () use ($product, $viewerId, $viewerSession) {
-            ActivityLogger::log('product.view', "Viewed product: {$product->name}", $product);
-            ProductView::record($product->id, $viewerId, $viewerSession);
-        });
+        // Shared with the client-side fbq('track', 'ViewContent', ..., {eventID}) call in
+        // products/show.blade.php so Meta dedupes this pixel+CAPI pair into one event.
+        $fbViewContentEventId = (string) Str::uuid();
+        // View counter, activity log, recently-viewed history and the CAPI ViewContent —
+        // now, or (Turbo hover-prefetch) only once the page is actually shown; see PageView.
+        $pageViewToken = PageView::record('product', $product->id, ['event' => $fbViewContentEventId]);
+
         $product->load([
             'category', 'brand', 'images', 'reviews.user', 'faqs', 'activeFlashSaleProduct',
             'crossSells.recommended.activeFlashSaleProduct',
@@ -60,26 +54,6 @@ class ProductController extends Controller
             ? $product->wishlists()->where('user_id', auth()->id())->exists()
             : $product->wishlists()->where('session_id', session()->getId())->exists();
 
-        // Shared with the client-side fbq('track', 'ViewContent', ..., {eventID}) call in
-        // products/show.blade.php so Meta dedupes this pixel+CAPI pair into one event.
-        $fbViewContentEventId = (string) Str::uuid();
-        $user = auth()->user();
-        ConversionsApi::track(
-            eventName: 'ViewContent',
-            eventId: $fbViewContentEventId,
-            customData: [
-                // Matches the client-side fbq call's own `id` value exactly (see
-                // products/show.blade.php) — raw product ID, not SKU.
-                'content_ids'      => [(string) $product->id],
-                'content_type'     => 'product',
-                'content_name'     => $product->name,
-                'content_category' => $product->category->name ?? null,
-                'value'            => (float) $product->final_price,
-                'currency'         => setting('currency_code', 'BDT'),
-            ],
-            rawUserFields: $user ? ['name' => $user->name, 'email' => $user->email, 'phone' => $user->phone] : [],
-        );
-
         // Bundle box only for a product that itself goes to the cart in one tap
         $fbt = !$product->isVariable() && !$product->isDigital() && $product->available_stock > 0
             ? \App\Services\Personalization::frequentlyBoughtTogether($product)
@@ -87,7 +61,7 @@ class ProductController extends Controller
         $recentlyViewed = \App\Services\Personalization::recentlyViewed($product->id, 12)
             ->reject(fn ($p) => $related->contains('id', $p->id))->values();
 
-        return view('products.show', compact('product', 'related', 'wishlisted', 'fbViewContentEventId', 'fbt', 'recentlyViewed'));
+        return view('products.show', compact('product', 'related', 'wishlisted', 'fbViewContentEventId', 'fbt', 'recentlyViewed', 'pageViewToken'));
     }
 
     public function storeReview(Request $request, Product $product)

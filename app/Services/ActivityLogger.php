@@ -16,7 +16,11 @@ class ActivityLogger
      * hot request paths (product page, cart add) — a logging failure must never
      * break the actual page/action.
      */
-    public static function log(string $event, string $description, ?Model $subject = null, array $properties = []): void
+    /**
+     * $url / $referrer override the current request's — for a view recorded later by the
+     * page itself (App\Support\PageView), where the current request is just that beacon.
+     */
+    public static function log(string $event, string $description, ?Model $subject = null, array $properties = [], ?string $url = null, ?string $referrer = null): void
     {
         try {
             $userAgent = Request::userAgent() ?? '';
@@ -42,8 +46,8 @@ class ActivityLogger
                 'description'  => $description,
                 'subject_type' => $subject ? get_class($subject) : null,
                 'subject_id'   => $subject?->getKey(),
-                'url'          => Request::fullUrl(),
-                'referrer'     => Request::header('referer'),
+                'url'          => $url ?? Request::fullUrl(),
+                'referrer'     => $url !== null ? $referrer : Request::header('referer'),
                 'ip_address'   => Request::ip(),
                 'user_agent'   => $userAgent,
                 'device'       => $device,

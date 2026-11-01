@@ -1018,3 +1018,7 @@ html.dark .admin-nav-group[data-has-active="1"] .admin-nav-group__title { color:
 :where(html.dark) body .to-rose-50 { --tw-gradient-to: theme('colors.rose.500 / 12%') var(--tw-gradient-to-position); }
 :where(html.dark) body .from-rose-100 { --tw-gradient-from: theme('colors.rose.500 / 18%') var(--tw-gradient-from-position); --tw-gradient-to: theme('colors.rose.500 / 0%') var(--tw-gradient-to-position); --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to); }
 :where(html.dark) body .to-rose-100 { --tw-gradient-to: theme('colors.rose.500 / 18%') var(--tw-gradient-to-position); }
+
+/* Tapped link while its page loads (resources/js/app.js §6) + busy cursor during a Turbo visit. */
+a.turbo-pending { opacity: .6; transition: opacity .15s; }
+html[aria-busy="true"] { cursor: progress; }

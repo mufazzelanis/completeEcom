@@ -33,7 +33,7 @@ class BlogController extends Controller
     {
         abort_if($blogPost->status !== 'published' || $blogPost->published_at?->isFuture(), 404);
 
-        $blogPost->increment('views');
+        $pageViewToken = \App\Support\PageView::record('blog', $blogPost->id); // not on a hover-prefetch
         $blogPost->load(['category', 'author', 'tags']);
 
         $related = BlogPost::with('category')
@@ -46,7 +46,7 @@ class BlogController extends Controller
 
         $shopProducts = $this->productsFor($blogPost);
 
-        return view('blog.show', compact('blogPost', 'related', 'shopProducts'));
+        return view('blog.show', compact('blogPost', 'related', 'shopProducts', 'pageViewToken'));
     }
 
     /**

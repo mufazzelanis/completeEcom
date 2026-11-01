@@ -849,4 +849,5 @@
         </div>
     </div>
 @endif
+@include('partials.page-view-beacon')
 @endsection

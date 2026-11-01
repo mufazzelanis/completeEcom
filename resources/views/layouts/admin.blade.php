@@ -990,7 +990,7 @@ $adminBadges = \Illuminate\Support\Facades\Cache::remember('admin_sidebar_badges
         @endif
 
         <!-- Page Content -->
-        <main class="relative flex-1 overflow-y-auto p-4 sm:p-6 pb-24 lg:pb-6">
+        <main class="relative flex-1 overflow-y-auto p-4 sm:p-6 pb-24 lg:pb-6" data-turbo-scroll @if($errors->any() || session('error')) data-has-errors @endif>
             @yield('content')
         </main>
     </div>

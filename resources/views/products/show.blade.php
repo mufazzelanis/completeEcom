@@ -789,4 +789,5 @@ function updateQty(delta) {
     });
 })();
 </script>
+@include('partials.page-view-beacon')
 @endsection

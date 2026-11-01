@@ -216,6 +216,11 @@ Route::get('/wishlist', [WishlistController::class, 'index'])->name('wishlist.in
 // Checkout Routes
 Route::get('/checkout', [CheckoutController::class, 'index'])->name('checkout.index');
 Route::post('/checkout', [CheckoutController::class, 'store'])->name('checkout.store');
+// A page Turbo prefetched on hover reports here once it's actually shown (App\Support\PageView).
+// No CSRF token: the body is an encrypted, expiring, single-use token, and landing pages have no meta tag.
+Route::post('/pv', fn (\Illuminate\Http\Request $request) => response()->noContent(
+    \App\Support\PageView::consume((string) $request->input('t')) ? 204 : 202
+))->middleware('throttle:60,1,post-pv')->withoutMiddleware(\Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class)->name('page-view');
 Route::post('/checkout/lead', [CheckoutController::class, 'lead'])->middleware('throttle:30,1,post-checkout-lead')->name('checkout.lead');
 Route::post('/checkout/phone/send', [\App\Http\Controllers\CheckoutPhoneController::class, 'send'])->middleware('throttle:12,10,post-checkout-phone-send')->name('checkout.phone.send');
 Route::post('/checkout/phone/verify', [\App\Http\Controllers\CheckoutPhoneController::class, 'verify'])->middleware('throttle:20,10,post-checkout-phone-verify')->name('checkout.phone.verify');

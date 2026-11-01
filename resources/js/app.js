@@ -148,3 +148,57 @@ function observeHeaderHeight() {
 }
 observeHeaderHeight();
 document.addEventListener('turbo:load', observeHeaderHeight);
+
+// 6. Feedback the moment a link is tapped. Turbo's own progress bar only appears after 500ms,
+//    so on a slow connection a tap looked like it did nothing for half a second — shown after
+//    120ms now, and the tapped link itself dims until the next page is on screen.
+Turbo.setProgressBarDelay(120);
+let pendingLink = null;
+const clearPendingLink = () => { pendingLink?.classList.remove('turbo-pending'); pendingLink = null; };
+document.addEventListener('turbo:click', (e) => {
+    clearPendingLink();
+    pendingLink = e.target.closest?.('a') || null;
+    pendingLink?.classList.add('turbo-pending');
+    setTimeout(clearPendingLink, 8000); // a visit cancelled elsewhere never leaves it dimmed
+});
+['turbo:before-cache', 'turbo:load', 'turbo:fetch-request-error'].forEach((t) => document.addEventListener(t, clearPendingLink));
+
+// 7. Turbo prefetches a link's page as soon as the mouse rests on it (desktop), so the click
+//    itself is near-instant. Not for pages where merely loading them does work: checkout
+//    (InitiateCheckout event), cart, logout, file downloads/exports/invoices (heavy to build),
+//    the notifications page and admin alert "open" links (mark things read), template seeding,
+//    social-login redirects, unsubscribe links, vendor document files. Product/blog/landing
+//    views are safe — the server defers their tracking until the page is actually shown
+//    (App\Support\PageView).
+const NO_PREFETCH = /\/(checkout|cart|buy-now|logout|sync|pv|auth|unsubscribe|document)(\/|$)|\/(download|export|invoice|pdf|print|label)s?(\/|$)|\/(notifications|open|seed)$|\.(pdf|csv|xlsx?|zip)$/i;
+document.addEventListener('turbo:before-prefetch', (e) => {
+    const link = e.target;
+    if (NO_PREFETCH.test(link.pathname) || link.hasAttribute('download')) e.preventDefault();
+});
+
+// 8. The admin panel scrolls inside <main data-turbo-scroll>, not the window, and Turbo only
+//    keeps/restores *window* scroll — so every save (form posts back to the same page) and
+//    every Back press landed at the top, which is what made it feel like a full reload.
+//    Remembered per URL here: a same-page refresh keeps its position (unless the page came
+//    back with errors to show — data-has-errors — which still start at the top, where they
+//    are), and Back/Forward return to where that page was left.
+const scrollMemory = new Map();
+let scrollKey = location.href;
+let visitAction = null;
+const scrollBox = () => document.querySelector('[data-turbo-scroll]');
+document.addEventListener('scroll', (e) => {
+    if (e.target?.hasAttribute?.('data-turbo-scroll')) scrollMemory.set(scrollKey, e.target.scrollTop);
+}, { capture: true, passive: true });
+document.addEventListener('turbo:visit', (e) => { visitAction = e.detail.action; });
+document.addEventListener('turbo:load', () => {
+    const box = scrollBox();
+    const previousKey = scrollKey;
+    scrollKey = location.href;
+    const action = visitAction;
+    visitAction = null;
+    if (!box || !action) return;
+    let top = null;
+    if (action === 'restore') top = scrollMemory.get(scrollKey);
+    else if (action === 'replace' && previousKey === scrollKey && !box.hasAttribute('data-has-errors')) top = scrollMemory.get(previousKey);
+    if (top) requestAnimationFrame(() => { box.scrollTop = top; });
+});
