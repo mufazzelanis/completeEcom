@@ -54,10 +54,12 @@ class SecurityHeaders
             // domain (see below) — AdSense's SODAR anti-fraud check loads an actual script
             // (ep2.adtrafficquality.google/sodar/sodar2.js) in addition to the beacon ping.
             // www.clarity.ms / *.clarity.ms: Microsoft Clarity (Settings → Google Analytics & Ads).
+            // static.cloudflareinsights.com: Cloudflare Web Analytics, which Cloudflare injects
+            // into every page itself now that the site is behind it (it reports to connect-src https:).
             // With Google Tag Manager switched on, any HTTPS script source is allowed: tags
             // added in the GTM container (TikTok, LinkedIn, Hotjar…) load from whatever domain
             // that vendor uses, and an allowlist here would silently block each new one.
-            "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://cdn.jsdelivr.net https://www.googletagmanager.com https://www.google.com https://www.gstatic.com https://connect.facebook.net https://googleads.g.doubleclick.net https://pagead2.googlesyndication.com https://*.googlesyndication.com https://*.profitableratecpmnetwork.com https://*.highrevenueformat.com https://*.adtrafficquality.google https://www.clarity.ms https://*.clarity.ms"
+            "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://cdn.jsdelivr.net https://www.googletagmanager.com https://www.google.com https://www.gstatic.com https://connect.facebook.net https://googleads.g.doubleclick.net https://pagead2.googlesyndication.com https://*.googlesyndication.com https://*.profitableratecpmnetwork.com https://*.highrevenueformat.com https://*.adtrafficquality.google https://www.clarity.ms https://*.clarity.ms https://static.cloudflareinsights.com"
                 . ($this->tagManagerOn() ? ' https:' : ''),
             "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com",
             // cdn.jsdelivr.net added for the Summernote editor's bundled icon font
