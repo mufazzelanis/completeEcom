@@ -315,6 +315,12 @@ class Product extends Model
 
     public function getAverageRatingAttribute()
     {
+        // product cards / the product page eager-load (approved) reviews — average those
+        // instead of a fresh AVG query every time the accessor is read
+        if ($this->relationLoaded('reviews')) {
+            return $this->reviews->avg('rating') ?? 0;
+        }
+
         return $this->reviews()->avg('rating') ?? 0;
     }
 

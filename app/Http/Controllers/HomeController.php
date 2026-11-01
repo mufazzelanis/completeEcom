@@ -9,8 +9,8 @@ use App\Models\FlashSale;
 use App\Models\HomeSection;
 use App\Models\Product;
 use App\Models\Review;
+use App\Support\StorefrontCache;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Cache;
 
 class HomeController extends Controller
 {
@@ -19,19 +19,13 @@ class HomeController extends Controller
      * which orphans every cached homepage block at once — admin edits show up immediately,
      * and the TTL below only bounds staleness from changes that bypass model events.
      */
-    public const CACHE_VERSION_KEY = 'home_cache_version';
-    // 5 min: edits invalidate instantly anyway (see AppServiceProvider), so this only bounds
-    // time-based changes no save event announces — a banner reaching its starts_at/ends_at —
-    // and raw DB edits. Shorter would mostly just mean more cold renders on a low-traffic site.
-    private const CACHE_TTL = 300; // seconds
+    public const CACHE_VERSION_KEY = StorefrontCache::VERSION_KEY;
 
-    private ?int $cacheVersion = null;
-
+    // 5 min TTL (StorefrontCache): edits invalidate instantly anyway, so it only bounds
+    // time-based changes no save event announces — a banner reaching its starts_at/ends_at.
     private function remember(string $key, \Closure $callback)
     {
-        $version = $this->cacheVersion ??= Cache::get(self::CACHE_VERSION_KEY, 1);
-
-        return Cache::remember("home:{$version}:{$key}", self::CACHE_TTL, $callback);
+        return StorefrontCache::remember($key, $callback);
     }
 
     public function index()

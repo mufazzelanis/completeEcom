@@ -61,7 +61,8 @@ class HomeSection extends Model
     {
         $ids = $this->getCategoryIdsList();
 
-        return $ids ? Category::whereIn('id', $ids)->orderBy('name')->get() : collect();
+        // memoised per section: the homepage asks for it more than once while rendering
+        return $ids ? once(fn () => Category::whereIn('id', $ids)->orderBy('name')->get()) : collect();
     }
 
     /**

@@ -56,13 +56,12 @@ class AppServiceProvider extends ServiceProvider
         // Any change to something the homepage caches orphans all of its cached blocks at once
         // (HomeController reads keys under this version) — so admin edits, new reviews, stock
         // changes on product save, etc. appear on the next page view, not after the TTL.
-        $bumpHomeCache = fn () => \Illuminate\Support\Facades\Cache::forever(
-            \App\Http\Controllers\HomeController::CACHE_VERSION_KEY,
-            (int) \Illuminate\Support\Facades\Cache::get(\App\Http\Controllers\HomeController::CACHE_VERSION_KEY, 1) + 1,
-        );
+        // (also the storefront header/footer data — see App\Support\StorefrontCache)
+        $bumpHomeCache = fn () => \App\Support\StorefrontCache::bump();
         foreach ([
             \App\Models\Category::class, \App\Models\Brand::class,
             \App\Models\Banner::class, \App\Models\HomeSection::class, \App\Models\Review::class,
+            \App\Models\Page::class, \App\Models\PaymentMethod::class,
         ] as $model) {
             $model::saved($bumpHomeCache);
             $model::deleted($bumpHomeCache);

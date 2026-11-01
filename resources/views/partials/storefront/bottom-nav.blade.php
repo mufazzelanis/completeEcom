@@ -26,9 +26,7 @@
      what actually reads as "selected" at a glance the way Apple's own tab bars do), and taps
      get a spring-eased scale-down instead of a flat one. --}}
 @php
-    $bnCartCount = auth()->check()
-        ? \App\Models\Cart::where('user_id', auth()->id())->sum('quantity')
-        : \App\Models\Cart::where('session_id', session()->getId())->sum('quantity');
+    $bnCartCount = \App\Support\StorefrontCache::cartCount();
     $bnUnreadCount = auth()->check()
         ? \App\Models\UserNotification::where('user_id', auth()->id())->where('is_read', false)->count()
         : 0;

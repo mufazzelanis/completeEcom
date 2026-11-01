@@ -604,8 +604,9 @@ $pageTwitterImage = $meta('twitter_image', $pageOgImage);
 // withCount (one extra query per level, not one per child) rather than $child->products()->count()
 // in the dropdown below — this header renders on every storefront page, so an N+1 there would
 // mean dozens of extra COUNT queries on every single page load.
-$navCategories = \App\Models\Category::with(['children' => fn($q) => $q->active()->orderBy('sort_order')->withCount('products')])
-    ->whereNull('parent_id')->active()->orderBy('sort_order')->take(12)->get();
+// Same for every visitor, so cached (StorefrontCache resets it whenever a category changes).
+$navCategories = \App\Support\StorefrontCache::remember('nav_categories', fn () => \App\Models\Category::with(['children' => fn($q) => $q->active()->orderBy('sort_order')->withCount('products')])
+    ->whereNull('parent_id')->active()->orderBy('sort_order')->take(12)->get());
 @endphp
 
 {{-- Top Utility Bar --}}
@@ -1039,7 +1040,7 @@ $navCategories = \App\Models\Category::with(['children' => fn($q) => $q->active(
                 {{ t('header.blog', 'Blogs', [], 'header') }}
             </a>
             @php
-                $mobileCategories = \App\Models\Category::whereNull('parent_id')->active()->withCount('products')->orderBy('sort_order')->limit(8)->get();
+                $mobileCategories = $navCategories->take(8); // same top-level list as the header nav
             @endphp
             @if($mobileCategories->count() > 0)
                 <div x-data="{ showCats: false }">
@@ -1279,9 +1280,11 @@ $navCategories = \App\Models\Category::with(['children' => fn($q) => $q->active(
     $shopUrl     = setting('nav_shop_url') ?: route('shop.index');
     $blogUrl     = setting('nav_blog_url') ?: route('blog.index');
     $contactUrl  = setting('nav_contact_url') ?: route('contact');
-    $aboutUrl    = setting('nav_about_url') ?: ((int) setting('about_page_id', 0) || \App\Models\Page::where('slug', 'about-us')->active()->exists() ? route('about') : null);
-    $termsUrl    = (int) setting('terms_page_id', 0) || \App\Models\Page::where('slug', 'terms-conditions')->active()->exists() ? route('terms') : null;
-    $privacyUrl  = (int) setting('privacy_page_id', 0) || \App\Models\Page::where('slug', 'privacy-policy')->active()->exists() ? route('privacy') : null;
+    // one cached lookup instead of three EXISTS queries on every page
+    $footerPages = \App\Support\StorefrontCache::remember('footer_pages', fn () => \App\Models\Page::whereIn('slug', ['about-us', 'terms-conditions', 'privacy-policy'])->active()->pluck('slug')->all());
+    $aboutUrl    = setting('nav_about_url') ?: ((int) setting('about_page_id', 0) || in_array('about-us', $footerPages, true) ? route('about') : null);
+    $termsUrl    = (int) setting('terms_page_id', 0) || in_array('terms-conditions', $footerPages, true) ? route('terms') : null;
+    $privacyUrl  = (int) setting('privacy_page_id', 0) || in_array('privacy-policy', $footerPages, true) ? route('privacy') : null;
     $copyright   = setting('copyright_text')
         ? str_replace('{year}', date('Y'), setting('copyright_text'))
         : t('footer.copyright_default', '© :year :site. All rights reserved.', ['year' => date('Y'), 'site' => $siteName], 'footer');

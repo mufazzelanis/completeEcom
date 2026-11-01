@@ -272,7 +272,7 @@
 @php
     $freeShippingEnabled = setting('free_shipping_enabled', '0') == '1';
     $freeShippingMin = (float) setting('free_shipping_min', '999');
-    $activeGateways = \App\Models\PaymentMethod::where('is_active', true)->orderBy('sort_order')->pluck('name');
+    $activeGateways = collect(\App\Support\StorefrontCache::remember('payment_gateways', fn () => \App\Models\PaymentMethod::where('is_active', true)->orderBy('sort_order')->pluck('name')->all()));
     $waLink = setting('whatsapp_link', '');
     $mLink = setting('messenger_link', '');
     $supportLink = $waLink ?: ($mLink ?: route('contact'));

@@ -24,12 +24,16 @@ class ProductController extends Controller
         }
 
         $product->increment('views');
-        ActivityLogger::log('product.view', "Viewed product: {$product->name}", $product);
         // Per-visitor history behind the homepage personalized section
-        // (HomeSection::getPersonalizedProducts()) — separate from the two lines above,
-        // which are a site-wide counter and an admin audit log respectively, neither of
-        // which can answer "what has THIS visitor looked at."
-        ProductView::record($product->id, auth()->id(), session()->getId());
+        // (HomeSection::getPersonalizedProducts()) — separate from the view counter and the
+        // admin audit log, neither of which can answer "what has THIS visitor looked at."
+        // Both writes run after the page is sent, so the visitor never waits on them.
+        $viewerId = auth()->id();
+        $viewerSession = session()->getId();
+        after_response(function () use ($product, $viewerId, $viewerSession) {
+            ActivityLogger::log('product.view', "Viewed product: {$product->name}", $product);
+            ProductView::record($product->id, $viewerId, $viewerSession);
+        });
         $product->load([
             'category', 'brand', 'images', 'reviews.user', 'faqs', 'activeFlashSaleProduct',
             'crossSells.recommended.activeFlashSaleProduct',
