@@ -96,7 +96,16 @@ class SitemapController extends Controller
         // The "Enable Sitemap" admin toggle only controls sitemap.xml itself — it must
         // never also flip into a site-wide "Disallow: /", or an admin turning off the
         // sitemap feature for an unrelated reason would silently deindex the whole store.
+        // Crawlers that bring this store no shoppers but fetch thousands of product pages a day
+        // (Admin → Activity Log: QlyzeBot ~1.6k, TokenFoundryBot ~2.5k, PetalBot ~450 per day).
+        // All of these honour robots.txt. Search engines (Googlebot, Bingbot), Facebook's link
+        // previews and the AI assistants that can send visitors (ChatGPT, Perplexity…) stay allowed.
+        $blockedBots = ['QlyzeBot', 'TokenFoundryBot', 'PetalBot', 'Bytespider', 'DotBot', 'MJ12bot', 'BLEXBot', 'DataForSeoBot', 'SemrushBot', 'AhrefsBot'];
+
         $lines = [
+            ...array_map(fn ($bot) => "User-agent: {$bot}", $blockedBots),
+            'Disallow: /',
+            '',
             'User-agent: *',
             'Disallow: /admin',
             'Disallow: /cart',

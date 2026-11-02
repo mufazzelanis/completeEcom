@@ -21,7 +21,8 @@ class ClassifyBotActivity extends Command
 {
     protected $signature = 'activity:classify-bots
         {--hours=3 : How far back to re-check (live pings are kept 2 days, so at most 47)}
-        {--report : List the busiest guest IPs of the last 24 hours and their verdict}';
+        {--report : List the busiest guest IPs of the last 24 hours and their verdict}
+        {--shared-ip= : Clear the "too-fast" bot label from this IP — one address used by many visitors at once (a proxy) trips the rate rule}';
 
     protected $description = 'Relabel guest product views from IPs that never ran the page JavaScript as bot traffic';
 
@@ -32,6 +33,15 @@ class ClassifyBotActivity extends Command
     {
         if ($this->option('report')) {
             return $this->report();
+        }
+        if ($ip = $this->option('shared-ip')) {
+            // only the rate rule is undone — rows flagged for a bot User-Agent or missing browser headers stay bots
+            $n = ActivityLog::where('ip_address', $ip)->where('is_bot', true)
+                ->whereRaw("JSON_UNQUOTE(JSON_EXTRACT(properties, '$.bot')) = 'too-fast'")
+                ->update(['is_bot' => false, 'properties' => DB::raw("JSON_REMOVE(properties, '$.bot')")]);
+            $this->info("{$ip}: {$n} views were marked bot only for speed — counted as people again.");
+
+            return self::SUCCESS;
         }
 
         $from = now()->subHours(min(47, max(1, (int) $this->option('hours'))));
@@ -84,13 +94,15 @@ class ClassifyBotActivity extends Command
         $since = now()->subDay();
         $top = ActivityLog::query()
             ->where('event', 'product.view')->whereNull('user_id')->where('created_at', '>=', $since)
-            ->selectRaw('ip_address, COUNT(*) as views, SUM(is_bot) as bot, MIN(created_at) as first_at, MAX(user_agent) as ua')
+            ->selectRaw('ip_address, COUNT(*) as views, SUM(is_bot) as bot, MIN(created_at) as first_at, MAX(created_at) as last_at, MAX(user_agent) as ua')
             ->groupBy('ip_address')->orderByDesc('views')->limit(25)->get();
 
-        $this->table(['IP', 'views (24h)', 'marked bot', 'ran JS', 'verdict', 'user agent'], $top->map(fn ($r) => [
+        $tz = setting('timezone', 'Asia/Dhaka');
+        $this->table(['IP', 'views (24h)', 'marked bot', 'last view', 'ran JS', 'verdict', 'user agent'], $top->map(fn ($r) => [
             $r->ip_address,
             $r->views,
             (int) $r->bot,
+            \Illuminate\Support\Carbon::parse($r->last_at)->timezone($tz)->format('d M H:i'),
             $this->ranJavaScript((string) $r->ip_address, $r->first_at) ? 'yes' : 'NO',
             (int) $r->bot === (int) $r->views ? 'bot' : ((int) $r->bot === 0 ? 'person' : 'mixed'),
             mb_strimwidth((string) $r->ua, 0, 60, '…'),
