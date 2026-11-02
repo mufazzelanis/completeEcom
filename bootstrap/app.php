@@ -111,7 +111,9 @@ return Application::configure(basePath: dirname(__DIR__))
         // CRM: nightly full recompute (RFM cut-offs shift as the customer base changes) + win-back tasks;
         // the hourly pass just fires reminders for tasks that have come due.
         $schedule->command('crm:refresh')->dailyAt('01:00');
-        $schedule->command('crm:refresh', ['--reminders' => true])->hourly();
+        // plain flag in the command string — ['--reminders' => true] is passed as --reminders='1',
+        // which a value-less option rejects (the hourly run failed every time)
+        $schedule->command('crm:refresh --reminders')->hourly();
 
         // Keeps the homepage personalized section's source tables (product_views,
         // search_queries) from growing forever — see the command's own docblock.
