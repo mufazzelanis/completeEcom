@@ -75,8 +75,9 @@ class PageView
 
         match ($type) {
             'product' => self::product($id, $data, $url, $ref),
-            'blog'    => BlogPost::whereKey($id)->increment('views'),
-            'landing' => LandingPage::whereKey($id)->increment('views_count'),
+            // toBase(): a view isn't an edit — leave updated_at (the sitemap's <lastmod>) alone
+            'blog'    => BlogPost::whereKey($id)->toBase()->increment('views'),
+            'landing' => LandingPage::whereKey($id)->toBase()->increment('views_count'),
             default   => null,
         };
     }
@@ -88,7 +89,9 @@ class PageView
             return;
         }
 
-        $product->increment('views');
+        // not $product->increment(): that also bumps updated_at, so every visit (bots included)
+        // made the sitemap claim ~2,300 products changed today and Google learns to ignore <lastmod>
+        Product::whereKey($product->id)->toBase()->increment('views');
         $userId = auth()->id();
         $sessionId = session()->getId();
 

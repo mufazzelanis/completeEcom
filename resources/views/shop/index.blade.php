@@ -255,6 +255,9 @@
                     {{ $products->links() }}
                 </div>
             @endif
+            @if(!empty($guide) && !request()->filled('search'))
+                @include('shop._guide')
+            @endif
         </div>
     </div>
 </div>

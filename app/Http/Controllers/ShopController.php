@@ -152,9 +152,12 @@ class ShopController extends Controller
             $ids = $ids->merge($frontier);
         }
 
+        // buying guide under the grid — first page only, so paginated pages don't repeat it
+        $guide = request()->integer('page', 1) <= 1 ? \App\Support\ListingGuide::forCategory($category, $ids->all()) : null;
+
         return $this->listing(fn ($q) => $q
             ->whereIn('category_id', $ids)
-            ->orWhereIn('subcategory_id', $ids), compact('category'));
+            ->orWhereIn('subcategory_id', $ids), compact('category', 'guide'));
     }
 
     /**
@@ -166,7 +169,9 @@ class ShopController extends Controller
     {
         abort_unless($brand->is_active, 404);
 
-        return $this->listing(fn ($q) => $q->where('brand_id', $brand->id), ['currentBrand' => $brand]);
+        $guide = request()->integer('page', 1) <= 1 ? \App\Support\ListingGuide::forBrand($brand) : null;
+
+        return $this->listing(fn ($q) => $q->where('brand_id', $brand->id), ['currentBrand' => $brand, 'guide' => $guide]);
     }
 
     private function listing(\Closure $scope, array $context)
