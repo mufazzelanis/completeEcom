@@ -188,9 +188,9 @@ class LandingPageController extends Controller
             '_order'       => $order,
         ]);
 
-        if ($landingPage->thank_you_redirect_url) {
-            return redirect()->away($landingPage->thank_you_redirect_url);
-        }
+        // Admin → Live Visitors funnel: the thank-you shows on this same URL (or on another site),
+        // so the heartbeat can't see the order happen
+        LiveVisitorController::markOrdered();
 
         // Flashed alongside order_success purely for the Purchase pixel event on the
         // thank-you page (see show.blade.php) — value/currency to report the conversion at,
@@ -204,7 +204,8 @@ class LandingPageController extends Controller
         // the redirected-to thank-you page (see show.blade.php) so Meta dedupes the pair into
         // one event. Fired here (not guarded by a session flag like the main checkout's
         // Purchase) because — unlike that GET success page, which can be revisited/refreshed —
-        // this is the POST handler itself, which only ever runs once per order.
+        // this is the POST handler itself, which only ever runs once per order. Sent before the
+        // optional redirect to an outside thank-you page below, which used to skip it entirely.
         $fbPurchaseEventId = 'purchase_' . $order->id;
         ConversionsApi::track(
             eventName: 'Purchase',
@@ -219,6 +220,10 @@ class LandingPageController extends Controller
             pixelIdOverride: $landingPage->fb_pixel_id ?: null,
             accessTokenOverride: $landingPage->fb_capi_access_token ?: null,
         );
+
+        if ($landingPage->thank_you_redirect_url) {
+            return redirect()->away($landingPage->thank_you_redirect_url);
+        }
 
         return redirect()->route('landing.show', $landingPage)->with([
             'order_success'         => $order->order_number,

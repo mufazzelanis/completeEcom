@@ -45,6 +45,11 @@ class LiveVisitorController extends Controller
         $title = Str::limit(trim(preg_replace('/\s*[|–-]\s*' . preg_quote(setting('site_name', ''), '/') . '\s*$/u', '', strip_tags($data['title'] ?? ''))), 250, '…') ?: $label;
         $url = Str::limit($url, 500, '');
 
+        // remembered so an order placed in this browser session can mark its visit as ordered (markOrdered)
+        if (session('live_vk') !== $data['vk']) {
+            session(['live_vk' => $data['vk']]);
+        }
+
         $visitor = LiveVisitor::firstOrNew(['visitor_key' => $data['vk']]);
         $now = now();
         if (!$visitor->exists) {
@@ -135,6 +140,23 @@ class LiveVisitorController extends Controller
         $visitor->session_id = $session->id;
     }
 
+    /**
+     * Called where an order is created (checkout, landing page): marks this browser's current visit
+     * as ordered right away. The heartbeat alone only learns it from /checkout/success — a landing
+     * page shows its thank-you on the same URL, and a thank-you redirect to another site never pings.
+     */
+    public static function markOrdered(): void
+    {
+        $vk = session('live_vk');
+        if (!$vk) {
+            return;
+        }
+        $sessionId = LiveVisitor::where('visitor_key', $vk)->value('session_id');
+        if ($sessionId) {
+            VisitorSession::whereKey($sessionId)->update(['reached_product' => true, 'reached_checkout' => true, 'ordered' => true]);
+        }
+    }
+
     /** [page type, product (on a product page), readable label] from the URL. */
     private function classify(string $path, string $query): array
     {
@@ -153,9 +175,16 @@ class LiveVisitorController extends Controller
             str_starts_with($path, '/checkout') => ['checkout', null, 'Checkout'],
             str_starts_with($path, '/blog') => ['blog', null, 'Blog'],
             (bool) preg_match('#^/(orders|account|profile|wishlist|track-order|login|register)#', $path) => ['account', null, 'Account'],
-            (bool) preg_match('#^/[^/]+$#', $path) => ['landing', null, 'Landing page'],
+            (bool) preg_match('#^/(about|contact|faq|terms|privacy|pages/)#', $path) => ['other', null, 'Info page'],
+            // only real landing pages — other one-segment URLs (/sell, /brands…) aren't campaign funnels
+            (bool) preg_match('#^/([^/]+)$#', $path, $m) && in_array($m[1], $this->landingSlugs(), true) => ['landing', null, 'Landing page'],
             default => ['other', null, 'Page'],
         };
+    }
+
+    private function landingSlugs(): array
+    {
+        return Cache::remember('live:landing_slugs', 600, fn () => \App\Models\LandingPage::pluck('slug')->all());
     }
 
     /** City/country for an IP, looked up once (after the response) and cached for a month. */

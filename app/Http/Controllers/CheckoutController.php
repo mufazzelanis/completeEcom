@@ -713,6 +713,8 @@ class CheckoutController extends Controller
             '_order' => $order,
         ]);
 
+        LiveVisitorController::markOrdered(); // Admin → Live Visitors funnel
+
         return redirect()->route('checkout.success', $order->id)
             ->with('account_created', $accountCreated);
     }
