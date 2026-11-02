@@ -157,6 +157,7 @@
                         $botWhy = match ($log->properties ? (json_decode($log->properties, true)['bot'] ?? null) : null) {
                             'no-browser-headers' => 'Pretends to be a browser but sends none of the headers a real one does (scraper)',
                             'too-fast' => 'Viewed more than 30 products in 10 minutes from this IP',
+                            'no-js' => 'Opened several products but never ran the page JavaScript — a scraper posing as a browser',
                             'user-agent' => 'Identifies itself as a bot/crawler',
                             default => 'Bot or crawler',
                         };

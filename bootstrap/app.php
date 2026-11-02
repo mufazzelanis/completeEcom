@@ -114,6 +114,8 @@ return Application::configure(basePath: dirname(__DIR__))
         // plain flag in the command string — ['--reminders' => true] is passed as --reminders='1',
         // which a value-less option rejects (the hourly run failed every time)
         $schedule->command('crm:refresh --reminders')->hourly();
+        // relabel guest views from IPs that never ran the page JavaScript (scrapers posing as Chrome)
+        $schedule->command('activity:classify-bots')->everyFiveMinutes()->withoutOverlapping();
 
         // Keeps the homepage personalized section's source tables (product_views,
         // search_queries) from growing forever — see the command's own docblock.
