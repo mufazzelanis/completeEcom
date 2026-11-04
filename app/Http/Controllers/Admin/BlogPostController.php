@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\BlogCategory;
 use App\Models\BlogPost;
 use App\Models\BlogTag;
+use App\Models\Product;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -50,6 +51,9 @@ class BlogPostController extends Controller
             'blog_category_id' => 'nullable|exists:blog_categories,id',
             'meta_title'       => 'nullable|string|max:255',
             'meta_keywords'    => 'nullable|string|max:255',
+            'products'         => 'nullable|array|max:50',
+            'products.*.id'    => 'required|integer|exists:products,id',
+            'products.*.note'  => 'nullable|string|max:255',
         ]);
 
         if ($request->filled('slug') && Str::slug($request->slug) === '') {
@@ -70,13 +74,16 @@ class BlogPostController extends Controller
 
         $post = BlogPost::create($data);
         $this->syncTags($post, $request->input('tags') ?? '');
+        if ($request->boolean('products_sync')) {
+            $this->syncProducts($post, (array) $request->input('products', []));
+        }
 
         return redirect()->route('admin.blog.posts.index')->with('success', 'Post created.');
     }
 
     public function edit(BlogPost $post)
     {
-        $post->load('tags');
+        $post->load(['tags', 'products']);
         $categories = BlogCategory::where('is_active', true)->orderBy('name')->get(['id', 'name']);
         return view('admin.blog.posts.edit', ['blogPost' => $post, 'categories' => $categories]);
     }
@@ -92,6 +99,9 @@ class BlogPostController extends Controller
             'blog_category_id' => 'nullable|exists:blog_categories,id',
             'meta_title'       => 'nullable|string|max:255',
             'meta_keywords'    => 'nullable|string|max:255',
+            'products'         => 'nullable|array|max:50',
+            'products.*.id'    => 'required|integer|exists:products,id',
+            'products.*.note'  => 'nullable|string|max:255',
         ]);
 
         if ($request->filled('slug') && Str::slug($request->slug) === '') {
@@ -116,6 +126,9 @@ class BlogPostController extends Controller
 
         $post->update($data);
         $this->syncTags($post, $request->input('tags') ?? '');
+        if ($request->boolean('products_sync')) {
+            $this->syncProducts($post, (array) $request->input('products', []));
+        }
 
         return redirect()->route('admin.blog.posts.edit', $post)->with('success', 'Post updated.');
     }
@@ -127,6 +140,48 @@ class BlogPostController extends Controller
         }
         $post->delete();
         return redirect()->route('admin.blog.posts.index')->with('success', 'Post deleted.');
+    }
+
+    /** Product picker (post editor: "Products in this article" + the editor's Product button). */
+    public function searchProducts(Request $request)
+    {
+        $q = trim((string) $request->query('q', ''));
+        $ids = array_filter(array_map('intval', explode(',', (string) $request->query('ids', ''))));
+
+        $products = Product::query()
+            ->when($ids, fn ($query) => $query->whereIn('id', $ids), fn ($query) => $query->where('is_active', true)
+                ->when($q !== '', fn ($w) => $w->where(fn ($s) => $s->where('name', 'like', "%{$q}%")->orWhere('sku', 'like', "%{$q}%")))
+                ->orderByRaw('stock > 0 desc')->orderByDesc('views'))
+            ->limit($ids ? 50 : 24)
+            ->get(['id', 'name', 'slug', 'price', 'sale_price', 'image', 'stock']);
+
+        return response()->json($products->map(fn ($p) => self::productRow($p)));
+    }
+
+    public static function productRow(Product $p, ?string $note = null): array
+    {
+        return [
+            'id'    => $p->id,
+            'name'  => $p->name,
+            'price' => (float) ($p->sale_price ?: $p->price),
+            'was'   => $p->sale_price && $p->sale_price < $p->price ? (float) $p->price : null,
+            'stock' => (int) $p->stock,
+            'image' => $p->image ? image_thumb($p->image, 96) : null,
+            'url'   => route('products.show', $p->slug),
+            'note'  => (string) $note,
+        ];
+    }
+
+    private function syncProducts(BlogPost $post, array $rows): void
+    {
+        $sync = [];
+        foreach (array_values($rows) as $i => $row) {
+            $id = (int) ($row['id'] ?? 0);
+            if ($id && !isset($sync[$id])) {
+                $sync[$id] = ['sort_order' => $i, 'note' => trim((string) ($row['note'] ?? '')) ?: null];
+            }
+        }
+        $post->products()->sync($sync);
     }
 
     private function syncTags(BlogPost $post, string $tagInput): void

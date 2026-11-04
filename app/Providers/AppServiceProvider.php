@@ -91,6 +91,7 @@ class AppServiceProvider extends ServiceProvider
         Order::observe(OrderAlertObserver::class);
         Order::observe(TelegramOrderObserver::class);
         Order::observe(CrmOrderObserver::class);
+        Order::observe(\App\Observers\BlogOrderObserver::class);
         // an order placed within a day of clicking a promo popup is credited to that popup
         Order::created(fn (Order $order) => \App\Models\PromoPopup::attributeOrder($order));
         User::observe(CrmUserObserver::class);

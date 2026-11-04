@@ -39,6 +39,17 @@ class BlogPost extends Model
     public function author()   { return $this->belongsTo(User::class, 'user_id'); }
     public function tags()     { return $this->belongsToMany(BlogTag::class, 'blog_post_tag'); }
 
+    /** Products the author attached to this post, in their chosen order (pivot note = "why we picked it"). */
+    public function products()
+    {
+        return $this->belongsToMany(Product::class, 'blog_post_product')
+            ->withPivot(['sort_order', 'note'])
+            ->orderBy('blog_post_product.sort_order');
+    }
+
+    public function reads()       { return $this->hasMany(BlogRead::class); }
+    public function conversions() { return $this->hasMany(BlogConversion::class); }
+
     public function scopePublished($query)
     {
         return $query->where('status', 'published')->where('published_at', '<=', now());

@@ -92,8 +92,11 @@
                  retrofit in app.css, which only targets plain utility classes. Without this,
                  the article body specifically would stay dark, hard-to-read text regardless of
                  everything else on the page correctly going dark. --}}
-            <div class="prose prose-gray dark:prose-invert max-w-none leading-relaxed">
-                {!! demote_h1($blogPost->content) !!}
+            {{-- $body: the sanitized content with its product blocks already rendered as cards
+                 (App\Support\BlogShop::render). data-blog-body: what the reading tracker measures
+                 scroll depth against (blog/partials/tracker). --}}
+            <div data-blog-body class="prose prose-gray dark:prose-invert max-w-none leading-relaxed">
+                {!! $body !!}
             </div>
 
             {{-- Kept below the article body (not stacked with the AdSense in-article unit
@@ -125,16 +128,20 @@
                 </button>
             </div>
 
-            {{-- products the article is about (BlogController::productsFor) — links from the post into the shop --}}
+            {{-- products the article is about: the ones the author picked (BlogShop::forPost), else
+                 matched from its links / title (BlogController::productsFor) — links from the post into the shop --}}
             @if(isset($shopProducts) && $shopProducts->isNotEmpty())
-            <section class="mt-8 pt-6 border-t border-gray-100 dark:border-gray-800" aria-labelledby="blog-shop-h">
-                <div class="flex items-center justify-between gap-3 mb-4">
-                    <h2 id="blog-shop-h" class="text-lg font-bold text-gray-900 dark:text-gray-100">🛍️ Shop the products in this article</h2>
-                    <a href="{{ route('shop.index') }}" class="text-sm font-semibold text-orange-700 hover:underline whitespace-nowrap">View all →</a>
+            <section id="blog-shop" class="mt-8 rounded-2xl bg-gradient-to-br from-orange-50 via-white to-amber-50 dark:from-gray-900 dark:via-gray-900 dark:to-gray-900 ring-1 ring-orange-100 dark:ring-gray-800 p-3 sm:p-5" aria-labelledby="blog-shop-h">
+                <div class="flex items-end justify-between gap-3 mb-4">
+                    <div>
+                        <p class="text-[11px] font-bold uppercase tracking-wider text-orange-600 dark:text-orange-400">Ready to try it?</p>
+                        <h2 id="blog-shop-h" class="mt-0.5 text-lg sm:text-xl font-bold text-gray-900 dark:text-gray-100">🛍️ Shop the products in this article</h2>
+                    </div>
+                    <a href="{{ route('shop.index') }}" class="text-sm font-semibold text-orange-700 dark:text-orange-400 hover:underline whitespace-nowrap">View all →</a>
                 </div>
-                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div class="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-2.5 sm:gap-3">
                     @foreach($shopProducts as $product)
-                        @include('partials.product-card', ['product' => $product])
+                        @include('blog.partials.product', ['product' => $product, 'variant' => 'tile', 'place' => 'shelf'])
                     @endforeach
                 </div>
             </section>
@@ -173,8 +180,25 @@
             @endif
 
             @include('partials.adsense-unit', ['slot' => setting('adsense_slot_sidebar')])
+
+            {{-- desktop: the article's products stay in reach while reading (phones get the sticky bar instead) --}}
+            @if(isset($shopProducts) && $shopProducts->isNotEmpty())
+            <div class="hidden lg:block lg:sticky lg:top-24 bg-white dark:bg-gray-900 rounded-2xl shadow-sm ring-1 ring-gray-100 dark:ring-gray-800 p-4">
+                <p class="text-[11px] font-bold uppercase tracking-wider text-orange-600 dark:text-orange-400">In this article</p>
+                <div class="mt-3 space-y-3">
+                    @foreach($shopProducts->take(4) as $product)
+                        @include('blog.partials.product', ['product' => $product, 'variant' => 'mini', 'place' => 'sidebar'])
+                    @endforeach
+                </div>
+                <a href="#blog-shop" class="mt-4 flex items-center justify-center gap-1 h-9 rounded-xl bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-xs font-bold hover:opacity-90 transition">
+                    Shop {{ $shopProducts->count() > 1 ? 'all ' . $shopProducts->count() . ' products' : 'this product' }}
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 14l-7 7m0 0l-7-7m7 7V3"/></svg>
+                </a>
+            </div>
+            @endif
         </aside>
     </div>
 </div>
 @include('partials.page-view-beacon')
+@include('blog.partials.tracker')
 @endsection

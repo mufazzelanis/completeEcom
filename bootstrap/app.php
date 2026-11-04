@@ -52,6 +52,9 @@ return Application::configure(basePath: dirname(__DIR__))
             ],
             headers: Request::HEADER_X_FORWARDED_FOR | Request::HEADER_X_FORWARDED_PROTO,
         );
+        // set by the blog reading tracker in the browser (blog/partials/tracker) when a shopper
+        // clicks a product inside a post: plain "postId.readKey", read back by BlogOrderObserver
+        $middleware->encryptCookies(except: ['blg']);
         $middleware->web(prepend: [\App\Http\Middleware\ServerTiming::class, ForceHttps::class]);
         // Link: rel=preload headers for the Vite CSS/JS — Cloudflare Early Hints replays them as a
         // 103 response straight from its edge, so the browser starts fetching the (edge-cached)

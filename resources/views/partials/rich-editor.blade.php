@@ -40,11 +40,18 @@
             .rich-editor .note-dropdown-item h5 { font-size: 0.85rem; }
             .rich-editor .note-dropdown-item h6 { font-size: 0.75rem; font-weight: 600; color: rgb(107 114 128); }
             .rich-editor .note-dropdown-item blockquote, .rich-editor .note-dropdown-item pre { font-size: 0.8125rem; font-weight: 400; font-style: italic; color: rgb(107 114 128); }
+
+            /* blog product block placeholder (App\Support\BlogShop) — shown as a tagged card in the
+               editor; the public page swaps it for the real product cards */
+            .rich-editor .note-editable .blog-embed { position: relative; margin: 1rem 0; padding: 1.6rem .9rem .75rem; border: 2px dashed rgb(251 146 60); border-radius: .75rem; background: rgb(255 247 237); color: rgb(124 45 18); font-size: .8125rem; font-weight: 600; line-height: 1.45; cursor: default; user-select: none; }
+            .rich-editor .note-editable .blog-embed::before { content: "PRODUCT BLOCK — shows as product cards on the post"; position: absolute; top: .45rem; left: .9rem; font-size: .625rem; letter-spacing: .06em; font-weight: 800; color: rgb(234 88 12); }
+            .rich-editor .note-editable .blog-embed:hover { border-style: solid; }
         </style>
     @endpush
 @endonce
 
-<div class="rich-editor" x-data="{
+<div class="rich-editor" @blog-embed-insert.window="$event.detail.target === {{ Js::from($editorId) }} && _insertEmbed && _insertEmbed($event.detail.html)" x-data="{
+        _insertEmbed: null,
         promoOpen: false,
         promoUrl: '',
         promoAlt: '',
@@ -119,10 +126,20 @@
             ['color', ['color']],
             ['para', ['ul', 'ol', 'paragraph']],
             ['table', ['table']],
-            ['insert', ['link', 'picture', 'promoImage', 'hr']],
+            ['insert', ['link', 'picture', 'promoImage', @if(!empty($productBlocks))'productBlock', @endif'hr']],
             ['view', ['fullscreen', 'codeview']],
         ],
         buttons: {
+            @if(!empty($productBlocks))
+            {{-- Blog posts: drop shoppable product cards anywhere in the text (App\Support\BlogShop) --}}
+            productBlock: function (context) {
+                return $.summernote.ui.button({
+                    contents: '<span style=\'font-size:13px\'>🛍️</span> <span style=\'font-size:12px;font-weight:600\'>Product</span>',
+                    tooltip: 'Insert product cards (search & pick one or more)',
+                    click: function () { context.invoke('editor.saveRange'); alpineData._hasRange = true; window.dispatchEvent(new CustomEvent('blog-embed-open', { detail: { target: {{ Js::from($editorId) }} } })); },
+                }).render();
+            },
+            @endif
             // A plain inserted picture has no way to link anywhere without switching to
             // codeview and hand-writing an <a> tag — this button uploads + wraps an image
             // in a link in one step, specifically so a non-technical admin can drop a
@@ -165,6 +182,18 @@
         },
     });
     editor.summernote('code', hidden.value);
+    @if(!empty($productBlocks))
+    {{-- product blocks are placeholders, not text: one unit to move or delete, never typed into --}}
+    const lockEmbeds = () => editor.next('.note-editor').find('.blog-embed').attr('contenteditable', 'false');
+    lockEmbeds();
+    alpineData._insertEmbed = (html) => {
+        if (alpineData._hasRange) { editor.summernote('restoreRange'); editor.summernote('pasteHTML', html); }
+        else { editor.summernote('code', editor.summernote('code') + html); }
+        lockEmbeds();
+        hidden.value = editor.summernote('code');
+    };
+    editor.on('summernote.blur', () => { editor.summernote('saveRange'); alpineData._hasRange = true; });
+    @endif
     @if(!empty($contentClass))
     {{-- WYSIWYG: style the editing area with the same class the public page renders this
          content in (e.g. .lp-content for landing pages), so the editor shows exactly what

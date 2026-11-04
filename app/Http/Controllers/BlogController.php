@@ -44,9 +44,14 @@ class BlogController extends Controller
             ->take(3)
             ->get();
 
-        $shopProducts = $this->productsFor($blogPost);
+        // products the author picked (attached list + in-article blocks); a post without any still
+        // ends with a shelf matched from its links / title, as before
+        $shop = \App\Support\BlogShop::forPost($blogPost);
+        $shopProducts = $shop['manual'] ? $shop['shelf']->take(8) : $this->productsFor($blogPost);
+        $body = \App\Support\BlogShop::render(demote_h1($blogPost->content), $shop['byId']);
+        $primaryProduct = $shop['primary'];
 
-        return view('blog.show', compact('blogPost', 'related', 'shopProducts', 'pageViewToken'));
+        return view('blog.show', compact('blogPost', 'related', 'shopProducts', 'pageViewToken', 'body', 'primaryProduct'));
     }
 
     /**
@@ -58,10 +63,8 @@ class BlogController extends Controller
     {
         preg_match_all('#/products/([a-z0-9][a-z0-9-]*)#i', (string) $post->content, $m);
         $slugs = array_values(array_unique(array_map('strtolower', $m[1])));
-        $with = ['brand', 'reviews', 'activeFlashSaleProduct'];
-
         $linked = $slugs
-            ? \App\Models\Product::active()->with($with)->whereIn('slug', $slugs)->get()->sortBy(fn ($p) => array_search($p->slug, $slugs))->values()
+            ? \App\Support\BlogShop::query()->whereIn('slug', $slugs)->get()->sortBy(fn ($p) => array_search($p->slug, $slugs))->values()
             : collect();
         if ($linked->count() >= $max) {
             return $linked->take($max);
@@ -75,7 +78,7 @@ class BlogController extends Controller
             return $linked;
         }
 
-        $matched = \App\Models\Product::active()->with($with)
+        $matched = \App\Support\BlogShop::query()
             ->whereNotIn('id', $linked->pluck('id'))
             ->where(fn ($q) => $words->each(fn ($w) => $q->orWhere('name', 'like', "%{$w}%")))
             ->where('stock', '>', 0)

@@ -496,6 +496,10 @@ $pageTwitterImage = $meta('twitter_image', $pageOgImage);
         @endif
     </script>
     @endif
+    {{-- The page before this one: after a Turbo visit document.referrer still names the site the
+         visitor first came from, so on-page trackers (blog/partials/tracker) read window.mvCurUrl —
+         at the time body scripts run it still holds the previous page (turbo:load comes after). --}}
+    <script>if(!window.__mvNav){window.__mvNav=1;document.addEventListener('turbo:load',function(){window.mvCurUrl=location.href;});}</script>
     <script>
     /*
      * Ecommerce analytics — one sender for every GA4 event (gtag) and its GTM twin (dataLayer),

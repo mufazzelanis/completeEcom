@@ -71,10 +71,12 @@
 
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Content <span class="text-red-500">*</span></label>
-                        @include('partials.rich-editor', ['name' => 'content', 'value' => old('content', ''), 'id' => 'content', 'placeholder' => 'Write the post…'])
+                        @include('partials.rich-editor', ['name' => 'content', 'value' => old('content', ''), 'id' => 'content', 'placeholder' => 'Write the post…', 'productBlocks' => true])
                         @error('content')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
                     </div>
                 </div>
+
+                @include('admin.blog.posts._products', ['items' => []])
 
                 {{-- SEO --}}
                 <div class="bg-white rounded-2xl shadow-sm p-6 space-y-5">

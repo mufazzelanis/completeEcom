@@ -22,7 +22,8 @@
         @if(request()->hasAny(['search','status','category']))
             <a href="{{ route('admin.blog.posts.index') }}" class="px-4 py-2 border border-gray-200 rounded-xl text-sm text-gray-600 hover:bg-gray-50">Clear</a>
         @endif
-        <div class="ml-auto">
+        <div class="ml-auto flex items-center gap-2">
+            <a href="{{ route('admin.blog.analytics') }}" class="border border-gray-200 text-gray-700 px-4 py-2 rounded-xl text-sm font-medium hover:bg-gray-50 transition">📊 Analytics</a>
             <a href="{{ route('admin.blog.posts.create') }}" class="bg-indigo-600 text-white px-4 py-2 rounded-xl text-sm font-medium hover:bg-indigo-700 transition flex items-center gap-2">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
                 New Post
@@ -75,6 +76,7 @@
                 <td class="px-6 py-4 text-center">
                     <div class="flex items-center justify-center gap-2">
                         <a href="{{ route('admin.blog.posts.edit', $post) }}" class="text-indigo-600 hover:text-indigo-800 text-sm font-medium">Edit</a>
+                        <a href="{{ route('admin.blog.analytics.show', $post) }}" class="text-gray-500 hover:text-gray-800 text-sm font-medium">Stats</a>
                         <form action="{{ route('admin.blog.posts.destroy', $post) }}" method="POST" onsubmit="return uiConfirm(event, 'Delete this post?')">
                             @csrf @method('DELETE')
                             <button class="text-red-500 hover:text-red-700 text-sm font-medium">Delete</button>
