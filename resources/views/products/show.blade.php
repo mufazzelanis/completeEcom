@@ -344,24 +344,35 @@
                     </div>
                 @else
                     <div class="mb-6">
-                        @if($activeFlashSale)
-                            <div class="flex items-center space-x-3">
-                                <span class="text-3xl font-bold text-red-600">৳{{ number_format($product->final_price) }}</span>
-                                <span class="text-xl text-gray-400 line-through">৳{{ number_format($product->effective_price) }}</span>
-                                <span class="bg-red-100 text-red-600 text-sm px-2 py-1 rounded-full font-medium animate-pulse">
-                                    ⚡ Flash Sale
-                                </span>
+                        {{-- Discounted prices stay neutral (red reads as an error); the
+                             saving itself is shown in green so it reads as a gain. --}}
+                        @php
+                            [$nowPrice, $wasPrice] = $activeFlashSale
+                                ? [$product->final_price, $product->effective_price]
+                                : [$product->sale_price, $product->price];
+                            $saved = $wasPrice - $nowPrice;
+                            $savedPct = $wasPrice > 0 ? round($saved / $wasPrice * 100) : 0;
+                        @endphp
+                        @if(($activeFlashSale || $product->sale_price) && $saved > 0)
+                            <div class="flex flex-wrap items-end gap-x-3 gap-y-1">
+                                <span class="text-4xl font-extrabold tracking-tight text-gray-900 leading-none">৳{{ number_format($nowPrice) }}</span>
+                                <span class="text-lg text-gray-400 line-through leading-none pb-0.5">৳{{ number_format($wasPrice) }}</span>
+                                @if($activeFlashSale)
+                                    <span class="inline-flex items-center gap-1 bg-gradient-to-r from-orange-500 to-amber-500 text-white text-xs font-bold uppercase tracking-wide px-2.5 py-1 rounded-full shadow-sm shadow-orange-500/30">
+                                        <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path d="M11.3 1.05a1 1 0 00-1.8-.6l-7 10A1 1 0 003.3 12H8v6.95a1 1 0 001.8.6l7-10A1 1 0 0016 8h-4.7V1.05z"/></svg>
+                                        Flash Sale
+                                    </span>
+                                @endif
                             </div>
-                        @elseif($product->sale_price)
-                            <div class="flex items-center space-x-3">
-                                <span class="text-3xl font-bold text-red-600">৳{{ number_format($product->sale_price) }}</span>
-                                <span class="text-xl text-gray-400 line-through">৳{{ number_format($product->price) }}</span>
-                                <span class="bg-red-100 text-red-600 text-sm px-2 py-1 rounded-full font-medium">
-                                    {{ round((1 - $product->sale_price / $product->price) * 100) }}% off
+                            <div class="mt-3 inline-flex items-center gap-2 rounded-lg bg-emerald-50 dark:bg-emerald-500/10 ring-1 ring-emerald-600/15 dark:ring-emerald-400/20 px-3 py-1.5 text-sm">
+                                <svg class="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9.568 3H5.25A2.25 2.25 0 003 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 005.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 009.568 3z"/><path stroke-linecap="round" stroke-linejoin="round" d="M6 6h.008v.008H6V6z"/></svg>
+                                <span class="text-emerald-700 dark:text-emerald-300">
+                                    You save <strong class="font-bold">৳{{ number_format($saved) }}</strong>
                                 </span>
+                                <span class="rounded-md bg-emerald-600 dark:bg-emerald-500 px-1.5 py-0.5 text-xs font-bold text-white">{{ $savedPct }}% OFF</span>
                             </div>
                         @else
-                            <span class="text-3xl font-bold text-gray-900">৳{{ number_format($product->price) }}</span>
+                            <span class="text-4xl font-extrabold tracking-tight text-gray-900 leading-none">৳{{ number_format($nowPrice ?: $product->price) }}</span>
                         @endif
                     </div>
                 @endif
