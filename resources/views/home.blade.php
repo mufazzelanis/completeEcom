@@ -364,57 +364,86 @@
 
 {{-- ═══════════ FLASH SALE ═══════════ --}}
 @if($flashSale && $flashSaleProducts->count() > 0)
-<div class="mx-3 md:mx-0 mt-3 md:mt-4 bg-white dark:bg-gray-900 rounded-2xl md:rounded-none shadow-sm md:shadow-none" x-data="{
-    hours: 0, minutes: 0, seconds: 0,
-    end: '{{ $flashSale->ends_at->toIso8601String() }}',
-    init() {
-        this.update();
-        this.timer = setInterval(() => this.update(), 1000);
-    },
-    destroy() { clearInterval(this.timer); },
-    update() {
-        let diff = Math.max(0, Math.floor((new Date(this.end) - new Date()) / 1000));
-        this.hours = Math.floor(diff / 3600);
-        this.minutes = Math.floor((diff % 3600) / 60);
-        this.seconds = diff % 60;
-    }
-}">
-    <div class="max-w-[1200px] mx-auto px-4 py-5">
-        <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
-            <div class="flex items-center gap-3">
-                <div class="flex items-center gap-2">
-                    <span class="relative flex h-6 w-6 items-center justify-center">
-                        <span class="absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-60 animate-ping"></span>
-                        <svg class="relative w-5 h-5 text-red-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M11.983 1.907a.75.75 0 00-1.292-.657l-8 9.5A.75.75 0 003.25 12H9v6.093a.75.75 0 001.292.657l8-9.5A.75.75 0 0018 8H12V1.907z" clip-rule="evenodd"/></svg>
+@include('partials.flash-sale-styles')
+@php
+    $fsUpcoming = $flashSale->status === 'upcoming';
+    $fsShown = $flashSaleProducts->take($flashSale->home_limit ?: 12);
+    $fsMaxOff = (int) $flashSaleProducts->max('discount_percent');
+@endphp
+<section class="mx-3 md:mx-0 mt-3 md:mt-4" style="{{ $flashSale->style_vars }}"
+         x-data="{ gone: false }" x-show="!gone" x-transition.opacity
+         @flash-ended="{{ $fsUpcoming ? 'setTimeout(() => location.reload(), 1200)' : 'gone = true' }}">
+    <div class="max-w-[1200px] mx-auto md:px-4 py-1 md:py-4">
+        <div class="bg-white rounded-2xl shadow-sm ring-1 ring-gray-100 dark:ring-gray-800 overflow-hidden">
+            {{-- Header band --}}
+            <div class="fs-grad fs-band text-white px-4 md:px-5 py-3.5 flex flex-wrap items-center justify-between gap-3">
+                <div class="flex items-center gap-3 min-w-0">
+                    <span class="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/20 ring-1 ring-white/30">
+                        @unless($fsUpcoming)<span class="absolute inset-0 rounded-xl bg-white/30 animate-ping"></span>@endunless
+                        <svg class="relative w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M11.983 1.907a.75.75 0 00-1.292-.657l-8 9.5A.75.75 0 003.25 12H9v6.093a.75.75 0 001.292.657l8-9.5A.75.75 0 0018 8H12V1.907z" clip-rule="evenodd"/></svg>
                     </span>
-                    <h2 class="text-lg md:text-xl font-extrabold text-gray-900 dark:text-white">Flash Sale</h2>
+                    <div class="min-w-0">
+                        <p class="text-[10px] font-bold uppercase tracking-[.18em] opacity-90">
+                            {{ $fsUpcoming ? 'Coming soon' : 'Flash Sale' }}@if($fsMaxOff > 0) · up to {{ $fsMaxOff }}% off @endif
+                        </p>
+                        <h2 class="text-lg md:text-xl font-extrabold leading-tight truncate">{{ $flashSale->banner_text ?: $flashSale->name }}</h2>
+                    </div>
                 </div>
-                <div class="flex items-center gap-1.5">
-                    <div class="bg-gradient-to-b from-red-500 to-red-600 text-white text-xs font-bold px-2 py-1 rounded-md min-w-[28px] text-center shadow-sm">
-                        <span x-text="String(hours).padStart(2,'0')">00</span>
+                <div class="flex items-center gap-3 md:gap-4">
+                    <div class="flex items-center gap-2">
+                        <span class="text-[11px] font-semibold opacity-90 hidden sm:block">{{ $fsUpcoming ? 'Starts in' : 'Ends in' }}</span>
+                        @include('partials.flash-countdown', ['target' => $fsUpcoming ? $flashSale->starts_at : $flashSale->ends_at, 'size' => 'sm'])
                     </div>
-                    <span class="text-red-500 font-bold text-xs">:</span>
-                    <div class="bg-gradient-to-b from-red-500 to-red-600 text-white text-xs font-bold px-2 py-1 rounded-md min-w-[28px] text-center shadow-sm">
-                        <span x-text="String(minutes).padStart(2,'0')">00</span>
-                    </div>
-                    <span class="text-red-500 font-bold text-xs">:</span>
-                    <div class="bg-gradient-to-b from-red-500 to-red-600 text-white text-xs font-bold px-2 py-1 rounded-md min-w-[28px] text-center shadow-sm">
-                        <span x-text="String(seconds).padStart(2,'0')">00</span>
-                    </div>
+                    <a href="{{ $flashSale->url }}" class="group hidden sm:inline-flex items-center gap-1 rounded-full bg-white text-gray-900 px-3.5 py-1.5 text-xs font-bold shadow-sm hover:shadow transition">
+                        View all
+                        <svg class="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
+                    </a>
                 </div>
             </div>
-            <a href="{{ route('shop.index') }}?on_sale=1" class="group inline-flex items-center gap-1 bg-red-50 hover:bg-red-100 dark:bg-red-500/10 dark:hover:bg-red-500/20 text-red-700 dark:text-red-400 px-3.5 py-1.5 rounded-full font-bold text-xs transition">
-                SHOP ALL
-                <svg class="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
+
+            {{-- Deals --}}
+            @if($flashSale->layout === 'grid')
+                <div class="p-3 md:p-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+                    @foreach($fsShown as $fsp)
+                        @include('partials.flash-sale-card', ['fsp' => $fsp, 'sale' => $flashSale, 'wide' => true])
+                    @endforeach
+                </div>
+            @else
+                <div class="relative group/track" x-data="{ atStart: true, atEnd: false,
+                        sync() { const t = this.$refs.track; this.atStart = t.scrollLeft < 24; this.atEnd = t.scrollLeft + t.clientWidth >= t.scrollWidth - 24; },
+                        go(dir) { this.$refs.track.scrollBy({ left: dir * this.$refs.track.clientWidth * .8, behavior: 'smooth' }); } }"
+                     x-init="$nextTick(() => sync())">
+                    <div x-ref="track" @scroll.debounce.50ms="sync()" class="fs-track flex gap-3 overflow-x-auto p-3 md:p-4">
+                        @foreach($fsShown as $fsp)
+                            @include('partials.flash-sale-card', ['fsp' => $fsp, 'sale' => $flashSale])
+                        @endforeach
+                        @if($flashSaleProducts->count() > $fsShown->count())
+                            <a href="{{ $flashSale->url }}" class="w-[9.5rem] sm:w-44 flex-shrink-0 rounded-2xl border-2 border-dashed border-gray-200 flex flex-col items-center justify-center gap-2 text-sm font-bold fs-accent hover:bg-gray-50 transition">
+                                <span class="fs-grad text-white w-10 h-10 rounded-full flex items-center justify-center">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
+                                </span>
+                                +{{ $flashSaleProducts->count() - $fsShown->count() }} more deals
+                            </a>
+                        @endif
+                    </div>
+                    <button type="button" @click="go(-1)" x-show="!atStart" x-transition.opacity aria-label="Previous deals"
+                            class="hidden md:flex absolute left-1 top-1/2 -translate-y-1/2 w-9 h-9 items-center justify-center rounded-full bg-white shadow-lg ring-1 ring-gray-100 text-gray-700 hover:scale-105 transition">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"/></svg>
+                    </button>
+                    <button type="button" @click="go(1)" x-show="!atEnd" x-transition.opacity aria-label="More deals"
+                            class="hidden md:flex absolute right-1 top-1/2 -translate-y-1/2 w-9 h-9 items-center justify-center rounded-full bg-white shadow-lg ring-1 ring-gray-100 text-gray-700 hover:scale-105 transition">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
+                    </button>
+                </div>
+            @endif
+
+            <a href="{{ $flashSale->url }}" class="sm:hidden flex items-center justify-center gap-1 border-t border-gray-100 py-2.5 text-xs font-bold fs-accent">
+                View all {{ $flashSaleProducts->count() }} deals
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
             </a>
         </div>
-        <div class="flex gap-3 overflow-x-auto scrollbar-hide pb-2">
-            @foreach($flashSaleProducts->take(10) as $fsp)
-                @include('partials.flash-sale-card', ['fsp' => $fsp])
-            @endforeach
-        </div>
     </div>
-</div>
+</section>
 @endif
 
 {{-- ═══════════ CATEGORIES GRID ═══════════ --}}

@@ -41,7 +41,7 @@ class GoogleFeedController extends Controller
         $xml->writeElement('description', setting('site_name', config('app.name')) . ' product feed');
 
         Product::active()
-            ->with(['brand', 'category', 'subcategory', 'images'])
+            ->with(['brand', 'category', 'subcategory', 'images', 'activeFlashSaleProduct.flashSale'])
             ->where('type', '!=', 'digital') // Shopping ads don't accept digital goods
             ->whereNotNull('image')
             ->where('price', '>', 0)
@@ -95,9 +95,18 @@ class GoogleFeedController extends Controller
         if ($availableOn) {
             $xml->writeElement('g:availability_date', $availableOn);
         }
+        // A live flash deal is what the product page charges right now; the effective date tells
+        // Google when to drop back to the regular price even if it doesn't re-fetch in time.
+        $flash = ! $product->isVariable() && $product->activeFlashSaleProduct?->isAvailable() ? $product->activeFlashSaleProduct : null;
+        if ($flash) {
+            $salePrice = (float) $flash->sale_price;
+        }
         $xml->writeElement('g:price', number_format($price, 2, '.', '') . " {$currency}");
         if ($salePrice !== null && $salePrice < $price) {
             $xml->writeElement('g:sale_price', number_format($salePrice, 2, '.', '') . " {$currency}");
+            if ($flash) {
+                $xml->writeElement('g:sale_price_effective_date', $flash->flashSale->starts_at->toIso8601String() . '/' . $flash->flashSale->ends_at->toIso8601String());
+            }
         }
         $xml->writeElement('g:condition', strtolower(str_replace('Condition', '', $product->schema_condition ?: 'NewCondition')));
 

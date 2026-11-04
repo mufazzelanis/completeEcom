@@ -187,6 +187,15 @@ class CartController extends Controller
             return back()->with('error', 'Insufficient stock.');
         }
 
+        $inCart = (int) $this->getCartQuery()->where('product_id', $product->id)->sum('quantity');
+        if ($limitError = $this->flashLimitError($product, $inCart + $request->quantity)) {
+            if ($request->wantsJson()) {
+                return response()->json(['status' => 'error', 'message' => $limitError], 422);
+            }
+
+            return back()->with('error', $limitError);
+        }
+
         session()->forget('buy_now');
 
         $cartQuery = $this->getCartQuery()->where('product_id', $product->id)
@@ -262,9 +271,28 @@ class CartController extends Controller
     public function update(Request $request, Cart $cart)
     {
         $request->validate(['quantity' => 'required|integer|min:1']);
+
+        if ($cart->product) {
+            $otherLines = (int) $this->getCartQuery()->where('product_id', $cart->product_id)->where('id', '!=', $cart->id)->sum('quantity');
+            if ($limitError = $this->flashLimitError($cart->product, $otherLines + $request->quantity)) {
+                return back()->with('error', $limitError);
+            }
+        }
+
         $cart->update(['quantity' => $request->quantity]);
 
         return back()->with('success', 'Cart updated.');
+    }
+
+    /** A flash deal's per-order cap (or its remaining units) caps how many one cart may hold. */
+    private function flashLimitError(Product $product, int $totalQuantity): ?string
+    {
+        $flash = $product->activeFlashSaleProduct;
+        $max = $flash && $flash->isAvailable() ? $flash->maxPerOrder() : null;
+
+        return $max !== null && $totalQuantity > $max
+            ? "Flash deal limit: you can buy up to {$max} of this item per order."
+            : null;
     }
 
     public function remove(Cart $cart)

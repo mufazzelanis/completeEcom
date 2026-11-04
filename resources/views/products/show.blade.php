@@ -21,6 +21,12 @@
         $product->name,
     ], 65);
     $priceText = setting('currency_symbol', '৳') . number_format((float) ($product->sale_price ?? $product->price));
+    // Structured data / og price must match the price shown on the page — during a flash sale
+    // that's the flash price, valid only until the sale ends (Merchant Center flags mismatches).
+    // The meta description keeps the regular price: Google caches it far longer than a sale runs.
+    $schemaFlash = ! $product->isVariable() && $product->activeFlashSaleProduct?->isAvailable() ? $product->activeFlashSaleProduct : null;
+    $schemaPrice = $schemaFlash ? $schemaFlash->sale_price : ($product->sale_price ?? $product->price);
+    $schemaValidUntil = collect([$schemaFlash?->flashSale?->ends_at, $product->price_valid_until])->filter()->min()?->format('Y-m-d');
     $returnDays = (int) setting('return_days', '7');
     $seoDesc = match (true) {
         $customDesc !== null => $customDesc,
@@ -109,7 +115,7 @@
 
 @push('meta')
 {{-- Product-specific Open Graph properties the layout's generic tags don't cover --}}
-<meta property="product:price:amount" content="{{ $product->sale_price ?? $product->price }}">
+<meta property="product:price:amount" content="{{ $schemaPrice }}">
 <meta property="product:price:currency" content="{{ setting('currency_code', 'BDT') }}">
 @if($product->brand)<meta property="product:brand" content="{{ $product->brand->name }}">@endif
 @if($product->sku)<meta property="product:retailer_item_id" content="{{ $product->sku }}">@endif
@@ -132,8 +138,8 @@
         '@type' => 'Offer',
         'url' => $canonicalUrl,
         'priceCurrency' => setting('currency_code', 'BDT'),
-        'price' => (string) ($product->sale_price ?? $product->price),
-        'priceValidUntil' => $product->price_valid_until?->format('Y-m-d'),
+        'price' => (string) $schemaPrice,
+        'priceValidUntil' => $schemaValidUntil,
         'itemCondition' => 'https://schema.org/' . ($product->schema_condition ?: 'NewCondition'),
         'availability' => $schemaAvailability,
         'shippingDetails' => $schemaShipping,
@@ -357,13 +363,29 @@
                             <div class="flex flex-wrap items-end gap-x-3 gap-y-1">
                                 <span class="text-4xl font-extrabold tracking-tight text-gray-900 leading-none">৳{{ number_format($nowPrice) }}</span>
                                 <span class="text-lg text-gray-400 line-through leading-none pb-0.5">৳{{ number_format($wasPrice) }}</span>
-                                @if($activeFlashSale)
-                                    <span class="inline-flex items-center gap-1 bg-gradient-to-r from-orange-500 to-amber-500 text-white text-xs font-bold uppercase tracking-wide px-2.5 py-1 rounded-full shadow-sm shadow-orange-500/30">
-                                        <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path d="M11.3 1.05a1 1 0 00-1.8-.6l-7 10A1 1 0 003.3 12H8v6.95a1 1 0 001.8.6l7-10A1 1 0 0016 8h-4.7V1.05z"/></svg>
-                                        Flash Sale
-                                    </span>
-                                @endif
                             </div>
+                            @if($activeFlashSale)
+                                @include('partials.flash-sale-styles')
+                                @php $fsSale = $activeFlashSale->flashSale; @endphp
+                                <div style="{{ $fsSale->style_vars }}" @flash-ended="setTimeout(() => location.reload(), 1200)"
+                                     class="fs-grad fs-band mt-3 rounded-xl text-white px-3.5 py-2.5 flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+                                    <div class="flex items-center gap-2 min-w-0">
+                                        <svg class="w-5 h-5 shrink-0" fill="currentColor" viewBox="0 0 20 20"><path d="M11.3 1.05a1 1 0 00-1.8-.6l-7 10A1 1 0 003.3 12H8v6.95a1 1 0 001.8.6l7-10A1 1 0 0016 8h-4.7V1.05z"/></svg>
+                                        <div class="min-w-0 leading-tight">
+                                            <p class="text-sm font-extrabold truncate">{{ $fsSale->banner_text ?: 'Flash Sale' }}</p>
+                                            <p class="text-[11px] font-medium opacity-90">
+                                                @if($activeFlashSale->remaining !== null)
+                                                    Only {{ $activeFlashSale->remaining }} left at this price
+                                                @else
+                                                    Price goes back up when the timer ends
+                                                @endif
+                                                @if($activeFlashSale->per_order_limit) · max {{ $activeFlashSale->per_order_limit }} per order @endif
+                                            </p>
+                                        </div>
+                                    </div>
+                                    @include('partials.flash-countdown', ['target' => $fsSale->ends_at, 'size' => 'sm'])
+                                </div>
+                            @endif
                             <div class="mt-3 inline-flex items-center gap-2 rounded-lg bg-emerald-50 dark:bg-emerald-500/10 ring-1 ring-emerald-600/15 dark:ring-emerald-400/20 px-3 py-1.5 text-sm">
                                 <svg class="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9.568 3H5.25A2.25 2.25 0 003 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 005.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 009.568 3z"/><path stroke-linecap="round" stroke-linejoin="round" d="M6 6h.008v.008H6V6z"/></svg>
                                 <span class="text-emerald-700 dark:text-emerald-300">

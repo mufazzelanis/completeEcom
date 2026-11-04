@@ -181,6 +181,7 @@ Route::get('/nav/panel/{slug}', [\App\Http\Controllers\NavPanelController::class
 Route::get('/shop', [ShopController::class, 'index'])->name('shop.index');
 Route::get('/categories', [ShopController::class, 'categories'])->name('categories.index');
 Route::get('/brands', [ShopController::class, 'brands'])->name('brands.index');
+Route::get('/flash-sale/{slug?}', [\App\Http\Controllers\FlashSalePageController::class, 'show'])->name('flash-sale.show');
 Route::get('/shop/category/{category}', [ShopController::class, 'category'])->name('shop.category');
 Route::get('/brand/{brand:slug}', [ShopController::class, 'brand'])->name('shop.brand');
 Route::get('/products/{product}', [ProductController::class, 'show'])->name('products.show');
@@ -758,7 +759,11 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
 
     // Marketing — Flash Sales
     Route::resource('flash-sales', AdminFlashSaleController::class)->except(['show']);
+    Route::get('flash-sales/{flashSale}/product-search', [AdminFlashSaleController::class, 'searchProducts'])->name('flash-sales.products.search');
     Route::post('flash-sales/{flashSale}/products', [AdminFlashSaleController::class, 'addProduct'])->name('flash-sales.products.add');
+    Route::put('flash-sales/{flashSale}/products', [AdminFlashSaleController::class, 'updateProducts'])->name('flash-sales.products.update');
+    Route::patch('flash-sales/{flashSale}/toggle', [AdminFlashSaleController::class, 'toggle'])->name('flash-sales.toggle');
+    Route::post('flash-sales/{flashSale}/duplicate', [AdminFlashSaleController::class, 'duplicate'])->name('flash-sales.duplicate');
     Route::delete('flash-sales/{flashSale}/products/{product}', [AdminFlashSaleController::class, 'removeProduct'])->name('flash-sales.products.remove');
 
     // Marketing — Promo Code Batches

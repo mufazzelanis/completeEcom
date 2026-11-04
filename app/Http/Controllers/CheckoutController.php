@@ -644,7 +644,7 @@ class CheckoutController extends Controller
 
                 $flashProduct = $item->product->activeFlashSaleProduct;
                 if ($flashProduct && $flashProduct->isAvailable()) {
-                    $flashProduct->increment('sold_count');
+                    $flashProduct->recordSale($item->quantity);
                 }
             }
 

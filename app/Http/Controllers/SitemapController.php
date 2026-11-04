@@ -25,6 +25,13 @@ class SitemapController extends Controller
         $urls[] = ['loc' => route('shop.index'), 'changefreq' => 'daily', 'priority' => '0.9'];
         $urls[] = ['loc' => route('blog.index'), 'changefreq' => 'daily', 'priority' => '0.7'];
 
+        // Only sales that are on (or teased) right now — ended ones are noindex on the page itself
+        $flashSales = \App\Models\FlashSale::live()->get()
+            ->merge(\App\Models\FlashSale::upcoming()->where('show_upcoming', true)->get());
+        foreach ($flashSales as $sale) {
+            $urls[] = ['loc' => $sale->url, 'lastmod' => $sale->updated_at->toAtomString(), 'changefreq' => 'hourly', 'priority' => '0.8'];
+        }
+
         foreach (Category::active()->where('noindex', false)->get() as $category) {
             $urls[] = [
                 'loc' => route('shop.category', $category->slug),

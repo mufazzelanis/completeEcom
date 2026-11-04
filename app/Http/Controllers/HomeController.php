@@ -105,13 +105,20 @@ class HomeController extends Controller
         $banners = \App\Services\Personalization::orderBanners($banners);
         $recentlyViewed = \App\Services\Personalization::recentlyViewed(null, 12);
 
-        $flashSale = FlashSale::current();
+        // Live sale first; otherwise tease the next one (if the admin allowed it) with a "starts in" countdown
+        $flashSale = FlashSale::current() ?? FlashSale::nextUpcoming();
+        if ($flashSale && ! $flashSale->show_on_home) {
+            $flashSale = null;
+        }
         $flashSaleProducts = collect();
         if ($flashSale) {
+            // the flash card shows no rating/brand/category — just the product row itself
             $flashSaleProducts = $flashSale->products()
-                ->with('product.category', 'product.brand', 'product.reviews')
+                ->with('product')
                 ->get()
-                ->filter(fn ($fsp) => $fsp->product && $fsp->product->is_active);
+                ->filter(fn ($fsp) => $fsp->product && $fsp->product->is_active)
+                ->sortBy(fn ($fsp) => $fsp->isAvailable() ? 0 : 1)
+                ->values();
         }
 
         return view('home', compact(
