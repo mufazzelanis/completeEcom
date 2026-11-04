@@ -682,7 +682,6 @@
                                     </div>
                                 </div>
                             </div>
-                            <span class="text-xs text-gray-400">{{ $review->created_at->diffForHumans() }}</span>
                         </div>
                         <p class="text-gray-600 text-sm mt-2">{{ $review->comment }}</p>
                     </div>
