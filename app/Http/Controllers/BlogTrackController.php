@@ -37,21 +37,40 @@ class BlogTrackController extends Controller
             'q'   => ['nullable', 'string', 'max:1000'],
         ]);
 
-        if (ActivityLog::isBotUserAgent((string) $request->userAgent()) || !$this->isLivePost((int) $d['p'])) {
+        // automationSignal(): bot User-Agent, or headers every real browser sends missing (the same test
+        // Activity Log uses). Staff checking their own posts aren't readers either.
+        if (ActivityLog::automationSignal($request) !== null
+            || auth()->user()?->canAccessAdmin()
+            || !$this->isLivePost((int) $d['p'])) {
             return response()->noContent();
         }
 
+        // usually the row the server wrote when it served the page (BlogRead::begin); created here
+        // only for a page that was prefetched first and then shown
+        $ua = mb_substr((string) $request->userAgent(), 0, 500);
         $read = BlogRead::firstOrCreate(['read_key' => $d['r']], [
             'blog_post_id'  => (int) $d['p'],
             'visitor_key'   => $d['v'],
             'user_id'       => auth()->id(),
+            'ip'            => $request->ip(),
+            'user_agent'    => $ua,
             'read_date'     => now(setting('timezone', 'Asia/Dhaka'))->toDateString(),
             'source'        => self::source($d['ref'] ?? null, $d['q'] ?? null, $request->getHost()),
             'referrer_host' => self::host($d['ref'] ?? null),
-            'device'        => self::device((string) $request->userAgent()),
+            'device'        => self::device($ua),
         ]);
-        if ($read->blog_post_id !== (int) $d['p']) {
-            return response()->noContent();
+        if ($read->blog_post_id !== (int) $d['p'] || $read->bot_name) {
+            return response()->noContent(); // a declared bot never becomes a reader, whatever it sends
+        }
+
+        // the tracker only ever reports after a real touch / mouse / key event: this is a person
+        if (!$read->engaged_at) {
+            BlogRead::whereKey($read->id)->toBase()->update([
+                'engaged_at'  => now(),
+                'visitor_key' => $d['v'], // the browser's own id replaces the server's IP-based stand-in
+                'user_id'     => $read->user_id ?? auth()->id(),
+            ]);
+            \App\Support\VisitorIntel::queue([(string) $request->ip()]);
         }
 
         $seconds = min((int) ($d['t'] ?? 0), self::MAX_SECONDS);
@@ -86,7 +105,7 @@ class BlogTrackController extends Controller
         return Cache::remember("blog-track:live:{$id}", 600, fn () => BlogPost::published()->whereKey($id)->exists());
     }
 
-    private static function host(?string $url): ?string
+    public static function host(?string $url): ?string
     {
         $host = $url ? parse_url($url, PHP_URL_HOST) : null;
 
@@ -122,7 +141,7 @@ class BlogTrackController extends Controller
         return $host ? 'referral' : 'direct';
     }
 
-    private static function device(string $ua): string
+    public static function device(string $ua): string
     {
         return match (true) {
             (bool) preg_match('/iPad|Tablet|PlayBook|Silk|(Android(?!.*Mobile))/i', $ua) => 'tablet',

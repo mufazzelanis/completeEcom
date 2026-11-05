@@ -117,8 +117,14 @@ return Application::configure(basePath: dirname(__DIR__))
         // plain flag in the command string — ['--reminders' => true] is passed as --reminders='1',
         // which a value-less option rejects (the hourly run failed every time)
         $schedule->command('crm:refresh --reminders')->hourly();
+        // who's behind visitor IPs (Amazon AWS, Grameenphone, Googlebot's network …) for Blog analytics
+        // and Activity Log — runs before the bot classifier needs it
+        $schedule->command('visitors:resolve-ips')->everyMinute()->withoutOverlapping()->runInBackground();
         // relabel guest views from IPs that never ran the page JavaScript (scrapers posing as Chrome)
         $schedule->command('activity:classify-bots')->everyFiveMinutes()->withoutOverlapping();
+        // bot / no-interaction blog views are only kept for the visitor log; readers stay
+        $schedule->call(fn () => \App\Models\BlogRead::whereNull('engaged_at')->where('created_at', '<', now()->subDays(90))->delete())
+            ->name('blog-reads:prune')->dailyAt('03:15');
 
         // Keeps the homepage personalized section's source tables (product_views,
         // search_queries) from growing forever — see the command's own docblock.

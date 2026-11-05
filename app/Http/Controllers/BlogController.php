@@ -50,8 +50,10 @@ class BlogController extends Controller
         $shopProducts = $shop['manual'] ? $shop['shelf']->take(8) : $this->productsFor($blogPost);
         $body = \App\Support\BlogShop::render(demote_h1($blogPost->content), $shop['byId']);
         $primaryProduct = $shop['primary'];
+        // every view is recorded here — bots too, by name — and the page's tracker continues it
+        $readKey = \App\Models\BlogRead::begin($blogPost, request());
 
-        return view('blog.show', compact('blogPost', 'related', 'shopProducts', 'pageViewToken', 'body', 'primaryProduct'));
+        return view('blog.show', compact('blogPost', 'related', 'shopProducts', 'pageViewToken', 'body', 'primaryProduct', 'readKey'));
     }
 
     /**

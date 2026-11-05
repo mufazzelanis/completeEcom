@@ -22,7 +22,8 @@ class BlogOrderObserver
 
     public function created(Order $order): void
     {
-        if ($order->created_by || $order->source === 'phone' || !app()->bound('request')) {
+        // staff orders (typed in for a phone customer, or a test order from the shop) aren't blog sales
+        if ($order->created_by || $order->source === 'phone' || !app()->bound('request') || auth()->user()?->canAccessAdmin()) {
             return;
         }
 

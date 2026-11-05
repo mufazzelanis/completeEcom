@@ -1,5 +1,6 @@
 {{-- Article reading tracker + reading progress bar + sticky "in this article" buy bar.
-     Sends to BlogTrackController: start (with the real referrer and landing query), a ping every
+     Sends to BlogTrackController — only after the first real touch / mouse / wheel / key event, so
+     script-running crawlers never count: start (with the real referrer and landing query), a ping every
      ~15 s while the reader is active (tab visible, input in the last 30 s) and when they leave,
      and a click for every product action inside [data-bp] cards. Plain JS, passive listeners and
      one rAF per scroll frame; nothing is fetched up front, so it adds no work to the page load.
@@ -61,21 +62,37 @@
 (function () {
     var URL_ = @js(route('blog.track')), POST = {{ (int) $blogPost->id }};
     var article = document.querySelector('[data-blog-body]');
-    if (!article || !window.JSON) return;
+    // a Turbo preview (cached copy shown while the real page loads) runs this too — only the real render counts
+    if (!article || !window.JSON || document.documentElement.hasAttribute('data-turbo-preview')) return;
 
     var uid = function () {
         return window.crypto && crypto.randomUUID ? crypto.randomUUID() : 'r' + Date.now().toString(36) + Math.random().toString(36).slice(2, 14);
     };
-    var rk = uid(), vk;
+    // the server already recorded this view (BlogRead::begin) — continue that row; none for staff
+    var rk = @js($readKey ?? null), vk;
+    var off = rk === null && @js(auth()->check() && auth()->user()->canAccessAdmin()); // staff: page works, nothing is counted
+    rk = rk || uid();
     try { vk = localStorage.getItem('mv_bvk'); if (!vk) { vk = uid(); localStorage.setItem('mv_bvk', vk); } } catch (e) { vk = rk; }
 
-    var active = 0, depth = 0, last = Date.now(), lastInput = Date.now(), ticks = 0, sent = '', sentAt = 0, done = false, raf = 0;
+    // Nothing is sent until a person shows up: a real touch / mouse / wheel / key event (isTrusted).
+    // Crawlers that run JavaScript (Googlebot's renderer, headless Chrome on cloud servers) load and
+    // scroll pages but don't produce those, so they never become a "reader" with reading time.
+    var human = false, shownAt = Date.now(), firstSent = false;
+    // read now: once turbo:load has run, window.mvCurUrl is this page, not the one before it
+    var prevUrl = (window.mvCurUrl && window.mvCurUrl !== location.href ? window.mvCurUrl : document.referrer) || '';
+    var active = 0, depth = 0, last = Date.now(), lastInput = 0, ticks = 0, sent = '', sentAt = 0, done = false, raf = 0;
     var progress = document.getElementById('blog-progress');
     var sb = document.getElementById('blog-sb'), sbClosed = false, blocksInView = 0, io = null;
     try { sbClosed = sessionStorage.getItem('bsb-x-' + POST) === '1'; } catch (e) {}
 
     function send(extra, beacon) {
-        var p = { r: rk, v: vk, p: POST, t: Math.round(active), s: depth };
+        if (!human || off) return;
+        var p ={ r: rk, v: vk, p: POST, t: Math.round(active), s: depth };
+        if (!firstSent) {
+            // the first message creates the read on the server: say where the reader came from
+            firstSent = true;
+            p.ref = prevUrl; p.q = location.search.slice(0, 900);
+        }
         for (var k in extra) p[k] = extra[k];
         var body = JSON.stringify(p);
         if (beacon && navigator.sendBeacon) {
@@ -85,7 +102,9 @@
     }
     function flush(beacon) {
         var state = Math.round(active) + ':' + depth;
-        if (state === sent && Date.now() - sentAt < 60000) return; // nothing new (a minute-long keep-alive still goes out)
+        // nothing new: skip — except a once-a-minute keep-alive while the tab is actually in front
+        // (keeps "reading now" right without counting a forgotten background tab)
+        if (state === sent && (Date.now() - sentAt < 60000 || document.visibilityState !== 'visible')) return;
         sent = state; sentAt = Date.now();
         send({ e: 'ping' }, beacon);
     }
@@ -105,8 +124,21 @@
         // only while reading the text itself, and never on top of a product block that's already on screen
         setBar(!sbClosed && blocksInView === 0 && r.top < -240 && r.bottom > vh * .6);
     }
-    function onScroll() { lastInput = Date.now(); if (!raf) raf = requestAnimationFrame(measure); }
-    function onInput() { lastInput = Date.now(); }
+    function onScroll() { if (human) lastInput = Date.now(); if (!raf) raf = requestAnimationFrame(measure); }
+    function onInput(ev) {
+        if (ev && ev.isTrusted === false) return;
+        var now = Date.now();
+        if (!human) {
+            human = true;
+            // credit the time spent reading the opening before the first touch/scroll (at most 30 s)
+            if (document.visibilityState === 'visible') active += Math.min(now - shownAt, 30000) / 1000;
+            last = now;
+            lastInput = now;
+            send({ e: 'start' }, false);
+            return;
+        }
+        lastInput = now;
+    }
 
     function onClick(ev) {
         var el = ev.target.closest ? ev.target.closest('a, button') : null;
@@ -171,8 +203,6 @@
         }
     }
 
-    var prev = window.mvCurUrl && window.mvCurUrl !== location.href ? window.mvCurUrl : document.referrer;
-    send({ e: 'start', ref: prev || '', q: location.search.slice(0, 900) }, false);
     measure();
 })();
 </script>

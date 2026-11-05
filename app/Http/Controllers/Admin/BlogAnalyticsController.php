@@ -15,7 +15,8 @@ use Illuminate\Support\Facades\DB;
 
 /**
  * Blog → Analytics: who read which post, for how long, how far, which products they clicked and
- * what it sold. Reads come from blog_reads (one row per page view, JS-only so crawlers don't count);
+ * what it sold — and who else came: bots by name, cloud servers, visits with no interaction. Readers are
+ * blog_reads rows with engaged_at (a real touch / mouse / key event); everything else is in traffic();
  * dates are the store's own days (setting timezone), not UTC.
  */
 class BlogAnalyticsController extends Controller
@@ -45,7 +46,7 @@ class BlogAnalyticsController extends Controller
         [$a, $b] = $this->utc($r['from'], $r['to']);
         $clicks = BlogProductClick::whereBetween('created_at', [$a, $b])->groupBy('blog_post_id')
             ->selectRaw("blog_post_id, COUNT(*) clicks, SUM(action IN ('cart','buy')) intents")->get()->keyBy('blog_post_id');
-        $conv = BlogConversion::whereBetween('created_at', [$a, $b])->groupBy('blog_post_id')
+        $conv = BlogConversion::counted()->whereBetween('created_at', [$a, $b])->groupBy('blog_post_id')
             ->selectRaw('blog_post_id, COUNT(*) orders, SUM(revenue) revenue, SUM(matched_revenue) matched')->get()->keyBy('blog_post_id');
         $prevReaders = $this->reads(null, $r['prevFrom'], $r['prevTo'])->groupBy('blog_post_id')
             ->selectRaw('blog_post_id, COUNT(DISTINCT visitor_key) readers')->pluck('readers', 'blog_post_id');
@@ -90,8 +91,10 @@ class BlogAnalyticsController extends Controller
         $sources = $this->breakdown(null, $r, 'source');
         $devices = $this->breakdown(null, $r, 'device');
         $live = $this->live();
+        $traffic = $this->traffic(null, $r['from'], $r['to']);
+        $this->resolveSoon();
 
-        return view('admin.blog.analytics.index', compact('r', 'kpi', 'prev', 'trend', 'rows', 'sort', 'silent', 'topProducts', 'sources', 'devices', 'live'));
+        return view('admin.blog.analytics.index', compact('r', 'kpi', 'prev', 'trend', 'rows', 'sort', 'silent', 'topProducts', 'sources', 'devices', 'live', 'traffic'));
     }
 
     public function show(Request $request, BlogPost $post)
@@ -124,13 +127,18 @@ class BlogAnalyticsController extends Controller
 
         $conversions = BlogConversion::with('order:id,order_number,total,status,shipping_name,created_at')
             ->where('blog_post_id', $post->id)->whereBetween('created_at', [$a, $b])->latest('created_at')->limit(20)->get();
-        $recent = BlogRead::where('blog_post_id', $post->id)->latest('id')->limit(25)
-            ->get(['id', 'source', 'referrer_host', 'device', 'active_seconds', 'max_scroll', 'product_clicks', 'user_id', 'created_at', 'updated_at']);
-        $liveNow = BlogRead::where('blog_post_id', $post->id)->where('updated_at', '>=', now()->subMinutes(2))->count();
+        // latest visits of every kind — people and bots, each with who it really was
+        $recent = BlogRead::where('blog_post_id', $post->id)->latest('id')->limit(25)->get();
+        $recentIntel = \App\Support\VisitorIntel::ips($recent->pluck('ip'));
+        $recent->each(fn ($v) => $v->verdict = \App\Support\VisitorIntel::verdict($v->user_agent, $v->ip, (bool) $v->engaged_at,
+            $v->bot_name === 'Scraper posing as a browser' ? 'no-browser-headers' : null, $recentIntel[$v->ip] ?? null));
+        $traffic = $this->traffic($post->id, $r['from'], $r['to']);
+        $this->resolveSoon();
+        $liveNow = BlogRead::readers()->where('blog_post_id', $post->id)->where('updated_at', '>=', now()->subMinutes(2))->count();
 
         return view('admin.blog.analytics.show', compact(
             'post', 'r', 'kpi', 'prev', 'trend', 'depth', 'time', 'sources', 'devices', 'referrers',
-            'productStats', 'products', 'attachedIds', 'conversions', 'recent', 'liveNow'
+            'productStats', 'products', 'attachedIds', 'conversions', 'recent', 'liveNow', 'traffic'
         ));
     }
 
@@ -188,7 +196,8 @@ class BlogAnalyticsController extends Controller
 
     private function reads(?int $postId, Carbon $from, Carbon $to)
     {
-        return BlogRead::query()
+        // readers only: views where a real touch / mouse / key event happened (bots and no-shows are in traffic())
+        return BlogRead::readers()
             ->whereBetween('read_date', [$from->toDateString(), $to->toDateString()])
             ->when($postId, fn ($q) => $q->where('blog_post_id', $postId));
     }
@@ -201,7 +210,7 @@ class BlogAnalyticsController extends Controller
         [$a, $b] = $this->utc($from, $to);
         $cl = BlogProductClick::whereBetween('created_at', [$a, $b])->when($postId, fn ($q) => $q->where('blog_post_id', $postId))
             ->selectRaw("COUNT(*) total, SUM(action='open') opens, SUM(action='cart') carts, SUM(action='buy') buys")->first();
-        $cv = BlogConversion::whereBetween('created_at', [$a, $b])->when($postId, fn ($q) => $q->where('blog_post_id', $postId))
+        $cv = BlogConversion::counted()->whereBetween('created_at', [$a, $b])->when($postId, fn ($q) => $q->where('blog_post_id', $postId))
             ->selectRaw('COUNT(*) orders, COALESCE(SUM(revenue), 0) revenue, COALESCE(SUM(matched_revenue), 0) matched')->first();
 
         $n = (int) $rd->n_reads;
@@ -236,7 +245,7 @@ class BlogAnalyticsController extends Controller
             $bucket = "HOUR(DATE_ADD(created_at, INTERVAL {$offset} SECOND))";
             $keys = range(0, $r['from']->isToday() ? now($r['tz'])->hour : 23);
             $labels = array_map(fn ($h) => Carbon::createFromTime($h)->format('ga'), $keys);
-            $readers = BlogRead::whereBetween('created_at', [$a, $b]);
+            $readers = BlogRead::readers()->whereBetween('created_at', [$a, $b]);
         } else {
             $bucket = 'read_date';
             $keys = [];
@@ -283,15 +292,100 @@ class BlogAnalyticsController extends Controller
             ->filter(fn ($s) => $s->product);
     }
 
+    /**
+     * Every visit in the period sorted into people / named bots / cloud servers / no interaction
+     * (App\Support\VisitorIntel::verdict). Grouped by IP + browser first, so a crawler that opened
+     * 300 pages is one lookup, not 300.
+     */
+    private function traffic(?int $postId, Carbon $from, Carbon $to): array
+    {
+        $groups = BlogRead::query()
+            ->whereBetween('read_date', [$from->toDateString(), $to->toDateString()])
+            ->when($postId, fn ($q) => $q->where('blog_post_id', $postId))
+            ->groupBy('ip', 'user_agent', 'bot_name', DB::raw('engaged_at IS NOT NULL'))
+            ->selectRaw('ip, user_agent, bot_name, (engaged_at IS NOT NULL) engaged, COUNT(*) n, COUNT(DISTINCT visitor_key) people')
+            ->limit(20000)->get();
+
+        $intel = \App\Support\VisitorIntel::ips($groups->pluck('ip'));
+        $types = ['human' => 0, 'bot' => 0, 'cloud' => 0, 'unknown' => 0];
+        $names = [];
+        foreach ($groups as $g) {
+            $v = \App\Support\VisitorIntel::verdict($g->user_agent, $g->ip, (bool) $g->engaged,
+                $g->bot_name === 'Scraper posing as a browser' ? 'no-browser-headers' : null, $intel[$g->ip] ?? null);
+            $types[$v['type']] += (int) $g->n;
+            if ($v['type'] === 'human') {
+                continue;
+            }
+            $k = $v['name'];
+            $names[$k] ??= ['name' => $k, 'type' => $v['type'], 'kind' => $v['kind'], 'icon' => \App\Support\VisitorIntel::icon($v),
+                'verified' => $v['verified'], 'note' => $v['note'], 'views' => 0, 'ips' => []];
+            $names[$k]['views'] += (int) $g->n;
+            $names[$k]['ips'][$g->ip] = true;
+            if ($v['verified'] === true) {
+                $names[$k]['verified'] = true;
+            }
+        }
+        $names = collect($names)->map(fn ($x) => ['ips' => count($x['ips'])] + $x)->sortByDesc('views')->values();
+
+        return [
+            'types'    => $types,
+            'total'    => array_sum($types),
+            'names'    => $names,
+            'pending'  => $groups->pluck('ip')->filter()->unique()->count() - count($intel), // networks not looked up yet
+        ];
+    }
+
+    /** Admin → Blog analytics → Visitor log: every view, who it really was. */
+    public function visits(Request $request)
+    {
+        $r = $this->range($request);
+        $type = in_array($request->query('type'), ['human', 'bot', 'cloud', 'unknown'], true) ? $request->query('type') : null;
+        $post = $request->filled('post') ? BlogPost::where('slug', $request->query('post'))->first() : null;
+
+        $query = BlogRead::with('post:id,title,slug')
+            ->whereBetween('read_date', [$r['from']->toDateString(), $r['to']->toDateString()])
+            ->when($post, fn ($q) => $q->where('blog_post_id', $post->id))
+            ->when($request->filled('ip'), fn ($q) => $q->where('ip', trim($request->query('ip'))))
+            ->when($type === 'human', fn ($q) => $q->whereNotNull('engaged_at'))
+            ->when($type === 'bot', fn ($q) => $q->whereNotNull('bot_name'))
+            ->when(in_array($type, ['cloud', 'unknown'], true), fn ($q) => $q->whereNull('engaged_at')->whereNull('bot_name'))
+            ->latest('id');
+
+        // cloud vs no-interaction needs the IP's network, which isn't a column: filter the page in PHP
+        $visits = $query->paginate(50)->withQueryString();
+        $intel = \App\Support\VisitorIntel::ips($visits->getCollection()->pluck('ip'));
+        $visits->getCollection()->transform(function ($v) use ($intel) {
+            $v->verdict = \App\Support\VisitorIntel::verdict($v->user_agent, $v->ip, (bool) $v->engaged_at,
+                $v->bot_name === 'Scraper posing as a browser' ? 'no-browser-headers' : null, $intel[$v->ip] ?? null);
+            [$v->ua_device, $v->ua_browser, $v->ua_platform] = \App\Models\ActivityLog::parseUserAgent((string) $v->user_agent);
+
+            return $v;
+        });
+        if (in_array($type, ['cloud', 'unknown'], true)) {
+            $visits->setCollection($visits->getCollection()->filter(fn ($v) => $v->verdict['type'] === $type)->values());
+        }
+
+        $traffic = $this->traffic($post?->id, $r['from'], $r['to']);
+        $this->resolveSoon();
+
+        return view('admin.blog.analytics.visits', compact('r', 'visits', 'type', 'post', 'traffic'));
+    }
+
+    /** IP networks still unknown get looked up once this response is out (never while the admin waits). */
+    private function resolveSoon(): void
+    {
+        after_response(fn () => \App\Support\VisitorIntel::resolveQueued(2));
+    }
+
     /** Reading right now: tracker pinged in the last 2 minutes. */
     private function live(): array
     {
-        $rows = BlogRead::where('updated_at', '>=', now()->subMinutes(2))->groupBy('blog_post_id')
+        $rows = BlogRead::readers()->where('updated_at', '>=', now()->subMinutes(2))->groupBy('blog_post_id')
             ->selectRaw('blog_post_id, COUNT(*) n')->orderByDesc('n')->limit(5)->pluck('n', 'blog_post_id');
         $posts = BlogPost::whereIn('id', $rows->keys())->get(['id', 'title', 'slug'])->keyBy('id');
 
         return [
-            'total' => BlogRead::where('updated_at', '>=', now()->subMinutes(2))->count(),
+            'total' => BlogRead::readers()->where('updated_at', '>=', now()->subMinutes(2))->count(),
             'posts' => $rows->filter(fn ($n, $id) => $posts->has($id))->map(fn ($n, $id) => ['title' => $posts[$id]->title, 'slug' => $posts[$id]->slug, 'n' => $n])->values(),
         ];
     }

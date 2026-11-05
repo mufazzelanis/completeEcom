@@ -70,7 +70,26 @@ class ClassifyBotActivity extends Command
             $ips++;
         }
 
-        $this->info("Checked {$candidates->count()} busy guest IPs — relabelled {$rows} views from {$ips} IPs as bot (no JavaScript).");
+        // Data-centre addresses (Amazon AWS, Google Cloud, DigitalOcean …): servers, not shoppers —
+        // even a single view, and even when they run JavaScript (headless Chrome does). An IP that
+        // shopped is left alone: a person on a VPN can come from a data centre too.
+        $cloudRows = 0;
+        $guestIps = ActivityLog::query()->whereNull('user_id')->where('is_bot', false)->where('event', 'product.view')
+            ->whereBetween('created_at', [$from, $to])->whereNotNull('ip_address')->distinct()->pluck('ip_address');
+        foreach (\App\Support\VisitorIntel::ips($guestIps) as $ip => $info) {
+            if (empty($info['hosting']) || $this->didShop($ip, $from)) {
+                continue;
+            }
+            $cloudRows += ActivityLog::query()
+                ->whereNull('user_id')->where('is_bot', false)->where('event', 'product.view')
+                ->where('ip_address', $ip)->whereBetween('created_at', [$from, $to])
+                ->update([
+                    'is_bot' => true,
+                    'properties' => DB::raw("JSON_SET(COALESCE(properties, '{}'), '$.bot', 'cloud')"),
+                ]);
+        }
+
+        $this->info("Checked {$candidates->count()} busy guest IPs — relabelled {$rows} views from {$ips} IPs as bot (no JavaScript), {$cloudRows} views from data-centre IPs.");
 
         return self::SUCCESS;
     }

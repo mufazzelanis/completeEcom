@@ -9,7 +9,6 @@ use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Http;
 
 /**
  * Admin → Activity Log: ActivityLog (logins, product/order views, cart, orders — customers and
@@ -19,7 +18,7 @@ use Illuminate\Support\Facades\Http;
  * for the requested page are merged — the previous version merged both whole tables first and
  * filtered the result, which on ~30k live rows made each filter take so long it looked like
  * filtering did nothing. Totals are per-table counts added together; the event and user dropdown
- * lists are cached for 10 minutes; IP locations never hold the page up (see batchIpLocations).
+ * lists are cached for 10 minutes; IP locations never hold the page up (App\Support\VisitorIntel reads the cache only).
  */
 class ActivityLogController extends Controller
 {
@@ -61,7 +60,10 @@ class ActivityLogController extends Controller
             'path' => $request->url(),
             'query' => $request->except('page'),
         ]);
-        $ipLocations = $this->batchIpLocations($rows->pluck('ip_address')->filter()->unique());
+        // who's behind each IP (network, location) — cache only; unknown ones are looked up after this response
+        $ipIntel = \App\Support\VisitorIntel::ips($rows->pluck('ip_address')->filter()->unique());
+        after_response(fn () => \App\Support\VisitorIntel::resolveQueued(1));
+        $ipLocations = array_filter(array_map(fn ($i) => \App\Support\VisitorIntel::location($i), $ipIntel));
         $ipCounts = $this->ipCounts($request, $rows->pluck('ip_address')->filter()->unique()->values(), $start, $end);
 
         $eventTypes = Cache::remember('activity_log:event_types', 600, fn () => DB::table('activity_logs')->distinct()->pluck('event')
@@ -74,7 +76,7 @@ class ActivityLogController extends Controller
         $stats = $this->eventStats($request, $start, $end);
         $periodLabel = $this->periodLabel($request);
         $activeFilters = $this->activeFilters($request, $logUsers);
-        $data = compact('logs', 'eventTypes', 'logUsers', 'stats', 'periodLabel', 'ipLocations', 'activeFilters', 'ipCounts');
+        $data = compact('logs', 'eventTypes', 'logUsers', 'stats', 'periodLabel', 'ipLocations', 'ipIntel', 'activeFilters', 'ipCounts');
 
         // A filter change from the page itself (fetch, no reload) gets just the results block
         return $request->ajax()
@@ -183,6 +185,7 @@ class ActivityLogController extends Controller
                 'activity_logs.url',
                 'activity_logs.referrer',
                 'activity_logs.ip_address',
+                'activity_logs.user_agent',
                 'activity_logs.device',
                 'activity_logs.browser',
                 'activity_logs.platform',
@@ -210,6 +213,7 @@ class ActivityLogController extends Controller
                 DB::raw('NULL as url'),
                 DB::raw('NULL as referrer'),
                 'audit_logs.ip_address',
+                DB::raw('NULL as user_agent'),
                 DB::raw('NULL as device'),
                 DB::raw('NULL as browser'),
                 DB::raw('NULL as platform'),
@@ -367,52 +371,5 @@ class ActivityLogController extends Controller
         }
 
         return $chips;
-    }
-
-    /**
-     * City/country for this page's IPs (city level only — never a street address). Only what's
-     * already cached is used for this page; IPs not looked up yet are fetched from ip-api.com's
-     * free batch endpoint AFTER the response has been sent and cached for a month, so they show
-     * on the next load — an outside service never makes this page wait.
-     *
-     * @param  \Illuminate\Support\Collection<int, string>  $ips
-     * @return array<string, string> ip => "City, Country"
-     */
-    private function batchIpLocations($ips): array
-    {
-        $result = [];
-        $uncached = [];
-
-        foreach ($ips as $ip) {
-            if (!filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE)) {
-                continue; // private/reserved/loopback has no public geolocation
-            }
-            $cached = Cache::get("ip_location:{$ip}", '__miss__');
-            if ($cached === '__miss__') {
-                $uncached[] = $ip;
-            } elseif ($cached !== null) {
-                $result[$ip] = $cached;
-            }
-        }
-
-        if ($uncached) {
-            after_response(function () use ($uncached) {
-                $response = Http::timeout(5)->post('http://ip-api.com/batch?fields=status,city,country,query', array_values(array_slice($uncached, 0, 100)));
-                if (!$response->ok()) {
-                    return;
-                }
-                foreach ($response->json() ?: [] as $entry) {
-                    if (!($ip = $entry['query'] ?? null)) {
-                        continue;
-                    }
-                    $location = ($entry['status'] ?? null) === 'success'
-                        ? (collect([$entry['city'] ?? null, $entry['country'] ?? null])->filter()->implode(', ') ?: null)
-                        : null;
-                    Cache::put("ip_location:{$ip}", $location, now()->addMonth());
-                }
-            });
-        }
-
-        return $result;
     }
 }

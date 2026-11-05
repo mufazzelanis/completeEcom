@@ -76,7 +76,9 @@ class PageView
         match ($type) {
             'product' => self::product($id, $data, $url, $ref),
             // toBase(): a view isn't an edit — leave updated_at (the sitemap's <lastmod>) alone
-            'blog'    => BlogPost::whereKey($id)->toBase()->increment('views'),
+            // crawlers / scripted clients don't add to a post's public "N views"
+            'blog'    => \App\Models\ActivityLog::automationSignal(request()) === null
+                ? BlogPost::whereKey($id)->toBase()->increment('views') : null,
             'landing' => LandingPage::whereKey($id)->toBase()->increment('views_count'),
             default   => null,
         };

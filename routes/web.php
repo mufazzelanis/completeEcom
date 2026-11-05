@@ -223,8 +223,9 @@ Route::post('/pv', fn (\Illuminate\Http\Request $request) => response()->noConte
     \App\Support\PageView::consume((string) $request->input('t')) ? 204 : 202
 ))->middleware('throttle:60,1,post-pv')->withoutMiddleware(\Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class)->name('page-view');
 // In-article reading tracker (time on page, scroll depth, product clicks) — App\Http\Controllers\BlogTrackController.
-// Posted with sendBeacon, which can't carry a CSRF header; it only ever writes analytics rows.
-Route::post('/blog-track', \App\Http\Controllers\BlogTrackController::class)->middleware('throttle:120,1,post-blog-track')->withoutMiddleware(\Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class)->name('blog.track');
+// Posted with sendBeacon, which can't carry a CSRF header; it only ever writes analytics rows. A high per-IP limit:
+// mobile operators put many phones behind one address (CGNAT), and each reader pings ~4x a minute.
+Route::post('/blog-track', \App\Http\Controllers\BlogTrackController::class)->middleware('throttle:600,1,post-blog-track')->withoutMiddleware(\Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class)->name('blog.track');
 Route::post('/promo-popups/{promoPopup}/track', \App\Http\Controllers\PromoPopupTrackController::class)->middleware('throttle:60,1,post-promo-track')->name('promo-popups.track');
 Route::post('/checkout/lead', [CheckoutController::class, 'lead'])->middleware('throttle:30,1,post-checkout-lead')->name('checkout.lead');
 Route::post('/checkout/phone/send', [\App\Http\Controllers\CheckoutPhoneController::class, 'send'])->middleware('throttle:12,10,post-checkout-phone-send')->name('checkout.phone.send');
@@ -709,7 +710,8 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
 
     // CMS — Blog
     Route::get('blog/analytics', [\App\Http\Controllers\Admin\BlogAnalyticsController::class, 'index'])->name('blog.analytics');
-    Route::get('blog/analytics/{post}', [\App\Http\Controllers\Admin\BlogAnalyticsController::class, 'show'])->name('blog.analytics.show');
+    Route::get('blog/analytics/visits', [\App\Http\Controllers\Admin\BlogAnalyticsController::class, 'visits'])->name('blog.analytics.visits');
+    Route::get('blog/analytics/{post}',[\App\Http\Controllers\Admin\BlogAnalyticsController::class, 'show'])->name('blog.analytics.show');
     Route::get('blog/product-search', [AdminBlogPostController::class, 'searchProducts'])->name('blog.product-search');
     Route::resource('blog/categories', AdminBlogCategoryController::class)->except(['show'])->names([
         'index' => 'blog.categories.index',

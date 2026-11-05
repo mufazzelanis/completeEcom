@@ -89,9 +89,17 @@
         </thead>
         <tbody class="divide-y divide-gray-50">
             @forelse($logs as $log)
-            @php [$evLabel, $evIcon, $evHex] = \App\Models\ActivityLog::eventMeta($log->event_type); @endphp
+            @php
+                [$evLabel, $evIcon, $evHex] = \App\Models\ActivityLog::eventMeta($log->event_type);
+                // who a guest really was: named bot, fake bot, cloud server or a person (App\Support\VisitorIntel)
+                $who = $log->source === 'activity' && !$log->user_id
+                    ? \App\Support\VisitorIntel::verdict($log->user_agent, $log->ip_address, null,
+                        $log->properties ? (json_decode($log->properties, true)['bot'] ?? null) : null, $ipIntel[$log->ip_address] ?? null)
+                    : null;
+                $looksBot = $log->is_bot || ($who && $who['type'] !== 'human');
+            @endphp
             {{-- coloured left edge per event; bot rows faded so real shoppers stand out; orders tinted --}}
-            <tr class="hover:bg-gray-50 transition {{ $log->is_bot ? 'al-bot' : '' }}"
+            <tr class="hover:bg-gray-50 transition {{ $looksBot ? 'al-bot' : '' }}"
                 style="box-shadow: inset 3px 0 0 {{ $evHex }};{{ $log->event_type === 'order.place' && !$log->is_bot ? ' background: rgba(16,185,129,.07);' : '' }}">
                 <td class="px-5 py-3 whitespace-nowrap">
                     {{-- setTimezone — created_at is stored in app.timezone (UTC); shown
@@ -152,6 +160,8 @@
                     </span>
                     @if($log->source === 'audit')
                     <span class="block text-[10px] text-gray-400 mt-0.5">admin action</span>
+                    @elseif($who && $who['type'] !== 'human')
+                    <span class="block mt-0.5 text-[10px]">@include('admin.blog.analytics._verdict', ['v' => $who])</span>
                     @elseif($log->is_bot)
                     @php
                         $botWhy = match ($log->properties ? (json_decode($log->properties, true)['bot'] ?? null) : null) {
@@ -159,6 +169,7 @@
                             'too-fast' => 'Viewed more than 30 products in 10 minutes from this IP',
                             'no-js' => 'Opened several products but never ran the page JavaScript — a scraper posing as a browser',
                             'user-agent' => 'Identifies itself as a bot/crawler',
+                            'cloud' => 'Comes from a data centre (cloud server), never shopped',
                             default => 'Bot or crawler',
                         };
                     @endphp
@@ -231,6 +242,10 @@
                     {{-- City/country only — never a street address or anything close to it;
                          that precision isn't available from an IP to anyone outside the ISP
                          itself, not to this site or any other. --}}
+                    @if($log->ip_address && ($net = \App\Support\VisitorIntel::network($ipIntel[$log->ip_address] ?? null)))
+                        <span class="block font-sans font-medium {{ !empty($ipIntel[$log->ip_address]['hosting']) ? 'text-blue-500' : 'text-gray-400' }}"
+                              title="{{ !empty($ipIntel[$log->ip_address]['hosting']) ? 'Data centre / cloud server' : 'Internet provider' }}">{{ !empty($ipIntel[$log->ip_address]['hosting']) ? '☁️ ' : '' }}{{ $net }}</span>
+                    @endif
                     @if($log->ip_address && ($loc = $ipLocations[$log->ip_address] ?? null))
                         <span class="block text-gray-300 font-sans">{{ $loc }}</span>
                     @endif

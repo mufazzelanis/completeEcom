@@ -17,6 +17,13 @@ class BlogConversion extends Model
         'created_at'      => 'datetime',
     ];
 
+    /** Orders that are actually sales from the post: they contain one of its products and weren't cancelled / refunded. */
+    public function scopeCounted($query)
+    {
+        return $query->where('matched_revenue', '>', 0)
+            ->whereHas('order', fn ($o) => $o->whereNotIn('status', ['cancelled', 'refunded']));
+    }
+
     public function post()  { return $this->belongsTo(BlogPost::class, 'blog_post_id'); }
     public function order() { return $this->belongsTo(Order::class); }
 }

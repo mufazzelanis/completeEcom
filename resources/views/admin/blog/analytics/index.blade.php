@@ -47,6 +47,8 @@
 
     @include('admin.blog.analytics._trend')
 
+    @include('admin.blog.analytics._traffic', ['logParams' => array_filter(['period' => $r['period'], 'from' => $r['period'] === 'custom' ? $r['from']->toDateString() : null, 'to' => $r['period'] === 'custom' ? $r['to']->toDateString() : null])])
+
     {{-- posts --}}
     <div class="bg-white rounded-2xl shadow-sm overflow-hidden">
         <div class="flex flex-wrap items-center justify-between gap-3 px-5 py-4 border-b border-gray-100">

@@ -31,7 +31,6 @@
                 <p class="text-sm text-gray-500 mt-0.5">
                     {{ $r['label'] }} ·
                     <span class="{{ $liveNow ? 'text-emerald-600 font-semibold' : '' }}">{{ $liveNow }} reading now</span>
-                    · {{ number_format($post->views) }} total views
                 </p>
             </div>
         </div>
@@ -46,6 +45,8 @@
     @include('admin.blog.analytics._kpis')
 
     @include('admin.blog.analytics._trend')
+
+    @include('admin.blog.analytics._traffic', ['logParams' => array_filter(['post' => $post->slug, 'period' => $r['period'], 'from' => $r['period'] === 'custom' ? $r['from']->toDateString() : null, 'to' => $r['period'] === 'custom' ? $r['to']->toDateString() : null])])
 
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
         {{-- how far people read --}}
@@ -160,7 +161,7 @@
         <div class="bg-white rounded-2xl shadow-sm overflow-hidden">
             <div class="px-5 py-4 border-b border-gray-100">
                 <h3 class="font-semibold text-gray-800">Orders from this post</h3>
-                <p class="text-xs text-gray-400 mt-0.5">Placed within 7 days of clicking a product here.</p>
+                <p class="text-xs text-gray-400 mt-0.5">Placed within 7 days of clicking a product here. Counted only when the order has a product from this post and isn't cancelled or refunded.</p>
             </div>
             <div class="divide-y divide-gray-50">
                 @forelse($conversions as $cv)
@@ -170,10 +171,14 @@
                                 <a href="{{ route('admin.orders.show', $cv->order) }}" class="font-semibold text-gray-800 hover:text-indigo-600">{{ $cv->order->order_number }}</a>
                                 <span class="text-xs text-gray-400"> · {{ $cv->order->shipping_name }} · {{ ucfirst($cv->order->status) }}</span>
                             @endif
-                            <p class="text-[11px] text-gray-400">{{ $cv->created_at->timezone($tz)->format('d M, g:i A') }}</p>
+                            @php
+                                $why = in_array($cv->order?->status, ['cancelled', 'refunded'], true) ? 'Not counted — order ' . $cv->order->status
+                                    : ((float) $cv->matched_revenue <= 0 ? 'Not counted — bought other products, none from this post' : null);
+                            @endphp
+                            <p class="text-[11px] text-gray-400">{{ $cv->created_at->timezone($tz)->format('d M, g:i A') }}@if($why) · <span class="text-amber-600 font-medium">{{ $why }}</span>@endif</p>
                         </div>
                         <div class="text-right whitespace-nowrap">
-                            <p class="font-bold text-emerald-700">৳{{ number_format($cv->matched_revenue) }}</p>
+                            <p class="font-bold {{ $why ? 'text-gray-300 line-through' : 'text-emerald-700' }}">৳{{ number_format($cv->matched_revenue) }}</p>
                             <p class="text-[11px] text-gray-400">order ৳{{ number_format($cv->revenue) }}</p>
                         </div>
                     </div>
@@ -186,8 +191,8 @@
         {{-- latest reads --}}
         <div class="bg-white rounded-2xl shadow-sm overflow-hidden">
             <div class="px-5 py-4 border-b border-gray-100">
-                <h3 class="font-semibold text-gray-800">Latest readers</h3>
-                <p class="text-xs text-gray-400 mt-0.5">The 25 most recent views of this post.</p>
+                <div class="flex items-center justify-between gap-3"><h3 class="font-semibold text-gray-800">Latest visits</h3><a href="{{ route('admin.blog.analytics.visits', ['post' => $post->slug, 'period' => $r['period']]) }}" class="text-xs font-semibold text-indigo-600">All →</a></div>
+                <p class="text-xs text-gray-400 mt-0.5">The 25 most recent views of this post — people and bots, with who each really was.</p>
             </div>
             <div class="overflow-x-auto">
                 <table class="w-full text-xs">
@@ -196,7 +201,9 @@
                             <tr>
                                 <td class="px-5 py-2.5 whitespace-nowrap text-gray-500">
                                     {{ $rd->created_at->timezone($tz)->format('d M, g:i A') }}
-                                    @if($rd->updated_at->gte(now()->subMinutes(2)))<span class="ml-1 inline-block w-1.5 h-1.5 rounded-full bg-emerald-500" title="reading now"></span>@endif
+                                    @if($rd->engaged_at && $rd->updated_at->gte(now()->subMinutes(2)))<span class="ml-1 inline-block w-1.5 h-1.5 rounded-full bg-emerald-500" title="reading now"></span>@endif
+                                    <span class="block mt-1">@include('admin.blog.analytics._verdict', ['v' => $rd->verdict])</span>
+                                    @if($rd->verdict['network'] || $rd->verdict['location'])<span class="block text-[10px] text-gray-400 mt-0.5">{{ collect([$rd->verdict['network'], $rd->verdict['location']])->filter()->implode(' · ') }}</span>@endif
                                 </td>
                                 <td class="px-2 py-2.5 whitespace-nowrap text-gray-600">{{ \App\Models\BlogRead::SOURCES[$rd->source] ?? $rd->source }}@if($rd->referrer_host)<span class="text-gray-400"> · {{ Str::limit($rd->referrer_host, 22) }}</span>@endif</td>
                                 <td class="px-2 py-2.5 text-gray-500">{{ ucfirst($rd->device) }}</td>
@@ -207,7 +214,7 @@
                                 </td>
                             </tr>
                         @empty
-                            <tr><td class="px-5 py-10 text-center text-sm text-gray-400">No readers yet.</td></tr>
+                            <tr><td class="px-5 py-10 text-center text-sm text-gray-400">No visits yet.</td></tr>
                         @endforelse
                     </tbody>
                 </table>
