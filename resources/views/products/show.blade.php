@@ -362,7 +362,7 @@
                         @if(($activeFlashSale || $product->sale_price) && $saved > 0)
                             <div class="flex flex-wrap items-end gap-x-3 gap-y-1">
                                 <span class="text-4xl font-extrabold tracking-tight text-gray-900 leading-none">৳{{ number_format($nowPrice) }}</span>
-                                <span class="text-lg text-gray-400 line-through leading-none pb-0.5">৳{{ number_format($wasPrice) }}</span>
+                                <span class="text-lg text-gray-500 dark:text-gray-400 line-through leading-none pb-0.5">৳{{ number_format($wasPrice) }}</span>
                             </div>
                             @if($activeFlashSale)
                                 @include('partials.flash-sale-styles')

@@ -55,7 +55,7 @@
         <div class="mt-1.5 sm:mt-2 flex items-baseline gap-x-2 gap-y-1 flex-wrap">
             <span class="text-lg sm:text-2xl font-extrabold tracking-tight text-gray-900 dark:text-white leading-none">৳{{ number_format($final) }}</span>
             @if($save > 0)
-                <span class="text-xs sm:text-sm text-gray-400 line-through leading-none">৳{{ number_format($base) }}</span>
+                <span class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 line-through leading-none">৳{{ number_format($base) }}</span>
                 <span class="text-[10px] sm:text-xs font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-500/10 px-1.5 py-0.5 rounded-md leading-none">Save ৳{{ number_format($save) }}</span>
             @endif
         </div>
@@ -92,7 +92,7 @@
         <div class="mt-auto pt-1.5 flex items-end justify-between gap-2 flex-wrap">
             <div class="flex items-baseline gap-1.5 flex-wrap">
                 <span class="text-base sm:text-lg font-extrabold text-gray-900 dark:text-white leading-none">৳{{ number_format($final) }}</span>
-                @if($save > 0)<span class="text-[11px] text-gray-400 line-through leading-none">৳{{ number_format($base) }}</span>@endif
+                @if($save > 0)<span class="text-[11px] text-gray-500 dark:text-gray-400 line-through leading-none">৳{{ number_format($base) }}</span>@endif
                 @if($pct > 0)<span class="text-[10px] font-bold text-emerald-700 dark:text-emerald-300">-{{ $pct }}%</span>@endif
             </div>
             @include('blog.partials.buy', ['size' => 'sm', 'class' => 'w-full sm:w-auto sm:min-w-[9.5rem]'])
@@ -131,7 +131,7 @@
         <a href="{{ $url }}" class="text-xs sm:text-[13px] font-bold leading-snug text-gray-900 dark:text-gray-100 hover:text-orange-600 dark:hover:text-orange-400 line-clamp-2 min-h-[2.1rem] transition-colors">{{ $product->name }}</a>
         <div class="mt-1.5 flex items-baseline gap-1.5 flex-wrap">
             <span class="text-base font-extrabold text-gray-900 dark:text-white leading-none">৳{{ number_format($final) }}</span>
-            @if($save > 0)<span class="text-[11px] text-gray-400 line-through leading-none">৳{{ number_format($base) }}</span>@endif
+            @if($save > 0)<span class="text-[11px] text-gray-500 dark:text-gray-400 line-through leading-none">৳{{ number_format($base) }}</span>@endif
         </div>
         @if($save > 0)<p class="mt-1 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">Save ৳{{ number_format($save) }}</p>@endif
         @include('blog.partials.buy', ['size' => 'sm', 'class' => 'mt-auto pt-2.5'])

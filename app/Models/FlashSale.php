@@ -108,17 +108,30 @@ class FlashSale extends Model
         return (int) max(0, min(100, round($done / $total * 100)));
     }
 
-    /** @return array{from:string, via:string, to:string, accent:string} */
+    /**
+     * The theme's colours, made readable: the band's stops are deepened (same hue) until its white
+     * text passes WCAG AA, and `ink` is the accent deepened until it reads as small text on white.
+     * Light themes (Inferno's orange, Emerald, a pale custom colour) failed Lighthouse's contrast
+     * check without this; already-dark ones come out unchanged.
+     *
+     * @return array{from:string, via:string, to:string, accent:string, ink:string}
+     */
     public function getPaletteAttribute(): array
     {
         $theme = self::THEMES[$this->theme] ?? self::THEMES['inferno'];
 
         if ($this->theme === 'custom' || ! $theme['from']) {
             $c = preg_match('/^#[0-9a-f]{6}$/i', (string) $this->banner_color) ? $this->banner_color : '#ef4444';
-            return ['from' => $c, 'via' => self::shade($c, -0.12), 'to' => self::shade($c, -0.3), 'accent' => self::shade($c, -0.1)];
+            $theme = ['from' => $c, 'via' => self::shade($c, -0.12), 'to' => self::shade($c, -0.3), 'accent' => self::shade($c, -0.1)];
         }
 
-        return $theme;
+        return [
+            'from'   => self::readable($theme['from'], 5.0),
+            'via'    => self::readable($theme['via'], 5.0),
+            'to'     => self::readable($theme['to'], 5.0),
+            'accent' => $theme['accent'],
+            'ink'    => self::readable($theme['accent'], 4.6),
+        ];
     }
 
     /** Inline style that exposes the palette as --fs-* custom properties. */
@@ -126,7 +139,28 @@ class FlashSale extends Model
     {
         $p = $this->palette;
 
-        return "--fs-from:{$p['from']};--fs-via:{$p['via']};--fs-to:{$p['to']};--fs-accent:{$p['accent']};";
+        return "--fs-from:{$p['from']};--fs-via:{$p['via']};--fs-to:{$p['to']};--fs-accent:{$p['accent']};--fs-ink:{$p['ink']};";
+    }
+
+    /** $hex, deepened in small steps (hue kept) until white on it — or it on white — reaches $ratio. */
+    private static function readable(string $hex, float $ratio): string
+    {
+        for ($i = 0; $i < 30 && self::contrastWithWhite($hex) < $ratio; $i++) {
+            $hex = self::shade($hex, -0.06);
+        }
+
+        return $hex;
+    }
+
+    private static function contrastWithWhite(string $hex): float
+    {
+        $lum = array_map(function ($c) {
+            $c = hexdec($c) / 255;
+
+            return $c <= 0.03928 ? $c / 12.92 : (($c + 0.055) / 1.055) ** 2.4;
+        }, str_split(ltrim($hex, '#'), 2));
+
+        return 1.05 / (0.2126 * $lum[0] + 0.7152 * $lum[1] + 0.0722 * $lum[2] + 0.05);
     }
 
     public function getUrlAttribute(): string

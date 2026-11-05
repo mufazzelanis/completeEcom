@@ -4,7 +4,7 @@
 @once
 <style>
     .fs-grad { background: linear-gradient(120deg, var(--fs-from), var(--fs-via) 55%, var(--fs-to)); }
-    .fs-accent { color: var(--fs-accent); }
+    .fs-accent { color: var(--fs-ink, var(--fs-accent)); } /* ink: the accent deepened to read on white */
     .fs-band { position: relative; overflow: hidden; isolation: isolate; }
     .fs-band::before { content: ""; position: absolute; inset: 0; z-index: -1; opacity: .18;
         background-image: radial-gradient(rgba(255,255,255,.9) 1px, transparent 1.2px); background-size: 14px 14px;
@@ -20,7 +20,7 @@
     .fs-cd-unit { display: flex; flex-direction: column; align-items: center; }
     .fs-cd-num { min-width: 2rem; padding: .3rem .35rem; border-radius: .55rem; text-align: center; font-weight: 800; line-height: 1;
         background: rgba(255,255,255,.95); color: #111827; box-shadow: 0 2px 0 rgba(0,0,0,.12); }
-    .fs-cd-lbl { margin-top: .2rem; font-size: .55rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; opacity: .85; }
+    .fs-cd-lbl { margin-top: .2rem; font-size: .55rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
     .fs-cd-sep { font-weight: 800; padding-top: .25rem; opacity: .8; }
     .fs-cd-sm .fs-cd-num { font-size: .8rem; }
     .fs-cd-lg { gap: .5rem; }

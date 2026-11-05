@@ -383,7 +383,7 @@
                         <svg class="relative w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M11.983 1.907a.75.75 0 00-1.292-.657l-8 9.5A.75.75 0 003.25 12H9v6.093a.75.75 0 001.292.657l8-9.5A.75.75 0 0018 8H12V1.907z" clip-rule="evenodd"/></svg>
                     </span>
                     <div class="min-w-0">
-                        <p class="text-[10px] font-bold uppercase tracking-[.18em] opacity-90">
+                        <p class="text-[10px] font-bold uppercase tracking-[.18em]">
                             {{ $fsUpcoming ? 'Coming soon' : 'Flash Sale' }}@if($fsMaxOff > 0) · up to {{ $fsMaxOff }}% off @endif
                         </p>
                         <h2 class="text-lg md:text-xl font-extrabold leading-tight truncate">{{ $flashSale->banner_text ?: $flashSale->name }}</h2>
@@ -391,7 +391,7 @@
                 </div>
                 <div class="flex items-center gap-3 md:gap-4">
                     <div class="flex items-center gap-2">
-                        <span class="text-[11px] font-semibold opacity-90 hidden sm:block">{{ $fsUpcoming ? 'Starts in' : 'Ends in' }}</span>
+                        <span class="text-[11px] font-semibold hidden sm:block">{{ $fsUpcoming ? 'Starts in' : 'Ends in' }}</span>
                         @include('partials.flash-countdown', ['target' => $fsUpcoming ? $flashSale->starts_at : $flashSale->ends_at, 'size' => 'sm'])
                     </div>
                     <a href="{{ $flashSale->url }}" class="group hidden sm:inline-flex items-center gap-1 rounded-full bg-white text-gray-900 px-3.5 py-1.5 text-xs font-bold shadow-sm hover:shadow transition">
