@@ -49,7 +49,7 @@
                                 <p class="text-xs font-semibold truncate {{ $b['kind'] === 'fake' ? 'text-red-600' : 'text-gray-800' }}">
                                     {{ $b['name'] }}@if($b['verified'] === true)<span class="ml-1 text-emerald-600" title="Its IPs really belong to this company">✓ verified</span>@endif
                                 </p>
-                                <p class="text-[10px] text-gray-400 truncate">{{ \App\Support\VisitorIntel::KINDS[$b['kind']] ?? 'No interaction' }} · {{ $b['ips'] }} {{ Str::plural('IP', $b['ips']) }}@if($b['note']) · {{ $b['note'] }}@endif</p>
+                                <p class="text-[10px] text-gray-400 truncate">{{ \App\Support\VisitorIntel::KINDS[$b['kind']] ?? 'No interaction' }}@if($b['ips'] !== null) · {{ number_format($b['ips']) }} {{ Str::plural('IP', $b['ips']) }}@endif @if($b['note']) · {{ $b['note'] }}@endif</p>
                             </div>
                         </div>
                         <span class="text-sm font-bold text-gray-900 tabular-nums">{{ number_format($b['views']) }}</span>
@@ -59,6 +59,6 @@
         </div>
     @endif
     @if($traffic['pending'] > 0)
-        <p class="px-5 pb-4 text-[11px] text-gray-400">⏳ Looking up the network of {{ $traffic['pending'] }} more {{ Str::plural('IP', $traffic['pending']) }} (Amazon, Google Cloud, mobile operator …) — refresh in a minute; visits from them show as “No interaction” until then.</p>
+        <p class="px-5 pb-4 text-[11px] text-gray-400">⏳ Looking up the network behind {{ number_format($traffic['pending']) }} {{ Str::plural('visit', $traffic['pending']) }} (Amazon, Google Cloud, mobile operator …) — refresh in a minute; they show as “No interaction” until then.</p>
     @endif
 </div>

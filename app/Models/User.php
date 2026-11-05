@@ -79,9 +79,10 @@ class User extends Authenticatable
 
     public static function roleLabel(string $role): string
     {
-        $label = DB::table('roles')->where('name', $role)->value('display_name');
+        // once per role per request: list pages (Activity Log, Users) print it on every row
+        static $labels = [];
 
-        return $label ?? ucfirst($role);
+        return $labels[$role] ??= DB::table('roles')->where('name', $role)->value('display_name') ?? ucfirst($role);
     }
 
     public static function roleBadgeClass(string $role): string

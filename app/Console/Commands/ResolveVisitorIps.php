@@ -21,13 +21,16 @@ class ResolveVisitorIps extends Command
     public function handle(): int
     {
         $since = now()->subHours(max(1, (int) $this->option('hours')));
-        $recent = DB::table('blog_reads')->where('created_at', '>=', $since)->whereNotNull('ip')->distinct()->limit(2000)->pluck('ip')
+        $blog = VisitorIntel::pendingBlogIps();
+        $recent = $blog
             ->merge(DB::table('activity_logs')->where('created_at', '>=', $since)->whereNull('user_id')->whereNotNull('ip_address')->distinct()->limit(2000)->pluck('ip_address'))
             ->unique()->values();
 
         VisitorIntel::ips($recent); // queues the ones not cached yet
         $n = VisitorIntel::resolveQueued(5);
-        $this->info("{$n} IPs looked up.");
+        // write the networks onto the blog views, so the dashboard counts them with one GROUP BY
+        $rows = VisitorIntel::stampBlogReads($blog);
+        $this->info("{$n} IPs looked up, {$rows} blog views stamped.");
 
         return self::SUCCESS;
     }

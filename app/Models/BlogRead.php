@@ -36,11 +36,22 @@ class BlogRead extends Model
     protected $casts = [
         'read_date'  => 'date',
         'engaged_at' => 'datetime',
+        'net_hosting'  => 'boolean',
+        'bot_verified' => 'boolean',
     ];
 
     public function post() { return $this->belongsTo(BlogPost::class, 'blog_post_id'); }
 
     public function scopeReaders($query) { return $query->whereNotNull('engaged_at'); }
+
+    /**
+     * Signature the page's tracker sends back with its read key. Only keys this server handed out
+     * (with a real page view) are accepted, so a script can't mint readers by posting random keys.
+     */
+    public static function sign(string $key, int $postId): string
+    {
+        return substr(hash_hmac('sha256', $key . '|' . $postId, (string) config('app.key')), 0, 32);
+    }
 
     /**
      * Records the view being served now and returns its key for the page's tracker. Staff aren't
@@ -77,7 +88,8 @@ class BlogRead extends Model
                 'referrer_host' => BlogTrackController::host($request->header('referer')),
                 'device'        => BlogTrackController::device($ua),
             ]);
-            VisitorIntel::queue([$request->ip()]);
+            // no IP lookup queued here: visitors:resolve-ips picks up new IPs every minute, keeping
+            // the article free of extra cache writes
         } catch (\Throwable $e) {
             report($e); // analytics must never break the article
         }

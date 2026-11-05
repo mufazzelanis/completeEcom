@@ -21,10 +21,15 @@ class BlogTrackController extends Controller
 {
     private const MAX_SECONDS = 3600; // a tab left open all afternoon isn't an hour of reading
 
+    private const MAX_CLICKS = 30;
+
     public function __invoke(Request $request)
     {
-        $d = $request->validate([
+        // a bad beacon gets a quiet 204 — never Laravel's redirect-back, which fetch() would follow
+        // straight into the article and record a second, phantom view
+        $v = validator($request->all(), [
             'r'   => ['required', 'string', 'max:36', 'regex:/^[A-Za-z0-9-]+$/'],
+            'k'   => ['required', 'string', 'size:32'],
             'v'   => ['required', 'string', 'max:36', 'regex:/^[A-Za-z0-9-]+$/'],
             'p'   => ['required', 'integer'],
             't'   => ['nullable', 'integer', 'min:0'],
@@ -36,10 +41,16 @@ class BlogTrackController extends Controller
             'ref' => ['nullable', 'string', 'max:1000'],
             'q'   => ['nullable', 'string', 'max:1000'],
         ]);
+        if ($v->fails()) {
+            return response()->noContent();
+        }
+        $d = $v->validated();
 
-        // automationSignal(): bot User-Agent, or headers every real browser sends missing (the same test
-        // Activity Log uses). Staff checking their own posts aren't readers either.
-        if (ActivityLog::automationSignal($request) !== null
+        // Only a read key this server issued with the page (BlogRead::sign) — no minting readers by
+        // script. automationSignal(): bot User-Agent, or headers every real browser sends missing (the
+        // same test Activity Log uses). Staff checking their own posts aren't readers either.
+        if (!hash_equals(BlogRead::sign($d['r'], (int) $d['p']), $d['k'])
+            || ActivityLog::automationSignal($request) !== null
             || auth()->user()?->canAccessAdmin()
             || !$this->isLivePost((int) $d['p'])) {
             return response()->noContent();
@@ -70,10 +81,12 @@ class BlogTrackController extends Controller
                 'visitor_key' => $d['v'], // the browser's own id replaces the server's IP-based stand-in
                 'user_id'     => $read->user_id ?? auth()->id(),
             ]);
-            \App\Support\VisitorIntel::queue([(string) $request->ip()]);
         }
 
-        $seconds = min((int) ($d['t'] ?? 0), self::MAX_SECONDS);
+        // never more reading time than has passed since the page was served (+ the up-to-30 s the
+        // tracker credits for the opening, + network slack): a forged "t=3600" can't inflate it
+        $elapsed = $read->created_at ? (int) $read->created_at->diffInSeconds(now(), true) : 0;
+        $seconds = min((int) ($d['t'] ?? 0), self::MAX_SECONDS, $elapsed + 40);
         $scroll = (int) ($d['s'] ?? 0);
         if ($seconds > $read->active_seconds || $scroll > $read->max_scroll) {
             BlogRead::whereKey($read->id)->update([
@@ -86,7 +99,9 @@ class BlogTrackController extends Controller
             BlogRead::whereKey($read->id)->toBase()->update(['updated_at' => now()]);
         }
 
-        if (($d['e'] ?? null) === 'click' && !empty($d['pid']) && Product::whereKey($d['pid'])->exists()) {
+        // a real reader clicks a handful of times; past MAX_CLICKS it's someone hammering the button
+        if (($d['e'] ?? null) === 'click' && !empty($d['pid']) && $read->product_clicks < self::MAX_CLICKS
+            && Product::whereKey($d['pid'])->exists()) {
             BlogProductClick::create([
                 'blog_post_id' => $read->blog_post_id,
                 'blog_read_id' => $read->id,

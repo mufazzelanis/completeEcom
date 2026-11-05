@@ -69,7 +69,7 @@
         return window.crypto && crypto.randomUUID ? crypto.randomUUID() : 'r' + Date.now().toString(36) + Math.random().toString(36).slice(2, 14);
     };
     // the server already recorded this view (BlogRead::begin) — continue that row; none for staff
-    var rk = @js($readKey ?? null), vk;
+    var rk = @js($readKey ?? null), rs = @js(isset($readKey) ? \App\Models\BlogRead::sign($readKey, $blogPost->id) : null), vk;
     var off = rk === null && @js(auth()->check() && auth()->user()->canAccessAdmin()); // staff: page works, nothing is counted
     rk = rk || uid();
     try { vk = localStorage.getItem('mv_bvk'); if (!vk) { vk = uid(); localStorage.setItem('mv_bvk', vk); } } catch (e) { vk = rk; }
@@ -86,8 +86,8 @@
     try { sbClosed = sessionStorage.getItem('bsb-x-' + POST) === '1'; } catch (e) {}
 
     function send(extra, beacon) {
-        if (!human || off) return;
-        var p ={ r: rk, v: vk, p: POST, t: Math.round(active), s: depth };
+        if (!human || off || !rs) return;
+        var p = { r: rk, k: rs, v: vk, p: POST, t: Math.round(active), s: depth };
         if (!firstSent) {
             // the first message creates the read on the server: say where the reader came from
             firstSent = true;

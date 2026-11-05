@@ -3,6 +3,7 @@
 namespace App\Support;
 
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 
 /**
@@ -325,8 +326,7 @@ class VisitorIntel
 
         if ($bot = self::botFromUserAgent($ua)) {
             if ($bot['verify'] && $info && !empty($info['ok'])) {
-                $owner = implode(' ', array_filter([$info['isp'] ?? '', $info['org'] ?? '', $info['asname'] ?? '', $network]));
-                if (!preg_match($bot['verify'], $owner)) {
+                if (!self::ownedBy($bot['verify'], $info)) {
                     return ['type' => 'bot', 'kind' => 'fake', 'name' => 'Fake ' . $bot['name'], 'verified' => false,
                         'note' => 'Claims to be ' . $bot['name'] . ' but comes from ' . ($network ?: 'another network')] + $base;
                 }
@@ -365,6 +365,125 @@ class VisitorIntel
         }
 
         return ['type' => 'human', 'kind' => null, 'name' => 'Person'] + $base;
+    }
+
+    /**
+     * The same verdict, from what a blog_reads row already has stamped (net, net_hosting,
+     * bot_verified) — lets the dashboard count every view with one GROUP BY instead of per IP.
+     */
+    public static function storedVerdict(?string $botName, ?string $botKind, ?bool $botVerified, ?string $net, ?bool $hosting, bool $engaged): array
+    {
+        $base = ['network' => $net, 'location' => null, 'verified' => null, 'note' => null];
+
+        if ($botName) {
+            if ($botVerified === false) {
+                return ['type' => 'bot', 'kind' => 'fake', 'name' => 'Fake ' . $botName, 'verified' => false,
+                    'note' => 'Claims to be ' . $botName . ' but comes from ' . ($net ?: 'another network')] + $base;
+            }
+            if ($botName === 'Scraper posing as a browser') {
+                return ['type' => 'bot', 'kind' => 'tool', 'name' => $botName,
+                    'note' => 'Says it is a browser but sends none of the headers a real one does'] + $base;
+            }
+
+            return ['type' => 'bot', 'kind' => $botKind ?: 'tool', 'name' => $botName, 'verified' => $botVerified] + $base;
+        }
+        if ($engaged) {
+            return ['type' => 'human', 'kind' => null, 'name' => 'Person'] + array_replace($base, [
+                'note' => $hosting ? 'Real touch/mouse activity, but through ' . ($net ?: 'a data centre') . ' — VPN, proxy or a well-built bot' : null,
+            ]);
+        }
+        if ($hosting) {
+            return ['type' => 'cloud', 'kind' => 'cloud', 'name' => ($net ?: 'Cloud') . ' server',
+                'note' => 'Comes from a data centre, not a home or mobile connection'] + $base;
+        }
+
+        return ['type' => 'unknown', 'kind' => null, 'name' => 'No interaction',
+            'note' => 'Opened the page but never touched, scrolled or moved the mouse — left at once, or a bot'] + $base;
+    }
+
+    /**
+     * Writes each IP's network onto its blog_reads rows (and whether a named bot really is that
+     * bot). Only IPs already looked up are stamped; private / unresolvable ones are marked "not a
+     * data centre" so they stop showing as pending. Returns the rows updated.
+     */
+    public static function stampBlogReads(iterable $ips): int
+    {
+        $ips = collect($ips)->filter()->unique()->values();
+        if ($ips->isEmpty()) {
+            return 0;
+        }
+        $intel = self::ips($ips, false);
+        $rows = 0;
+
+        foreach ($ips->chunk(200) as $chunk) {
+            $net = $host = [];
+            foreach ($chunk as $ip) {
+                $info = $intel[$ip] ?? null;
+                if ($info === null && self::isPublic($ip)) {
+                    continue; // not looked up yet: stays pending
+                }
+                $net[$ip] = self::network($info);
+                $host[$ip] = $info && !empty($info['hosting']);
+            }
+            if (!$net) {
+                continue;
+            }
+            $caseNet = $caseHost = '';
+            $bind = [];
+            foreach ($net as $ip => $name) {
+                $caseNet .= ' WHEN ? THEN ?';
+                array_push($bind, $ip, $name);
+            }
+            foreach ($host as $ip => $h) {
+                $caseHost .= ' WHEN ? THEN ?';
+                array_push($bind, $ip, $h ? 1 : 0);
+            }
+            $keys = array_keys($net);
+            $rows += DB::update(
+                'UPDATE blog_reads SET net = CASE ip' . $caseNet . ' END, net_hosting = CASE ip' . $caseHost . ' END'
+                . ' WHERE net_hosting IS NULL AND ip IN (' . implode(',', array_fill(0, count($keys), '?')) . ')',
+                array_merge($bind, $keys)
+            );
+
+            // named bots: does the network match the name? (fake Googlebot from Amazon AWS)
+            $bots = DB::table('blog_reads')->whereIn('ip', $keys)->whereNotNull('bot_name')->whereNull('bot_verified')
+                ->distinct()->get(['ip', 'bot_name']);
+            foreach ($bots as $b) {
+                $info = $intel[$b->ip] ?? null;
+                $pattern = self::verifyPatternFor($b->bot_name);
+                if ($pattern && $info && !empty($info['ok'])) {
+                    DB::table('blog_reads')->where('ip', $b->ip)->where('bot_name', $b->bot_name)->whereNull('bot_verified')
+                        ->update(['bot_verified' => self::ownedBy($pattern, $info)]);
+                }
+            }
+        }
+
+        return $rows;
+    }
+
+    /** Recent blog views whose network isn't stamped yet. */
+    public static function pendingBlogIps(int $limit = 3000): \Illuminate\Support\Collection
+    {
+        return DB::table('blog_reads')->where('created_at', '>=', now()->subDays(3))->whereNull('net_hosting')
+            ->whereNotNull('ip')->distinct()->limit($limit)->pluck('ip');
+    }
+
+    private static function verifyPatternFor(string $name): ?string
+    {
+        foreach (self::BOTS as [, $botName, , $verify]) {
+            if ($botName === $name) {
+                return $verify;
+            }
+        }
+
+        return null;
+    }
+
+    private static function ownedBy(string $pattern, array $info): bool
+    {
+        $owner = implode(' ', array_filter([$info['isp'] ?? '', $info['org'] ?? '', $info['asname'] ?? '', self::network($info)]));
+
+        return (bool) preg_match($pattern, $owner);
     }
 
     public static function icon(array $v): string
