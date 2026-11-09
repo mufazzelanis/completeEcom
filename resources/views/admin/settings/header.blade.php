@@ -36,6 +36,7 @@
 
 <div class="bg-white rounded-xl shadow-sm border p-6 space-y-4">
     <h2 class="text-base font-semibold text-gray-900 pb-2 border-b">Top Bar Contact Info</h2>
+    <p class="text-xs text-gray-400">Filled in automatically when you save <a href="{{ route('admin.business.index') }}" class="underline">Business Profile</a>. Empty them here to hide them from the top bar.</p>
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Phone (Top Bar)</label>

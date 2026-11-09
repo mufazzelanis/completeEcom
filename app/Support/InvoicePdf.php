@@ -117,7 +117,7 @@ class InvoicePdf
     }
 
     /** Admin's two colours and the shades worked out from them, always readable on their background. */
-    private static function theme(?string $accent): array
+    public static function theme(?string $accent): array
     {
         $valid = fn (?string $hex, string $fallback) => preg_match('/^#[0-9a-f]{6}$/i', (string) $hex) ? $hex : $fallback;
         $accent = $valid($accent ?: setting('invoice_accent_color'), '#6366f1');
@@ -134,7 +134,7 @@ class InvoicePdf
     }
 
     /** The seller's details, printed on every document. */
-    private static function store(): array
+    public static function store(): array
     {
         return [
             'name' => setting('company_name') ?: setting('site_name', 'Store'),
@@ -144,7 +144,7 @@ class InvoicePdf
             'tax' => setting('invoice_tax_number'),
             'bank' => setting('invoice_bank_details'),
             'footer' => setting('invoice_footer_text', 'Thank you for shopping with us!'),
-            'logo' => self::image(setting('invoice_logo'), 500),
+            'logo' => self::image(setting('invoice_logo'), 500) ?: self::image(setting('site_logo'), 500),
             'signature' => self::image(setting('invoice_signature'), 400),
             'showWords' => setting('invoice_show_words', '1') == '1',
             'currencyWord' => match (setting('currency_code', 'BDT')) {

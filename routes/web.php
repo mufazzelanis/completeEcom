@@ -848,6 +848,9 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
         Route::delete('settings/redirects/404/{notFoundLog}', [\App\Http\Controllers\Admin\RedirectController::class, 'dismissNotFound'])->name('redirects.404.dismiss');
         Route::put('settings/redirects/{redirect}', [\App\Http\Controllers\Admin\RedirectController::class, 'update'])->name('redirects.update');
         Route::delete('settings/redirects/{redirect}', [\App\Http\Controllers\Admin\RedirectController::class, 'destroy'])->name('redirects.destroy');
+        // Settings → Business Profile. Registered before settings/{group}, as is Watermark below.
+        Route::get('settings/business', [\App\Http\Controllers\Admin\BusinessProfileController::class, 'index'])->name('business.index');
+        Route::post('settings/business', [\App\Http\Controllers\Admin\BusinessProfileController::class, 'update'])->name('business.update');
         // Settings → Watermark. Registered before settings/{group} so "watermark" isn't taken for a group name.
     Route::get('settings/watermark', [\App\Http\Controllers\Admin\WatermarkController::class, 'index'])->name('watermark.index');
     Route::post('settings/watermark', [\App\Http\Controllers\Admin\WatermarkController::class, 'update'])->name('watermark.update');

@@ -18,36 +18,79 @@
     .ci-in:focus { outline: none; box-shadow: 0 0 0 2px #6366f1; border-color: transparent; }
     .ci-flex { display: flex; justify-content: space-between; gap: 8px; }
     .ci-xs { font-size: 11px; } .ci-xxs { font-size: 10px; }
-    .ci-paper { background: #fff; color: #1f2937; border-radius: 14px; box-shadow: 0 10px 40px -12px rgba(15, 23, 42, .25); padding: 28px 30px; font-size: 12px; min-height: 640px; }
-    .ci-paper table { width: 100%; border-collapse: collapse; }
-    .ci-num { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+    /* The preview is the PDF drawn to scale: every size is in mm or pt of an A4 sheet (see admin/invoices/_pdf-styles). */
+    .ci-paper { background: #fff; color: #1f2937; border-radius: 14px; box-shadow: 0 10px 40px -12px rgba(15, 23, 42, .25); overflow: hidden; container-type: inline-size; }
+    .pv { --mm: calc(100cqw / 210); --pt: calc(100cqw / 210 * .3528); position: relative; display: flex; flex-direction: column; min-height: calc(100cqw * 297 / 210); font-size: calc(var(--pt) * 10); line-height: 1.4; }
+    .pv table { width: 100%; border-collapse: collapse; }
+    .pv-band { height: calc(var(--mm) * 44); flex-shrink: 0; background: var(--dark); color: var(--ondark); border-top: calc(var(--mm) * 1.6) solid var(--acc); padding: calc(var(--mm) * 10.9) calc(var(--mm) * 12) 0; display: flex; justify-content: space-between; align-items: flex-start; }
+    .pv-plate { background: #fff; border-radius: calc(var(--mm) * 2.5); padding: calc(var(--mm) * 3) calc(var(--mm) * 5); }
+    .pv-plate img { height: calc(var(--mm) * 13); max-width: calc(var(--mm) * 58); object-fit: contain; display: block; }
+    .pv-brand { font-size: calc(var(--pt) * 20); font-weight: 700; }
+    .pv-doc { text-align: right; }
+    .pv-title { font-size: calc(var(--pt) * 27); font-weight: 700; letter-spacing: calc(var(--pt) * 1.5); line-height: 1.05; }
+    .pv-no { font-size: calc(var(--pt) * 11.5); font-weight: 700; color: var(--line); }
+    .pv-body { flex: 1; display: flex; flex-direction: column; padding: 0 calc(var(--mm) * 12); position: relative; }
+    .pv-label { font-size: calc(var(--pt) * 7.5); font-weight: 700; letter-spacing: calc(var(--pt) * .5); text-transform: uppercase; color: var(--acctext); }
+    .pv-facts { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: calc(var(--mm) * .7); margin-top: calc(var(--mm) * -8); }
+    .pv-facts > div { background: var(--tint); padding: calc(var(--mm) * 3) calc(var(--mm) * 4); min-width: 0; }
+    .pv-fact { font-size: calc(var(--pt) * 11); font-weight: 700; color: #111827; overflow-wrap: anywhere; }
+    .pv-parties { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: calc(var(--mm) * 4); margin-top: calc(var(--mm) * 6); }
+    .pv-parties > div { border: calc(var(--mm) * .25) solid #e5e7eb; padding: calc(var(--mm) * 4) calc(var(--mm) * 5); min-width: 0; }
+    .pv-name { font-size: calc(var(--pt) * 13.5); font-weight: 700; color: #111827; }
+    .pv-strong { font-weight: 700; color: #111827; }
+    .pv-line { color: #4b5563; white-space: pre-line; overflow-wrap: anywhere; }
+    .pv-items { margin-top: calc(var(--mm) * 6); }
+    .pv-items th { background: var(--dark); color: var(--ondark); font-size: calc(var(--pt) * 8.5); text-transform: uppercase; padding: calc(var(--mm) * 2.8) calc(var(--mm) * 3); text-align: left; }
+    .pv-items td { padding: calc(var(--mm) * 2.6) calc(var(--mm) * 3); border-bottom: calc(var(--mm) * .25) solid #e5e7eb; vertical-align: middle; }
+    .pv-items .r, .ci-num { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+    .pv-items .c { text-align: center; }
+    .pv-items img { width: calc(var(--mm) * 11); height: calc(var(--mm) * 11); object-fit: contain; display: block; margin: auto; }
+    .pv-sub { font-size: calc(var(--pt) * 8.5); color: #6b7280; }
+    .pv-summary { display: flex; justify-content: space-between; margin-top: calc(var(--mm) * 6); }
+    .pv-left { width: 56%; }
+    .pv-right { width: 40%; }
+    .pv-panel { background: #f9fafb; border-left: calc(var(--mm) * .9) solid var(--acc); padding: calc(var(--mm) * 2.6) calc(var(--mm) * 4); margin-bottom: calc(var(--mm) * 2.5); }
+    .pv-row { display: flex; justify-content: space-between; gap: 1em; padding: calc(var(--mm) * 1.8) calc(var(--mm) * 3); color: #4b5563; }
+    .pv-row b { font-weight: 400; color: #111827; }
+    .pv-grand { background: var(--dark); color: var(--ondark); font-size: calc(var(--pt) * 13.5); font-weight: 700; padding: calc(var(--mm) * 3); display: flex; justify-content: space-between; }
+    .pv-due { background: var(--tint); color: var(--acctext); font-size: calc(var(--pt) * 11); font-weight: 700; padding: calc(var(--mm) * 2.6) calc(var(--mm) * 3); display: flex; justify-content: space-between; }
+    .pv-paid { background: #ecfdf5; color: #047857; }
+    .pv-push { flex: 1; min-height: calc(var(--mm) * 3); }
+    .pv-boxes { display: flex; gap: calc(var(--mm) * 2.5); }
+    .pv-boxes > div { flex: 1; min-width: 0; background: #f9fafb; padding: calc(var(--mm) * 2.8) calc(var(--mm) * 4); }
+    .pv-note { font-size: calc(var(--pt) * 8.5); color: #4b5563; white-space: pre-line; overflow-wrap: anywhere; }
+    .pv-closing { background: var(--tint); margin-top: calc(var(--mm) * 3); padding: calc(var(--mm) * 4) calc(var(--mm) * 5); display: flex; justify-content: space-between; align-items: center; gap: 1em; }
+    .pv-thanks { font-size: calc(var(--pt) * 13); font-weight: 700; color: var(--acctext); }
+    .pv-small { font-size: calc(var(--pt) * 8.5); color: #6b7280; }
+    .pv-sign { text-align: center; font-size: calc(var(--pt) * 8); color: #6b7280; flex-shrink: 0; }
+    .pv-sign img { height: calc(var(--mm) * 12); max-width: calc(var(--mm) * 40); object-fit: contain; display: block; margin: auto; }
+    .pv-foot { display: flex; justify-content: space-between; font-size: calc(var(--pt) * 8); color: #6b7280; padding: calc(var(--mm) * 6) 0 calc(var(--mm) * 7); }
+    .pv-stamp { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-45deg); font-size: calc(var(--pt) * 90); font-weight: 700; color: #6b7280; opacity: .1; pointer-events: none; white-space: nowrap; }
     .ci-drop { position: absolute; z-index: 30; left: 0; right: 0; margin-top: 4px; max-height: 18rem; overflow-y: auto; border-radius: .75rem; box-shadow: 0 12px 32px -8px rgba(0,0,0,.25); }
 </style>
 @php
     $currency = setting('currency_symbol', '৳');
-    $logo = setting('invoice_logo');
-    $store = [
-        'name' => setting('company_name') ?: setting('site_name', 'ShopVista'),
-        'email' => setting('company_email') ?: 'support@shopvista.com',
-        'phone' => setting('company_phone'),
-        'address' => setting('company_address') ?: 'Dhaka, Bangladesh',
-        'logo' => $logo ? asset('storage/' . $logo) : null,
-    ];
+    // the same details and colours the PDF prints, so the preview can't drift from it
+    $store = \App\Support\InvoicePdf::store();
+    $theme = \App\Support\InvoicePdf::theme(null);
+    $showPhotos = \App\Support\InvoicePdf::showPhotos();
+    $lines = collect(old('items', $invoice->items ?: []));
+    $productImages = \App\Models\Product::whereIn('id', $lines->pluck('product_id')->filter())->pluck('image', 'id');
     $types = collect(\App\Models\CustomInvoice::TYPES)->map(fn ($t) => ['title' => $t[0], 'label' => $t[1], 'color' => $t[2]]);
     $state = [
         'type' => old('type', $invoice->type ?: 'invoice'),
         'status' => old('status', $invoice->status ?: 'unpaid'),
         'user_id' => old('user_id', $invoice->user_id),
-        'customer_name' => old('customer_name', $invoice->customer_name),
+        'customer_name' => (string) old('customer_name', $invoice->customer_name),
         'customer_phone' => old('customer_phone', $invoice->customer_phone),
         'customer_email' => old('customer_email', $invoice->customer_email),
         'customer_address' => old('customer_address', $invoice->customer_address),
         'issue_date' => old('issue_date', optional($invoice->issue_date)->format('Y-m-d') ?: now()->format('Y-m-d')),
         'due_date' => old('due_date', optional($invoice->due_date)->format('Y-m-d')),
-        'items' => collect(old('items', $invoice->items ?: []))->map(fn ($i) => [
+        'items' => $lines->map(fn ($i) => [
             'product_id' => $i['product_id'] ?? null, 'name' => $i['name'] ?? '', 'description' => $i['description'] ?? '',
             'qty' => (float) ($i['qty'] ?? 1), 'price' => (float) ($i['price'] ?? 0), 'discount' => (float) ($i['discount'] ?? 0),
-            'image' => null,
+            'image' => !empty($i['product_id']) && !empty($productImages[$i['product_id']]) ? image_thumb($productImages[$i['product_id']], 96) : null,
         ])->values()->all(),
         'discount_type' => old('discount_type', $invoice->discount_type ?: 'fixed'),
         'discount_value' => (float) old('discount_value', $invoice->discount_value ?? 0),
@@ -62,7 +105,7 @@
 @endphp
 
 <script>
-function invoiceBuilder(state, types, currency) {
+function invoiceBuilder(state, types, currency, statuses, currencyRight) {
     let k = 0;
     const blank = () => ({ _k: ++k, product_id: null, name: '', description: '', qty: 1, price: 0, discount: 0, image: null, _open: false, _results: [], _t: null });
     state.items = state.items.length ? state.items.map(i => Object.assign(blank(), i)) : [blank()];
@@ -78,8 +121,36 @@ function invoiceBuilder(state, types, currency) {
         },
         isQuote() { return ['quotation', 'proforma'].includes(this.s.type); },
         setType(t) { this.s.type = t; if (t === 'receipt' && !this.s.paid_amount) this.s.paid_amount = this.total(); },
-        fmt(n) { return currency + round(n).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); },
-        nice(d) { return d ? new Date(d + 'T00:00:00').toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' }) : ''; },
+        fmt(n) { const v = round(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); return currencyRight ? v + ' ' + currency : currency + v; },
+        nice(d) { return d ? new Date(d + 'T00:00:00').toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'; },
+        // the PDF's colours worked out live, same formulas as hex_shade() and darken_for_white_text()
+        tint(hex, p) { const c = [1, 3, 5].map(i => parseInt(hex.substr(i, 2), 16)); return '#' + c.map(v => Math.round(v + (255 - v) * p).toString(16).padStart(2, '0')).join(''); },
+        readable(hex) {
+            let c = [1, 3, 5].map(i => parseInt(hex.substr(i, 2), 16));
+            const lum = a => { const [r, g, b] = a.map(v => { v /= 255; return v <= .03928 ? v / 12.92 : ((v + .055) / 1.055) ** 2.4; }); return .2126 * r + .7152 * g + .0722 * b; };
+            for (let i = 0; i < 40 && 1.05 / (lum(c) + .05) < 4.5; i++) c = c.map(v => Math.floor(v * .95));
+            return '#' + c.map(v => v.toString(16).padStart(2, '0')).join('');
+        },
+        paperVars() { const a = /^#[0-9a-f]{6}$/i.test(this.s.accent_color) ? this.s.accent_color : '#6366f1'; return `--acc:${a};--tint:${this.tint(a, .92)};--line:${this.tint(a, .75)};--acctext:${this.readable(a)}`; },
+        statusKey() {
+            if (['draft', 'cancelled'].includes(this.s.status)) return this.s.status;
+            const paid = Number(this.s.paid_amount) || 0;
+            return paid <= 0 ? 'unpaid' : (paid >= this.total() ? 'paid' : 'partial');
+        },
+        statusInfo() { const k = this.statusKey(); return this.isQuote() && ['unpaid', 'partial', 'paid'].includes(k) ? ['Open', '#0ea5e9'] : statuses[k]; },
+        stamp() { const k = this.statusKey(); return k === 'cancelled' ? 'CANCELLED' : k === 'draft' ? 'DRAFT' : k === 'paid' && !this.isQuote() ? 'PAID' : ''; },
+        paysShown() { return !this.isQuote() && !['draft', 'cancelled'].includes(this.statusKey()); },
+        filled() { return this.s.items.filter(i => i.name.trim()); },
+        words(n) {
+            const ones = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen'];
+            const tens = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
+            const small = v => v < 20 ? ones[v] : v < 100 ? (tens[Math.floor(v / 10)] + ' ' + ones[v % 10]).trim() : (ones[Math.floor(v / 100)] + ' Hundred ' + (v % 100 ? small(v % 100) : '')).trim();
+            let whole = Math.floor(n); const paisa = Math.round((n - whole) * 100), parts = [];
+            [[10000000, 'Crore'], [100000, 'Lakh'], [1000, 'Thousand']].forEach(([size, name]) => { const q = Math.floor(whole / size); whole %= size; if (q) parts.push(small(q) + ' ' + name); });
+            if (whole) parts.push(small(whole));
+            return (parts.join(' ') || 'Zero') + (paisa > 0 ? ' and ' + small(paisa) + ' Poisha' : '');
+        },
+        shortName() { const n = this.s.customer_name.trim() || 'Customer'; return n.length > 40 ? n.slice(0, 40) + '...' : n; },
         dueIn(days) {
             if (!days) { this.s.due_date = ''; return; }
             const d = new Date((this.s.issue_date || new Date().toISOString().slice(0, 10)) + 'T00:00:00');
@@ -147,7 +218,7 @@ function invoiceBuilder(state, types, currency) {
 
 <form method="POST" x-ref="form"
       action="{{ $invoice->exists ? route('admin.custom-invoices.update', $invoice) : route('admin.custom-invoices.store') }}"
-      x-data="invoiceBuilder(@js($state), @js($types), @js($currency))"
+      x-data="invoiceBuilder(@js($state), @js($types), @js($currency), @js(\App\Models\CustomInvoice::STATUSES), @js(setting('currency_position', 'left') === 'right'))"
       @submit="dirty = false" @keydown.enter="if ($event.target.tagName === 'INPUT') $event.preventDefault()"
       @keydown.window.ctrl.s.prevent="save()" @keydown.window.meta.s.prevent="save()">
     @csrf
@@ -397,81 +468,112 @@ function invoiceBuilder(state, types, currency) {
         <div class="ci-sticky min-w-0">
             <div class="flex items-center justify-between mb-2">
                 <span class="ci-xs font-semibold uppercase tracking-wider text-gray-400">Live preview</span>
-                <span class="ci-xs text-gray-400">A4 PDF looks the same</span>
+                <a href="{{ route('admin.business.index') }}" class="ci-xs text-indigo-500 hover:underline">Edit shop name, phone &amp; address →</a>
             </div>
-            <div class="ci-paper">
-                <div style="height:5px;border-radius:3px;margin-bottom:16px" :style="{ background: s.accent_color }"></div>
-                <table><tr>
-                    <td style="vertical-align:top">
-                        @if($store['logo'])
-                            <img src="{{ $store['logo'] }}" alt="" style="max-height:42px;max-width:170px;margin-bottom:6px">
+            {{-- the fixed colours sit on the parent: a string :style would replace this element's own style --}}
+            <div class="ci-paper" style="--dark:{{ $theme['dark'] }};--ondark:{{ $theme['onDark'] }};">
+                <div class="pv" :style="paperVars()">
+                    <div class="pv-band">
+                        @if ($store['logo'])
+                            <div class="pv-plate"><img src="{{ $store['logo'] }}" alt=""></div>
                         @else
-                            <div style="font-size:20px;font-weight:700" :style="{ color: s.accent_color }">{{ $store['name'] }}</div>
+                            <div class="pv-brand">{{ $store['name'] }}</div>
                         @endif
-                        <div style="font-size:10px;color:#6b7280;line-height:1.5;margin-top:4px">{{ $store['email'] }}@if($store['phone'])<br>{{ $store['phone'] }}@endif<br>{{ $store['address'] }}</div>
-                    </td>
-                    <td style="text-align:right;vertical-align:top">
-                        <div style="font-size:20px;font-weight:800;letter-spacing:2px;color:#111827;line-height:1" x-text="types[s.type].title"></div>
-                        <div style="font-size:11px;font-weight:700;margin-top:4px" :style="{ color: s.accent_color }">{{ $nextNumber }}</div>
-                        <div style="font-size:10px;color:#6b7280;margin-top:4px;line-height:1.5">
-                            Date: <span x-text="nice(s.issue_date)"></span>
-                            <template x-if="s.due_date"><span><br><span x-text="isQuote() ? 'Valid until' : 'Due'"></span>: <span x-text="nice(s.due_date)"></span></span></template>
+                        <div class="pv-doc">
+                            <div class="pv-title" x-text="types[s.type].title"></div>
+                            <div class="pv-no">{{ $nextNumber }}</div>
                         </div>
-                    </td>
-                </tr></table>
-                <div style="border-top:1px solid #e5e7eb;margin:14px 0"></div>
-                <div style="background:#f9fafb;border-radius:10px;padding:10px 14px;margin-bottom:14px" :style="{ borderLeft: '3px solid ' + s.accent_color }">
-                    <div style="font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px" :style="{ color: s.accent_color }" x-text="isQuote() ? 'Prepared for' : 'Bill to'"></div>
-                    <div style="font-weight:700;color:#111827" x-text="s.customer_name || 'Customer name'" :style="{ color: s.customer_name ? '#111827' : '#d1d5db' }"></div>
-                    <div style="font-size:11px;color:#374151;line-height:1.5;white-space:pre-line" x-text="[s.customer_address, s.customer_phone, s.customer_email].filter(Boolean).join('\n')"></div>
-                </div>
-                <div style="border:1px solid #e5e7eb;border-radius:10px;padding:4px">
-                    <table>
-                        <thead><tr style="color:#fff;font-size:10px;text-transform:uppercase;letter-spacing:.5px">
-                            <th style="text-align:left;padding:7px 10px;border-radius:8px 0 0 8px;background:{{ setting('invoice_dark_color', '#111827') }}">#</th>
-                            <th style="text-align:left;padding:7px 10px;background:{{ setting('invoice_dark_color', '#111827') }}">Description</th>
-                            <th style="text-align:center;padding:7px 10px;background:{{ setting('invoice_dark_color', '#111827') }}">Qty</th>
-                            <th class="ci-num" style="padding:7px 10px;background:{{ setting('invoice_dark_color', '#111827') }}">Price</th>
-                            <th class="ci-num" style="padding:7px 10px;border-radius:0 8px 8px 0;background:{{ setting('invoice_dark_color', '#111827') }}">Amount</th>
-                        </tr></thead>
-                        <tbody>
-                            <template x-for="(item, i) in s.items.filter(it => it.name.trim())" :key="item._k">
-                                <tr :style="i % 2 ? 'background:#f9fafb' : ''">
-                                    <td style="padding:6px 10px;vertical-align:top" x-text="i + 1"></td>
-                                    <td style="padding:6px 10px">
-                                        <div style="font-weight:700;color:#111827" x-text="item.name"></div>
-                                        <div x-show="item.description" style="font-size:9.5px;color:#9ca3af" x-text="item.description"></div>
-                                        <div x-show="item.discount > 0" style="font-size:9.5px;color:#dc2626" x-text="'Discount -' + fmt(item.discount)"></div>
-                                    </td>
-                                    <td style="padding:6px 10px;text-align:center;vertical-align:top" x-text="item.qty"></td>
-                                    <td class="ci-num" style="padding:6px 10px;vertical-align:top" x-text="fmt(item.price)"></td>
-                                    <td class="ci-num" style="padding:6px 10px;vertical-align:top;font-weight:700" x-text="fmt(lineTotal(item))"></td>
-                                </tr>
-                            </template>
-                            <tr x-show="!s.items.some(it => it.name.trim())"><td colspan="5" style="padding:18px;text-align:center;color:#d1d5db">Items you add appear here</td></tr>
-                        </tbody>
-                    </table>
-                </div>
-                <div style="display:flex;justify-content:flex-end;margin-top:12px">
-                    <div style="width:250px;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden;font-size:11px">
-                        <div style="display:flex;justify-content:space-between;padding:5px 12px"><span style="color:#6b7280">Subtotal</span><span class="ci-num" x-text="fmt(subtotal())"></span></div>
-                        <div x-show="discount() > 0" class="ci-flex" style="justify-content:space-between;padding:5px 12px;color:#dc2626"><span x-text="'Discount' + (s.discount_type === 'percent' ? ' (' + s.discount_value + '%)' : '')"></span><span class="ci-num" x-text="'-' + fmt(discount())"></span></div>
-                        <div x-show="tax() > 0" class="ci-flex" style="justify-content:space-between;padding:5px 12px"><span style="color:#6b7280" x-text="'VAT (' + s.tax_rate + '%)'"></span><span class="ci-num" x-text="fmt(tax())"></span></div>
-                        <div x-show="s.shipping > 0" class="ci-flex" style="justify-content:space-between;padding:5px 12px"><span style="color:#6b7280">Delivery charge</span><span class="ci-num" x-text="fmt(s.shipping)"></span></div>
-                        <div style="display:flex;justify-content:space-between;padding:7px 12px;color:#fff;font-size:13px;font-weight:700;background:{{ setting('invoice_dark_color', '#111827') }}"><span>Total</span><span class="ci-num" x-text="fmt(total())"></span></div>
                     </div>
-                </div>
-                <div x-show="!isQuote() && s.status !== 'draft'" class="ci-flex" style="gap:8px;margin-top:10px">
-                    <div style="flex:1;background:#ecfdf5;border-radius:8px;padding:6px 12px"><div style="font-size:9px;text-transform:uppercase;color:#047857">Paid</div><div style="font-weight:700;color:#065f46" x-text="fmt(Math.min(s.paid_amount || 0, total()))"></div></div>
-                    <div style="flex:1;border-radius:8px;padding:6px 12px" :style="{ background: (due() > 0 ? '#fef2f2' : '#f9fafb') }"><div style="font-size:9px;text-transform:uppercase" :style="{ color: (due() > 0 ? '#b91c1c' : '#6b7280') }">Balance due</div><div style="font-weight:700" :style="{ color: (due() > 0 ? '#991b1b' : '#374151') }" x-text="fmt(due())"></div></div>
-                </div>
-                <template x-if="s.notes || s.terms">
-                    <div style="display:flex;gap:8px;margin-top:10px">
-                        <template x-if="s.notes"><div style="flex:1;background:#f9fafb;border-radius:8px;padding:6px 12px" :style="{ borderLeft: '3px solid ' + s.accent_color }"><div style="font-size:9px;font-weight:700;text-transform:uppercase" :style="{ color: s.accent_color }">Notes</div><div style="font-size:10px;color:#6b7280;white-space:pre-line" x-text="s.notes"></div></div></template>
-                        <template x-if="s.terms"><div style="flex:1;background:#f9fafb;border-radius:8px;padding:6px 12px" :style="{ borderLeft: '3px solid ' + s.accent_color }"><div style="font-size:9px;font-weight:700;text-transform:uppercase" :style="{ color: s.accent_color }">Terms &amp; Conditions</div><div style="font-size:10px;color:#6b7280;white-space:pre-line" x-text="s.terms"></div></div></template>
+                    <div class="pv-body">
+                        <div class="pv-facts">
+                            <div><div class="pv-label">Date</div><div class="pv-fact" x-text="nice(s.issue_date)"></div></div>
+                            <div><div class="pv-label" x-text="isQuote() ? 'Valid Until' : 'Due Date'"></div><div class="pv-fact" x-text="nice(s.due_date)"></div></div>
+                            <div><div class="pv-label">Payment Method</div><div class="pv-fact" x-text="s.payment_method || '—'"></div></div>
+                            <div><div class="pv-label">Status</div><div class="pv-fact" :style="{ color: readable(statusInfo()[1]) }" x-text="statusInfo()[0]"></div></div>
+                        </div>
+                        <div class="pv-parties">
+                            <div>
+                                <div class="pv-label" x-text="isQuote() ? 'Prepared For' : 'Bill To'"></div>
+                                <div class="pv-name" :style="{ color: s.customer_name ? '#111827' : '#d1d5db' }" x-text="s.customer_name || 'Customer name'"></div>
+                                <div class="pv-strong" x-show="s.customer_phone" x-text="s.customer_phone"></div>
+                                <div class="pv-line" x-show="s.customer_address" x-text="s.customer_address"></div>
+                                <div class="pv-line" x-show="s.customer_email" x-text="s.customer_email"></div>
+                            </div>
+                            <div>
+                                <div class="pv-label">From</div>
+                                <div class="pv-name">{{ $store['name'] }}</div>
+                                @if ($store['phone'])<div class="pv-strong">{{ $store['phone'] }}</div>@endif
+                                <div class="pv-line">{{ $store['address'] }}</div>
+                                @if ($store['email'])<div class="pv-line">{{ $store['email'] }}</div>@endif
+                                @if ($store['tax'])<div class="pv-line">{{ $store['tax'] }}</div>@endif
+                            </div>
+                        </div>
+                        <table class="pv-items">
+                            <thead><tr>
+                                <th class="c" style="width:7%">#</th>
+                                @if ($showPhotos)<th x-show="filled().some(i => i.image)" style="width:9%"></th>@endif
+                                <th>Description</th>
+                                <th class="c" style="width:8%">Qty</th>
+                                <th class="r" style="width:15%">Unit Price</th>
+                                <th class="r" x-show="filled().some(i => i.discount > 0)" style="width:12%">Discount</th>
+                                <th class="r" style="width:16%">Amount</th>
+                            </tr></thead>
+                            <tbody>
+                                <template x-for="(item, i) in filled()" :key="item._k">
+                                    <tr :style="i % 2 ? 'background:#f9fafb' : ''">
+                                        <td class="c" x-text="i + 1"></td>
+                                        @if ($showPhotos)<td x-show="filled().some(l => l.image)" style="padding-top:0;padding-bottom:0"><img x-show="item.image" :src="item.image || ''" alt=""></td>@endif
+                                        <td>
+                                            <div class="pv-strong" x-text="item.name"></div>
+                                            <div class="pv-sub" x-show="item.description" x-text="item.description"></div>
+                                        </td>
+                                        <td class="c" x-text="item.qty"></td>
+                                        <td class="r" x-text="fmt(item.price)"></td>
+                                        <td class="r" x-show="filled().some(l => l.discount > 0)" style="color:#dc2626" x-text="item.discount > 0 ? '-' + fmt(item.discount) : '—'"></td>
+                                        <td class="r pv-strong" x-text="fmt(lineTotal(item))"></td>
+                                    </tr>
+                                </template>
+                                <tr x-show="!filled().length"><td colspan="6" style="padding:calc(var(--mm) * 8);text-align:center;color:#d1d5db">Items you add appear here</td></tr>
+                            </tbody>
+                        </table>
+                        <div class="pv-summary">
+                            <div class="pv-left">
+                                @if ($store['showWords'])
+                                    <div class="pv-panel"><div class="pv-label">Amount in Words</div><div class="pv-strong"><span x-text="words(total())"></span> {{ $store['currencyWord'] }} Only</div></div>
+                                @endif
+                            </div>
+                            <div class="pv-right">
+                                <div class="pv-row"><span>Subtotal</span><b class="ci-num" x-text="fmt(subtotal())"></b></div>
+                                <div class="pv-row" x-show="discount() > 0"><span x-text="'Discount' + (s.discount_type === 'percent' ? ' (' + s.discount_value + '%)' : '')"></span><b class="ci-num" style="color:#dc2626" x-text="'-' + fmt(discount())"></b></div>
+                                <div class="pv-row" x-show="tax() > 0"><span x-text="'Tax / VAT (' + s.tax_rate + '%)'"></span><b class="ci-num" x-text="fmt(tax())"></b></div>
+                                <div class="pv-row" x-show="s.shipping > 0"><span>Delivery Charge</span><b class="ci-num" x-text="fmt(s.shipping)"></b></div>
+                                <div class="pv-grand"><span>Total</span><span class="ci-num" x-text="fmt(total())"></span></div>
+                                <div class="pv-row" x-show="paysShown() && s.paid_amount > 0"><span>Paid</span><b class="ci-num" x-text="fmt(Math.min(s.paid_amount || 0, total()))"></b></div>
+                                <div class="pv-due" x-show="paysShown() && due() > 0"><span>Balance Due</span><span class="ci-num" x-text="fmt(due())"></span></div>
+                                <div class="pv-due pv-paid" x-show="paysShown() && total() > 0 && due() <= 0"><span>Paid in Full</span><span class="ci-num" x-text="fmt(total())"></span></div>
+                            </div>
+                        </div>
+                        <div class="pv-push"></div>
+                        <div class="pv-boxes" x-show="s.notes || s.terms || {{ $store['bank'] ? '!isQuote()' : 'false' }}">
+                            <div x-show="s.notes"><div class="pv-label">Notes</div><div class="pv-note" x-text="s.notes"></div></div>
+                            <div x-show="s.terms"><div class="pv-label">Terms &amp; Conditions</div><div class="pv-note" x-text="s.terms"></div></div>
+                            @if ($store['bank'])<div x-show="!isQuote()"><div class="pv-label">Bank / Payment Details</div><div class="pv-note">{{ $store['bank'] }}</div></div>@endif
+                        </div>
+                        <div class="pv-closing">
+                            <div>
+                                <div class="pv-thanks" x-text="(isQuote() ? 'Thank you for considering us, ' : 'Thank you for your business, ') + shortName() + '!'"></div>
+                                <div class="pv-small">{{ $store['footer'] }}</div>
+                                @if ($store['phone'] || $store['email'])<div class="pv-small">Need help? <b>{{ collect([$store['phone'], $store['email']])->filter()->implode('  ·  ') }}</b></div>@endif
+                            </div>
+                            @if ($store['signature'])<div class="pv-sign"><img src="{{ $store['signature'] }}" alt="">Authorized Signature</div>@endif
+                        </div>
+                        <div class="pv-foot">
+                            <span>{{ collect([$store['name'], $store['phone'], $store['email']])->filter()->implode('  ·  ') }}</span>
+                            <span>Page 1 of 1</span>
+                        </div>
                     </div>
-                </template>
-                <div style="margin-top:14px;padding-top:8px;border-top:1px solid #e5e7eb;text-align:center;font-size:9px;color:#9ca3af">{{ setting('invoice_footer_text', 'Thank you for shopping with us!') }}</div>
+                    <div class="pv-stamp" x-show="stamp()" x-text="stamp()"></div>
+                </div>
             </div>
         </div>
     </div>

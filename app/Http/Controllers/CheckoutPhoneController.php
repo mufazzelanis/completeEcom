@@ -76,7 +76,7 @@ class CheckoutPhoneController extends Controller
         RateLimiter::hit('phoneotp:ip:' . $request->ip(), 600);
 
         $code = Otp::generate($local, self::PURPOSE, 5);
-        (new SmsChannel())->send(null, 'checkout_phone_otp', $local, "Your Mitavin verification code is {$code}. It expires in 5 minutes. Do not share it with anyone.");
+        (new SmsChannel())->send(null, 'checkout_phone_otp', $local, "Your " . setting('site_name', 'store') . " verification code is {$code}. It expires in 5 minutes. Do not share it with anyone.");
 
         return response()->json(['ok' => true]);
     }

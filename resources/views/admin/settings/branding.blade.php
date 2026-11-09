@@ -11,25 +11,9 @@
       }">
 @csrf @method('PATCH')
 
-{{-- Brand Name --}}
-<div class="bg-white rounded-xl shadow-sm border p-6 space-y-4">
-    <h2 class="text-base font-semibold text-gray-900 pb-3 border-b">Brand Identity</h2>
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-        <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Brand Name / Site Name</label>
-            <input type="text" name="site_name" value="{{ setting('site_name', 'ShopVista') }}"
-                   class="w-full border rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
-                   placeholder="Your Brand Name">
-            <p class="text-xs text-gray-400 mt-1">Displayed in header, footer, browser tab, and emails.</p>
-        </div>
-        <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Tagline</label>
-            <input type="text" name="site_tagline" value="{{ setting('site_tagline', '') }}"
-                   class="w-full border rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
-                   placeholder="Your one-stop shop">
-            <p class="text-xs text-gray-400 mt-1">Short slogan shown below or near the brand name.</p>
-        </div>
-    </div>
+{{-- Name and tagline live in Business Profile --}}
+<div class="bg-orange-50 border border-orange-200 rounded-xl p-4 text-sm text-orange-900">
+    Your shop name and tagline are now edited in one place: <a href="{{ route('admin.business.index') }}" class="font-semibold underline">Settings → Business Profile</a>.
 </div>
 
 {{-- Logos --}}
