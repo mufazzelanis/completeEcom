@@ -27,7 +27,7 @@
                     <p class="font-medium mb-1">Your seller account has been suspended.</p>
                     <p>For more information, please contact us:</p>
                     <ul class="mt-1 space-y-0.5">
-                        @if($supportEmail)<li>Email: <a href="mailto:{{ $supportEmail }}" class="underline hover:text-red-800">{{ $supportEmail }}</a></li>@endif
+                        @if($supportEmail)<li>Email: <!--email_off--><a href="mailto:{{ $supportEmail }}" class="underline hover:text-red-800">{{ $supportEmail }}</a><!--/email_off--></li>@endif
                         @if($supportPhone)<li>Phone: <a href="tel:{{ $supportPhone }}" class="underline hover:text-red-800">{{ $supportPhone }}</a></li>@endif
                     </ul>
                 </div>

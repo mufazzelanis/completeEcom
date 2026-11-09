@@ -7,7 +7,7 @@
     $ownNames = [$product->name, $product->category?->name, $product->subcategory?->name];
     $customTitle = meaningful_seo($product->meta_title, $ownNames);
     $customDesc = meaningful_seo($product->meta_description, $ownNames, 50);
-    $shortDesc = meaningful_seo($product->short_description, $ownNames, 50);
+    $shortDesc = meaningful_seo($product->short_description, $ownNames, 70); // shorter ones say less than the price-and-delivery line below
 
     // Google shows ~60 characters of a title and ~155 of a description and cuts the rest — with
     // long imported product names the fixed formula ran to 80–117 characters, so the part people
@@ -129,7 +129,7 @@
     'name' => $product->name,
     'description' => $seoDesc,
     'image' => $ogImage ? [$ogImage] : [],
-    'sku' => $product->sku,
+    'sku' => $product->sku ?: (string) $product->id, // the store's own id when no SKU was entered
     'gtin' => $product->gtin,
     'mpn' => $product->mpn,
     'brand' => $product->brand ? ['@type' => 'Brand', 'name' => $product->brand->name] : null,

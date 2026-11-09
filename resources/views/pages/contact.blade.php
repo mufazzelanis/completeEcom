@@ -66,7 +66,8 @@
                     </div>
                     <div>
                         <p class="font-medium text-gray-700 text-sm">Email</p>
-                        <p class="text-gray-500 text-sm">{{ setting('contact_email') ?: setting('support_email') ?: setting('company_email') }}</p>
+                        {{-- email_off: otherwise Cloudflare swaps it for a /cdn-cgi link and a render-blocking script --}}
+                        <p class="text-gray-500 text-sm"><!--email_off-->{{ setting('contact_email') ?: setting('support_email') ?: setting('company_email') }}<!--/email_off--></p>
                     </div>
                 </div>
                 @endif

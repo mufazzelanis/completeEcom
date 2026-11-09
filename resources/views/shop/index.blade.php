@@ -13,11 +13,17 @@
     $shopIntro   = meaningful_seo(isset($category) ? $category->description : ($currentBrand->description ?? null), $ownNames, 25)
         ? (isset($category) ? $category->description : $currentBrand->description) : null;
     $shopIntroText = $shopIntro ? Str::limit(meaningful_seo($shopIntro, $ownNames), 155, '…') : null;
+    // Several categories share a name under different parents ("Eye Care" three times): without
+    // the parent they all went out with the same title and description, which Google treats as duplicates.
+    $shopSeoName = $shopHeading;
+    if (isset($category) && $category->parent && \App\Models\Category::where('name', $category->name)->where('id', '!=', $category->id)->exists()) {
+        $shopSeoName .= ' (' . Str::title(Str::lower($category->parent->name)) . ')';
+    }
     $shopFallbackDesc = isset($currentBrand)
         ? "Buy original {$currentBrand->name} products online in Bangladesh at {$siteName}. Best price, cash on delivery and fast delivery across Bangladesh."
-        : "Shop {$shopHeading} online in Bangladesh at {$siteName}. Original products, best price, cash on delivery and fast delivery across Bangladesh.";
+        : "Shop {$shopSeoName} online in Bangladesh at {$siteName}. Original products, best price, cash on delivery and fast delivery across Bangladesh.";
     $shopSeoTitle = isset($category)
-        ? (meaningful_seo($category->meta_title, $ownNames) ?? "{$shopHeading} Price in Bangladesh – Buy Online | {$siteName}")
+        ? (meaningful_seo($category->meta_title, $ownNames) ?? "{$shopSeoName} Price in Bangladesh – Buy Online | {$siteName}")
         : (isset($currentBrand) ? "{$currentBrand->name} Products Price in Bangladesh | {$siteName}" : "Shop Original Skincare, Baby & Health Products | {$siteName}");
     $shopSeoDesc  = isset($category)
         ? (meaningful_seo($category->meta_description, $ownNames, 50) ?? (mb_strlen((string) $shopIntroText) >= 50 ? $shopIntroText : $shopFallbackDesc))
