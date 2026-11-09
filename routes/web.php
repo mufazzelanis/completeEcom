@@ -116,9 +116,10 @@ Route::get('/indexnow.txt', [SitemapController::class, 'indexNowKey'])->name('in
 // Google Merchant Center product feed (scheduled daily fetch) — see GoogleFeedController.
 Route::get('/google-feed.xml', [\App\Http\Controllers\GoogleFeedController::class, 'index'])->name('google-feed');
 // Only reached when the thumb file doesn't exist yet (otherwise the web server serves it
-// statically) — see ImageThumbController.
+// statically) — see ImageThumbController. No session: with one, every first view of a size got
+// Set-Cookie, so Cloudflare wouldn't cache it and each image started a session of its own.
 Route::get('/storage/thumbs/{width}/{path}', [\App\Http\Controllers\ImageThumbController::class, 'show'])
-    ->where(['width' => '[0-9]+', 'path' => '.*'])->name('image.thumb');
+    ->where(['width' => '[0-9]+', 'path' => '.*'])->withoutMiddleware('web')->name('image.thumb');
 // Product photos with the store's watermark, and what guards the originals: App\Support\Watermark.
 // No session middleware: an image must never start a session or send a cookie.
 Route::get('/storage/wm/{version}/{width}/{path}', [\App\Http\Controllers\WatermarkImageController::class, 'show'])

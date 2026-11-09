@@ -155,6 +155,14 @@ class WatermarkTest extends TestCase
         $this->assertSame('image/webp', $res->headers->get('Content-Type'));
     }
 
+    public function test_a_plain_thumbnail_starts_no_session_either(): void
+    {
+        $res = $this->get('/storage/thumbs/1200/' . self::PHOTO . '.webp')->assertOk();
+
+        $this->assertSame([], $res->headers->getCookies());
+        $this->assertStringContainsString('immutable', $res->headers->get('Cache-Control'));
+    }
+
     public function test_changing_the_logo_makes_new_addresses_and_old_ones_still_work(): void
     {
         $old = $this->goLive();
