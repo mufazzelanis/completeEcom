@@ -126,7 +126,8 @@ $defaultDescription = match (true) {
         ?? meaningful_seo($siteTagline, [$siteName], 50)
         ?? "{$siteName} — shop original products online in Bangladesh with the best prices, cash on delivery and fast delivery nationwide.",
 };
-$pageDescription = $meta('meta_description', $defaultDescription);
+// Google cuts snippets at about 160 characters; an admin's or blog post's longer text ends on a whole word here.
+$pageDescription = \Illuminate\Support\Str::limit($meta('meta_description', $defaultDescription), 160, '…', true);
 $pageKeywords    = $meta('meta_keywords', setting('seo_keywords', ''));
 // paginated lists keep their page number (page 2's canonical is page 2 — Google's own guidance)
 // query() only — request('page') falls back to a {page} route parameter (the Page model on /pages/{page})
@@ -633,10 +634,12 @@ $navCategories = \App\Support\StorefrontCache::remember('nav_categories', fn () 
                 <span class="text-gray-600">|</span>
             @endif
             @if($topbarEmail)
-                <a href="mailto:{{ $topbarEmail }}" class="hover:text-white transition flex items-center gap-1.5">
+                {{-- email_off: otherwise Cloudflare scrambles the address and adds a render-blocking
+                     decoder script near the top of every page (PageSpeed: ~150 ms). --}}
+                <!--email_off--><a href="mailto:{{ $topbarEmail }}" class="hover:text-white transition flex items-center gap-1.5">
                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
                     {{ $topbarEmail }}
-                </a>
+                </a><!--/email_off-->
                 <span class="text-gray-600">|</span>
             @endif
             <a href="{{ route('guest.order.track.form') }}" class="hover:text-white transition">{{ t('header.track_order', 'Track Order', [], 'header') }}</a>
@@ -1438,7 +1441,7 @@ $navCategories = \App\Support\StorefrontCache::remember('nav_categories', fn () 
                     @if($contactEmail)
                     <li class="flex items-center gap-2">
                         <svg class="w-4 h-4 flex-shrink-0 text-orange-400/70" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
-                        <a href="mailto:{{ $contactEmail }}" class="hover:text-orange-400 hover:translate-x-1 transition-all duration-200 inline-block">{{ $contactEmail }}</a>
+                        <!--email_off--><a href="mailto:{{ $contactEmail }}" class="hover:text-orange-400 hover:translate-x-1 transition-all duration-200 inline-block">{{ $contactEmail }}</a><!--/email_off-->
                     </li>
                     @endif
                 </ul>

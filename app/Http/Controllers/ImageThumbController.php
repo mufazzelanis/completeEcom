@@ -27,7 +27,7 @@ class ImageThumbController extends Controller
 
         $disk = Storage::disk('public');
         $source = substr($path, 0, -5);
-        abort_unless($disk->exists($source) && preg_match('/\.(jpe?g|png|webp)$/i', $source), 404);
+        abort_unless($disk->exists($source) && preg_match('/\.(jpe?g|png|webp|gif)$/i', $source), 404);
 
         // a photo that carries the store's watermark has no unmarked copy at this size
         if (\App\Support\Watermark::applies($source, $width)) {

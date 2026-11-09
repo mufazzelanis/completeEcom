@@ -193,6 +193,29 @@ class WatermarkTest extends TestCase
         $this->assertStringEndsWith('.jpg', $res->headers->get('Location'));
     }
 
+    public function test_a_gif_photo_is_resized_and_marked_like_any_other(): void
+    {
+        $im = imagecreatetruecolor(1000, 1000);
+        imagefill($im, 0, 0, imagecolorallocate($im, 240, 240, 240));
+        ob_start();
+        imagegif($im);
+        Storage::disk('public')->put('products/old.gif', ob_get_clean());
+        $this->product->update(['image' => 'products/old.gif']);
+        $cfg = $this->goLive();
+
+        Storage::disk('public')->assertExists(Watermark::file($cfg['v'], 800, 'products/old.gif', 'webp'));
+        $this->assertStringContainsString("/storage/wm/{$cfg['v']}/800/", image_thumb('products/old.gif', 800));
+
+        $card = image_thumb('products/old.gif', 300);
+        $this->assertStringEndsWith('thumbs/300/products/old.gif.webp', $card);
+        $this->get('/storage/thumbs/300/products/old.gif.webp')->assertOk();
+        $this->assertSame(300, getimagesize(Storage::disk('public')->path('thumbs/300/products/old.gif.webp'))[0]);
+
+        $res = $this->get('/storage/products/old.gif');
+        $res->assertStatus(302);
+        $this->assertStringContainsString('/storage/wm/', $res->headers->get('Location'));
+    }
+
     public function test_originals_can_be_left_public(): void
     {
         $this->goLive();

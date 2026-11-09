@@ -55,7 +55,7 @@
     # Product photos: the original file goes through Laravel, which sends visitors to the copy
     # carrying the store's watermark when that's on (WatermarkImageController::original).
     # Matched on the rule's own path, relative to this public/ folder, as the rules above.
-    RewriteRule ^storage/products/.+\.(jpe?g|png|webp)$ index.php [L,NC]
+    RewriteRule ^storage/products/.+\.(jpe?g|png|webp|gif)$ index.php [L,NC]
 
     # Send Requests To Front Controller...
     RewriteCond %{REQUEST_FILENAME} !-d

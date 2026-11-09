@@ -90,14 +90,16 @@ if (!function_exists('image_thumb')) {
     /**
      * URL of a resized WebP copy of a public-disk image, at least $width px wide (rounded up
      * to one of ImageThumbController::WIDTHS). Generated on first request, then served as
-     * a static file — see ImageThumbController. SVG/GIF and external URLs pass through as-is.
+     * a static file — see ImageThumbController. SVG and external URLs pass through as-is.
+     * A GIF becomes a still WebP of its first frame: hundreds of imported product photos are
+     * single-frame GIFs that otherwise went out at full size (800 px, ~85 KB) in 200 px cards.
      */
     function image_thumb(?string $path, int $width): ?string
     {
         if (!$path) {
             return null;
         }
-        if (str_starts_with($path, 'http') || !preg_match('/\.(jpe?g|png|webp)$/i', $path)) {
+        if (str_starts_with($path, 'http') || !preg_match('/\.(jpe?g|png|webp|gif)$/i', $path)) {
             return str_starts_with($path, 'http') ? $path : \Illuminate\Support\Facades\Storage::url($path);
         }
 

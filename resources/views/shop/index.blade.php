@@ -18,7 +18,7 @@
         : "Shop {$shopHeading} online in Bangladesh at {$siteName}. Original products, best price, cash on delivery and fast delivery across Bangladesh.";
     $shopSeoTitle = isset($category)
         ? (meaningful_seo($category->meta_title, $ownNames) ?? "{$shopHeading} Price in Bangladesh – Buy Online | {$siteName}")
-        : (isset($currentBrand) ? "{$currentBrand->name} Products Price in Bangladesh | {$siteName}" : 'Shop');
+        : (isset($currentBrand) ? "{$currentBrand->name} Products Price in Bangladesh | {$siteName}" : "Shop Original Skincare, Baby & Health Products | {$siteName}");
     $shopSeoDesc  = isset($category)
         ? (meaningful_seo($category->meta_description, $ownNames, 50) ?? (mb_strlen((string) $shopIntroText) >= 50 ? $shopIntroText : $shopFallbackDesc))
         : (isset($currentBrand) ? (mb_strlen((string) $shopIntroText) >= 50 ? $shopIntroText : $shopFallbackDesc) : null);
@@ -247,7 +247,8 @@
                 <div class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4"
                      data-track-list="{{ request()->filled('search') ? 'Search results' : (isset($category) ? 'Category: ' : (isset($currentBrand) ? 'Brand: ' : '')) . (request()->filled('search') ? '' : $shopHeading) }}">
                     @foreach($products as $product)
-                        @include('partials.product-card', ['product' => $product])
+                        {{-- the first row is on screen at load: lazy-loading it delayed the page's LCP --}}
+                        @include('partials.product-card', ['product' => $product, 'imgEager' => $loop->index < 4, 'imgPriority' => $loop->first])
                     @endforeach
                 </div>
 

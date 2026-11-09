@@ -261,7 +261,13 @@
                          booted, which delayed its download by seconds (PageSpeed "LCP load delay").
                          :src still swaps it when a color with its own photo is picked. --}}
                     @if($product->image)
-                        <img src="{{ image_thumb($product->image, 1200) }}" :src="active || '{{ image_thumb($product->image, 1200) }}'" fetchpriority="high" decoding="async" :style="`transform-origin: ${zoomX}% ${zoomY}%`" alt="{{ $product->image_alt ?: $product->name }}" title="{{ $product->image_title ?: $product->name }}" class="w-full h-full object-contain transition-transform duration-300 ease-out group-hover:scale-[1.8]">
+                        {{-- srcset only for the first photo: phones were downloading the 1200 px file for a ~270 px box.
+                             Dropped when another photo is picked, or it would override :src. --}}
+                        @php
+                            $heroSrc = image_thumb($product->image, 1200);
+                            $heroSet = image_thumb($product->image, 400) . ' 400w, ' . image_thumb($product->image, 800) . ' 800w, ' . $heroSrc . ' 1200w';
+                        @endphp
+                        <img src="{{ $heroSrc }}" srcset="{{ $heroSet }}" sizes="(max-width: 767px) 70vw, 480px" :srcset="active === '{{ $heroSrc }}' ? '{{ $heroSet }}' : null" :src="active || '{{ $heroSrc }}'" fetchpriority="high" decoding="async" :style="`transform-origin: ${zoomX}% ${zoomY}%`" alt="{{ $product->image_alt ?: $product->name }}" title="{{ $product->image_title ?: $product->name }}" class="w-full h-full object-contain transition-transform duration-300 ease-out group-hover:scale-[1.8]">
                     @else
                     <template x-if="active">
                         <img :src="active" :style="`transform-origin: ${zoomX}% ${zoomY}%`" alt="{{ $product->image_alt ?: $product->name }}" title="{{ $product->image_title ?: $product->name }}" class="w-full h-full object-contain transition-transform duration-300 ease-out group-hover:scale-[1.8]">
@@ -538,6 +544,7 @@
                     // color drives the border/text instead, with a light auto-tinted hover
                     // background (hex_shade) standing in for Tailwind's old hover:bg-indigo-50.
                     $addToCartColor = brand_button_color('add_to_cart_button_color');
+                    $addToCartText = darken_for_white_text($addToCartColor); // the label must stay readable on the white button
                     $addToCartHoverBg = hex_shade($addToCartColor, 0.92);
                 @endphp
                 @if($product->isVariable())
@@ -559,7 +566,7 @@
                                 <button type="submit" formaction="{{ route('cart.add') }}" :disabled="!selectedCombo"
                                     data-loader-message="Adding to cart&hellip;"
                                     :class="!selectedCombo ? 'opacity-40 cursor-not-allowed' : ''"
-                                    style="border-color: {{ $addToCartColor }}; color: {{ $addToCartColor }}; --atc-hover-bg: {{ $addToCartHoverBg }};"
+                                    style="border-color: {{ $addToCartColor }}; color: {{ $addToCartText }}; --atc-hover-bg: {{ $addToCartHoverBg }};"
                                     class="flex-1 bg-white hover:bg-[var(--atc-hover-bg)] border-2 py-3 rounded-xl font-semibold transition flex items-center justify-center space-x-2">
                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
                                     <span>Add to Cart</span>
@@ -591,7 +598,7 @@
                             <div class="flex-1 flex gap-3">
                                 <button type="submit" formaction="{{ route('cart.add') }}"
                                     data-loader-message="Adding to cart&hellip;"
-                                    style="border-color: {{ $addToCartColor }}; color: {{ $addToCartColor }}; --atc-hover-bg: {{ $addToCartHoverBg }};"
+                                    style="border-color: {{ $addToCartColor }}; color: {{ $addToCartText }}; --atc-hover-bg: {{ $addToCartHoverBg }};"
                                     class="flex-1 bg-white hover:bg-[var(--atc-hover-bg)] border-2 py-3 rounded-xl font-semibold transition flex items-center justify-center space-x-2">
                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
                                     <span>Add to Cart</span>

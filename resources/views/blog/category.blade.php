@@ -1,5 +1,5 @@
 @extends('layouts.app')
-@section('title', $blogCategory->name . ' — Blog')
+@section('title', $blogCategory->name . ' – Blog | ' . setting('site_name', 'ShopVista'))
 @section('meta_description', $blogCategory->description ?: (setting('site_name', 'ShopVista') . ' blog posts in ' . $blogCategory->name . '.'))
 @section('canonical', route('blog.category', $blogCategory))
 

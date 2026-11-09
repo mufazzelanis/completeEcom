@@ -55,7 +55,7 @@
                 <img src="{{ image_thumb($product->image, 300) }}"
                      srcset="{{ image_thumb($product->image, 200) }} 200w, {{ image_thumb($product->image, 300) }} 300w, {{ image_thumb($product->image, 400) }} 400w"
                      sizes="(max-width: 639px) 40vw, (max-width: 1023px) 30vw, 210px"
-                     alt="{{ $product->name }}" width="400" height="400" loading="lazy" decoding="async"
+                     alt="{{ $product->name }}" width="400" height="400" loading="{{ ($imgEager ?? false) ? 'eager' : 'lazy' }}" @if($imgPriority ?? false) fetchpriority="high" @endif decoding="async"
                     class="w-full h-full object-contain group-hover:scale-110 transition-transform duration-500">
             @else
                 <div class="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200">

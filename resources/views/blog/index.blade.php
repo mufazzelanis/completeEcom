@@ -1,5 +1,5 @@
 @extends('layouts.app')
-@section('title', 'Blog')
+@section('title', 'Blog – Skin Care, Baby Care & Health Guides | ' . setting('site_name', 'ShopVista'))
 @section('meta_description', meaningful_seo(setting('blog_meta_description'), [], 50) ?? 'Guides, tips and product advice from ' . setting('site_name', 'ShopVista') . ' — baby care, skin care, health and online shopping in Bangladesh.')
 
 @push('meta')

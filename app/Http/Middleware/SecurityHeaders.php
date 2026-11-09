@@ -16,6 +16,9 @@ class SecurityHeaders
             return $response;
         }
 
+        // No need to tell the world the exact PHP version.
+        header_remove('X-Powered-By');
+
         // Clickjacking protection — this app is never meant to be framed by another site.
         $response->headers->set('X-Frame-Options', 'SAMEORIGIN');
         // Stops browsers guessing/executing a response as a different content type than declared.

@@ -78,7 +78,7 @@ class Watermark
 
     public static function covers(string $path): bool
     {
-        return str_starts_with($path, 'products/') && preg_match('/\.(jpe?g|png|webp)$/i', $path) === 1;
+        return str_starts_with($path, 'products/') && preg_match('/\.(jpe?g|png|webp|gif)$/i', $path) === 1;
     }
 
     /** Should this image at this width be shown with the mark right now? */

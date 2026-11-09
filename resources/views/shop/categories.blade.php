@@ -1,5 +1,5 @@
 @extends('layouts.app')
-@section('title', 'All Categories')
+@section('title', 'All Categories – Shop Online in Bangladesh | ' . setting('site_name', 'ShopVista'))
 
 @section('content')
 <div class="max-w-7xl mx-auto px-4 py-8">
