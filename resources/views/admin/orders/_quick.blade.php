@@ -81,10 +81,11 @@
             <span class="oq-avatar">{{ mb_strtoupper(mb_substr($name, 0, 1)) }}</span>
             <div class="min-w-0 flex-1">
                 <p class="oq-name">{{ $name }}
+                    @include('admin.orders._copy-icon', ['text' => $name, 'label' => 'Name'])
                     @if($stats['orders'] <= 1)<span class="oq-tag" style="background:#e0f2fe;color:#0369a1">New customer</span>
                     @elseif($risk)<span class="oq-tag" style="background:{{ $risk[1] }};color:{{ $risk[0] }}">{{ $risk[2] }} buyer</span>@endif
                 </p>
-                @if($phone)<p class="oq-line"><a href="tel:{{ $digits }}" class="font-semibold" style="color:#2563eb">{{ $phone }}</a></p>@endif
+                @if($phone)<p class="oq-line flex items-center gap-1"><a href="tel:{{ $digits }}" class="font-semibold" style="color:#2563eb">{{ $phone }}</a>@include('admin.orders._copy-icon', ['text' => $phone, 'label' => 'Phone'])</p>@endif
                 @if($email)<p class="oq-line truncate">{{ $email }}</p>@endif
                 @if($order->user)<p class="oq-line" style="color:#9ca3af">Registered account</p>@else<p class="oq-line" style="color:#9ca3af">Guest checkout</p>@endif
             </div>
@@ -140,7 +141,10 @@
             <button type="button" class="oq-mini" @click="copy(cfg.copy, 'Courier details copied')" title="Name, phone, address, COD amount and items — ready to paste into the courier panel">Copy for courier</button>
         </div>
         <p class="text-sm text-gray-800 dark:text-gray-100 font-medium">{{ $order->shipping_name }}</p>
-        <p class="text-sm text-gray-600 dark:text-gray-300">{{ $address ?: '—' }}</p>
+        <div class="flex items-start gap-1">
+            <p class="text-sm text-gray-600 dark:text-gray-300 min-w-0">{{ $address ?: '—' }}</p>
+            @if($address)@include('admin.orders._copy-icon', ['text' => $address, 'label' => 'Address'])@endif
+        </div>
         @if($zoneLabel)<p class="oq-line mt-1">🚚 {{ $zoneLabel }}</p>@endif
         @if($order->notes)
             <div class="oq-note-c">📝 <b>Customer note:</b> {{ $order->notes }}</div>

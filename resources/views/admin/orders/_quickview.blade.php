@@ -50,6 +50,11 @@
     .oq-bar span { display: block; height: 100%; border-radius: 999px; }
     .oq-mini { font-size: .75rem; font-weight: 700; color: #4f46e5; padding: .25rem .55rem; border-radius: .55rem; background: #eef2ff; }
     .oq-mini:hover { background: #e0e7ff; }
+    .oq-cp { flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; width: 1.6rem; height: 1.6rem; border-radius: .45rem; color: #6b7280; }
+    .oq-cp svg { width: .95rem; height: .95rem; }
+    .oq-cp:hover { color: #4f46e5; background: #eef2ff; }
+    .dark .oq-cp { color: #9ca3af; }
+    .dark .oq-cp:hover { color: #c7d2fe; background: rgba(129, 140, 248, .18); }
     .oq-note-c { margin-top: .6rem; padding: .55rem .7rem; border-radius: .7rem; background: #fffbeb; color: #92400e; font-size: .82rem; }
     .oq-thumb { width: 2.75rem; height: 2.75rem; border-radius: .7rem; background: #f8fafc; border: 1px solid #eef2f7; overflow: hidden; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
     .oq-thumb img { max-width: 100%; max-height: 100%; object-fit: contain; }
