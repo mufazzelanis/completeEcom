@@ -17,6 +17,8 @@
         ?: ($order->payment_method === 'cod' ? 'Cash on Delivery' : \Illuminate\Support\Str::headline((string) $order->payment_method));
     $isCod = $order->payment_method === 'cod';
     $isPaid = $order->payment_status === 'paid';
+    $delivered = $order->status === 'delivered'; // too late to tell anyone to pay the delivery person
+    $noDue = $stopped || $order->payment_status === 'refunded';
     $advance = $order->is_preorder ? (float) $order->advance_amount : 0;
     $balance = $isPaid && !$advance ? 0 : max(0, (float) $order->total - $advance);
 
@@ -127,15 +129,15 @@
             <table class="panel"><tr><td>
                 <div class="label">Payment</div>
                 <div class="panel-big">{{ $paymentName }}</div>
-                @if ($stopped)
+                @if ($noDue)
                     <div class="small">No payment is due on this order.</div>
                 @elseif ($isPaid && !$advance)
                     <div class="small">Payment received. Thank you.</div>
-                @elseif ($isCod)
+                @elseif ($isCod && !$delivered)
                     <div class="small">Please pay the delivery person when you receive your order.</div>
                 @endif
                 @if ($transaction)<div class="small">Transaction ID: <b>{{ $transaction }}</b></div>@endif
-                @if ($dueDays > 0 && !$isPaid && !$stopped)<div class="small">Due by: <b>{{ $order->created_at->copy()->addDays($dueDays)->format('d M Y') }}</b></div>@endif
+                @if ($dueDays > 0 && !$isPaid && !$noDue)<div class="small">Due by: <b>{{ $order->created_at->copy()->addDays($dueDays)->format('d M Y') }}</b></div>@endif
             </td></tr></table>
         </td>
         <td class="gap"></td>
@@ -158,9 +160,9 @@
                 @if ($advance > 0)
                     <tr><td>{{ $isPaid ? 'Advance Paid' : 'Advance to Pay' }}</td><td class="v">{{ $money($advance) }}</td></tr>
                 @endif
-                @unless ($stopped)
+                @unless ($noDue)
                     @if ($balance > 0)
-                        <tr class="due"><td>{{ $isCod || $advance ? 'Collect on Delivery' : 'Amount Due' }}</td><td style="text-align:right;">{{ $money($balance) }}</td></tr>
+                        <tr class="due"><td>{{ ($isCod || $advance) && !$delivered ? 'Collect on Delivery' : 'Amount Due' }}</td><td style="text-align:right;">{{ $money($balance) }}</td></tr>
                     @else
                         <tr class="settled"><td>Paid in Full</td><td style="text-align:right;">{{ $money($order->total) }}</td></tr>
                     @endif
@@ -170,7 +172,7 @@
     </tr>
 </table>
 
-@include('admin.invoices._pdf-closing', ['thanks' => $stopped ? 'Thank you for choosing ' . $store['name'] . '.' : 'Thank you for your order, ' . $order->shipping_name . '!', 'qr' => $stopped ? null : $trackingQr, 'boxes' => [
+@include('admin.invoices._pdf-closing', ['thanks' => $stopped ? 'Thank you for choosing ' . $store['name'] . '.' : 'Thank you for your order, ' . \Illuminate\Support\Str::limit($order->shipping_name, 40) . '!', 'qr' => $stopped ? null : $trackingQr, 'boxes' => [
     $order->notes ? ['Order Notes', $order->notes] : null,
     setting('invoice_terms') ? ['Terms & Conditions', setting('invoice_terms')] : null,
     $store['bank'] ? ['Bank / Payment Details', $store['bank']] : null,

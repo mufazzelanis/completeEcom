@@ -128,7 +128,7 @@
     </tr>
 </table>
 
-@include('admin.invoices._pdf-closing', ['thanks' => ($isQuote ? 'Thank you for considering us, ' : 'Thank you for your business, ') . $invoice->customer_name . '!', 'qr' => null, 'boxes' => [
+@include('admin.invoices._pdf-closing', ['thanks' => ($isQuote ? 'Thank you for considering us, ' : 'Thank you for your business, ') . \Illuminate\Support\Str::limit($invoice->customer_name, 40) . '!', 'qr' => null, 'boxes' => [
     $invoice->notes ? ['Notes', $invoice->notes] : null,
     $invoice->terms ? ['Terms & Conditions', $invoice->terms] : null,
     $store['bank'] && !$isQuote ? ['Bank / Payment Details', $store['bank']] : null,

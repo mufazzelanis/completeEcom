@@ -32,7 +32,7 @@ class InvoicePdf
 
         $tmp = storage_path('app/mpdf'); // mPDF's font cache; git-ignored
         if (!is_dir($tmp)) {
-            mkdir($tmp, 0775, true);
+            @mkdir($tmp, 0775, true); // two first-ever downloads at once may race; either one creating it is fine
         }
 
         $data += ['theme' => self::theme($accent), 'store' => self::store(), 'money' => self::moneyFormatter()];
@@ -176,7 +176,12 @@ class InvoicePdf
         if (!$path || str_starts_with($path, 'http') || !$disk->exists($path)) {
             return null;
         }
-        $source = @imagecreatefromstring($disk->get($path));
+        // an empty or damaged upload must cost the invoice one picture, not the whole download
+        try {
+            $source = @imagecreatefromstring((string) $disk->get($path));
+        } catch (\Throwable) {
+            return null;
+        }
         if (!$source) {
             return null;
         }

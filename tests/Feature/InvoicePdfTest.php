@@ -10,6 +10,7 @@ use App\Models\Product;
 use App\Models\Setting;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 /** Downloaded invoices: every kind of order must produce a real PDF, with its figures adding up. */
@@ -108,6 +109,48 @@ class InvoicePdfTest extends TestCase
         $paid = $this->html($this->order(['payment_method' => 'bkash', 'payment_status' => 'paid']));
         $this->assertStringContainsString('Paid in Full', $paid);
         $this->assertStringNotContainsString('Collect on Delivery', $paid);
+    }
+
+    public function test_a_delivered_order_never_asks_to_pay_the_delivery_person(): void
+    {
+        $html = $this->html($this->order(['status' => 'delivered']));
+
+        $this->assertStringContainsString('Amount Due', $html);
+        $this->assertStringNotContainsString('Collect on Delivery', $html);
+        $this->assertStringNotContainsString('delivery person', $html);
+    }
+
+    public function test_a_refunded_payment_shows_nothing_due(): void
+    {
+        $html = $this->html($this->order(['payment_status' => 'refunded']));
+
+        $this->assertStringContainsString('No payment is due', $html);
+        $this->assertStringNotContainsString('Collect on Delivery', $html);
+    }
+
+    public function test_a_damaged_logo_and_a_deleted_product_do_not_stop_the_download(): void
+    {
+        Storage::fake('public');
+        Storage::disk('public')->put('settings/empty.png', '');
+        Storage::disk('public')->put('settings/junk.png', 'not an image');
+        Setting::set('invoice_logo', 'settings/empty.png');
+        Setting::set('invoice_signature', 'settings/junk.png');
+        Setting::bust();
+        $order = $this->order();
+        $order->items()->update(['product_id' => null]);
+
+        $this->assertPdf($this->actingAs($this->admin)->get(route('admin.orders.invoice', $order)));
+    }
+
+    public function test_a_webp_logo_is_embedded(): void
+    {
+        Storage::fake('public');
+        $im = imagecreatetruecolor(300, 90);
+        ob_start();
+        imagewebp($im);
+        Storage::disk('public')->put('settings/logo.webp', ob_get_clean());
+
+        $this->assertStringStartsWith('data:image/png;base64,', \App\Support\InvoicePdf::image('settings/logo.webp', 200));
     }
 
     public function test_a_preorder_shows_the_advance_and_only_the_balance_as_due(): void

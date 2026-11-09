@@ -5,10 +5,13 @@
     $contact = array_filter([$store['phone'], $store['email']]);
 @endphp
 
-<table><tr><td style="height:{{ max(3, $push) }}mm;"></td></tr></table>
+{{-- compact: nothing but the boxes may follow the totals, or this spacer alone can start a blank page --}}
+@unless ($compact)
+    <table><tr><td style="height:{{ max(3, $push) }}mm;"></td></tr></table>
+@endunless
 
 @if ($boxes)
-    <table class="boxes">
+    <table class="boxes" style="margin-top:{{ $compact ? 3 : 0 }}mm;">
         <tr>
             @foreach ($boxes as $i => [$boxTitle, $boxBody])
                 @if ($i > 0)<td class="gap"></td>@endif
