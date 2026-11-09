@@ -97,6 +97,12 @@
             <span class="text-sm text-gray-700">Show product SKU on invoice</span>
         </label>
         <label class="flex items-center gap-2 cursor-pointer">
+            <input type="hidden" name="invoice_show_photos" value="0">
+            <input type="checkbox" name="invoice_show_photos" value="1" class="rounded text-orange-600"
+                   @checked(setting('invoice_show_photos', '1') == '1')>
+            <span class="text-sm text-gray-700">Show product photos on invoice</span>
+        </label>
+        <label class="flex items-center gap-2 cursor-pointer">
             <input type="hidden" name="invoice_show_watermark" value="0">
             <input type="checkbox" name="invoice_show_watermark" value="1" class="rounded text-orange-600"
                    @checked(setting('invoice_show_watermark', '1') == '1')>
@@ -129,13 +135,13 @@
         @endif
         <input type="file" name="invoice_signature" accept="image/*"
                class="block w-full text-xs text-gray-600 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-medium file:bg-orange-50 file:text-orange-700 hover:file:bg-orange-100">
-        <p class="text-xs text-gray-400 mt-1">Printed above your name in the footer, right-aligned. Optional — a plain "computer-generated" note is used when none is set.</p>
+        <p class="text-xs text-gray-400 mt-1">Printed in the thank-you panel at the bottom of the invoice. Optional.</p>
     </div>
 </div>
 
 <div class="bg-white rounded-xl shadow-sm border p-6 space-y-4">
     <h2 class="text-base font-semibold text-gray-900 pb-2 border-b">Invoice Colors</h2>
-    <p class="text-xs text-gray-400 -mt-2">Re-theme the downloaded/printed PDF invoice to match your brand. Accent colors the invoice number, section labels, note borders and footer highlight. Header/Total Bar colors the items-table header and the total row.</p>
+    <p class="text-xs text-gray-400 -mt-2">Re-theme the downloaded PDF to match your brand. Accent colors the section labels, delivery progress and thank-you panel. Header/Total Bar colors the top band, the items-table header and the total row. Text colors adjust themselves so everything stays readable.</p>
     <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
         <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Accent Color</label>
@@ -161,15 +167,11 @@
     <div class="border-t pt-4 mt-2">
         <p class="text-xs font-medium text-gray-500 mb-2">Preview:</p>
         <div class="rounded-xl border p-4 bg-gray-50 space-y-3">
-            <div class="h-1.5 rounded" :style="`background-color: ${accent}`"></div>
-            <div class="flex items-center justify-between">
-                <div>
-                    <div class="text-sm font-bold" :style="`color: ${accent}`">{{ setting('company_name') ?: setting('site_name', 'ShopVista') }}</div>
-                    <div class="text-[10px] text-gray-400">123 Example Road, Dhaka, Bangladesh</div>
-                </div>
+            <div class="flex items-center justify-between rounded px-3 py-3 text-white border-t-4" :style="`background-color: ${dark}; border-color: ${accent}`">
+                <div class="text-sm font-bold">{{ setting('company_name') ?: setting('site_name', 'ShopVista') }}</div>
                 <div class="text-right">
-                    <div class="text-xs font-extrabold tracking-widest text-gray-800">INVOICE</div>
-                    <div class="text-[10px] font-bold" :style="`color: ${accent}`">INV-001000</div>
+                    <div class="text-xs font-extrabold tracking-widest">INVOICE</div>
+                    <div class="text-[10px] font-bold opacity-80">INV-001000</div>
                 </div>
             </div>
             <div class="rounded overflow-hidden text-[10px]">

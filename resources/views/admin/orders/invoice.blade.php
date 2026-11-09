@@ -1,299 +1,179 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     <title>Invoice {{ $order->order_number }}</title>
-    @php
-        // Bangla text (order notes, names, addresses) needs a font with real Bengali
-        // glyph coverage — Hind Siliguri is registered in OrderController::invoice()
-        // before rendering. Two settings let admins re-theme the invoice to match
-        // their brand without editing this template.
-        $accentColor = setting('invoice_accent_color', '#6366f1');
-        $darkColor = setting('invoice_dark_color', '#111827');
-    @endphp
     @include('admin.invoices._pdf-styles')
 </head>
-
 <body>
-    @php
-        // Hind Siliguri (registered in OrderController::invoice()) has a real glyph
-        // for the Bengali Taka sign (৳), so it no longer needs to be spelled out as "Tk".
-        $currencySymbol = setting('currency_symbol', '৳');
-        $symbolPosition = setting('currency_position', 'left');
-        $money = function ($amount) use ($currencySymbol, $symbolPosition) {
-            $formatted = number_format((float) $amount, 2);
-            return $symbolPosition === 'right' ? $formatted . ' ' . $currencySymbol : $currencySymbol . $formatted;
-        };
+@php
+    // Sequential and derived from the order id, so re-downloading always gives the same number.
+    $invoiceNumber = setting('invoice_prefix', 'INV-') . str_pad((int) setting('invoice_start_number', 1000) + $order->id - 1, 6, '0', STR_PAD_LEFT);
+    $dueDays = (int) setting('invoice_due_days', 0);
+    $showSku = setting('invoice_show_sku', '1') == '1';
+    $stopped = in_array($order->status, ['cancelled', 'refunded'], true);
 
-$storeName = setting('company_name') ?: setting('site_name', 'ShopVista');
-$storeEmail = setting('company_email') ?: 'support@shopvista.com';
-// No placeholder fallback for the phone — unlike email/address, a fake "+880 1700-000000"
-// on a real invoice reads as a real (wrong) contact number, not obviously a placeholder.
-// Left blank in Settings -> General -> Company Phone, the line is simply omitted.
-$storePhone = setting('company_phone');
-$storeAddress = setting('company_address') ?: 'Dhaka, Bangladesh';
-$footerText = setting('invoice_footer_text', 'Thank you for shopping with us!');
-$invoiceTerms = setting('invoice_terms');
+    $paymentName = \App\Models\PaymentMethod::where('slug', $order->payment_method)->value('name')
+        ?: ($order->payment_method === 'cod' ? 'Cash on Delivery' : \Illuminate\Support\Str::headline((string) $order->payment_method));
+    $isCod = $order->payment_method === 'cod';
+    $isPaid = $order->payment_status === 'paid';
+    $advance = $order->is_preorder ? (float) $order->advance_amount : 0;
+    $balance = $isPaid && !$advance ? 0 : max(0, (float) $order->total - $advance);
 
-// Invoice numbers are sequential and derived from the order id, so re-downloading
-// the same order's invoice always yields the same number without a separate
-// counter column — starting point and prefix are admin-configurable.
-$invoicePrefix = setting('invoice_prefix', 'INV-');
-$invoiceStartNumber = (int) setting('invoice_start_number', 1000);
-$invoiceNumber = $invoicePrefix . str_pad($invoiceStartNumber + $order->id - 1, 6, '0', STR_PAD_LEFT);
+    $steps = ['pending' => 'Order Placed', 'processing' => 'Processing', 'shipped' => 'Shipped', 'delivered' => 'Delivered'];
+    $reached = array_search($order->status, array_keys($steps), true);
 
-$invoiceDueDays = (int) setting('invoice_due_days', 0);
-$dueDate = $invoiceDueDays > 0 ? $order->created_at->copy()->addDays($invoiceDueDays)->format('d F Y') : null;
+    $addressLines = array_filter([
+        $order->shipping_address,
+        collect([$order->shipping_city, $order->shipping_state, $order->shipping_zip])->filter()->implode(', '),
+        $order->shipping_country,
+    ]);
+    $customerEmail = $order->user?->email ?: $order->guest_email;
+    $hasPhotos = !empty($photos);
+    $transaction = $order->payment?->transaction_id;
 
-$logoPath = setting('invoice_logo');
-$logoAbsolutePath = null;
-if ($logoPath && \Illuminate\Support\Facades\Storage::disk('public')->exists($logoPath)) {
-    $logoAbsolutePath = \Illuminate\Support\Facades\Storage::disk('public')->path($logoPath);
-        }
+    $trackingQr ??= null;
+@endphp
 
-$invoiceTitle = setting('invoice_title') ?: 'INVOICE';
-$taxNumber = setting('invoice_tax_number');
-$bankDetails = setting('invoice_bank_details');
-$showSku = setting('invoice_show_sku', '1') == '1';
-$showWatermark = setting('invoice_show_watermark', '1') == '1' && in_array($order->status, ['cancelled', 'refunded']);
-$showWords = setting('invoice_show_words', '1') == '1';
-$currencyWordName = match (setting('currency_code', 'BDT')) {
-    'BDT' => 'Taka', 'USD' => 'Dollars', 'INR' => 'Rupees', 'EUR' => 'Euros', 'GBP' => 'Pounds',
-    default => setting('currency_code', 'BDT'),
-};
-$trackingQr ??= null; // passed in by OrderController::invoice(); null when disabled or generation failed
+@include('admin.invoices._pdf-band', ['title' => setting('invoice_title') ?: 'INVOICE', 'number' => $invoiceNumber])
 
-$signaturePath = setting('invoice_signature');
-$signatureAbsolutePath = null;
-if ($signaturePath && \Illuminate\Support\Facades\Storage::disk('public')->exists($signaturePath)) {
-    $signatureAbsolutePath = \Illuminate\Support\Facades\Storage::disk('public')->path($signaturePath);
-}
-    @endphp
-    <div class="page">
+@if ($stopped && setting('invoice_show_watermark', '1') == '1')
+    <watermarktext content="{{ strtoupper($order->status) }}" alpha="0.09" />
+@endif
 
-        <div class="accent-bar"></div>
+<table class="facts">
+    <tr>
+        <td class="first" style="width:23%;"><div class="label">Invoice Date</div><div class="fact-value">{{ $order->created_at->format('d M Y') }}</div></td>
+        <td style="width:29%;"><div class="label">Order No.</div><div class="fact-value">{{ $order->order_number }}</div></td>
+        <td style="width:26%;"><div class="label">Payment Method</div><div class="fact-value">{{ $paymentName }}</div></td>
+        <td style="width:22%;"><div class="label">Payment</div><div class="fact-value" style="color:{{ $isPaid ? '#047857' : '#b45309' }};">{{ ucfirst($order->payment_status) }}</div></td>
+    </tr>
+</table>
 
-        {{-- Header --}}
-        <table class="header-table">
-            <tr>
-                <td>
-                    @if ($logoAbsolutePath)
-                        <img src="{{ $logoAbsolutePath }}" class="brand-logo" alt="{{ $storeName }}">
-                    @else
-                        <div class="brand">{{ $storeName }}</div>
-                    @endif
-                    <div class="brand-contact">
-                        {{ $storeEmail }}<br>
-                        @if($storePhone)
-                            {{ $storePhone }}<br>
-                        @endif
-                        {{ $storeAddress }}
-                        @if($taxNumber)
-                            <br>{{ $taxNumber }}
-                        @endif
-                    </div>
-                </td>
-                <td class="invoice-title">
-                    <h1>{{ $invoiceTitle }}</h1>
-                    <div class="inv-number">{{ $invoiceNumber }}</div>
-                    <div style="margin-top:6px;">
-                        <span class="badge badge-{{ $order->status }}">{{ ucfirst($order->status) }}</span>
-                    </div>
-                    <div class="inv-meta">
-                        Issued: {{ $order->created_at->format('d F Y') }}
-                        @if($dueDate)
-                            <br>Due: {{ $dueDate }}
-                        @endif
-                    </div>
-                </td>
-            </tr>
-        </table>
+<table class="parties">
+    <tr>
+        <td class="card">
+            <div class="label">Deliver To</div>
+            <div class="party-name">{{ $order->shipping_name }}</div>
+            <div class="party-line" style="font-weight:bold; color:#111827;">{{ $order->shipping_phone }}</div>
+            <div class="party-line">{!! implode('<br>', array_map('e', $addressLines)) !!}</div>
+            @if ($customerEmail)<div class="party-line">{{ $customerEmail }}</div>@endif
+        </td>
+        <td class="gap"></td>
+        <td class="card">
+            <div class="label">Sold By</div>
+            <div class="party-name">{{ $store['name'] }}</div>
+            @if ($store['phone'])<div class="party-line" style="font-weight:bold; color:#111827;">{{ $store['phone'] }}</div>@endif
+            <div class="party-line">{{ $store['address'] }}</div>
+            @if ($store['email'])<div class="party-line">{{ $store['email'] }}</div>@endif
+            @if ($store['tax'])<div class="party-line">{{ $store['tax'] }}</div>@endif
+        </td>
+    </tr>
+</table>
 
-        <div class="divider"></div>
+@if ($stopped)
+    <table class="alert"><tr><td>This order was {{ $order->status }}.</td></tr></table>
+@elseif ($reached !== false)
+    <table class="journey">
+        <tr>
+            @foreach (array_values($steps) as $i => $step)
+                @if ($i > 0)<td class="gap"></td>@endif
+                <td class="step {{ $i <= $reached ? 'step-done' : 'step-todo' }}" style="width:24%;">{{ $step }}</td>
+            @endforeach
+        </tr>
+    </table>
+@endif
 
-        <p class="greeting">Dear <strong>{{ $order->shipping_name }}</strong>, thank you for shopping with {{ $storeName }} — here are the details of your order.</p>
-
-        {{-- Ship To / Order Info --}}
-        <table class="info-grid">
-            <tr>
-                <td>
-                    <div class="info-box">
-                        <h4>Ship To</h4>
-                        <p>
-                            <span class="val">{{ $order->shipping_name }}</span><br>
-                            {{ $order->shipping_address }}<br>
-                            {{ $order->shipping_city }}@if ($order->shipping_state)
-                                , {{ $order->shipping_state }}
-                                @endif @if ($order->shipping_zip)
-                                    {{ $order->shipping_zip }}
-                                @endif
-                                <br>
-                                {{ $order->shipping_country }}<br>
-                                {{ $order->shipping_phone }}
-                        </p>
-                    </div>
-                </td>
-                <td>
-                    <div class="info-box">
-                        <h4>Order Details</h4>
-                        <p>
-                            <span class="row-label">Order Ref:</span> {{ $order->order_number }}<br>
-                            <span class="row-label">Payment Method:</span>
-                            {{ ucfirst(str_replace('_', ' ', $order->payment_method)) }}<br>
-                            <span class="row-label">Payment Status:</span>
-                            <span class="{{ $order->payment_status === 'paid' ? 'paid-yes' : 'paid-no' }}"
-                                style="font-weight:700;">
-                                {{ ucfirst($order->payment_status) }}
-                            </span>
-                        </p>
-                    </div>
-                </td>
-            </tr>
-        </table>
-
-        {{-- Items --}}
-        <div class="items-wrap">
-        <table class="items-table">
-            <thead>
-                <tr>
-                    <th style="text-align:left; width:5%">#</th>
-                    <th style="text-align:left;">Product</th>
-                    <th class="text-center" style="width:10%">Qty</th>
-                    <th class="text-right" style="width:17%">Unit Price</th>
-                    <th class="text-right" style="width:17%">Subtotal</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach ($order->items as $i => $item)
-                    <tr>
-                        <td>{{ $i + 1 }}</td>
-                        <td>
-                            <div class="prod-name">{{ $item->product_name }}</div>
-                            @if ($item->variant_label)
-                                <div class="prod-sku">{{ $item->variant_label }}</div>
-                            @endif
-                            @if ($showSku && $item->product?->sku)
-                                <div class="prod-sku">SKU: {{ $item->product->sku }}</div>
-                            @endif
-                        </td>
-                        <td class="text-center">{{ $item->quantity }}</td>
-                        <td class="text-right">{{ $money($item->price) }}</td>
-                        <td class="text-right" style="font-weight:700;">{{ $money($item->subtotal) }}</td>
-                    </tr>
-                @endforeach
-            </tbody>
-        </table>
-        </div>
-
-        {{-- Totals --}}
-        <div class="clearfix">
-            <div class="totals">
-                <table>
-                    <tr>
-                        <td class="label">Subtotal</td>
-                        <td class="amount">{{ $money($order->subtotal) }}</td>
-                    </tr>
-                    @if ($order->discount > 0)
-                        <tr>
-                            <td class="label">Discount{{ $order->coupon_code ? ' (' . $order->coupon_code . ')' : '' }}
-                            </td>
-                            <td class="amount discount-amount">-{{ $money($order->discount) }}</td>
-                        </tr>
-                    @endif
-                    @if ($order->shipping > 0)
-                        <tr>
-                            <td class="label">Shipping</td>
-                            <td class="amount">{{ $money($order->shipping) }}</td>
-                        </tr>
-                    @endif
-                    @if ($order->tax > 0)
-                        <tr>
-                            <td class="label">Tax</td>
-                            <td class="amount">{{ $money($order->tax) }}</td>
-                        </tr>
-                    @endif
-                    <tr class="separator">
-                        <td colspan="2"></td>
-                    </tr>
-                    <tr class="total-row">
-                        <td class="label">Total</td>
-                        <td class="amount">{{ $money($order->total) }}</td>
-                    </tr>
-                </table>
-            </div>
-        </div>
-
-        <div class="clearfix"></div>
-
-        @if ($showWords)
-            <p class="words-row">In words: <strong>{{ amount_in_words((float) $order->total) }} {{ $currencyWordName }} Only</strong></p>
-        @endif
-
-        @php
-            // Side-by-side instead of stacked whenever more than one of these is present —
-            // with every optional box switched on at once this is the difference between
-            // fitting on one page and spilling a couple of lines onto an almost-empty second
-            // one. white-space:pre-line (see .note-box p) keeps each box's own line breaks.
-            $noteBoxes = array_filter([
-                $order->notes ? ['title' => 'Order Notes', 'body' => $order->notes] : null,
-                $invoiceTerms ? ['title' => 'Terms &amp; Conditions', 'body' => $invoiceTerms] : null,
-                $bankDetails ? ['title' => 'Bank / Payment Details', 'body' => $bankDetails] : null,
-            ]);
-        @endphp
-        @if ($noteBoxes)
-            <table style="width:100%; margin-top:6px; border-collapse:separate; border-spacing:8px 0;">
-                <tr>
-                    @foreach ($noteBoxes as $box)
-                        <td style="width:{{ (int) (100 / count($noteBoxes)) }}%; vertical-align:top; padding:0;">
-                            <div class="note-box" style="margin-top:0;">
-                                <h4>{!! $box['title'] !!}</h4>
-                                <p>{{ $box['body'] }}</p>
-                            </div>
-                        </td>
-                    @endforeach
-                </tr>
-            </table>
-        @endif
-
-        @if ($trackingQr || $signatureAbsolutePath)
-            <table class="bottom-strip">
-                <tr>
-                    <td style="text-align:left;">
-                        @if ($trackingQr)
-                            <img src="{{ $trackingQr }}" class="qr-code" alt="QR code">
-                            <div class="qr-caption">Scan to track this order online</div>
-                        @endif
-                    </td>
-                    <td style="width:200px; text-align:center;">
-                        @if ($signatureAbsolutePath)
-                            <img src="{{ $signatureAbsolutePath }}" class="signature-img" alt="Signature">
-                            <div class="signature-line">Authorized Signature</div>
-                        @endif
-                    </td>
-                </tr>
-            </table>
-        @endif
-
-        {{-- Footer --}}
-        <div class="footer">
-            <p>
-                {{ $footerText }}<br>
-                For questions about this invoice, contact us at <strong>{{ $storeEmail }}</strong><br>
-                @if ($signatureAbsolutePath)
-                    This is a computer-generated invoice.
-                @else
-                    This is a computer-generated invoice and does not require a signature.
+<table class="items">
+    <thead>
+        <tr>
+            <th style="width:7%;" class="c">#</th>
+            @if ($hasPhotos)<th style="width:9%;"></th>@endif
+            <th>Product</th>
+            <th class="r" style="width:16%; text-align:right;">Unit Price</th>
+            <th style="width:8%; text-align:center;">Qty</th>
+            <th style="width:17%; text-align:right;">Amount</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach ($order->items as $i => $item)
+            <tr class="{{ $i % 2 ? 'alt' : '' }}">
+                <td class="c">{{ $i + 1 }}</td>
+                @if ($hasPhotos)
+                    <td class="photo">@if (!empty($photos[$item->id]))<img src="{{ $photos[$item->id] }}" style="width:11mm; height:11mm;" alt="">@endif</td>
                 @endif
-            </p>
-        </div>
+                <td>
+                    <div class="item-name">{{ $item->product_name }}</div>
+                    @php $sub = array_filter([$item->variant_label, $showSku && $item->product?->sku ? 'SKU: ' . $item->product->sku : null]); @endphp
+                    @if ($sub)<div class="item-sub">{{ implode('  ·  ', $sub) }}</div>@endif
+                </td>
+                <td class="r">{{ $money($item->price) }}</td>
+                <td class="c">{{ $item->quantity }}</td>
+                <td class="r" style="font-weight:bold; color:#111827;">{{ $money($item->subtotal) }}</td>
+            </tr>
+        @endforeach
+    </tbody>
+</table>
 
-        @if ($showWatermark)
-            <div class="watermark">{{ strtoupper($order->status) }}</div>
-        @endif
+<table class="summary">
+    <tr>
+        <td class="left">
+            @if ($store['showWords'])
+                <table class="panel"><tr><td>
+                    <div class="label">Amount in Words</div>
+                    <div style="font-weight:bold; color:#111827;">{{ amount_in_words((float) $order->total) }} {{ $store['currencyWord'] }} Only</div>
+                </td></tr></table>
+            @endif
+            <table class="panel"><tr><td>
+                <div class="label">Payment</div>
+                <div class="panel-big">{{ $paymentName }}</div>
+                @if ($stopped)
+                    <div class="small">No payment is due on this order.</div>
+                @elseif ($isPaid && !$advance)
+                    <div class="small">Payment received. Thank you.</div>
+                @elseif ($isCod)
+                    <div class="small">Please pay the delivery person when you receive your order.</div>
+                @endif
+                @if ($transaction)<div class="small">Transaction ID: <b>{{ $transaction }}</b></div>@endif
+                @if ($dueDays > 0 && !$isPaid && !$stopped)<div class="small">Due by: <b>{{ $order->created_at->copy()->addDays($dueDays)->format('d M Y') }}</b></div>@endif
+            </td></tr></table>
+        </td>
+        <td class="gap"></td>
+        <td class="right">
+            <table class="totals">
+                <tr><td>Subtotal</td><td class="v">{{ $money($order->subtotal) }}</td></tr>
+                @if ($order->discount > 0)
+                    <tr><td>Discount{{ $order->coupon_code ? ' (' . $order->coupon_code . ')' : '' }}</td><td class="v minus">-{{ $money($order->discount) }}</td></tr>
+                @endif
+                @if ($order->shipping > 0)
+                    <tr><td>Delivery Charge</td><td class="v">{{ $money($order->shipping) }}</td></tr>
+                @endif
+                @if ($order->tax > 0)
+                    <tr><td>Tax</td><td class="v">{{ $money($order->tax) }}</td></tr>
+                @endif
+                @if ($order->payment_charge > 0)
+                    <tr><td>Payment Charge</td><td class="v">{{ $money($order->payment_charge) }}</td></tr>
+                @endif
+                <tr class="grand"><td>Total</td><td style="text-align:right;">{{ $money($order->total) }}</td></tr>
+                @if ($advance > 0)
+                    <tr><td>{{ $isPaid ? 'Advance Paid' : 'Advance to Pay' }}</td><td class="v">{{ $money($advance) }}</td></tr>
+                @endif
+                @unless ($stopped)
+                    @if ($balance > 0)
+                        <tr class="due"><td>{{ $isCod || $advance ? 'Collect on Delivery' : 'Amount Due' }}</td><td style="text-align:right;">{{ $money($balance) }}</td></tr>
+                    @else
+                        <tr class="settled"><td>Paid in Full</td><td style="text-align:right;">{{ $money($order->total) }}</td></tr>
+                    @endif
+                @endunless
+            </table>
+        </td>
+    </tr>
+</table>
 
-    </div>
+@include('admin.invoices._pdf-closing', ['thanks' => $stopped ? 'Thank you for choosing ' . $store['name'] . '.' : 'Thank you for your order, ' . $order->shipping_name . '!', 'qr' => $stopped ? null : $trackingQr, 'boxes' => [
+    $order->notes ? ['Order Notes', $order->notes] : null,
+    setting('invoice_terms') ? ['Terms & Conditions', setting('invoice_terms')] : null,
+    $store['bank'] ? ['Bank / Payment Details', $store['bank']] : null,
+]])
 </body>
-
 </html>

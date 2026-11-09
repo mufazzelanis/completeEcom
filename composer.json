@@ -15,6 +15,7 @@
         "maatwebsite/excel": "^3.1",
         "mews/purifier": "*",
         "minishlink/web-push": "^11.0",
+        "mpdf/mpdf": "^8.2",
         "socialiteproviders/linkedin": "^5.0"
     },
     "require-dev": {

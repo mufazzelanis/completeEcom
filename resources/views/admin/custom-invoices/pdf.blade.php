@@ -1,258 +1,137 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     <title>{{ $invoice->typeMeta()[1] }} {{ $invoice->number }}</title>
-    @php
-        // Same look as order invoices (Settings → Invoice); an invoice can override the accent colour
-        $accentColor = $invoice->accent_color ?: setting('invoice_accent_color', '#6366f1');
-        $darkColor = setting('invoice_dark_color', '#111827');
-    @endphp
     @include('admin.invoices._pdf-styles')
-    <style>
-        .items-table .num { text-align: right; white-space: nowrap; }
-        .pay-strip { width: 100%; margin-top: 8px; border-collapse: separate; border-spacing: 8px 0; }
-        .pay-strip td { padding: 0; vertical-align: top; }
-        .pay-card { border-radius: 8px; padding: 6px 12px; }
-        .pay-card .k { font-size: 9px; text-transform: uppercase; letter-spacing: .6px; }
-        .pay-card .v { font-size: 13px; font-weight: 700; margin-top: 1px; }
-        .stamp { position: fixed; top: 430px; left: 0; width: 100%; text-align: center; font-size: 86px; font-weight: 800; opacity: .10; letter-spacing: 10px; transform: rotate(-25deg); }
-    </style>
 </head>
-
 <body>
-    @php
-        $currencySymbol = setting('currency_symbol', '৳');
-        $symbolPosition = setting('currency_position', 'left');
-        $money = function ($amount) use ($currencySymbol, $symbolPosition) {
-            $formatted = number_format((float) $amount, 2);
-            return $symbolPosition === 'right' ? $formatted . ' ' . $currencySymbol : $currencySymbol . $formatted;
-        };
+@php
+    [$docTitle, $docLabel] = $invoice->typeMeta();
+    [$statusLabel, $statusColor] = $invoice->statusMeta();
+    $isQuote = in_array($invoice->type, ['quotation', 'proforma'], true);
+    $hasLineDiscount = collect($invoice->items)->contains(fn ($i) => ($i['discount'] ?? 0) > 0);
+    $hasPhotos = !empty($photos);
+    $stamp = match (true) {
+        $invoice->status === 'cancelled' => 'CANCELLED',
+        $invoice->status === 'paid' && !$isQuote => 'PAID',
+        $invoice->status === 'draft' => 'DRAFT',
+        default => null,
+    };
+    $trim = fn ($n) => rtrim(rtrim(number_format((float) $n, 2, '.', ''), '0'), '.');
+@endphp
 
-        $storeName = setting('company_name') ?: setting('site_name', 'ShopVista');
-        $storeEmail = setting('company_email') ?: 'support@shopvista.com';
-        $storePhone = setting('company_phone');
-        $storeAddress = setting('company_address') ?: 'Dhaka, Bangladesh';
-        $footerText = setting('invoice_footer_text', 'Thank you for shopping with us!');
-        $taxNumber = setting('invoice_tax_number');
-        $bankDetails = setting('invoice_bank_details');
-        $showWords = setting('invoice_show_words', '1') == '1';
-        $currencyWordName = match (setting('currency_code', 'BDT')) {
-            'BDT' => 'Taka', 'USD' => 'Dollars', 'INR' => 'Rupees', 'EUR' => 'Euros', 'GBP' => 'Pounds',
-            default => setting('currency_code', 'BDT'),
-        };
+@include('admin.invoices._pdf-band', ['title' => $docTitle, 'number' => $invoice->number])
 
-        $disk = \Illuminate\Support\Facades\Storage::disk('public');
-        $logoPath = setting('invoice_logo');
-        $logoAbsolutePath = $logoPath && $disk->exists($logoPath) ? $disk->path($logoPath) : null;
-        $signaturePath = setting('invoice_signature');
-        $signatureAbsolutePath = $signaturePath && $disk->exists($signaturePath) ? $disk->path($signaturePath) : null;
+@if ($stamp)
+    <watermarktext content="{{ $stamp }}" alpha="0.08" />
+@endif
 
-        [$docTitle, $docLabel] = $invoice->typeMeta();
-        [$statusLabel, $statusColor] = $invoice->statusMeta();
-        $isQuote = in_array($invoice->type, ['quotation', 'proforma'], true);
-        $hasLineDiscount = collect($invoice->items)->contains(fn ($i) => ($i['discount'] ?? 0) > 0);
-        $stamp = match (true) {
-            $invoice->status === 'cancelled' => ['CANCELLED', '#dc2626'],
-            $invoice->status === 'paid' && !$isQuote => ['PAID', '#059669'],
-            $invoice->status === 'draft' => ['DRAFT', '#64748b'],
-            default => null,
-        };
-    @endphp
-    <div class="page">
-        <div class="accent-bar"></div>
+<table class="facts">
+    <tr>
+        <td class="first" style="width:25%;"><div class="label">Date</div><div class="fact-value">{{ $invoice->issue_date->format('d M Y') }}</div></td>
+        <td style="width:25%;"><div class="label">{{ $isQuote ? 'Valid Until' : 'Due Date' }}</div><div class="fact-value">{{ $invoice->due_date?->format('d M Y') ?: '—' }}</div></td>
+        <td style="width:25%;"><div class="label">Payment Method</div><div class="fact-value">{{ $invoice->payment_method ?: '—' }}</div></td>
+        <td style="width:25%;"><div class="label">Status</div><div class="fact-value" style="color:{{ darken_for_white_text($statusColor) }};">{{ $statusLabel }}</div></td>
+    </tr>
+</table>
 
-        <table class="header-table">
-            <tr>
+<table class="parties">
+    <tr>
+        <td class="card">
+            <div class="label">{{ $isQuote ? 'Prepared For' : 'Bill To' }}</div>
+            <div class="party-name">{{ $invoice->customer_name }}</div>
+            @if ($invoice->customer_phone)<div class="party-line" style="font-weight:bold; color:#111827;">{{ $invoice->customer_phone }}</div>@endif
+            @if ($invoice->customer_address)<div class="party-line">{!! nl2br(e($invoice->customer_address)) !!}</div>@endif
+            @if ($invoice->customer_email)<div class="party-line">{{ $invoice->customer_email }}</div>@endif
+        </td>
+        <td class="gap"></td>
+        <td class="card">
+            <div class="label">From</div>
+            <div class="party-name">{{ $store['name'] }}</div>
+            @if ($store['phone'])<div class="party-line" style="font-weight:bold; color:#111827;">{{ $store['phone'] }}</div>@endif
+            <div class="party-line">{{ $store['address'] }}</div>
+            @if ($store['email'])<div class="party-line">{{ $store['email'] }}</div>@endif
+            @if ($store['tax'])<div class="party-line">{{ $store['tax'] }}</div>@endif
+        </td>
+    </tr>
+</table>
+
+<table class="items">
+    <thead>
+        <tr>
+            <th style="width:7%;" class="c">#</th>
+            @if ($hasPhotos)<th style="width:9%;"></th>@endif
+            <th>Description</th>
+            <th style="width:8%; text-align:center;">Qty</th>
+            <th style="width:15%; text-align:right;">Unit Price</th>
+            @if ($hasLineDiscount)<th style="width:12%; text-align:right;">Discount</th>@endif
+            <th style="width:16%; text-align:right;">Amount</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach ($invoice->items as $i => $item)
+            <tr class="{{ $i % 2 ? 'alt' : '' }}">
+                <td class="c">{{ $i + 1 }}</td>
+                @if ($hasPhotos)
+                    <td class="photo">@if (!empty($photos[$i]))<img src="{{ $photos[$i] }}" style="width:11mm; height:11mm;" alt="">@endif</td>
+                @endif
                 <td>
-                    @if ($logoAbsolutePath)
-                        <img src="{{ $logoAbsolutePath }}" class="brand-logo" alt="{{ $storeName }}">
+                    <div class="item-name">{{ $item['name'] }}</div>
+                    @if (!empty($item['description']))<div class="item-sub">{{ $item['description'] }}</div>@endif
+                </td>
+                <td class="c">{{ $trim($item['qty']) }}</td>
+                <td class="r">{{ $money($item['price']) }}</td>
+                @if ($hasLineDiscount)<td class="r" style="color:#dc2626;">{{ ($item['discount'] ?? 0) > 0 ? '-' . $money($item['discount']) : '—' }}</td>@endif
+                <td class="r" style="font-weight:bold; color:#111827;">{{ $money($item['total'] ?? 0) }}</td>
+            </tr>
+        @endforeach
+    </tbody>
+</table>
+
+<table class="summary">
+    <tr>
+        <td class="left">
+            @if ($store['showWords'])
+                <table class="panel"><tr><td>
+                    <div class="label">Amount in Words</div>
+                    <div style="font-weight:bold; color:#111827;">{{ amount_in_words((float) $invoice->total) }} {{ $store['currencyWord'] }} Only</div>
+                </td></tr></table>
+            @endif
+        </td>
+        <td class="gap"></td>
+        <td class="right">
+            <table class="totals">
+                <tr><td>Subtotal</td><td class="v">{{ $money($invoice->subtotal) }}</td></tr>
+                @if ($invoice->discount > 0)
+                    <tr><td>Discount{{ $invoice->discount_type === 'percent' ? ' (' . $trim($invoice->discount_value) . '%)' : '' }}</td><td class="v minus">-{{ $money($invoice->discount) }}</td></tr>
+                @endif
+                @if ($invoice->tax > 0)
+                    <tr><td>Tax / VAT ({{ $trim($invoice->tax_rate) }}%)</td><td class="v">{{ $money($invoice->tax) }}</td></tr>
+                @endif
+                @if ($invoice->shipping > 0)
+                    <tr><td>Delivery Charge</td><td class="v">{{ $money($invoice->shipping) }}</td></tr>
+                @endif
+                <tr class="grand"><td>Total</td><td style="text-align:right;">{{ $money($invoice->total) }}</td></tr>
+                @if (!$isQuote && !in_array($invoice->status, ['draft', 'cancelled'], true))
+                    @if ($invoice->paid_amount > 0)
+                        <tr><td>Paid</td><td class="v">{{ $money($invoice->paid_amount) }}</td></tr>
+                    @endif
+                    @if ($invoice->due_amount > 0)
+                        <tr class="due"><td>Balance Due</td><td style="text-align:right;">{{ $money($invoice->due_amount) }}</td></tr>
                     @else
-                        <div class="brand">{{ $storeName }}</div>
+                        <tr class="settled"><td>Paid in Full</td><td style="text-align:right;">{{ $money($invoice->total) }}</td></tr>
                     @endif
-                    <div class="brand-contact">
-                        {{ $storeEmail }}<br>
-                        @if ($storePhone){{ $storePhone }}<br>@endif
-                        {{ $storeAddress }}
-                        @if ($taxNumber)<br>{{ $taxNumber }}@endif
-                    </div>
-                </td>
-                <td class="invoice-title">
-                    <h1>{{ $docTitle }}</h1>
-                    <div class="inv-number">{{ $invoice->number }}</div>
-                    @unless ($isQuote)
-                        <div style="margin-top:6px;">
-                            <span class="badge" style="background: {{ $statusColor }}22; color: {{ $statusColor }};">{{ $statusLabel }}</span>
-                        </div>
-                    @endunless
-                    <div class="inv-meta">
-                        Date: {{ $invoice->issue_date->format('d F Y') }}
-                        @if ($invoice->due_date)
-                            <br>{{ $isQuote ? 'Valid until' : 'Due' }}: {{ $invoice->due_date->format('d F Y') }}
-                        @endif
-                    </div>
-                </td>
-            </tr>
-        </table>
-
-        <div class="divider"></div>
-
-        <table class="info-grid">
-            <tr>
-                <td>
-                    <div class="info-box">
-                        <h4>{{ $isQuote ? 'Prepared For' : 'Bill To' }}</h4>
-                        <p>
-                            <span class="val">{{ $invoice->customer_name }}</span>
-                            @if ($invoice->customer_address)<br>{!! nl2br(e($invoice->customer_address)) !!}@endif
-                            @if ($invoice->customer_phone)<br>{{ $invoice->customer_phone }}@endif
-                            @if ($invoice->customer_email)<br>{{ $invoice->customer_email }}@endif
-                        </p>
-                    </div>
-                </td>
-                <td>
-                    <div class="info-box">
-                        <h4>{{ $docLabel }} Details</h4>
-                        <p>
-                            <span class="row-label">{{ $docLabel }} No:</span> {{ $invoice->number }}<br>
-                            <span class="row-label">Date:</span> {{ $invoice->issue_date->format('d M Y') }}<br>
-                            @unless ($isQuote)
-                                <span class="row-label">Payment:</span>
-                                <span style="font-weight:700; color: {{ $statusColor }};">{{ $statusLabel }}</span>
-                                @if ($invoice->payment_method) · {{ $invoice->payment_method }}@endif
-                            @else
-                                <span class="row-label">Items:</span> {{ count($invoice->items) }}
-                            @endunless
-                        </p>
-                    </div>
-                </td>
-            </tr>
-        </table>
-
-        <div class="items-wrap">
-            <table class="items-table">
-                <thead>
-                    <tr>
-                        <th style="text-align:left; width:5%">#</th>
-                        <th style="text-align:left;">Description</th>
-                        <th class="text-center" style="width:9%">Qty</th>
-                        <th class="text-right" style="width:15%">Unit Price</th>
-                        @if ($hasLineDiscount)<th class="text-right" style="width:12%">Discount</th>@endif
-                        <th class="text-right" style="width:16%">Amount</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach ($invoice->items as $i => $item)
-                        <tr>
-                            <td>{{ $i + 1 }}</td>
-                            <td>
-                                <div class="prod-name">{{ $item['name'] }}</div>
-                                @if (!empty($item['description']))<div class="prod-sku">{{ $item['description'] }}</div>@endif
-                            </td>
-                            <td class="text-center">{{ rtrim(rtrim(number_format((float) $item['qty'], 2, '.', ''), '0'), '.') }}</td>
-                            <td class="num">{{ $money($item['price']) }}</td>
-                            @if ($hasLineDiscount)<td class="num" style="color:#dc2626;">{{ ($item['discount'] ?? 0) > 0 ? '-' . $money($item['discount']) : '—' }}</td>@endif
-                            <td class="num" style="font-weight:700;">{{ $money($item['total'] ?? 0) }}</td>
-                        </tr>
-                    @endforeach
-                </tbody>
+                @endif
             </table>
-        </div>
+        </td>
+    </tr>
+</table>
 
-        <div class="clearfix">
-            <div class="totals">
-                <table>
-                    <tr><td class="label">Subtotal</td><td class="amount">{{ $money($invoice->subtotal) }}</td></tr>
-                    @if ($invoice->discount > 0)
-                        <tr>
-                            <td class="label">Discount{{ $invoice->discount_type === 'percent' ? ' (' . rtrim(rtrim((string) $invoice->discount_value, '0'), '.') . '%)' : '' }}</td>
-                            <td class="amount discount-amount">-{{ $money($invoice->discount) }}</td>
-                        </tr>
-                    @endif
-                    @if ($invoice->tax > 0)
-                        <tr><td class="label">Tax / VAT ({{ rtrim(rtrim((string) $invoice->tax_rate, '0'), '.') }}%)</td><td class="amount">{{ $money($invoice->tax) }}</td></tr>
-                    @endif
-                    @if ($invoice->shipping > 0)
-                        <tr><td class="label">Delivery charge</td><td class="amount">{{ $money($invoice->shipping) }}</td></tr>
-                    @endif
-                    <tr class="separator"><td colspan="2"></td></tr>
-                    <tr class="total-row"><td class="label">Total</td><td class="amount">{{ $money($invoice->total) }}</td></tr>
-                </table>
-            </div>
-        </div>
-        <div class="clearfix"></div>
-
-        @if ($showWords)
-            <p class="words-row">In words: <strong>{{ amount_in_words((float) $invoice->total) }} {{ $currencyWordName }} Only</strong></p>
-        @endif
-
-        @if (!$isQuote && $invoice->status !== 'draft')
-            <table class="pay-strip">
-                <tr>
-                    <td>
-                        <div class="pay-card" style="background:#ecfdf5;">
-                            <div class="k" style="color:#047857;">Paid</div>
-                            <div class="v" style="color:#065f46;">{{ $money($invoice->paid_amount) }}</div>
-                        </div>
-                    </td>
-                    <td>
-                        <div class="pay-card" style="background: {{ $invoice->due_amount > 0 ? '#fef2f2' : '#f9fafb' }};">
-                            <div class="k" style="color: {{ $invoice->due_amount > 0 ? '#b91c1c' : '#6b7280' }};">Balance due</div>
-                            <div class="v" style="color: {{ $invoice->due_amount > 0 ? '#991b1b' : '#374151' }};">{{ $money($invoice->due_amount) }}</div>
-                        </div>
-                    </td>
-                </tr>
-            </table>
-        @endif
-
-        @php
-            $noteBoxes = array_filter([
-                $invoice->notes ? ['title' => 'Notes', 'body' => $invoice->notes] : null,
-                $invoice->terms ? ['title' => 'Terms &amp; Conditions', 'body' => $invoice->terms] : null,
-                $bankDetails && !$isQuote ? ['title' => 'Bank / Payment Details', 'body' => $bankDetails] : null,
-            ]);
-        @endphp
-        @if ($noteBoxes)
-            <table style="width:100%; margin-top:8px; border-collapse:separate; border-spacing:8px 0;">
-                <tr>
-                    @foreach ($noteBoxes as $box)
-                        <td style="width:{{ (int) (100 / count($noteBoxes)) }}%; vertical-align:top; padding:0;">
-                            <div class="note-box" style="margin-top:0;">
-                                <h4>{!! $box['title'] !!}</h4>
-                                <p>{{ $box['body'] }}</p>
-                            </div>
-                        </td>
-                    @endforeach
-                </tr>
-            </table>
-        @endif
-
-        @if ($signatureAbsolutePath)
-            <table class="bottom-strip">
-                <tr>
-                    <td></td>
-                    <td style="width:200px; text-align:center;">
-                        <img src="{{ $signatureAbsolutePath }}" class="signature-img" alt="Signature">
-                        <div class="signature-line">Authorized Signature</div>
-                    </td>
-                </tr>
-            </table>
-        @endif
-
-        <div class="footer">
-            <p>
-                {{ $footerText }}<br>
-                For questions about this {{ strtolower($docLabel) }}, contact us at <strong>{{ $storeEmail }}</strong>@if ($storePhone) · <strong>{{ $storePhone }}</strong>@endif<br>
-                This is a computer-generated {{ strtolower($docLabel) }}{{ $signatureAbsolutePath ? '.' : ' and does not require a signature.' }}
-            </p>
-        </div>
-
-        @if ($stamp)
-            <div class="stamp" style="color: {{ $stamp[1] }};">{{ $stamp[0] }}</div>
-        @endif
-    </div>
+@include('admin.invoices._pdf-closing', ['thanks' => ($isQuote ? 'Thank you for considering us, ' : 'Thank you for your business, ') . $invoice->customer_name . '!', 'qr' => null, 'boxes' => [
+    $invoice->notes ? ['Notes', $invoice->notes] : null,
+    $invoice->terms ? ['Terms & Conditions', $invoice->terms] : null,
+    $store['bank'] && !$isQuote ? ['Bank / Payment Details', $store['bank']] : null,
+]])
 </body>
-
 </html>

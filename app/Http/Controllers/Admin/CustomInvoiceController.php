@@ -9,7 +9,6 @@ use App\Models\Order;
 use App\Models\Product;
 use App\Models\User;
 use App\Services\AuditLogger;
-use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -197,11 +196,19 @@ class CustomInvoiceController extends Controller
     /** PDF — ?inline=1 opens it in the browser (to print), otherwise downloads. */
     public function pdf(Request $request, CustomInvoice $customInvoice)
     {
-        $pdf = Pdf::loadView('admin.custom-invoices.pdf', ['invoice' => $customInvoice])->setPaper('a4', 'portrait');
-        $this->registerInvoiceFont($pdf);
+        $photos = [];
+        if (\App\Support\InvoicePdf::showPhotos()) {
+            $images = Product::whereIn('id', collect($customInvoice->items)->pluck('product_id')->filter())->pluck('image', 'id');
+            foreach ($customInvoice->items as $i => $item) {
+                $photos[$i] = \App\Support\InvoicePdf::image($images[$item['product_id'] ?? 0] ?? null, 132);
+            }
+            $photos = array_filter($photos);
+        }
+
+        $bytes = \App\Support\InvoicePdf::render('admin.custom-invoices.pdf', ['invoice' => $customInvoice, 'photos' => $photos], $customInvoice->accent_color);
         $name = strtolower($customInvoice->typeMeta()[1]) . "-{$customInvoice->number}.pdf";
 
-        return $request->boolean('inline') ? $pdf->stream($name) : $pdf->download($name);
+        return \App\Support\InvoicePdf::response($bytes, $name, $request->boolean('inline'));
     }
 
     /** Builder look-ups: catalog products (word search) and existing customers with their address. */
@@ -285,15 +292,5 @@ class CustomInvoiceController extends Controller
             throw \Illuminate\Validation\ValidationException::withMessages(['items' => 'Add at least one item with a name and quantity.']);
         }
         $invoice->syncPaymentStatus();
-    }
-
-    /** Hind Siliguri for Bangla names/addresses — same as OrderController::registerInvoiceFont. */
-    private function registerInvoiceFont($pdf): void
-    {
-        $fontMetrics = $pdf->getDomPDF()->getFontMetrics();
-        foreach (['normal', 'italic'] as $style) {
-            $fontMetrics->registerFont(['family' => 'Hind Siliguri', 'style' => $style, 'weight' => 'normal'], storage_path('fonts/HindSiliguri-Regular.ttf'));
-            $fontMetrics->registerFont(['family' => 'Hind Siliguri', 'style' => $style, 'weight' => 'bold'], storage_path('fonts/HindSiliguri-Bold.ttf'));
-        }
     }
 }

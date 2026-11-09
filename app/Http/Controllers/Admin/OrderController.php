@@ -10,7 +10,6 @@ use App\Services\CourierFraudCheckService;
 use App\Services\FraudDetectionService;
 use App\Services\Notifications\NotificationDispatcher;
 use App\Services\OrderStockService;
-use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 
 class OrderController extends Controller
@@ -453,7 +452,7 @@ class OrderController extends Controller
 
     public function invoice(Order $order)
     {
-        $order->load('user', 'items.product');
+        $order->load('user', 'items.product', 'payment');
 
         // The public order-tracking link (routes/web.php: guest.order.track) only ever checks
         // the token, not who placed the order — so backfilling one here (for orders that were
@@ -463,19 +462,25 @@ class OrderController extends Controller
             $order->forceFill(['guest_token' => \Illuminate\Support\Str::random(64)])->save();
         }
 
-        $pdf = Pdf::loadView('admin.orders.invoice', [
+        $photos = [];
+        if (\App\Support\InvoicePdf::showPhotos()) {
+            foreach ($order->items as $item) {
+                $photos[$item->id] = \App\Support\InvoicePdf::image($item->product?->image, 132);
+            }
+            $photos = array_filter($photos);
+        }
+
+        $bytes = \App\Support\InvoicePdf::render('admin.orders.invoice', [
             'order' => $order,
+            'photos' => $photos,
             'trackingQr' => $this->invoiceTrackingQr($order),
-        ])->setPaper('a4', 'portrait');
+        ]);
 
-        $this->registerInvoiceFont($pdf);
-
-        return $pdf->download("invoice-{$order->order_number}.pdf");
+        return \App\Support\InvoicePdf::response($bytes, "invoice-{$order->order_number}.pdf");
     }
 
     /**
-     * A QR code (embedded as an inline SVG data URI, so it needs no GD/Imagick extension
-     * and no temp file) linking straight to this order's public tracking page. Wrapped in
+     * A QR code (embedded as a PNG data URI, so it needs no temp file) linking straight to this order's public tracking page. Wrapped in
      * a try/catch so a QR-library hiccup can never take down invoice downloads — the
      * invoice template simply omits the code when this comes back null.
      */
@@ -487,10 +492,10 @@ class OrderController extends Controller
         try {
             $url = route('guest.order.track', ['order_number' => $order->order_number, 'token' => $order->guest_token]);
             $result = (new \Endroid\QrCode\Builder\Builder(
-                writer: new \Endroid\QrCode\Writer\SvgWriter(),
+                writer: new \Endroid\QrCode\Writer\PngWriter(),
                 data: $url,
                 errorCorrectionLevel: \Endroid\QrCode\ErrorCorrectionLevel::Low,
-                size: 160,
+                size: 240,
                 margin: 0,
             ))->build();
 
@@ -500,32 +505,6 @@ class OrderController extends Controller
 
             return null;
         }
-    }
-
-    /**
-     * dompdf's bundled DejaVu Sans font has almost no Bengali glyph coverage, so
-     * Bangla order notes/addresses/names render as blank boxes. Register Hind
-     * Siliguri (storage/fonts) as a real font family before the PDF renders.
-     */
-    private function registerInvoiceFont($pdf): void
-    {
-        $fontMetrics = $pdf->getDomPDF()->getFontMetrics();
-        $fontMetrics->registerFont(
-            ['family' => 'Hind Siliguri', 'style' => 'normal', 'weight' => 'normal'],
-            storage_path('fonts/HindSiliguri-Regular.ttf')
-        );
-        $fontMetrics->registerFont(
-            ['family' => 'Hind Siliguri', 'style' => 'normal', 'weight' => 'bold'],
-            storage_path('fonts/HindSiliguri-Bold.ttf')
-        );
-        $fontMetrics->registerFont(
-            ['family' => 'Hind Siliguri', 'style' => 'italic', 'weight' => 'normal'],
-            storage_path('fonts/HindSiliguri-Regular.ttf')
-        );
-        $fontMetrics->registerFont(
-            ['family' => 'Hind Siliguri', 'style' => 'italic', 'weight' => 'bold'],
-            storage_path('fonts/HindSiliguri-Bold.ttf')
-        );
     }
 
     /**
