@@ -29,6 +29,11 @@ class ImageThumbController extends Controller
         $source = substr($path, 0, -5);
         abort_unless($disk->exists($source) && preg_match('/\.(jpe?g|png|webp)$/i', $source), 404);
 
+        // a photo that carries the store's watermark has no unmarked copy at this size
+        if (\App\Support\Watermark::applies($source, $width)) {
+            return redirect(\App\Support\Watermark::url($source, $width), 302);
+        }
+
         $target = "thumbs/{$width}/{$path}";
         if (!$disk->exists($target)) {
             $image = @imagecreatefromstring($disk->get($source));

@@ -37,7 +37,7 @@
             "Buy original {$product->name} at {$priceText} in Bangladesh. Cash on delivery.",
         ], 160),
     };
-    $ogImage  = $product->og_image ?: ($product->image ? Storage::url($product->image) : null);
+    $ogImage  = $product->og_image ?: \App\Support\Watermark::publicUrl($product->image);
     $canonicalUrl = $product->canonical_url ?: route('products.show', $product);
 
     // robots_meta (the base select) and the noindex/nofollow/nosnippet/noimageindex checkboxes
@@ -196,7 +196,7 @@
         @php
             $productColorsJs = $product->isVariable() ? $product->colors->map(fn ($c) => [
                 'id' => $c->id, 'name' => $c->name, 'hex_code' => $c->hex_code,
-                'image' => $c->image ? Storage::url($c->image) : null,
+                'image' => $c->image ? image_thumb($c->image, 1200) : null,
             ]) : collect();
             $productSizesJs = $product->isVariable() ? $product->sizes->map(fn ($s) => [
                 'id' => $s->id, 'name' => $s->name,
@@ -212,7 +212,7 @@
         @endphp
         <div class="grid grid-cols-1 md:grid-cols-2 gap-8 p-8"
             x-data="{
-                active: '{{ $product->image ? Storage::url($product->image) : '' }}',
+                active: '{{ $product->image ? image_thumb($product->image, 1200) : '' }}',
                 zoomX: 50, zoomY: 50,
                 qty: 1,
                 productColors: {{ Js::from($productColorsJs) }},
@@ -261,7 +261,7 @@
                          booted, which delayed its download by seconds (PageSpeed "LCP load delay").
                          :src still swaps it when a color with its own photo is picked. --}}
                     @if($product->image)
-                        <img src="{{ Storage::url($product->image) }}" :src="active || '{{ Storage::url($product->image) }}'" fetchpriority="high" decoding="async" :style="`transform-origin: ${zoomX}% ${zoomY}%`" alt="{{ $product->image_alt ?: $product->name }}" title="{{ $product->image_title ?: $product->name }}" class="w-full h-full object-contain transition-transform duration-300 ease-out group-hover:scale-[1.8]">
+                        <img src="{{ image_thumb($product->image, 1200) }}" :src="active || '{{ image_thumb($product->image, 1200) }}'" fetchpriority="high" decoding="async" :style="`transform-origin: ${zoomX}% ${zoomY}%`" alt="{{ $product->image_alt ?: $product->name }}" title="{{ $product->image_title ?: $product->name }}" class="w-full h-full object-contain transition-transform duration-300 ease-out group-hover:scale-[1.8]">
                     @else
                     <template x-if="active">
                         <img :src="active" :style="`transform-origin: ${zoomX}% ${zoomY}%`" alt="{{ $product->image_alt ?: $product->name }}" title="{{ $product->image_title ?: $product->name }}" class="w-full h-full object-contain transition-transform duration-300 ease-out group-hover:scale-[1.8]">
@@ -278,16 +278,16 @@
                 @if($product->images->isNotEmpty())
                     <div class="flex gap-3 overflow-x-auto pb-1">
                         @if($product->image)
-                            <button type="button" aria-label="Show image 1" @click="active = '{{ Storage::url($product->image) }}'"
+                            <button type="button" aria-label="Show image 1" @click="active = '{{ image_thumb($product->image, 1200) }}'"
                                 class="w-20 h-20 flex-shrink-0 rounded-lg overflow-hidden border-2 bg-gray-50 p-1.5 transition-colors"
-                                :class="active === '{{ Storage::url($product->image) }}' ? 'border-indigo-500' : 'border-gray-200 hover:border-indigo-300'">
+                                :class="active === '{{ image_thumb($product->image, 1200) }}' ? 'border-indigo-500' : 'border-gray-200 hover:border-indigo-300'">
                                 <img src="{{ image_thumb($product->image, 200) }}" alt="" class="w-full h-full object-contain">
                             </button>
                         @endif
                         @foreach($product->images as $img)
-                            <button type="button" aria-label="Show image {{ $loop->iteration + ($product->image ? 1 : 0) }}" @click="active = '{{ Storage::url($img->image) }}'"
+                            <button type="button" aria-label="Show image {{ $loop->iteration + ($product->image ? 1 : 0) }}" @click="active = '{{ image_thumb($img->image, 1200) }}'"
                                 class="w-20 h-20 flex-shrink-0 rounded-lg overflow-hidden border-2 bg-gray-50 p-1.5 transition-colors"
-                                :class="active === '{{ Storage::url($img->image) }}' ? 'border-indigo-500' : 'border-gray-200 hover:border-indigo-300'">
+                                :class="active === '{{ image_thumb($img->image, 1200) }}' ? 'border-indigo-500' : 'border-gray-200 hover:border-indigo-300'">
                                 <img src="{{ image_thumb($img->image, 200) }}" alt="" loading="lazy" class="w-full h-full object-contain">
                             </button>
                         @endforeach

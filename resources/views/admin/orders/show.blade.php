@@ -64,7 +64,7 @@ $rc = $riskColors[$riskLevel];
                              looking like a stamp-sized thumbnail floating on white. --}}
                         <div class="w-16 h-16 bg-gray-50 border border-gray-100 rounded-xl overflow-hidden flex-shrink-0 flex items-center justify-center p-1.5">
                             @if($item->product && $item->product->image)
-                                <img src="{{ Storage::url($item->product->image) }}" class="max-w-full max-h-full object-contain">
+                                <img src="{{ image_thumb($item->product->image, 200) }}" class="max-w-full max-h-full object-contain">
                             @endif
                         </div>
                         <div class="flex-1">

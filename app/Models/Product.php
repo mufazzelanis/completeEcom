@@ -11,7 +11,7 @@ class Product extends Model
         'seller_id',
         'type', 'category_id', 'subcategory_id', 'brand_id', 'name', 'slug', 'sort_order',
         'short_description', 'description', 'sku', 'barcode', 'price', 'sale_price',
-        'stock', 'low_stock_threshold', 'weight', 'image', 'download_file',
+        'stock', 'low_stock_threshold', 'weight', 'image', 'watermark_off', 'download_file',
         'download_expiry_days', 'is_active', 'is_featured', 'views',
         'approval_status', 'rejection_reason',
         // Basic SEO
@@ -42,6 +42,7 @@ class Product extends Model
         'sitemap_priority' => 'decimal:2',
         'is_active' => 'boolean',
         'is_featured' => 'boolean',
+        'watermark_off' => 'boolean',
         'marked_out_of_stock' => 'boolean',
         'noindex' => 'boolean',
         'nofollow' => 'boolean',
@@ -66,6 +67,12 @@ class Product extends Model
             if ($product->is_active && $product->approval_status === 'approved' && ! $product->noindex
                 && ($product->wasRecentlyCreated || $product->wasChanged(['name', 'slug', 'price', 'sale_price', 'description', 'short_description', 'image', 'is_active', 'marked_out_of_stock', 'meta_title', 'meta_description']))) {
                 \App\Services\IndexNow::submit(route('products.show', $product->slug));
+            }
+        });
+        static::saved(function ($product) {
+            if ($product->wasChanged('watermark_off')
+                || (($product->watermark_off || $product->seller_id) && ($product->wasRecentlyCreated || $product->wasChanged('image')))) {
+                \App\Support\Watermark::forgetExclusions();
             }
         });
         // Last chance to name any inventory-ledger row that doesn't carry its own copy yet

@@ -35,7 +35,7 @@ class SearchController extends Controller
             'products' => $products->map(fn($p) => [
                 'name'  => $p->name,
                 'price' => '৳' . number_format($p->sale_price ?? $p->price),
-                'image' => $p->image ? asset('storage/' . $p->image) : null,
+                'image' => $p->image ? image_thumb($p->image, 96) : null,
                 'url'   => route('products.show', $p->slug),
             ]),
             'categories' => $categories->map(fn($c) => [
@@ -99,7 +99,7 @@ class SearchController extends Controller
                 'name'      => $p->name,
                 'sku'       => $p->sku ?? 'No SKU',
                 'price'     => '৳' . number_format($p->price),
-                'image'     => $p->image ? asset('storage/' . $p->image) : null,
+                'image'     => $p->image ? image_thumb($p->image, 96) : null,
                 'is_active' => (bool) $p->is_active,
                 'url'       => route('admin.products.edit', $p->id),
             ]),

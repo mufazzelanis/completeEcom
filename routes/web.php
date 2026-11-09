@@ -119,6 +119,14 @@ Route::get('/google-feed.xml', [\App\Http\Controllers\GoogleFeedController::clas
 // statically) — see ImageThumbController.
 Route::get('/storage/thumbs/{width}/{path}', [\App\Http\Controllers\ImageThumbController::class, 'show'])
     ->where(['width' => '[0-9]+', 'path' => '.*'])->name('image.thumb');
+// Product photos with the store's watermark, and what guards the originals: App\Support\Watermark.
+// No session middleware: an image must never start a session or send a cookie.
+Route::get('/storage/wm/{version}/{width}/{path}', [\App\Http\Controllers\WatermarkImageController::class, 'show'])
+    ->where(['version' => '[0-9]+', 'width' => '[0-9]+', 'path' => '.*'])->withoutMiddleware('web')->name('image.wm');
+Route::get('/storage/products/{path}', [\App\Http\Controllers\WatermarkImageController::class, 'original'])
+    ->where('path', '.*')->withoutMiddleware('web')->name('image.original');
+Route::get('/media/{sig}/{path}', [\App\Http\Controllers\WatermarkImageController::class, 'clean'])
+    ->where(['sig' => '[a-f0-9]{24}', 'path' => '.*'])->withoutMiddleware('web')->name('image.clean');
 Route::get('/robots.txt', [SitemapController::class, 'robots'])->name('robots');
 // AdSense wants this at the domain root listing which ad networks may sell its inventory —
 // 404s until a Publisher ID is saved, same as robots.txt needing public/robots.txt removed.
@@ -839,7 +847,13 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
         Route::delete('settings/redirects/404/{notFoundLog}', [\App\Http\Controllers\Admin\RedirectController::class, 'dismissNotFound'])->name('redirects.404.dismiss');
         Route::put('settings/redirects/{redirect}', [\App\Http\Controllers\Admin\RedirectController::class, 'update'])->name('redirects.update');
         Route::delete('settings/redirects/{redirect}', [\App\Http\Controllers\Admin\RedirectController::class, 'destroy'])->name('redirects.destroy');
-        Route::get('settings/{group}', [AdminSettingController::class, 'show'])->name('settings.show');
+        // Settings → Watermark. Registered before settings/{group} so "watermark" isn't taken for a group name.
+    Route::get('settings/watermark', [\App\Http\Controllers\Admin\WatermarkController::class, 'index'])->name('watermark.index');
+    Route::post('settings/watermark', [\App\Http\Controllers\Admin\WatermarkController::class, 'update'])->name('watermark.update');
+    Route::post('settings/watermark/logo', [\App\Http\Controllers\Admin\WatermarkController::class, 'logo'])->name('watermark.logo');
+    Route::get('settings/watermark/preview', [\App\Http\Controllers\Admin\WatermarkController::class, 'preview'])->name('watermark.preview');
+    Route::post('settings/watermark/publish', [\App\Http\Controllers\Admin\WatermarkController::class, 'publishNow'])->name('watermark.publish');
+    Route::get('settings/{group}', [AdminSettingController::class, 'show'])->name('settings.show');
         Route::patch('settings/{group}', [AdminSettingController::class, 'update'])->name('settings.update');
         Route::post('settings/test-email', [AdminSettingController::class, 'testEmail'])->name('settings.test-email');
         Route::post('settings/test-telegram', [AdminSettingController::class, 'testTelegram'])->name('settings.test-telegram');

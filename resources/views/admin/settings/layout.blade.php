@@ -40,6 +40,7 @@ $navGroups = [
         ['group' => 'ads',            'label' => 'Advertisements',    'icon' => 'M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z'],
     ],
     'Design' => [
+        ['group' => 'watermark',    'label' => 'Watermark',         'icon' => 'M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z', 'route' => 'admin.watermark.index'],
         ['group' => 'theme',        'label' => 'Theme & Design',    'icon' => 'M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01'],
     ],
     'System' => [
@@ -48,7 +49,7 @@ $navGroups = [
         ['group' => 'api',          'label' => 'API & Integrations','icon' => 'M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4'],
     ],
 ];
-$currentGroup = request()->routeIs('admin.redirects.*') ? 'redirects' : request()->route('group', 'general');
+$currentGroup = request()->routeIs('admin.redirects.*') ? 'redirects' : (request()->routeIs('admin.watermark.*') ? 'watermark' : request()->route('group', 'general'));
 @endphp
 
 {{-- flex-col on mobile — same reasoning as admin/reports/layout.blade.php: a fixed w-52

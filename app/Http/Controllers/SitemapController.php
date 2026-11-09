@@ -19,7 +19,7 @@ class SitemapController extends Controller
 
         $urls = [];
         // absolute URL for an image path (Google Images reads <image:loc> from the sitemap)
-        $img = fn (?string $path) => $path ? (str_starts_with($path, 'http') ? $path : url(\Illuminate\Support\Facades\Storage::url($path))) : null;
+        $img = fn (?string $path) => \App\Support\Watermark::publicUrl($path); // the address really served, never a redirect
 
         $urls[] = ['loc' => route('home'), 'changefreq' => 'daily', 'priority' => '1.0'];
         $urls[] = ['loc' => route('shop.index'), 'changefreq' => 'daily', 'priority' => '0.9'];

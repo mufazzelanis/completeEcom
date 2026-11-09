@@ -56,7 +56,7 @@
             <div class="flex items-center gap-2 flex-shrink-0">
                 <div class="w-10 h-10 bg-gray-100 rounded-lg overflow-hidden p-1">
                     @if($item->product?->image)
-                    <img src="{{ \Illuminate\Support\Facades\Storage::url($item->product->image) }}" class="w-full h-full object-contain">
+                    <img src="{{ image_thumb($item->product->image, 200) }}" class="w-full h-full object-contain">
                     @endif
                 </div>
                 <div>

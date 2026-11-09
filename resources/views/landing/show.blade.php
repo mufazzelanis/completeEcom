@@ -525,7 +525,7 @@
                 {{-- Fixed-size rounded "card" frame with a soft brand-tinted backdrop; the photo
                      itself uses object-contain so it never gets cropped, whatever its shape. --}}
                 <div class="w-44 h-44 mx-auto mb-3 rounded-2xl flex items-center justify-center p-4" style="background: linear-gradient(145deg, {{ $primary }}14, {{ $primary }}05);">
-                    <img src="{{ Storage::url($landingPage->product->image) }}" alt="{{ $landingPage->title }}" class="max-w-full max-h-full object-contain drop-shadow-md">
+                    <img src="{{ image_thumb($landingPage->product->image, 800) }}" alt="{{ $landingPage->title }}" class="max-w-full max-h-full object-contain drop-shadow-md">
                 </div>
             @endif
 
@@ -835,7 +835,7 @@
         class="fixed bottom-0 inset-x-0 z-50 flex justify-center pointer-events-none">
         <div class="w-full max-w-md bg-white/95 backdrop-blur border-t border-gray-100 shadow-[0_-8px_24px_-8px_rgba(0,0,0,0.15)] px-3 py-2.5 flex items-center gap-3 pointer-events-auto" style="padding-bottom: max(0.625rem, env(safe-area-inset-bottom));">
             @if($stickyThumb)
-            <img src="{{ Storage::url($stickyThumb) }}" alt="" class="w-11 h-11 rounded-xl object-contain bg-gray-50 border border-gray-100 shrink-0">
+            <img src="{{ image_thumb($stickyThumb, 96) }}" alt="" class="w-11 h-11 rounded-xl object-contain bg-gray-50 border border-gray-100 shrink-0">
             @endif
             <div class="min-w-0 flex-1">
                 <p class="text-xs font-semibold text-gray-700 truncate">{{ $landingPage->title }}</p>

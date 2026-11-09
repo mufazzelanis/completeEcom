@@ -104,6 +104,10 @@ if (!function_exists('image_thumb')) {
         $widths = \App\Http\Controllers\ImageThumbController::WIDTHS;
         $size = collect($widths)->first(fn ($w) => $w >= $width) ?? end($widths);
 
+        if (\App\Support\Watermark::applies($path, $size)) {
+            return \App\Support\Watermark::url($path, $size);
+        }
+
         return \Illuminate\Support\Facades\Storage::disk('public')->url("thumbs/{$size}/{$path}.webp");
     }
 }

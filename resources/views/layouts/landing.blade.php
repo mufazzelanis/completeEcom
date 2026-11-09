@@ -55,7 +55,7 @@
     <meta property="og:title" content="{{ $landingPage->meta_title ?: $landingPage->title }}">
     <meta property="og:description" content="{{ $lpDescription }}">
     @php $ogImg = $landingPage->og_image ?? $landingPage->hero_image; @endphp
-    @if($ogImg)<meta property="og:image" content="{{ Storage::url($ogImg) }}">@endif
+    @if($ogImg)<meta property="og:image" content="{{ \App\Support\Watermark::publicUrl($ogImg) }}">@endif
     <meta property="og:type" content="website">
     {{-- Canonical = the bare page URL. Ad traffic lands with ?fbclid=… / ?utm_… on every
          visit — without this each variant counted as its own page (Search Console:

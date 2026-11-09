@@ -120,6 +120,8 @@ return Application::configure(basePath: dirname(__DIR__))
         // who's behind visitor IPs (Amazon AWS, Grameenphone, Googlebot's network …) for Blog analytics
         // and Activity Log — runs before the bot classifier needs it
         $schedule->command('visitors:resolve-ips')->everyMinute()->withoutOverlapping()->runInBackground();
+        // exits at once unless a new watermark is waiting to be prepared
+        $schedule->command('watermark:build')->everyMinute()->withoutOverlapping(15)->runInBackground();
         // relabel guest views from IPs that never ran the page JavaScript (scrapers posing as Chrome)
         $schedule->command('activity:classify-bots')->everyFiveMinutes()->withoutOverlapping();
         // bot / no-interaction blog views are only kept for the visitor log; readers stay

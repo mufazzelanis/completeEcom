@@ -86,10 +86,10 @@ class GoogleFeedController extends Controller
         $xml->writeElement('g:title', Str::limit($product->name, 150, ''));
         $xml->writeElement('g:description', Str::limit($description, 5000, ''));
         $xml->writeElement('g:link', $product->canonical_url ?: route('products.show', $product));
-        // url(): Storage::url() can be root-relative depending on filesystem config; Google needs absolute.
-        $xml->writeElement('g:image_link', url(Storage::url($product->image)));
+        // Absolute, and the clean photo: Merchant Center disapproves watermarked images.
+        $xml->writeElement('g:image_link', \App\Support\Watermark::cleanUrl($product->image));
         foreach ($product->images->take(10) as $image) {
-            $xml->writeElement('g:additional_image_link', url(Storage::url($image->image)));
+            $xml->writeElement('g:additional_image_link', \App\Support\Watermark::cleanUrl($image->image));
         }
         $xml->writeElement('g:availability', $availability);
         if ($availableOn) {

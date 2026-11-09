@@ -666,6 +666,13 @@
                     </label>
                     <span class="text-sm text-gray-700">Featured</span>
                 </div>
+                <div class="flex items-center space-x-3">
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" name="watermark_off" value="1" {{ old('watermark_off', $product->watermark_off ?? false) ? 'checked' : '' }} class="sr-only peer">
+                        <div class="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:bg-indigo-600 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-full"></div>
+                    </label>
+                    <span class="text-sm text-gray-700">No watermark on this product</span>
+                </div>
             </div>
         </div>
 

@@ -307,6 +307,7 @@ class ProductController extends Controller
         $data['sort_order']           = $request->filled('sort_order') ? (int) $request->sort_order : 0;
         $data['is_active']            = $request->boolean('is_active', true);
         $data['is_featured']          = $request->boolean('is_featured');
+        $data['watermark_off']        = $request->boolean('watermark_off');
         $data['download_expiry_days'] = $request->filled('download_expiry_days') ? (int) $request->download_expiry_days : null;
 
         if ($request->hasFile('image')) {
@@ -414,6 +415,7 @@ class ProductController extends Controller
         $data['sort_order']           = $request->filled('sort_order') ? (int) $request->sort_order : $product->sort_order;
         $data['is_active']            = $request->boolean('is_active');
         $data['is_featured']          = $request->boolean('is_featured');
+        $data['watermark_off']        = $request->boolean('watermark_off');
         $data['download_expiry_days'] = $request->filled('download_expiry_days') ? (int) $request->download_expiry_days : null;
 
         if ($request->hasFile('image')) {
