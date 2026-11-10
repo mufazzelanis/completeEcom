@@ -274,6 +274,7 @@ class LandingPageController extends Controller
             'certificates_heading'     => 'nullable|string|max:255',
             'certificates_subheading'  => 'nullable|string|max:500',
             'brand_color'              => 'nullable|regex:/^#[0-9a-fA-F]{6}$/',
+            'theme'                    => 'nullable|in:' . implode(',', \App\Support\LandingThemes::keys()),
             // Pixel IDs — loosely shaped rather than byte-exact, so a pasted value with
             // stray whitespace or a slightly different but still valid format doesn't
             // bounce the whole form. Each one independently optional; leaving any blank
@@ -343,6 +344,7 @@ class LandingPageController extends Controller
         $data['brand_color'] = $request->boolean('brand_color_enabled') && $request->filled('brand_color')
             ? $request->brand_color
             : null;
+        $data['theme'] = \App\Support\LandingThemes::key($request->input('theme'));
 
         return $data;
     }

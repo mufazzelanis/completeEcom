@@ -738,6 +738,35 @@
                 <input type="text" name="order_button_text" value="{{ old('order_button_text', $lp->order_button_text ?? 'Order Now') }}"
                     class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
             </div>
+            {{-- Design: the same content in another look (App\Support\LandingThemes). Each card is a
+                 tiny sketch of the theme's page — header, hero, price and button in its colours. --}}
+            @php $themeNow = \App\Support\LandingThemes::key(old('theme', $lp->theme ?? 'classic')); @endphp
+            <div x-data="{ theme: @js($themeNow) }">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Design Theme</label>
+                <p class="text-xs text-gray-400 mb-2">Same content, different design — switch any time, nothing needs re-typing.</p>
+                <div class="grid grid-cols-2 gap-2">
+                    @foreach(\App\Support\LandingThemes::all() as $key => $t)
+                    @php [$bg, $brand, $third] = $t['swatch']; $dark = in_array($key, ['offer', 'premium'], true); @endphp
+                    <label class="relative block cursor-pointer rounded-xl border-2 p-1.5 transition"
+                           :class="theme === '{{ $key }}' ? 'border-indigo-500 shadow-md' : 'border-gray-100 hover:border-gray-300'">
+                        <input type="radio" name="theme" value="{{ $key }}" x-model="theme" class="sr-only">
+                        <span class="block rounded-lg overflow-hidden" style="background: {{ $bg }}; height: 74px; position: relative;">
+                            <span style="position:absolute;left:6px;right:6px;top:6px;height:6px;border-radius:3px;background:{{ $dark ? 'rgba(255,255,255,.18)' : 'rgba(0,0,0,.08)' }}"></span>
+                            <span style="position:absolute;left:6px;top:18px;width:46%;height:7px;border-radius:3px;background:{{ $dark ? '#fff' : '#1f2937' }};opacity:.85"></span>
+                            <span style="position:absolute;left:6px;top:29px;width:34%;height:5px;border-radius:3px;background:{{ $dark ? '#fff' : '#1f2937' }};opacity:.35"></span>
+                            <span style="position:absolute;left:6px;top:40px;width:28%;height:9px;border-radius:3px;background:{{ $third }}"></span>
+                            <span style="position:absolute;left:6px;bottom:7px;width:42%;height:11px;border-radius:{{ $key === 'care' ? '8px' : '3px' }};background:{{ $brand }}"></span>
+                            <span style="position:absolute;right:7px;top:18px;width:36%;bottom:7px;border-radius:{{ $key === 'care' ? '14px' : '5px' }};background:{{ $key === 'premium' ? '#1b2420' : '#fff' }};box-shadow:0 1px 3px rgba(0,0,0,.12);border:1px solid {{ $brand }}33"></span>
+                        </span>
+                        <span class="flex items-center justify-between mt-1.5 px-0.5">
+                            <span class="text-xs font-semibold text-gray-800">{{ $t['name'] }}</span>
+                            <svg x-show="theme === '{{ $key }}'" class="w-4 h-4 text-indigo-600" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.7-9.3a1 1 0 00-1.4-1.4L9 10.6 7.7 9.3a1 1 0 00-1.4 1.4l2 2a1 1 0 001.4 0l4-4z" clip-rule="evenodd"/></svg>
+                        </span>
+                        <span class="block text-[11px] leading-tight text-gray-400 px-0.5 mt-0.5">{{ $t['best'] }}</span>
+                    </label>
+                    @endforeach
+                </div>
+            </div>
             <div x-data="{ useCustom: {{ old('brand_color', $lp->brand_color ?? null) ? 'true' : 'false' }} }">
                 <label class="flex items-center gap-2 cursor-pointer mb-2">
                     <input type="checkbox" x-model="useCustom" class="rounded text-indigo-600">

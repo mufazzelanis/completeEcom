@@ -13,6 +13,7 @@
         ? round((($landingPage->compare_at_price - $landingPage->effective_price) / $landingPage->compare_at_price) * 100)
         : null;
     $stickyThumb = $landingPage->hero_image ?: $landingPage->product?->image;
+    $lpTheme = \App\Support\LandingThemes::of($landingPage);
 @endphp
 <style>
     .no-scrollbar::-webkit-scrollbar{display:none}
@@ -292,6 +293,9 @@
         }
     })();
     </script>
+@elseif($lpTheme !== 'classic')
+    {{-- One of the designed themes (App\Support\LandingThemes) --}}
+    @include('landing.themes.page')
 @else
 
     {{-- Hero --}}
