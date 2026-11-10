@@ -140,6 +140,27 @@ class SettingController extends Controller
         }
     }
 
+    /** The latest order, sent the way a new order arrives (photos, copy buttons), marked as a sample. */
+    public function testTelegramOrder()
+    {
+        if (!TelegramNotifier::isEnabled()) {
+            return back()->with('error', 'Fill in the Bot Token and Chat ID and save settings first, then try again.');
+        }
+        $order = \App\Models\Order::latest('id')->first();
+        if (!$order) {
+            return back()->with('error', 'There is no order yet to send as a sample.');
+        }
+
+        (new \App\Observers\TelegramOrderObserver())->sendNewOrder($order, now: true, sample: true);
+
+        $log = NotificationLog::where('channel', 'telegram')->latest('id')->first();
+        if ($log && $log->status === 'failed') {
+            return back()->with('error', 'Telegram rejected the message: ' . $log->error);
+        }
+
+        return back()->with('success', "Order {$order->order_number} sent as a sample — check your Telegram chat.");
+    }
+
     public function testTelegram()
     {
         if (!TelegramNotifier::isEnabled()) {

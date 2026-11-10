@@ -130,7 +130,7 @@
     'description' => $seoDesc,
     'image' => $ogImage ? [$ogImage] : [],
     'sku' => $product->sku ?: (string) $product->id, // the store's own id when no SKU was entered
-    'gtin' => $product->gtin,
+    'gtin' => $product->globalGtin(),
     'mpn' => $product->mpn,
     'brand' => $product->brand ? ['@type' => 'Brand', 'name' => $product->brand->name] : null,
     'countryOfOrigin' => $product->country_of_origin,

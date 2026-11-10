@@ -86,6 +86,21 @@ $channels = [
                @checked(setting('telegram_notifications_enabled', '0') == '1')>
         <span class="text-sm text-gray-700">Send order alerts to Telegram</span>
     </label>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 pl-6">
+        <label class="flex items-center gap-2 cursor-pointer">
+            <input type="hidden" name="telegram_notify_status" value="0">
+            <input type="checkbox" name="telegram_notify_status" value="1" class="rounded text-orange-600"
+                   @checked(setting('telegram_notify_status', '1') == '1')>
+            <span class="text-sm text-gray-700">Also when an order's status or payment changes</span>
+        </label>
+        <label class="flex items-center gap-2 cursor-pointer">
+            <input type="hidden" name="telegram_product_photos" value="0">
+            <input type="checkbox" name="telegram_product_photos" value="1" class="rounded text-orange-600"
+                   @checked(setting('telegram_product_photos', '1') == '1')>
+            <span class="text-sm text-gray-700">Show product photos</span>
+        </label>
+    </div>
+    <p class="text-xs text-gray-400 pl-6">Every alert lists each product's full title: tap it in Telegram, or its 📋 button, to copy it.</p>
 
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
@@ -155,12 +170,20 @@ $channels = [
      HTML and breaks the outer one). --}}
 <div class="bg-white rounded-xl shadow-sm border p-6 mt-6">
     <h2 class="text-base font-semibold text-gray-900 pb-2 border-b mb-4">Test Telegram</h2>
-    <form method="POST" action="{{ route('admin.settings.test-telegram') }}">
-        @csrf
-        <button type="submit" class="px-4 py-2 bg-gray-800 text-white rounded-lg text-sm hover:bg-gray-700">
-            Send Test Message
-        </button>
-    </form>
-    <p class="text-xs text-gray-400 mt-2">Save the Bot Token and Chat ID above first, then test.</p>
+    <div class="flex flex-wrap gap-2">
+        <form method="POST" action="{{ route('admin.settings.test-telegram') }}">
+            @csrf
+            <button type="submit" class="px-4 py-2 bg-gray-800 text-white rounded-lg text-sm hover:bg-gray-700">
+                Send Test Message
+            </button>
+        </form>
+        <form method="POST" action="{{ route('admin.settings.test-telegram-order') }}">
+            @csrf
+            <button type="submit" class="px-4 py-2 bg-orange-600 text-white rounded-lg text-sm hover:bg-orange-700">
+                Send latest order as a sample
+            </button>
+        </form>
+    </div>
+    <p class="text-xs text-gray-400 mt-2">Save the Bot Token and Chat ID above first, then test. The sample shows exactly how a new order arrives, photos included, without placing one.</p>
 </div>
 @endsection

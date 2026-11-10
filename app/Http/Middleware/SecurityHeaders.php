@@ -8,12 +8,25 @@ use Symfony\Component\HttpFoundation\Response;
 
 class SecurityHeaders
 {
+    public const PRIVATE_PAGES = [
+        'admin', 'admin/*', 'seller', 'seller/*', 'cart', 'cart/*', 'checkout', 'checkout/*', 'wishlist',
+        'account', 'account/*', 'profile', 'orders', 'orders/*', 'track-order', 'track-order/*',
+        'login', 'register', 'forgot-password', 'reset-password/*', 'verify-email', 'verify-email/*',
+        'two-factor-challenge', 'confirm-password', 'auth/*', 'r/*', 'email/*', 'newsletter/*',
+    ];
+
     public function handle(Request $request, Closure $next): Response
     {
         $response = $next($request);
 
         if (! $response instanceof Response) {
             return $response;
+        }
+
+        // Per-customer and utility pages: never in Google. A header rather than a meta tag, so
+        // it also covers redirects (/checkout with an empty cart → /cart) and non-HTML responses.
+        if ($request->is(self::PRIVATE_PAGES) && !$response->headers->has('X-Robots-Tag')) {
+            $response->headers->set('X-Robots-Tag', 'noindex, follow');
         }
 
         // No need to tell the world the exact PHP version.

@@ -115,9 +115,9 @@ class SitemapController extends Controller
             '',
             'User-agent: *',
             'Disallow: /admin',
-            'Disallow: /cart',
-            'Disallow: /checkout',
-            'Disallow: /account',
+            // Cart, checkout, login, account, orders… are NOT blocked here on purpose: they send
+            // X-Robots-Tag: noindex (SecurityHeaders), and Google can only obey that if it may fetch
+            // the page. Blocked, they showed up as "Indexed, though blocked by robots.txt".
             // Faceted navigation: every filter/sort/search combination on the shop is its own
             // URL (?sort=, ?brand=…&min_price=…, ?search=…) — thousands of near-duplicates that
             // all canonicalize back to /shop. Search Console showed ~1,900 such "not indexed"
@@ -149,16 +149,9 @@ class SitemapController extends Controller
             // load their products from it, and Googlebot must be able to fetch it to see them.
             // The JSON itself carries X-Robots-Tag: noindex.)
             'Disallow: /auth/',
-            'Disallow: /reset-password/',
-            'Disallow: /verify-email/',
-            'Disallow: /orders/',
-            'Disallow: /track-order/',
+            // one-click unsubscribe links act on a plain GET: a crawler must never follow one
             'Disallow: /email/',
             'Disallow: /newsletter/',
-            ...array_map(fn ($page) => "Disallow: /{$page}$", [
-                'login', 'register', 'forgot-password', 'verify-email', 'two-factor-challenge',
-                'confirm-password', 'profile', 'orders', 'wishlist', 'track-order',
-            ]),
         ];
 
         if (setting('sitemap_enabled', '1') === '1') {

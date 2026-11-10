@@ -179,6 +179,29 @@ class Product extends Model
         return $this->hasMany(Batch::class);
     }
 
+    /**
+     * The barcode Google matches products on: the GTIN field, else the Barcode field when it is a
+     * real EAN/UPC (8, 12, 13 or 14 digits with a correct check digit). Merchant listings flag
+     * products with no brand and no GTIN; most barcodes typed in are exactly this number.
+     */
+    public function globalGtin(): ?string
+    {
+        foreach ([$this->gtin, $this->barcode] as $code) {
+            $digits = preg_replace('/\s+/', '', (string) $code);
+            if (preg_match('/^(\d{8}|\d{12,14})$/', $digits)) {
+                $sum = 0;
+                foreach (str_split(strrev(substr($digits, 0, -1))) as $i => $d) {
+                    $sum += (int) $d * ($i % 2 ? 1 : 3);
+                }
+                if ((10 - $sum % 10) % 10 === (int) substr($digits, -1)) {
+                    return $digits;
+                }
+            }
+        }
+
+        return $this->gtin ?: null; // a GTIN typed in on purpose is sent as it is
+    }
+
     public function isLowStock(): bool
     {
         return $this->stock <= $this->low_stock_threshold;

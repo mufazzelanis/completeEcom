@@ -115,13 +115,14 @@ class GoogleFeedController extends Controller
         }
         // identifier_exists=no only when Google truly has nothing to match on — claiming
         // "no identifiers" for a product that has a GTIN gets it disapproved.
-        if ($product->gtin) {
-            $xml->writeElement('g:gtin', $product->gtin);
+        $gtin = $product->globalGtin();
+        if ($gtin) {
+            $xml->writeElement('g:gtin', $gtin);
         }
         if ($product->mpn) {
             $xml->writeElement('g:mpn', $product->mpn);
         }
-        if (!$product->gtin && !($product->mpn && $product->brand)) {
+        if (!$gtin && !($product->mpn && $product->brand)) {
             $xml->writeElement('g:identifier_exists', 'no');
         }
 

@@ -62,6 +62,15 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->web(append: [SetLocale::class, MaintenanceMode::class, SecurityHeaders::class, \Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets::class]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
+        // A guest sent from /account to /login gets that redirect from the exception handler,
+        // past SecurityHeaders, so the private pages' noindex is added here as well.
+        $exceptions->respond(function (\Symfony\Component\HttpFoundation\Response $response, \Throwable $e, Request $request) {
+            if ($request->is(\App\Http\Middleware\SecurityHeaders::PRIVATE_PAGES) && !$response->headers->has('X-Robots-Tag')) {
+                $response->headers->set('X-Robots-Tag', 'noindex, follow');
+            }
+
+            return $response;
+        });
         $exceptions->shouldRenderJsonWhen(
             fn (Request $request) => $request->is('api/*'),
         );
