@@ -29,6 +29,26 @@ class CategorySeoTest extends TestCase
             ->assertSee('<title>Eye Care (Mens Care) Price in Bangladesh', false);
     }
 
+    public function test_a_parent_with_the_same_name_is_skipped_for_the_next_one_up(): void
+    {
+        $root = $this->category("Personal Care", "personal-care");
+        $hair = $this->category("Hair Care", "hair-care", $root->id);
+        $inner = $this->category("Hair Care", "hair-care-2", $hair->id);
+
+        $this->get(route("shop.category", $inner))->assertOk()
+            ->assertSee("<title>Hair Care (Personal Care) Price in Bangladesh", false)
+            ->assertDontSee("Hair Care (Hair Care)", false);
+    }
+
+    public function test_a_sub_category_named_like_its_top_category_is_worded_apart(): void
+    {
+        $top = $this->category('Hair care', 'hair-care');
+        $sub = $this->category('hair care', 'hair-care-2', $top->id);
+
+        $this->get(route('shop.category', $sub))->assertOk()->assertSee('<title>Hair Care Products Price in Bangladesh', false);
+        $this->get(route('shop.category', $top))->assertOk()->assertSee('<title>Hair Care Price in Bangladesh', false);
+    }
+
     public function test_a_unique_category_keeps_its_short_title(): void
     {
         $parent = $this->category('Baby', 'baby');

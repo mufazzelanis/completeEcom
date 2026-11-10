@@ -17,7 +17,13 @@
     // the parent they all went out with the same title and description, which Google treats as duplicates.
     $shopSeoName = $shopHeading;
     if (isset($category) && $category->parent && \App\Models\Category::where('name', $category->name)->where('id', '!=', $category->id)->exists()) {
-        $shopSeoName .= ' (' . Str::title(Str::lower($category->parent->name)) . ')';
+        // the nearest parent with a different name: "Hair Care" inside "Hair Care" would read "Hair Care (Hair Care)"
+        $ancestor = $category->parent;
+        for ($depth = 0; $ancestor && strcasecmp(trim($ancestor->name), trim($category->name)) === 0 && $depth < 5; $depth++) {
+            $ancestor = $ancestor->parent;
+        }
+        // no such parent (a sub-category named like its own top category): still worded apart from it
+        $shopSeoName .= $ancestor ? ' (' . Str::title(Str::lower($ancestor->name)) . ')' : ' Products';
     }
     $shopFallbackDesc = isset($currentBrand)
         ? "Buy original {$currentBrand->name} products online in Bangladesh at {$siteName}. Best price, cash on delivery and fast delivery across Bangladesh."
