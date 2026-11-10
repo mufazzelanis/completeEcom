@@ -47,7 +47,8 @@ class TelegramOrderObserver
     /** $sample: Settings → Notifications "send a sample" button: the same message, marked as a test. */
     public function sendNewOrder(Order $order, bool $now = false, bool $sample = false): void
     {
-        $order->loadMissing('items.product', 'items.combination.color', 'landingPage');
+        // load(), not loadMissing(): an items list read earlier in the request may predate the items
+        $order->load('items.product', 'items.combination.color', 'landingPage');
         $message = ($sample ? "🧪 <i>Sample of an earlier order</i>\n" : '') . $this->newOrderMessage($order);
 
         TelegramNotifier::sendWithPhotos($message, $this->photos($order), $sample ? 'test' : 'order_placed', $this->copyButtons($order), $now);
@@ -64,7 +65,7 @@ class TelegramOrderObserver
         if ((!$status && !$payment) || setting('telegram_notify_status', '1') !== '1') {
             return;
         }
-        $order->loadMissing('items.product', 'items.combination.color');
+        $order->load('items.product', 'items.combination.color');
 
         $lines = [];
         if ($status) {
