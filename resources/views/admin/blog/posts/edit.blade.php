@@ -75,6 +75,8 @@
 
                 @include('admin.blog.posts._products', ['items' => $blogPost->products->map(fn ($p) => \App\Http\Controllers\Admin\BlogPostController::productRow($p, $p->pivot->note))->all()])
 
+                @include('admin.blog.posts._language')
+
                 {{-- SEO --}}
                 <div class="bg-white rounded-2xl shadow-sm p-6 space-y-5">
                     <div class="flex items-center gap-2">
@@ -141,7 +143,16 @@
                         {{ number_format($blogPost->views) }} views · Created {{ $blogPost->created_at->diffForHumans() }}
                     </div>
                     <button type="submit" class="w-full bg-indigo-600 text-white px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-indigo-700 transition">Save Changes</button>
-                    <a href="{{ route('blog.show', $blogPost) }}" target="_blank" class="block text-center text-xs text-indigo-600 hover:text-indigo-800 font-medium">View live post →</a>
+                    <a href="{{ route('blog.show', $blogPost) }}" target="_blank" class="block text-center text-xs text-indigo-600 hover:text-indigo-800 font-medium">{{ $blogPost->status === 'published' ? 'View live post →' : 'Preview post →' }}</a>
+                    @if($blogPost->review_notes)
+                        {{-- AI Blog quality check: why this post was kept as a draft --}}
+                        <div class="rounded-xl bg-amber-50 ring-1 ring-amber-200 p-3 text-xs text-amber-800 space-y-1">
+                            <p class="font-semibold">Check before publishing</p>
+                            @foreach(preg_split('/\R/', $blogPost->review_notes) as $line)
+                                @if(trim($line) !== '')<p>• {{ $line }}</p>@endif
+                            @endforeach
+                        </div>
+                    @endif
                     <a href="{{ route('admin.blog.analytics.show', $blogPost) }}" class="flex items-center justify-center gap-1.5 text-xs font-semibold text-gray-700 border border-gray-200 hover:border-indigo-300 hover:text-indigo-700 rounded-xl py-2 transition">
                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
                         Reading & sales analytics

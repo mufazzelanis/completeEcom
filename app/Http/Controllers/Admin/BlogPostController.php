@@ -54,13 +54,21 @@ class BlogPostController extends Controller
             'products'         => 'nullable|array|max:50',
             'products.*.id'    => 'required|integer|exists:products,id',
             'products.*.note'  => 'nullable|string|max:255',
+            'lang'                 => 'nullable|in:bn,en',
+            'alt_title'            => 'nullable|string|max:255',
+            'alt_excerpt'          => 'nullable|string|max:2000',
+            'alt_content'          => 'nullable|string',
+            'alt_meta_title'       => 'nullable|string|max:255',
+            'alt_meta_description' => 'nullable|string|max:500',
         ]);
 
         if ($request->filled('slug') && Str::slug($request->slug) === '') {
             return back()->withInput()->withErrors(['slug' => 'This slug must contain at least one letter or number.']);
         }
 
-        $data = $request->only(['title', 'excerpt', 'content', 'status', 'meta_title', 'meta_description', 'meta_keywords']);
+        $data = $request->only(['title', 'excerpt', 'content', 'status', 'meta_title', 'meta_description', 'meta_keywords',
+            'alt_title', 'alt_excerpt', 'alt_content', 'alt_meta_title', 'alt_meta_description']);
+        $data['lang'] = $request->input('lang') ?: setting('ai_blog_default_lang', 'bn');
         $data['slug']             = $this->uniqueSlug(Str::slug($request->filled('slug') ? $request->slug : $request->title));
         $data['user_id']          = auth()->id();
         $data['blog_category_id'] = $request->filled('blog_category_id') ? $request->blog_category_id : null;
@@ -102,13 +110,21 @@ class BlogPostController extends Controller
             'products'         => 'nullable|array|max:50',
             'products.*.id'    => 'required|integer|exists:products,id',
             'products.*.note'  => 'nullable|string|max:255',
+            'lang'                 => 'nullable|in:bn,en',
+            'alt_title'            => 'nullable|string|max:255',
+            'alt_excerpt'          => 'nullable|string|max:2000',
+            'alt_content'          => 'nullable|string',
+            'alt_meta_title'       => 'nullable|string|max:255',
+            'alt_meta_description' => 'nullable|string|max:500',
         ]);
 
         if ($request->filled('slug') && Str::slug($request->slug) === '') {
             return back()->withInput()->withErrors(['slug' => 'This slug must contain at least one letter or number.']);
         }
 
-        $data = $request->only(['title', 'excerpt', 'content', 'status', 'meta_title', 'meta_description', 'meta_keywords']);
+        $data = $request->only(['title', 'excerpt', 'content', 'status', 'meta_title', 'meta_description', 'meta_keywords',
+            'alt_title', 'alt_excerpt', 'alt_content', 'alt_meta_title', 'alt_meta_description']);
+        $data['lang'] = $request->input('lang') ?: setting('ai_blog_default_lang', 'bn');
         if ($request->filled('slug') && Str::slug($request->slug) !== $post->slug) {
             $data['slug'] = $this->uniqueSlug(Str::slug($request->slug), $post->id);
         }

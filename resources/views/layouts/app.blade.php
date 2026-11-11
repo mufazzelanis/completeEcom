@@ -108,6 +108,8 @@ $htmlDir   = $currentLanguage->direction ?? 'ltr';
 // and the <title>/<meta> tags below escape again with {{ }} — so "Hand & Foot Cream" went out
 // as "Hand &amp;amp; Foot" (og:title even &amp;amp;amp;). Decode once here; the tags escape once.
 $meta = fn (string $section, $default = '') => html_entity_decode(trim($__env->yieldContent($section, $default)), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+// a page written in one language says so (a Bangla blog post on an English-UI site → lang="bn")
+$htmlLang = $meta('html_lang', $htmlLang);
 $pageTitle       = $meta('title', (setting('seo_meta_title') ?: $siteName . ' – Online Shopping in Bangladesh'));
 // Default description for pages that don't set their own. The admin's Settings → SEO
 // "Default Meta Description" wins when it's a real sentence; otherwise each page type gets

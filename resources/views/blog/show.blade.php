@@ -1,23 +1,42 @@
 @extends('layouts.app')
 @php
-    $seoTitle = meaningful_seo($blogPost->meta_title, [$blogPost->title]) ?? $blogPost->title;
-    $seoDesc  = meaningful_seo($blogPost->meta_description, [$blogPost->title], 50)
-        ?? meaningful_seo($blogPost->excerpt, [$blogPost->title], 50)
-        ?? Str::limit(trim(preg_replace('/\s+/u', ' ', strip_tags((string) $blogPost->content))), 155, '…');
+    // $view: this page's language version of the post (BlogPost::inLang) — Bangla and English
+    // each have their own URL, title, description and content
+    $view ??= $blogPost->inLang(null);
+    $preview ??= false;
+    $seoTitle = meaningful_seo($view['meta_title'], [$view['title']]) ?? $view['title'];
+    $seoDesc  = meaningful_seo($view['meta_description'], [$view['title']], 50)
+        ?? meaningful_seo($view['excerpt'], [$view['title']], 50)
+        ?? Str::limit(trim(preg_replace('/\s+/u', ' ', strip_tags($view['content']))), 155, '…');
     $seoImage = $blogPost->image ? Storage::url($blogPost->image) : null;
-    $canonicalUrl = route('blog.show', $blogPost);
+    $langUrls = $blogPost->languageUrls();
+    $canonicalUrl = $langUrls[$view['lang']] ?? route('blog.show', $blogPost);
     // ~200 words/minute, floored at 1 so a very short post still reads as "1 min read"
     // rather than "0 min read" — a small thing, but "0 min" reads as broken, not fast.
-    $readingMinutes = max(1, (int) ceil(str_word_count(strip_tags($blogPost->content)) / 200));
+    // (words = runs of letters, so Bangla counts too — str_word_count only knows A–Z)
+    $readingMinutes = max(1, (int) ceil(count(preg_split('/\s+/u', trim(strip_tags($view['content'])), -1, PREG_SPLIT_NO_EMPTY)) / 200));
+    $isBn = $view['lang'] === 'bn';
 @endphp
 @section('title', $seoTitle)
 @section('meta_description', $seoDesc)
 @section('meta_keywords', $blogPost->meta_keywords ?? '')
 @section('canonical', $canonicalUrl)
+@section('html_lang', $view['lang'])
 @section('og_type', 'article')
 @section('og_image', $seoImage ?? '')
+@if($preview)
+@section('robots', 'noindex, nofollow')
+@endif
 
 @push('meta')
+{{-- Bangla ⇄ English versions of this post point at each other, so Google shows each searcher
+     the version in their language instead of treating the pair as duplicates --}}
+@if(count($langUrls) > 1)
+@foreach($langUrls as $code => $url)
+<link rel="alternate" hreflang="{{ $code }}" href="{{ $url }}">
+@endforeach
+<link rel="alternate" hreflang="x-default" href="{{ route('blog.show', $blogPost) }}">
+@endif
 {{-- Article-specific Open Graph properties the layout's generic tags don't cover --}}
 <meta property="article:published_time" content="{{ $blogPost->published_at?->toAtomString() }}">
 <meta property="article:modified_time" content="{{ $blogPost->updated_at->toAtomString() }}">
@@ -33,6 +52,7 @@
     'headline' => $seoTitle,
     'description' => $seoDesc,
     'image' => $seoImage ? [$seoImage] : [],
+    'inLanguage' => $view['lang'],
     'datePublished' => $blogPost->published_at?->toAtomString(),
     'dateModified' => $blogPost->updated_at->toAtomString(),
     'author' => ['@type' => 'Person', 'name' => $blogPost->author->name ?? setting('site_name', 'Admin')],
@@ -49,9 +69,43 @@
         All Posts
     </a>
 
+    @if($preview)
+    <div class="mb-5 rounded-xl bg-amber-50 ring-1 ring-amber-200 px-4 py-3 text-sm text-amber-800 flex flex-wrap items-center justify-between gap-2">
+        <span><strong>Preview</strong> — this post is a {{ $blogPost->status }} and only admins can see it. Search engines are told not to index this page.</span>
+        <a href="{{ route('admin.blog.posts.edit', $blogPost) }}" class="font-semibold underline">Edit / publish →</a>
+    </div>
+    @endif
+
     <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 lg:gap-8">
         {{-- Article --}}
-        <article class="lg:col-span-3">
+        <article class="lg:col-span-3" lang="{{ $view['lang'] }}">
+            @if(count($langUrls) > 1)
+            {{-- Language switch: each version is its own page (Turbo swaps it in without a full reload;
+                 hover prefetch makes it instant). The reader's choice is remembered for the next post. --}}
+            <nav aria-label="Language" class="mb-4 inline-flex rounded-full bg-gray-100 dark:bg-gray-800 p-1 text-sm font-semibold" data-blog-lang="{{ $view['lang'] }}">
+                @foreach($langUrls as $code => $url)
+                    @if($code === $view['lang'])
+                        <span aria-current="true" class="px-4 py-1.5 rounded-full bg-white dark:bg-gray-900 text-gray-900 dark:text-white shadow-sm">{{ \App\Models\BlogPost::LANGS[$code] }}</span>
+                    @else
+                        <a href="{{ $url }}" hreflang="{{ $code }}" lang="{{ $code }}" data-blog-lang-pick="{{ $code }}" class="px-4 py-1.5 rounded-full text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition">{{ \App\Models\BlogPost::LANGS[$code] }}</a>
+                    @endif
+                @endforeach
+            </nav>
+            <script>
+                (function () {
+                    var nav = document.currentScript.previousElementSibling, here = nav.getAttribute('data-blog-lang');
+                    var other = nav.querySelector('[data-blog-lang-pick]');
+                    var store = function (v) { try { v ? localStorage.setItem('blogLang', v) : 0; return localStorage.getItem('blogLang'); } catch (e) { return null; } };
+                    other.addEventListener('click', function () { store(other.getAttribute('data-blog-lang-pick')); });
+                    // a reader who chose the other language before gets that version straight away
+                    var pref = store(null);
+                    if (pref && pref !== here && pref === other.getAttribute('data-blog-lang-pick')) {
+                        window.Turbo ? Turbo.visit(other.href, { action: 'replace' }) : location.replace(other.href);
+                    }
+                })();
+            </script>
+            @endif
+
             @if($blogPost->image)
             {{-- No fixed height / object-cover here on purpose — a forced crop box cuts off
                  whatever the author happened to put near the edges of their image (exactly
@@ -59,7 +113,7 @@
                  whole frame lost their top or bottom the moment the box's aspect ratio
                  didn't match the source). w-full + h-auto always shows the complete image,
                  scaled to the column width, on every screen size. --}}
-            <img src="{{ Storage::url($blogPost->image) }}" alt="{{ $blogPost->title }}" class="w-full h-auto rounded-2xl mb-6 sm:mb-8">
+            <img src="{{ Storage::url($blogPost->image) }}" alt="{{ $view['title'] }}" class="w-full h-auto rounded-2xl mb-6 sm:mb-8">
             @endif
 
             <div class="flex flex-wrap items-center gap-x-3 gap-y-1.5 mb-4 text-sm text-gray-500">
@@ -70,7 +124,7 @@
                 {{-- Publish date deliberately left out of the visible meta line — showing it
                      just makes any post read as "old news" the moment it's not brand new,
                      which works against a blog whose whole feel is meant to be current. --}}
-                <span>{{ $readingMinutes }} min read</span>
+                <span>{{ $isBn ? 'পড়তে ' . $readingMinutes . ' মিনিট' : $readingMinutes . ' min read' }}</span>
                 @if($blogPost->author)
                 <span class="text-gray-300 dark:text-gray-700">·</span>
                 <span>{{ $blogPost->author->name }}</span>
@@ -79,10 +133,10 @@
                 <span>{{ number_format($blogPost->views) }} views</span>
             </div>
 
-            <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 mb-4 leading-tight">{{ $blogPost->title }}</h1>
+            <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 mb-4 leading-tight">{{ $view['title'] }}</h1>
 
-            @if($blogPost->excerpt)
-            <p class="text-base sm:text-lg text-gray-600 mb-8 leading-relaxed border-l-4 border-indigo-500 pl-4">{{ $blogPost->excerpt }}</p>
+            @if($view['excerpt'])
+            <p class="text-base sm:text-lg text-gray-600 mb-8 leading-relaxed border-l-4 border-indigo-500 pl-4">{{ $view['excerpt'] }}</p>
             @endif
 
             @include('partials.adsense-unit', ['slot' => setting('adsense_slot_article')])
@@ -113,7 +167,7 @@
                     copied: false,
                     share() {
                         if (navigator.share) {
-                            navigator.share({ title: {{ Js::from($blogPost->title) }}, url: {{ Js::from($canonicalUrl) }} }).catch(() => {});
+                            navigator.share({ title: {{ Js::from($view['title']) }}, url: {{ Js::from($canonicalUrl) }} }).catch(() => {});
                         } else {
                             navigator.clipboard.writeText({{ Js::from($canonicalUrl) }});
                             this.copied = true;

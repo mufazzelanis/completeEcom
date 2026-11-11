@@ -29,11 +29,20 @@ class BlogController extends Controller
         return view('blog.index', compact('posts', 'categories', 'featured'));
     }
 
-    public function show(BlogPost $blogPost)
+    public function show(BlogPost $blogPost, ?string $lang = null)
     {
-        abort_if($blogPost->status !== 'published' || $blogPost->published_at?->isFuture(), 404);
+        $live = $blogPost->status === 'published' && !$blogPost->published_at?->isFuture();
+        // admins can open a draft (AI Blog review) — never indexed, never counted
+        $preview = !$live && (bool) auth()->user()?->canAccessAdmin();
+        abort_if(!$live && !$preview, 404);
 
-        $pageViewToken = \App\Support\PageView::record('blog', $blogPost->id); // not on a hover-prefetch
+        // /blog/{slug}/{lang} exists only for the post's second language; the main one is the plain URL
+        if ($lang !== null && $lang !== $blogPost->altLang()) {
+            return redirect()->route('blog.show', $blogPost, 301);
+        }
+        $view = $blogPost->inLang($lang);
+
+        $pageViewToken = $preview ? null : \App\Support\PageView::record('blog', $blogPost->id); // not on a hover-prefetch
         $blogPost->load(['category', 'author', 'tags']);
 
         $related = BlogPost::with('category')
@@ -46,14 +55,14 @@ class BlogController extends Controller
 
         // products the author picked (attached list + in-article blocks); a post without any still
         // ends with a shelf matched from its links / title, as before
-        $shop = \App\Support\BlogShop::forPost($blogPost);
+        $shop = \App\Support\BlogShop::forPost($blogPost, $view['content']);
         $shopProducts = $shop['manual'] ? $shop['shelf']->take(8) : $this->productsFor($blogPost);
-        $body = \App\Support\BlogShop::render(demote_h1($blogPost->content), $shop['byId']);
+        $body = \App\Support\BlogShop::render(demote_h1($view['content']), $shop['byId']);
         $primaryProduct = $shop['primary'];
         // every view is recorded here — bots too, by name — and the page's tracker continues it
-        $readKey = \App\Models\BlogRead::begin($blogPost, request());
+        $readKey = $preview ? null : \App\Models\BlogRead::begin($blogPost, request());
 
-        return view('blog.show', compact('blogPost', 'related', 'shopProducts', 'pageViewToken', 'body', 'primaryProduct', 'readKey'));
+        return view('blog.show', compact('blogPost', 'related', 'shopProducts', 'pageViewToken', 'body', 'primaryProduct', 'readKey', 'view', 'preview'));
     }
 
     /**

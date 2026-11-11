@@ -38,10 +38,10 @@ class BlogShop
      * Everything the article page needs in one product query:
      * byId (all products, for the inline blocks), shelf (end-of-post / sidebar list), primary (sticky bar).
      */
-    public static function forPost(BlogPost $post): array
+    public static function forPost(BlogPost $post, ?string $content = null): array
     {
         $attached = $post->products()->pluck('blog_post_product.note', 'products.id'); // id => note, in the author's order
-        $inline = self::inlineIds($post->content);
+        $inline = self::inlineIds($content ?? $post->content); // the language version being shown
         $ids = $attached->keys()->merge($inline)->unique()->values();
 
         $byId = $ids->isEmpty() ? collect() : self::query()->whereIn('id', $ids)->get()->keyBy('id');

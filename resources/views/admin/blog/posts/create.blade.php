@@ -78,6 +78,8 @@
 
                 @include('admin.blog.posts._products', ['items' => []])
 
+                @include('admin.blog.posts._language')
+
                 {{-- SEO --}}
                 <div class="bg-white rounded-2xl shadow-sm p-6 space-y-5">
                     <div class="flex items-center gap-2">

@@ -137,6 +137,8 @@ Route::get('/ads.txt', [SitemapController::class, 'adsTxt'])->name('ads-txt');
 Route::get('/blog', [BlogController::class, 'index'])->name('blog.index');
 Route::get('/blog/category/{blogCategory}', [BlogController::class, 'category'])->name('blog.category');
 Route::get('/blog/{blogPost}', [BlogController::class, 'show'])->name('blog.show');
+// the same post in its second language (Bangla ⇄ English), its own URL so each can rank
+Route::get('/blog/{blogPost}/{lang}', [BlogController::class, 'show'])->where('lang', 'bn|en')->name('blog.show.lang');
 
 // Pages (public)
 Route::get('/faq', [PageController::class, 'faq'])->name('faq');
@@ -738,6 +740,25 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
         'update' => 'blog.posts.update',
         'destroy' => 'blog.posts.destroy',
     ]);
+
+    // AI Blog — autopilot that writes product-based posts (Admin → AI Blog)
+    Route::prefix('ai-blog')->name('ai-blog.')->controller(\App\Http\Controllers\Admin\AiBlogController::class)->group(function () {
+        Route::get('/', 'index')->name('index');
+        Route::get('topics', 'topics')->name('topics');
+        Route::post('topics', 'storeTopic')->name('topics.store');
+        Route::get('topics/{topic}/edit', 'editTopic')->name('topics.edit');
+        Route::put('topics/{topic}', 'updateTopic')->name('topics.update');
+        Route::delete('topics/{topic}', 'destroyTopic')->name('topics.destroy');
+        Route::post('topics/{topic}/run', 'runTopic')->middleware('throttle:20,1')->name('topics.run');
+        Route::post('suggest', 'suggest')->middleware('throttle:6,1')->name('suggest');
+        Route::post('suggestions', 'addSuggestions')->name('suggestions.add');
+        Route::get('weak-posts', 'weak')->name('weak');
+        Route::middleware('permission:settings.manage')->group(function () {
+            Route::get('settings', 'settings')->name('settings');
+            Route::post('settings', 'saveSettings')->name('settings.save');
+            Route::post('settings/test', 'test')->middleware('throttle:10,1')->name('settings.test');
+        });
+    });
 
     // CMS — Banners
     Route::resource('banners', AdminBannerController::class)->except(['show']);

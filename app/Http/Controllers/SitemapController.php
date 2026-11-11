@@ -80,13 +80,16 @@ class SitemapController extends Controller
 
         BlogPost::published()->chunk(200, function ($posts) use (&$urls, $img) {
             foreach ($posts as $post) {
-                $urls[] = [
-                    'loc' => route('blog.show', $post),
-                    'lastmod' => $post->updated_at->toAtomString(),
-                    'changefreq' => 'monthly',
-                    'priority' => '0.6',
-                    'images' => array_filter([$img($post->image)]),
-                ];
+                // every language version (Bangla / English) is its own page
+                foreach ($post->languageUrls() as $url) {
+                    $urls[] = [
+                        'loc' => $url,
+                        'lastmod' => $post->updated_at->toAtomString(),
+                        'changefreq' => 'monthly',
+                        'priority' => '0.6',
+                        'images' => array_filter([$img($post->image)]),
+                    ];
+                }
             }
         });
 

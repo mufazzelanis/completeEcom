@@ -98,6 +98,9 @@ return Application::configure(basePath: dirname(__DIR__))
     })
     ->withSchedule(function (Schedule $schedule): void {
         $schedule->command('blog:publish-scheduled')->everyMinute();
+        // AI Blog: one article at a time (a write takes 1–3 min), in the background so it never
+        // holds up the other every-minute jobs
+        $schedule->command('ai-blog:run')->everyMinute()->withoutOverlapping(20)->runInBackground();
         $schedule->command('email-campaigns:process')->everyMinute();
         // Drains the default queue (bulk product imports, Facebook Conversions API
         // events, etc.) without needing a long-running `queue:work` process, which
