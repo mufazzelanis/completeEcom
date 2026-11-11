@@ -30,6 +30,23 @@ class PageController extends Controller
         ];
     }
 
+    /** Short addresses the site serves for these pages (routes /about, /terms, …). */
+    private const ALIASES = ['about-us' => '/about', 'terms-conditions' => '/terms', 'privacy-policy' => '/privacy', 'contact' => '/contact', 'faq' => '/faq'];
+
+    /**
+     * A live page must be reachable at its own address: a redirect rule left over from before the
+     * page existed (Admin → Redirects, e.g. "/about → /" added from the 404 log) would silently send
+     * every visitor and Google away from it — so saving the page clears such rules.
+     */
+    private function clearShadowingRedirects(Page $page): void
+    {
+        if (!$page->is_active) {
+            return;
+        }
+        $sources = array_filter(['/pages/' . $page->slug, self::ALIASES[$page->slug] ?? null]);
+        \App\Models\Redirect::whereIn('source', $sources)->get()->each->delete(); // model events refresh the redirect cache
+    }
+
     private const SLUG_MESSAGES = ['slug.regex' => 'The slug can only use English letters, numbers and hyphens (e.g. about-us).'];
 
     /** The admin's slug, else one from the title, else (a Bangla-only title) a readable fallback. */
@@ -69,7 +86,7 @@ class PageController extends Controller
         if ($request->hasFile('image'))    $data['image']    = $request->file('image')->store('pages', 'public');
         if ($request->hasFile('og_image')) $data['og_image'] = $request->file('og_image')->store('pages/og', 'public');
 
-        Page::create($data);
+        $this->clearShadowingRedirects(Page::create($data));
         return redirect()->route('admin.pages.index')->with('success', 'Page created.');
     }
 
@@ -105,9 +122,8 @@ class PageController extends Controller
         if ($page->slug !== $oldSlug) {
             \App\Models\Redirect::updateOrCreate(['source' => '/pages/' . $oldSlug],
                 ['target' => \App\Models\Redirect::normalizeTarget('/pages/' . $page->slug), 'status_code' => 301, 'is_active' => true, 'note' => 'Page address changed']);
-            // a redirect that pointed at the new address would now loop
-            \App\Models\Redirect::where('source', '/pages/' . $page->slug)->delete();
         }
+        $this->clearShadowingRedirects($page);
 
         return redirect()->route('admin.pages.edit', $page)->with('success', 'Page updated.');
     }

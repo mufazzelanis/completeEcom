@@ -55,6 +55,18 @@ class AdminPageFormTest extends TestCase
         $this->get('/pages/about-us')->assertOk();
     }
 
+    public function test_saving_a_page_clears_an_old_redirect_that_hid_it(): void
+    {
+        $this->actingAs($this->admin());
+        $page = Page::create(['title' => 'About Us', 'slug' => 'about-us', 'type' => 'static', 'is_active' => true, 'content' => '<p>We sell original products.</p>']);
+        \App\Models\Redirect::create(['source' => '/about', 'target' => url('/'), 'status_code' => 301, 'is_active' => true]);
+        $this->get('/about')->assertRedirect(url('/')); // the old rule wins over the page…
+        $this->put(route('admin.pages.update', $page), $this->form(['slug' => 'about-us']))->assertSessionHasNoErrors();
+
+        $this->assertFalse(\App\Models\Redirect::where('source', '/about')->exists());
+        $this->get('/about')->assertOk()->assertSee('We sell original products.'); // …until the page is saved
+    }
+
     public function test_menu_pages_keep_their_address(): void
     {
         $this->actingAs($this->admin());
