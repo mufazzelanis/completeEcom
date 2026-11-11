@@ -71,7 +71,7 @@
                         <label class="lt-label" for="lt-name">আপনার নাম <em>*</em></label>
                         <div class="lt-input-wrap">
                             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
-                            <input id="lt-name" class="lt-input" type="text" name="name" value="{{ old('name') }}" required autocomplete="name" placeholder="যেমন: রহিম আহমেদ">
+                            <input id="lt-name" class="lt-input" type="text" name="name" value="{{ old('name') }}" required minlength="2" maxlength="255" autocomplete="name" placeholder="যেমন: রহিম আহমেদ">
                         </div>
                     </div>
 
@@ -84,12 +84,12 @@
                         @include('partials.phone-live-check', ['selector' => 'input[name=phone]', 'bn' => true])
                     </div>
 
-                    @if($lp->collect_address)
+                    {{-- always asked for: an order can't be delivered without it --}}
                     <div class="lt-field">
-                        <label class="lt-label" for="lt-address">সম্পূর্ণ ঠিকানা @if($lp->require_address)<em>*</em>@endif</label>
-                        <textarea id="lt-address" class="lt-input" name="address" rows="2" autocomplete="street-address" placeholder="বাসা/রোড, এলাকা, থানা, জেলা" {{ $lp->require_address ? 'required' : '' }}>{{ old('address') }}</textarea>
+                        <label class="lt-label" for="lt-address">সম্পূর্ণ ঠিকানা <em>*</em></label>
+                        <textarea id="lt-address" class="lt-input" name="address" rows="2" required minlength="10" maxlength="500" autocomplete="street-address" placeholder="বাসা/রোড, এলাকা, থানা, জেলা">{{ old('address') }}</textarea>
                     </div>
-                    @endif
+                    @include('partials.landing-field-check')
 
                     @if($zones)
                     <div class="lt-field">

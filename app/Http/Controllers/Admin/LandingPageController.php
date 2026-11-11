@@ -325,8 +325,9 @@ class LandingPageController extends Controller
         }
 
         $data['status']              = $request->status;
-        $data['collect_address']     = $request->boolean('collect_address');
-        $data['require_address']     = $request->boolean('require_address');
+        // always on: every landing page order needs a full delivery address (LandingPageController@order)
+        $data['collect_address']     = true;
+        $data['require_address']     = true;
         $data['order_button_text']   = $request->filled('order_button_text') ? $request->order_button_text : 'Order Now';
         $data['thank_you_heading']   = $request->filled('thank_you_heading') ? $request->thank_you_heading : 'Thank You!';
         $data['thank_you_button_text'] = $request->filled('thank_you_button_text') ? $request->thank_you_button_text : 'আরও প্রোডাক্ট দেখুন';

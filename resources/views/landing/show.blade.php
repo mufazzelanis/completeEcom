@@ -690,7 +690,7 @@
                         <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-gray-400">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
                         </span>
-                        <input type="text" name="name" value="{{ old('name') }}" required
+                        <input type="text" name="name" value="{{ old('name') }}" required minlength="2" maxlength="255" autocomplete="name" placeholder="যেমন: রহিম আহমেদ"
                             class="w-full border border-gray-300 rounded-xl pl-11 pr-4 py-3 text-base focus:outline-none focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 transition">
                     </div>
                 </div>
@@ -709,16 +709,16 @@
                     @include('partials.phone-live-check', ['selector' => 'input[name=phone]', 'bn' => true])
                 </div>
 
-                @if($landingPage->collect_address)
+                {{-- always asked for: an order can't be delivered without it --}}
                 <div>
                     <label class="flex items-center gap-1.5 text-base font-bold text-gray-900 mb-1.5">
                         <span class="w-1 h-4 rounded-full shrink-0" style="background: {{ $primary }};"></span>
-                        সম্পূর্ণ ঠিকানা @if($landingPage->require_address)<span class="text-red-500">*</span>@endif
+                        সম্পূর্ণ ঠিকানা <span class="text-red-500">*</span>
                     </label>
-                    <textarea name="address" rows="2" {{ $landingPage->require_address ? 'required' : '' }}
+                    <textarea name="address" rows="2" required minlength="10" maxlength="500" autocomplete="street-address" placeholder="বাসা/রোড, এলাকা, থানা, জেলা"
                         class="w-full border border-gray-300 rounded-xl px-4 py-3 text-base focus:outline-none focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 transition">{{ old('address') }}</textarea>
                 </div>
-                @endif
+                @include('partials.landing-field-check')
 
                 @if(filled($landingPage->delivery_zones))
                 <div>

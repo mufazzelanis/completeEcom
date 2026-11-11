@@ -29,11 +29,27 @@ class LandingPageController extends Controller
     {
         abort_if($landingPage->status !== 'published', 404);
 
+        // Name, phone and full address on every order, like the store's own checkout — without
+        // all three an order can't be confirmed by phone or delivered. (The page's old "collect /
+        // require address" switches let orders through with no address at all.)
+        $request->merge(array_map(fn ($v) => is_string($v) ? trim(preg_replace('/\s+/u', ' ', $v)) : $v, $request->only(['name', 'phone', 'address'])));
         $rules = [
-            'name'     => 'required|string|max:255',
+            'name'     => ['required', 'string', 'min:2', 'max:255', function ($attr, $value, $fail) {
+                if (preg_match_all('/\p{L}/u', (string) $value) < 2) {
+                    $fail('আপনার নাম লিখুন (শুধু সংখ্যা বা চিহ্ন নয়)।');
+                }
+            }],
             'phone'    => ['required', 'string', 'max:30', function ($attr, $value, $fail) {
-                if (\App\Support\PhoneValidator::mode() !== 'off' && ($problem = \App\Support\PhoneValidator::problem($value))) {
-                    $fail($problem);
+                // a number the courier and the confirmation call can reach, whatever the phone-check setting
+                if (\App\Support\PhoneValidator::normalize($value) === null) {
+                    $fail('সঠিক ১১ ডিজিটের মোবাইল নম্বর দিন (যেমন 01712345678)।');
+                } elseif (\App\Support\PhoneValidator::mode() !== 'off' && ($problem = \App\Support\PhoneValidator::problem($value))) {
+                    $fail('নম্বরটি সঠিক মনে হচ্ছে না — আপনার আসল চালু মোবাইল নম্বর দিন।');
+                }
+            }],
+            'address'  => ['required', 'string', 'min:10', 'max:500', function ($attr, $value, $fail) {
+                if (!\App\Support\AddressCheck::looksReal((string) $value, (string) request('phone'))) {
+                    $fail(\App\Support\AddressCheck::MESSAGE);
                 }
             }],
             // Capped at 5 per order — landing pages are a single-product impulse-buy funnel,
@@ -41,9 +57,6 @@ class LandingPageController extends Controller
             // fat-fingered/bot submission than a genuine bulk buyer (who'd contact the shop).
             'quantity' => 'nullable|integer|min:1|max:5',
         ];
-        if ($landingPage->collect_address) {
-            $rules['address'] = ($landingPage->require_address ? 'required' : 'nullable') . '|string|max:500';
-        }
         if (filled($landingPage->delivery_zones)) {
             // Required once zones exist at all — a page with a shipping-charge picker can't
             // compute a total without knowing which zone applies.
@@ -60,7 +73,15 @@ class LandingPageController extends Controller
             $rules['custom.' . $field['key']] = $rule;
         }
 
-        $validated = $request->validate($rules);
+        $validated = $request->validate($rules, [
+            'name.required'    => 'আপনার নাম লিখুন।',
+            'name.min'         => 'আপনার পুরো নাম লিখুন।',
+            'phone.required'   => 'মোবাইল নম্বর দিন — অর্ডার নিশ্চিত করতে আমরা কল করবো।',
+            'address.required' => 'ডেলিভারির জন্য সম্পূর্ণ ঠিকানা দিন।',
+            'address.min'      => \App\Support\AddressCheck::MESSAGE,
+            'address.max'      => 'ঠিকানা ৫০০ অক্ষরের মধ্যে লিখুন।',
+            'delivery_zone.required' => 'ডেলিভারি এলাকা বেছে নিন।',
+        ]);
 
         $quantity = max(1, (int) ($validated['quantity'] ?? 1));
         $phone = \App\Support\PhoneValidator::normalize($validated['phone']) ?? $validated['phone'];

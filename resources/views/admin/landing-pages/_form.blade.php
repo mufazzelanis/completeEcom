@@ -493,18 +493,13 @@
             }">
             <div>
                 <h3 class="font-medium text-gray-800">Order Form</h3>
-                <p class="text-xs text-gray-400 mt-0.5">Name and phone are always collected — required for fulfilling any order. Add extra fields below for anything else you need (size, color, delivery notes, etc.).</p>
+                <p class="text-xs text-gray-400 mt-0.5">Add extra fields below for anything else you need (size, color, delivery notes, etc.).</p>
             </div>
 
-            <div class="flex flex-wrap gap-6">
-                <label class="flex items-center gap-2 cursor-pointer">
-                    <input type="checkbox" name="collect_address" value="1" {{ old('collect_address', $lp->collect_address ?? true) ? 'checked' : '' }} class="rounded text-indigo-600">
-                    <span class="text-sm text-gray-700">Collect shipping address</span>
-                </label>
-                <label class="flex items-center gap-2 cursor-pointer">
-                    <input type="checkbox" name="require_address" value="1" {{ old('require_address', $lp->require_address ?? false) ? 'checked' : '' }} class="rounded text-indigo-600">
-                    <span class="text-sm text-gray-700">Make address required</span>
-                </label>
+            {{-- Always required, as on the store's checkout — an order without them can't be confirmed or delivered. --}}
+            <div class="flex items-start gap-2.5 bg-emerald-50 border border-emerald-100 rounded-xl px-3.5 py-3 text-xs text-emerald-800 leading-relaxed">
+                <svg class="w-4 h-4 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                <span><strong>Name, mobile number and full address are always required</strong> on every landing page order. The number must be a real 11-digit Bangladeshi mobile, and the address must be a complete one (house/road, area, thana, district) — "Dhaka" alone, a phone number or random letters are turned away with a message in Bangla.</span>
             </div>
 
             <div class="space-y-2">
