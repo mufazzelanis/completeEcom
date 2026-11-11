@@ -1292,10 +1292,12 @@ $navCategories = \App\Support\StorefrontCache::remember('nav_categories', fn () 
     $blogUrl     = setting('nav_blog_url') ?: route('blog.index');
     $contactUrl  = setting('nav_contact_url') ?: route('contact');
     // one cached lookup instead of three EXISTS queries on every page
-    $footerPages = \App\Support\StorefrontCache::remember('footer_pages', fn () => \App\Models\Page::whereIn('slug', ['about-us', 'terms-conditions', 'privacy-policy'])->active()->pluck('slug')->all());
-    $aboutUrl    = setting('nav_about_url') ?: ((int) setting('about_page_id', 0) || in_array('about-us', $footerPages, true) ? route('about') : null);
-    $termsUrl    = (int) setting('terms_page_id', 0) || in_array('terms-conditions', $footerPages, true) ? route('terms') : null;
-    $privacyUrl  = (int) setting('privacy_page_id', 0) || in_array('privacy-policy', $footerPages, true) ? route('privacy') : null;
+    // (the short slugs too: an About page saved as /pages/about still gets its footer link)
+    $footerPages = \App\Support\StorefrontCache::remember('footer_pages', fn () => \App\Models\Page::whereIn('slug', ['about-us', 'about', 'terms-conditions', 'terms', 'privacy-policy', 'privacy'])->active()->pluck('slug')->all());
+    $hasPage     = fn (string ...$slugs) => (bool) array_intersect($slugs, $footerPages);
+    $aboutUrl    = setting('nav_about_url') ?: ((int) setting('about_page_id', 0) || $hasPage('about-us', 'about') ? route('about') : null);
+    $termsUrl    = (int) setting('terms_page_id', 0) || $hasPage('terms-conditions', 'terms') ? route('terms') : null;
+    $privacyUrl  = (int) setting('privacy_page_id', 0) || $hasPage('privacy-policy', 'privacy') ? route('privacy') : null;
     $copyright   = setting('copyright_text')
         ? str_replace('{year}', date('Y'), setting('copyright_text'))
         : t('footer.copyright_default', '© :year :site. All rights reserved.', ['year' => date('Y'), 'site' => $siteName], 'footer');

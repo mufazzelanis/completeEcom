@@ -63,6 +63,9 @@ class PageController extends Controller
      * Prefer the admin's Page Settings assignment (any slug) over the conventional
      * slug, so re-assigning a slot in the admin actually takes effect immediately.
      */
+    /** Conventional slug => the short slug admins also use for the same page. */
+    public const SHORT_SLUGS = ['about-us' => 'about', 'terms-conditions' => 'terms', 'privacy-policy' => 'privacy'];
+
     private function resolveAssignedPage(string $settingKey, string $fallbackSlug): ?Page
     {
         $id = (int) setting($settingKey, 0);
@@ -70,7 +73,10 @@ class PageController extends Controller
             return $page;
         }
 
-        return Page::where('slug', $fallbackSlug)->active()->first();
+        // the conventional slug, or its short form (an About page saved as /pages/about)
+        $slugs = array_values(array_filter([$fallbackSlug, self::SHORT_SLUGS[$fallbackSlug] ?? null]));
+
+        return Page::whereIn('slug', $slugs)->active()->orderByRaw('slug = ? desc', [$fallbackSlug])->first();
     }
 
     public function sendContact(Request $request, RecaptchaService $recaptcha)

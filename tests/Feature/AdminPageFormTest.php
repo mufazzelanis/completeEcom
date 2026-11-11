@@ -67,6 +67,20 @@ class AdminPageFormTest extends TestCase
         $this->get('/about')->assertOk()->assertSee('We sell original products.'); // …until the page is saved
     }
 
+    public function test_an_about_page_with_the_short_slug_works_everywhere(): void
+    {
+        $this->actingAs($this->admin());
+        $page = Page::create(['title' => 'About Us', 'slug' => 'about', 'type' => 'static', 'is_active' => true, 'content' => '<p>We sell original products.</p>']);
+        \App\Models\Redirect::create(['source' => '/about', 'target' => url('/'), 'status_code' => 301, 'is_active' => true]);
+
+        $this->put(route('admin.pages.update', $page), $this->form(['slug' => 'about']))->assertSessionHasNoErrors();
+
+        $this->get('/about')->assertOk()->assertSee('We sell original products.')
+            ->assertSee('<link rel="canonical" href="' . url('/pages/about') . '">', false);
+        \Illuminate\Support\Facades\Cache::flush();
+        $this->get('/')->assertSee('href="' . route('about') . '"', false); // footer link
+    }
+
     public function test_menu_pages_keep_their_address(): void
     {
         $this->actingAs($this->admin());

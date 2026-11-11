@@ -31,7 +31,13 @@ class PageController extends Controller
     }
 
     /** Short addresses the site serves for these pages (routes /about, /terms, …). */
-    private const ALIASES = ['about-us' => '/about', 'terms-conditions' => '/terms', 'privacy-policy' => '/privacy', 'contact' => '/contact', 'faq' => '/faq'];
+    private const ALIASES = [
+        'about-us' => '/about', 'about' => '/about', 'terms-conditions' => '/terms', 'terms' => '/terms',
+        'privacy-policy' => '/privacy', 'privacy' => '/privacy', 'contact' => '/contact', 'faq' => '/faq',
+    ];
+
+    /** Page Settings slots: a page assigned there is served at the short address whatever its slug. */
+    private const SLOT_ALIASES = ['about_page_id' => '/about', 'terms_page_id' => '/terms', 'privacy_page_id' => '/privacy', 'contact_page_id' => '/contact', 'faq_page_id' => '/faq'];
 
     /**
      * A live page must be reachable at its own address: a redirect rule left over from before the
@@ -44,6 +50,11 @@ class PageController extends Controller
             return;
         }
         $sources = array_filter(['/pages/' . $page->slug, self::ALIASES[$page->slug] ?? null]);
+        foreach (self::SLOT_ALIASES as $key => $path) {
+            if ((int) setting($key, 0) === $page->id) {
+                $sources[] = $path;
+            }
+        }
         \App\Models\Redirect::whereIn('source', $sources)->get()->each->delete(); // model events refresh the redirect cache
     }
 
