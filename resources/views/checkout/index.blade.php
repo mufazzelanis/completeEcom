@@ -374,17 +374,18 @@
                             <div class="grid grid-cols-2 gap-3">
                                 <label class="relative flex flex-col gap-1 border-2 rounded-xl px-4 py-3 cursor-pointer transition"
                                     :class="zone === 'dhaka' ? 'border-orange-500 bg-orange-50 dark:bg-orange-500/10' : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'">
-                                    <input type="radio" name="shipping_zone" value="dhaka" x-model="zone" class="absolute top-3 right-3 w-4 h-4 text-orange-600 focus:ring-orange-500">
+                                    <input type="radio" name="shipping_zone" value="dhaka" x-model="zone" required class="absolute top-3 right-3 w-4 h-4 text-orange-600 focus:ring-orange-500">
                                     <span class="text-sm font-medium text-gray-600 dark:text-gray-400 pr-6">Inside Dhaka</span>
                                     <span class="text-xl font-extrabold" :class="zone === 'dhaka' ? 'text-orange-600' : 'text-gray-900 dark:text-gray-100'">৳{{ number_format($shippingByZone['dhaka']) }}</span>
                                 </label>
                                 <label class="relative flex flex-col gap-1 border-2 rounded-xl px-4 py-3 cursor-pointer transition"
                                     :class="zone === 'outside_dhaka' ? 'border-orange-500 bg-orange-50 dark:bg-orange-500/10' : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'">
-                                    <input type="radio" name="shipping_zone" value="outside_dhaka" x-model="zone" class="absolute top-3 right-3 w-4 h-4 text-orange-600 focus:ring-orange-500">
+                                    <input type="radio" name="shipping_zone" value="outside_dhaka" x-model="zone" required class="absolute top-3 right-3 w-4 h-4 text-orange-600 focus:ring-orange-500">
                                     <span class="text-sm font-medium text-gray-600 dark:text-gray-400 pr-6">Outside Dhaka</span>
                                     <span class="text-xl font-extrabold" :class="zone === 'outside_dhaka' ? 'text-orange-600' : 'text-gray-900 dark:text-gray-100'">৳{{ number_format($shippingByZone['outside_dhaka']) }}</span>
                                 </label>
                             </div>
+                            <p x-show="!zone" x-cloak class="text-xs text-orange-600 mt-1.5">Choose your delivery area to see the delivery charge.</p>
                             @error('shipping_zone')<p class="text-red-500 text-xs mt-1.5">{{ $message }}</p>@enderror
                         </div>
                         @endif
@@ -598,8 +599,8 @@
                             </div>
                         @endif
                         <div class="flex justify-between text-gray-600">
-                            <span x-text="usesZones ? (zone === 'outside_dhaka' ? 'Shipping (Outside Dhaka)' : 'Shipping (Inside Dhaka)') : 'Shipping'">Shipping</span>
-                            <span x-text="shipping > 0 ? cs + shipping.toLocaleString('en-US') : 'Free'">৳{{ number_format($shipping) }}</span>
+                            <span x-text="usesZones ? (zone === 'outside_dhaka' ? 'Shipping (Outside Dhaka)' : (zone === 'dhaka' ? 'Shipping (Inside Dhaka)' : 'Shipping')) : 'Shipping'">Shipping</span>
+                            <span x-text="usesZones && !zone ? 'Choose area' : (shipping > 0 ? cs + shipping.toLocaleString('en-US') : 'Free')">৳{{ number_format($shipping) }}</span>
                         </div>
                         <div class="flex justify-between text-orange-600" x-show="(current.charge||0) > 0" x-cloak>
                             <span x-text="(current.name || 'Payment') + ' Fee'"></span>

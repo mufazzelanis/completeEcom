@@ -38,7 +38,7 @@ class LandingPage extends Model
         // Certificates
         'certificates_heading', 'certificates_subheading', 'certificates',
         // Delivery zones (shipping charge picker on the order form)
-        'delivery_zones',
+        'delivery_zones', 'delivery_mode',
     ];
 
     protected $casts = [
@@ -113,5 +113,87 @@ class LandingPage extends Model
         }
 
         return $this->product?->final_price;
+    }
+
+    /** site | custom | none — where the order form's delivery charge comes from. */
+    public function deliveryMode(): string
+    {
+        return in_array($this->delivery_mode, ['site', 'custom', 'none'], true) ? $this->delivery_mode : 'site';
+    }
+
+    /**
+     * The delivery areas the order form offers, each [key, label, charge]. `key` is the store's
+     * zone ('dhaka' / 'outside_dhaka' / 'flat') for Settings → Shipping, or null for the page's
+     * own zones. Charges are before the free-delivery threshold (see deliveryFreeFrom()).
+     */
+    public function deliveryOptions(): array
+    {
+        $calc = \App\Services\ShippingCalculator::class;
+
+        return match ($this->deliveryMode()) {
+            'none' => [],
+            'custom' => collect($this->delivery_zones ?: [])
+                ->map(fn ($z) => ['key' => null, 'label' => (string) ($z['label'] ?? ''), 'charge' => (float) ($z['charge'] ?? 0)])
+                ->filter(fn ($z) => $z['label'] !== '')->values()->all(),
+            default => $calc::usesZones()
+                ? [
+                    ['key' => $calc::ZONE_DHAKA, 'label' => 'ঢাকার ভিতরে', 'charge' => (float) setting('dhaka_charge', 60)],
+                    ['key' => $calc::ZONE_OUTSIDE_DHAKA, 'label' => 'ঢাকার বাইরে', 'charge' => (float) setting('outside_dhaka_charge', 120)],
+                ]
+                : [['key' => 'flat', 'label' => setting('flat_rate_label', 'Standard Delivery') ?: 'ডেলিভারি চার্জ', 'charge' => (float) setting('flat_rate_amount', 60)]],
+        };
+    }
+
+    /** Settings → Shipping's free-delivery threshold, for pages that use those settings; null when none. */
+    public function deliveryFreeFrom(): ?float
+    {
+        return $this->deliveryMode() === 'site' && setting('free_shipping_enabled', '0') === '1'
+            ? (float) setting('free_shipping_min', 999)
+            : null;
+    }
+
+    /**
+     * Which option starts selected: Settings → Shipping → Default Delivery Area. On a page's own
+     * zones that's the one whose name says inside/ভিতরে or outside/বাইরে; null = the customer picks.
+     */
+    public function defaultDeliveryIndex(): ?int
+    {
+        $options = $this->deliveryOptions();
+        if (count($options) <= 1) {
+            return $options ? 0 : null;
+        }
+        $zone = \App\Services\ShippingCalculator::defaultZone();
+        if ($zone === null) {
+            return null;
+        }
+        foreach ($options as $i => $o) {
+            if ($o['key'] === $zone) {
+                return $i;
+            }
+        }
+        $outside = '/(বাইর|বাহির|outside|out of dhaka)/iu';
+        $inside = '/(ভিতর|ভেতর|inside|dhaka city|ঢাকা সিটি)/iu';
+        foreach ($options as $i => $o) {
+            $isOutside = preg_match($outside, $o['label']) === 1;
+            if ($zone === \App\Services\ShippingCalculator::ZONE_OUTSIDE_DHAKA ? $isOutside : (!$isOutside && preg_match($inside, $o['label']))) {
+                return $i;
+            }
+        }
+
+        return 0;
+    }
+
+    /** The delivery charge for an option at this subtotal (free-delivery threshold applied for site settings). */
+    public function deliveryCharge(int $index, float $subtotal): float
+    {
+        $option = $this->deliveryOptions()[$index] ?? null;
+        if (!$option) {
+            return 0.0;
+        }
+        if ($this->deliveryMode() === 'site') {
+            return \App\Services\ShippingCalculator::calculate($subtotal, $option['key'] === 'flat' ? null : $option['key']);
+        }
+
+        return $option['charge'];
     }
 }

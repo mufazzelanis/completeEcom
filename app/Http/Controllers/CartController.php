@@ -80,8 +80,10 @@ class CartController extends Controller
             $discount += $pointsDiscount;
         }
 
-        // same area checkout pre-selects (Outside Dhaka), so the total doesn't jump at checkout
-        $shipping = $subtotal > 0 ? ShippingCalculator::calculate($subtotal, ShippingCalculator::ZONE_OUTSIDE_DHAKA) : 0;
+        // the area checkout starts on (Settings → Shipping → Default Delivery Area), so the total doesn't jump there;
+        // with no default, the higher Outside Dhaka rate — an estimate shouldn't under-quote
+        $shippingZone = ShippingCalculator::estimateZone();
+        $shipping = $subtotal > 0 ? ShippingCalculator::calculate($subtotal, $shippingZone) : 0;
         $total = $subtotal - $discount + $shipping;
 
         $cartProductIds = $cartItems->pluck('product_id');
@@ -100,7 +102,7 @@ class CartController extends Controller
 
         return view('cart.index', compact(
             'cartItems', 'subtotal', 'discount', 'shipping', 'total', 'coupon', 'crossSellProducts',
-            'pointsBalance', 'pointsRedeemed', 'pointsDiscount'
+            'pointsBalance', 'pointsRedeemed', 'pointsDiscount', 'shippingZone'
         ));
     }
 

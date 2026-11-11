@@ -275,6 +275,7 @@ class LandingPageController extends Controller
             'certificates_subheading'  => 'nullable|string|max:500',
             'brand_color'              => 'nullable|regex:/^#[0-9a-fA-F]{6}$/',
             'theme'                    => 'nullable|in:' . implode(',', \App\Support\LandingThemes::keys()),
+            'delivery_mode'            => 'nullable|in:site,custom,none',
             // Pixel IDs — loosely shaped rather than byte-exact, so a pasted value with
             // stray whitespace or a slightly different but still valid format doesn't
             // bounce the whole form. Each one independently optional; leaving any blank
@@ -346,6 +347,8 @@ class LandingPageController extends Controller
             ? $request->brand_color
             : null;
         $data['theme'] = \App\Support\LandingThemes::key($request->input('theme'));
+        // where the delivery charge comes from; Settings → Shipping unless the page says otherwise
+        $data['delivery_mode'] = in_array($request->input('delivery_mode'), ['site', 'custom', 'none'], true) ? $request->input('delivery_mode') : 'site';
 
         return $data;
     }

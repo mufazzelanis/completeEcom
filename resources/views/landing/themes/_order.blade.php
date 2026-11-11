@@ -4,7 +4,10 @@
      can't place the order twice (the server de-duplicates as well). --}}
 @php
     $unit = (float) ($price ?? 0);
-    $zones = $lp->delivery_zones ?: [];
+    // Settings → Shipping (with its default area and free-delivery threshold), the page's own zones, or none
+    $zones = $lp->deliveryOptions();
+    $zoneStart = old('delivery_zone') !== null && isset($zones[(int) old('delivery_zone')]) ? (int) old('delivery_zone') : $lp->defaultDeliveryIndex();
+    $freeFrom = $lp->deliveryFreeFrom();
     $orderImg = $productImg;
 @endphp
 <section id="order-form" class="lt-sec lt-order"
@@ -12,8 +15,10 @@
         qty: {{ max(1, min(5, (int) old('quantity', 1))) }},
         unit: {{ $unit }},
         zones: {{ Js::from($zones) }},
-        zoneIndex: {{ $zones ? (int) old('delivery_zone', 0) : 'null' }},
-        get zoneCharge() { return (this.zoneIndex !== null && this.zones[this.zoneIndex]) ? parseFloat(this.zones[this.zoneIndex].charge || 0) : 0; },
+        zoneIndex: {{ $zoneStart === null ? 'null' : $zoneStart }},
+        freeFrom: {{ $freeFrom === null ? 'null' : $freeFrom }},
+        get isFree() { return this.freeFrom !== null && this.subtotal >= this.freeFrom; },
+        get zoneCharge() { return (this.zoneIndex !== null && this.zones[this.zoneIndex] && !this.isFree) ? parseFloat(this.zones[this.zoneIndex].charge || 0) : 0; },
         get subtotal() { return this.unit * this.qty; },
         get total() { return this.subtotal + this.zoneCharge; },
         bn(n) { return String(n).replace(/[0-9]/g, d => '০১২৩৪৫৬৭৮৯'[d]); },
@@ -93,14 +98,19 @@
 
                     @if($zones)
                     <div class="lt-field">
-                        <span class="lt-label">ডেলিভারি এলাকা</span>
+                        <span class="lt-label">ডেলিভারি এলাকা <em>*</em></span>
                         @foreach($zones as $i => $zone)
                         <label class="lt-zone" :class="{ 'is-on': zoneIndex === {{ $i }} }">
-                            <span><input type="radio" x-model.number="zoneIndex" value="{{ $i }}">{{ $zone['label'] }}</span>
-                            <b>{{ $currencySymbol }}{{ number_format((float) $zone['charge'], $decimals) }}</b>
+                            <span><input type="radio" name="lt_zone_pick" x-model.number="zoneIndex" value="{{ $i }}" required @checked($zoneStart === $i)>{{ $zone['label'] }}</span>
+                            <b x-text="isFree ? 'ফ্রি' : money({{ (float) $zone['charge'] }})">{{ $currencySymbol }}{{ number_format((float) $zone['charge'], $decimals) }}</b>
                         </label>
                         @endforeach
-                        <input type="hidden" name="delivery_zone" :value="zoneIndex">
+                        <p class="lt-hint" x-show="zoneIndex === null" x-cloak>আপনার এলাকা বেছে নিন — ডেলিভারি চার্জ সেই অনুযায়ী যোগ হবে।</p>
+                        @if($freeFrom !== null)
+                        <p class="lt-hint" x-show="!isFree" x-cloak>{{ format_currency($freeFrom) }} বা তার বেশি অর্ডারে ডেলিভারি ফ্রি!</p>
+                        <p class="lt-hint lt-hint--ok" x-show="isFree" x-cloak>🎉 আপনার অর্ডারে ডেলিভারি ফ্রি!</p>
+                        @endif
+                        <input type="hidden" name="delivery_zone" :value="zoneIndex ?? ''" value="{{ $zoneStart }}">
                     </div>
                     @endif
 
@@ -151,9 +161,10 @@
                     <div class="lt-total" aria-live="polite">
                         <div><span>পণ্যের মূল্য (<span x-text="bn(qty)">১</span>টি)</span><span x-text="money(subtotal)">{{ format_currency($unit) }}</span></div>
                         @if($zones)
-                        <div><span>ডেলিভারি চার্জ</span><span x-text="money(zoneCharge)">{{ format_currency((float) ($zones[0]['charge'] ?? 0)) }}</span></div>
+                        @php $startCharge = $zoneStart === null ? 0 : $lp->deliveryCharge($zoneStart, $unit); @endphp
+                        <div><span>ডেলিভারি চার্জ</span><span x-text="zoneIndex === null ? 'এলাকা বেছে নিন' : (zoneCharge > 0 ? money(zoneCharge) : 'ফ্রি')">{{ $zoneStart === null ? 'এলাকা বেছে নিন' : format_currency($startCharge) }}</span></div>
                         @endif
-                        <div class="is-grand"><span>সর্বমোট</span><span x-text="money(total)">{{ format_currency($unit + (float) ($zones[0]['charge'] ?? 0)) }}</span></div>
+                        <div class="is-grand"><span>সর্বমোট</span><span x-text="money(total)">{{ format_currency($unit + ($zones ? ($startCharge ?? 0) : 0)) }}</span></div>
                     </div>
                     @endif
 

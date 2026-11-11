@@ -69,6 +69,34 @@
         </div>
     </div>
 
+    {{-- Which area an order starts on: checkout, cart estimate, pre-order and landing pages all
+         read it (App\Services\ShippingCalculator::defaultZone). --}}
+    @php $defZone = setting('shipping_default_zone', 'outside_dhaka'); $defZone = in_array($defZone, ['dhaka', 'outside_dhaka', 'ask'], true) ? $defZone : 'outside_dhaka'; @endphp
+    <div x-show="method === 'zone'" x-cloak class="pt-4 border-t border-gray-100" x-data="{ def: @js($defZone) }">
+        <label class="block text-sm font-semibold text-gray-800">Default Delivery Area</label>
+        <p class="text-xs text-gray-500 mt-0.5 mb-3">Already selected when a customer opens checkout, a landing page order form or a pre-order — they can still switch. Also used for the delivery estimate in the cart.</p>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+            @foreach([
+                'dhaka' => ['Inside Dhaka', 'Most of your customers are in Dhaka.', 'dhaka_charge', '60'],
+                'outside_dhaka' => ['Outside Dhaka', 'Most orders ship outside Dhaka. The higher rate shows first, so a total never goes up later.', 'outside_dhaka_charge', '120'],
+                'ask' => ['Customer chooses', 'Nothing preselected — every customer picks their area before ordering, so no one pays a rate they didn\'t choose.', null, null],
+            ] as $value => [$title, $hint, $chargeKey, $chargeDefault])
+            <label class="relative flex flex-col gap-1 border-2 rounded-xl p-4 cursor-pointer transition"
+                   :class="def === '{{ $value }}' ? 'border-orange-500 bg-orange-50' : 'border-gray-200 hover:border-gray-300'">
+                <input type="radio" name="shipping_default_zone" value="{{ $value }}" x-model="def" class="absolute top-4 right-4">
+                <span class="text-sm font-semibold text-gray-800 pr-6">{{ $title }}</span>
+                @if($chargeKey)
+                    <span class="text-lg font-extrabold text-gray-900">{{ setting('currency_symbol', '৳') }}{{ number_format((float) setting($chargeKey, $chargeDefault)) }}</span>
+                @else
+                    <span class="text-lg font-extrabold text-gray-900">—</span>
+                @endif
+                <span class="text-xs text-gray-500 leading-relaxed">{{ $hint }}</span>
+            </label>
+            @endforeach
+        </div>
+        <p class="text-xs text-gray-400 mt-2">A returning customer's own last choice is remembered on their device and wins over this default.</p>
+    </div>
+
     <div x-show="method === 'flat'" x-cloak class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
         <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Flat Rate Amount</label>

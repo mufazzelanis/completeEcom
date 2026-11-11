@@ -108,7 +108,7 @@
 </style>
 <div class="mb-4 rounded-2xl overflow-hidden" style="border: 1px solid rgba(124,58,237,.3);"
      x-data="{
-        q: {{ (int) old('quantity', 1) }}, zone: @js(old('zone') ?: 'outside_dhaka'), zones: {{ $poZones ? 'true' : 'false' }},
+        q: {{ (int) old('quantity', 1) }}, zone: @js(old('zone') ?: \App\Services\ShippingCalculator::estimateZone()), zones: {{ $poZones ? 'true' : 'false' }},
         rates: @js($poRates), price: {{ $poPrice }}, freeMin: @js($poFree),
         pay: @js($poPay), method: @js(old('payment_method', $poPay[0]['slug'] ?? null)),
         sheet: {{ $poReopen ? 'true' : 'false' }}, step: {{ $poPayErrors ? 2 : 1 }}, sending: false,

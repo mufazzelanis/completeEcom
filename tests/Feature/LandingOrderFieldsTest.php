@@ -30,6 +30,7 @@ class LandingOrderFieldsTest extends TestCase
         $this->lp = LandingPage::forceCreate([
             'title' => 'Aveeno', 'slug' => 'aveeno', 'product_id' => $product->id, 'status' => 'published',
             'order_button_text' => 'অর্ডার করুন', 'thank_you_heading' => 'ধন্যবাদ', 'collect_address' => false, 'require_address' => false,
+            'delivery_mode' => 'none', // delivery areas: DefaultDeliveryAreaTest
         ]);
     }
 

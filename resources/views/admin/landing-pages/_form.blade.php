@@ -539,17 +539,41 @@
             </button>
         </div>
 
-        {{-- Delivery Zones --}}
+        {{-- Delivery charge: the site's Settings → Shipping (default), this page's own zones, or none --}}
+        @php
+            $siteZones = \App\Services\ShippingCalculator::usesZones();
+            $siteDefault = \App\Services\ShippingCalculator::defaultZone();
+            $deliveryModeNow = old('delivery_mode', $lp->delivery_mode ?? 'site');
+        @endphp
         <div class="bg-white rounded-2xl shadow-sm p-6 space-y-4" x-data="{
+                mode: @js(in_array($deliveryModeNow, ['site', 'custom', 'none'], true) ? $deliveryModeNow : 'site'),
                 rows: {{ Js::from($seed(['label' => 'zone_label', 'charge' => 'zone_charge'], 'label', collect($lp->delivery_zones ?? [])->toArray())) }},
                 add() { this.rows.push({ label: '', charge: '' }); },
                 remove(i) { this.rows.splice(i, 1); },
             }">
             <div>
-                <h3 class="font-medium text-gray-800">Delivery Zones</h3>
-                <p class="text-xs text-gray-400 mt-0.5">Shipping-charge radio buttons on the order form (e.g. "Inside Dhaka — ৳60", "Outside Dhaka — ৳100"). Leave empty for no shipping charge picker — the order form just collects the address as plain text.</p>
+                <h3 class="font-medium text-gray-800">Delivery Charge</h3>
+                <p class="text-xs text-gray-400 mt-0.5">The delivery area picker on the order form, and what it adds to the total.</p>
             </div>
-            <div class="space-y-2">
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                @foreach([
+                    'site' => ['Shipping settings', $siteZones
+                        ? 'Inside Dhaka ' . setting('currency_symbol', '৳') . number_format((float) setting('dhaka_charge', 60)) . ' / Outside Dhaka ' . setting('currency_symbol', '৳') . number_format((float) setting('outside_dhaka_charge', 120)) . ', starts on ' . ($siteDefault ? \App\Services\ShippingCalculator::label($siteDefault) : 'nothing (customer chooses)') . '. Free delivery threshold applies.'
+                        : 'Flat ' . setting('currency_symbol', '৳') . number_format((float) setting('flat_rate_amount', 60)) . ' on every order. Free delivery threshold applies.'],
+                    'custom' => ['This page\'s own zones', 'Your own areas and charges, set below — for a campaign with special delivery prices.'],
+                    'none' => ['No delivery charge', 'No area picker; the total is the product price only (free delivery, or charge settled on the phone call).'],
+                ] as $value => [$title, $hint])
+                <label class="relative block border-2 rounded-xl p-3 cursor-pointer transition"
+                       :class="mode === '{{ $value }}' ? 'border-indigo-500 bg-indigo-50' : 'border-gray-100 hover:border-gray-300'">
+                    <input type="radio" name="delivery_mode" value="{{ $value }}" x-model="mode" class="absolute top-3 right-3 text-indigo-600">
+                    <span class="block text-sm font-semibold text-gray-800 pr-6">{{ $title }}</span>
+                    <span class="block text-xs text-gray-500 mt-1 leading-relaxed">{{ $hint }}</span>
+                </label>
+                @endforeach
+            </div>
+            <p x-show="mode === 'site'" class="text-xs text-gray-400">Change the charges and the default area in <a href="{{ route('admin.settings.show', 'shipping') }}" target="_blank" class="text-indigo-600 hover:underline">Settings → Shipping</a> — every page using them follows.</p>
+            <div x-show="mode === 'custom'" x-cloak class="space-y-2">
+            <p class="text-xs text-gray-400">e.g. "ঢাকার ভিতরে — ৳60", "ঢাকার বাইরে — ৳120". The zone whose name says inside / ভিতরে or outside / বাইরে is preselected to match Settings → Shipping → Default Delivery Area.</p>
                 <template x-for="(row, i) in rows" :key="i">
                     <div class="flex items-center gap-2">
                         <input type="text" name="zone_label[]" x-model="row.label" placeholder="Inside Dhaka"
@@ -563,6 +587,7 @@
             <button type="button" @click="add()" class="text-sm text-indigo-600 hover:text-indigo-800 font-medium flex items-center gap-1.5">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg> Add Zone
             </button>
+            </div>
         </div>
 
         {{-- FAQ --}}

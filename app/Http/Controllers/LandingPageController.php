@@ -57,10 +57,10 @@ class LandingPageController extends Controller
             // fat-fingered/bot submission than a genuine bulk buyer (who'd contact the shop).
             'quantity' => 'nullable|integer|min:1|max:5',
         ];
-        if (filled($landingPage->delivery_zones)) {
-            // Required once zones exist at all — a page with a shipping-charge picker can't
-            // compute a total without knowing which zone applies.
-            $rules['delivery_zone'] = 'required|integer|min:0|max:' . (count($landingPage->delivery_zones) - 1);
+        $deliveryOptions = $landingPage->deliveryOptions(); // Settings → Shipping, the page's own zones, or none
+        if ($deliveryOptions) {
+            // a total can't be worked out without knowing which area applies
+            $rules['delivery_zone'] = 'required|integer|min:0|max:' . (count($deliveryOptions) - 1);
         }
         foreach ($landingPage->order_form_fields ?? [] as $field) {
             $rule = $field['required'] ? 'required' : 'nullable';
@@ -116,9 +116,10 @@ class LandingPageController extends Controller
 
         $zone = null;
         $shippingCharge = 0.0;
-        if (filled($landingPage->delivery_zones) && isset($validated['delivery_zone'])) {
-            $zone = $landingPage->delivery_zones[(int) $validated['delivery_zone']] ?? null;
-            $shippingCharge = (float) ($zone['charge'] ?? 0);
+        if ($deliveryOptions && isset($validated['delivery_zone'])) {
+            $zone = $deliveryOptions[(int) $validated['delivery_zone']] ?? null;
+            // site settings: the store's own rate for the area, free-delivery threshold included
+            $shippingCharge = $zone ? $landingPage->deliveryCharge((int) $validated['delivery_zone'], $subtotal) : 0.0;
         }
         $total = round($subtotal + $shippingCharge, 2);
 
@@ -140,7 +141,7 @@ class LandingPageController extends Controller
             $customData = ['_delivery_zone' => $zone['label']] + $customData;
         }
 
-        $order = DB::transaction(function () use ($landingPage, $validated, $quantity, $unitPrice, $subtotal, $shippingCharge, $total, $customData, $phone) {
+        $order = DB::transaction(function () use ($landingPage, $validated, $quantity, $unitPrice, $subtotal, $shippingCharge, $total, $customData, $phone, $zone) {
             // Row lock + re-check: two orders arriving at the same moment can both pass the
             // pre-check above against the same last unit; only one may take it.
             if ($landingPage->product_id) {
@@ -166,6 +167,8 @@ class LandingPageController extends Controller
                 'shipping_name'     => $validated['name'],
                 'shipping_phone'    => $phone,
                 'shipping_address'  => $validated['address'] ?? null,
+                // the store's own area (Inside / Outside Dhaka) when the page uses Settings → Shipping — couriers and reports read it
+                'shipping_zone'     => in_array($zone['key'] ?? null, ['dhaka', 'outside_dhaka'], true) ? $zone['key'] : null,
                 'landing_page_data' => $customData,
             ]);
 

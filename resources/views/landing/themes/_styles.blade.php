@@ -211,6 +211,8 @@ select.lt-input{background:var(--bg) url("data:image/svg+xml,%3Csvg xmlns=%27htt
 .lt-zone.is-on{border-color:var(--brand);background:color-mix(in srgb,var(--brand) 8%,var(--surface))}
 .lt .lt-zone input{accent-color:var(--brand);color:var(--brand);width:18px;height:18px;flex:none}
 .lt-zone span{display:flex;align-items:center;gap:10px}
+.lt-hint{font-size:.84rem;color:var(--muted);margin:2px 2px 0}
+.lt-hint--ok{color:var(--accent);font-weight:700}
 .lt-total{border-radius:calc(var(--radius) * .7);padding:14px 16px;margin:6px 0 18px;background:color-mix(in srgb,var(--brand) 7%,var(--bg));border:1px dashed color-mix(in srgb,var(--brand) 35%,var(--line))}
 .lt-total div{display:flex;justify-content:space-between;padding:3px 0;color:var(--muted);font-variant-numeric:tabular-nums}
 .lt-total .is-grand{color:var(--ink);font-weight:900;font-size:1.15rem;border-top:1px dashed color-mix(in srgb,var(--brand) 35%,var(--line));margin-top:6px;padding-top:9px}

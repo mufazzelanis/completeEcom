@@ -15,6 +15,10 @@
         : null;
     $stickyThumb = $landingPage->hero_image ?: $landingPage->product?->image;
     $lpTheme = \App\Support\LandingThemes::of($landingPage);
+    // delivery areas: Settings → Shipping (default area + free threshold), the page's own zones, or none
+    $lpZones = $landingPage->deliveryOptions();
+    $lpZoneStart = old('delivery_zone') !== null && isset($lpZones[(int) old('delivery_zone')]) ? (int) old('delivery_zone') : $landingPage->defaultDeliveryIndex();
+    $lpFreeFrom = $landingPage->deliveryFreeFrom();
 @endphp
 <style>
     .no-scrollbar::-webkit-scrollbar{display:none}
@@ -626,9 +630,11 @@
         x-data="{
             qty: 1,
             unit: {{ (float) ($landingPage->effective_price ?? 0) }},
-            zones: {{ Js::from($landingPage->delivery_zones ?: []) }},
-            zoneIndex: {{ $landingPage->delivery_zones ? 0 : 'null' }},
-            get zoneCharge() { return (this.zoneIndex !== null && this.zones[this.zoneIndex]) ? parseFloat(this.zones[this.zoneIndex].charge || 0) : 0; },
+            zones: {{ Js::from($lpZones) }},
+            zoneIndex: {{ $lpZoneStart === null ? 'null' : $lpZoneStart }},
+            freeFrom: {{ $lpFreeFrom === null ? 'null' : $lpFreeFrom }},
+            get isFree() { return this.freeFrom !== null && this.subtotal >= this.freeFrom; },
+            get zoneCharge() { return (this.zoneIndex !== null && this.zones[this.zoneIndex] && !this.isFree) ? parseFloat(this.zones[this.zoneIndex].charge || 0) : 0; },
             get subtotal() { return this.unit * this.qty; },
             get total() { return this.subtotal + this.zoneCharge; },
             trackInitiateCheckout() {
@@ -720,26 +726,31 @@
                 </div>
                 @include('partials.landing-field-check')
 
-                @if(filled($landingPage->delivery_zones))
+                @if($lpZones)
                 <div>
                     <label class="flex items-center gap-1.5 text-base font-bold text-gray-900 mb-2">
                         <span class="w-1 h-4 rounded-full shrink-0" style="background: {{ $primary }};"></span>
-                        ডেলিভারি এলাকা
+                        ডেলিভারি এলাকা <span class="text-red-500">*</span>
                     </label>
                     <div class="space-y-2">
-                        @foreach($landingPage->delivery_zones as $i => $zone)
+                        @foreach($lpZones as $i => $zone)
                         <label class="flex items-center justify-between border rounded-xl px-4 py-3 cursor-pointer transition-all duration-200 hover:shadow-sm"
                                :class="zoneIndex === {{ $i }} ? 'ring-2 shadow-sm' : 'border-gray-200'"
                                :style="zoneIndex === {{ $i }} ? 'border-color:{{ $primary }};--tw-ring-color:{{ $primary }}' : ''">
                             <span class="flex items-center gap-2 text-base text-gray-700 min-w-0">
-                                <input type="radio" x-model.number="zoneIndex" value="{{ $i }}" class="text-orange-600 focus:ring-orange-500 shrink-0">
+                                <input type="radio" name="lp_zone_pick" x-model.number="zoneIndex" value="{{ $i }}" required @checked($lpZoneStart === $i) class="text-orange-600 focus:ring-orange-500 shrink-0">
                                 <span class="min-w-0">{{ $zone['label'] }}</span>
                             </span>
-                            <span class="text-base font-semibold text-gray-800 shrink-0">{{ $currencySymbol }}{{ number_format((float) $zone['charge'], $decimals) }}</span>
+                            <span class="text-base font-semibold text-gray-800 shrink-0" x-text="isFree ? 'ফ্রি' : '{{ $currencySymbol }}' + ({{ (float) $zone['charge'] }}).toFixed({{ $decimals }})">{{ $currencySymbol }}{{ number_format((float) $zone['charge'], $decimals) }}</span>
                         </label>
                         @endforeach
                     </div>
-                    <input type="hidden" name="delivery_zone" :value="zoneIndex">
+                    <p class="text-sm text-orange-600 mt-1.5" x-show="zoneIndex === null" x-cloak>আপনার এলাকা বেছে নিন — ডেলিভারি চার্জ সেই অনুযায়ী যোগ হবে।</p>
+                    @if($lpFreeFrom !== null)
+                    <p class="text-sm text-gray-500 mt-1.5" x-show="!isFree" x-cloak>{{ format_currency($lpFreeFrom) }} বা তার বেশি অর্ডারে ডেলিভারি ফ্রি!</p>
+                    <p class="text-sm text-green-600 font-semibold mt-1.5" x-show="isFree" x-cloak>🎉 আপনার অর্ডারে ডেলিভারি ফ্রি!</p>
+                    @endif
+                    <input type="hidden" name="delivery_zone" :value="zoneIndex ?? ''" value="{{ $lpZoneStart }}">
                 </div>
                 @endif
 
@@ -792,10 +803,10 @@
                         <span>পণ্যের মূল্য</span>
                         <span x-text="'{{ $currencySymbol }}' + subtotal.toFixed({{ $decimals }})"></span>
                     </div>
-                    @if(filled($landingPage->delivery_zones))
+                    @if($lpZones)
                     <div class="flex justify-between text-gray-600">
                         <span>ডেলিভারি চার্জ</span>
-                        <span x-text="'{{ $currencySymbol }}' + zoneCharge.toFixed({{ $decimals }})"></span>
+                        <span x-text="zoneIndex === null ? 'এলাকা বেছে নিন' : (zoneCharge > 0 ? '{{ $currencySymbol }}' + zoneCharge.toFixed({{ $decimals }}) : 'ফ্রি')"></span>
                     </div>
                     @endif
                     <div class="flex justify-between font-extrabold pt-1.5 border-t border-dashed" style="border-color: {{ $primary }}40; color: {{ $primaryDark }};">
