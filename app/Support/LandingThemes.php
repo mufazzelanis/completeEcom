@@ -75,6 +75,17 @@ class LandingThemes
         return self::key($page->theme);
     }
 
+    /** The page's main colour: its own Custom Brand Color, else its theme's, else the site's (classic). */
+    public static function primary(LandingPage $page): string
+    {
+        if ($page->brand_color) {
+            return $page->brand_color;
+        }
+        $theme = self::of($page);
+
+        return $theme === 'classic' ? setting('primary_color', '#ea580c') : self::tokens($theme)['brand'];
+    }
+
     /** CSS custom properties for a theme (not used by classic). */
     public static function tokens(string $theme, ?string $brandColor = null): array
     {

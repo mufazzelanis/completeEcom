@@ -4,7 +4,8 @@
 @php
     $currencySymbol = html_entity_decode(setting('currency_symbol', '৳'));
     $decimals = (int) setting('decimal_places', 0);
-    $primary = $landingPage->brand_color ?: setting('primary_color', '#ea580c');
+    // the page's own colour, else its theme's, else the site's — so a themed page's thank-you screen keeps its look
+    $primary = \App\Support\LandingThemes::primary($landingPage);
     $primaryDark = hex_shade($primary, -0.22);
     $currencyCode = setting('currency_code', 'BDT');
     $trackProductId = $landingPage->product_id ? (string) $landingPage->product_id : $landingPage->slug; // product ID (not SKU), as in every other event and the Merchant feed

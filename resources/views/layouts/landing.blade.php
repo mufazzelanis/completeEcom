@@ -9,7 +9,7 @@
     $siteName = setting('site_name', 'ShopVista');
     $logoUrl  =$landingPage->header_logo ? \Illuminate\Support\Facades\Storage::url($landingPage->header_logo) : setting_file_url('site_logo');
     $faviconUrl = $landingPage->favicon ? \Illuminate\Support\Facades\Storage::url($landingPage->favicon) : setting_file_url('favicon');
-    $primaryColor = $landingPage->brand_color ?: setting('primary_color', '#ea580c');
+    $primaryColor = \App\Support\LandingThemes::primary($landingPage);
     $primaryColorDark = hex_shade($primaryColor, -0.22);
 
     // Pixel tracking — this page's own Facebook/Google IDs (Admin → Landing Pages → edit →

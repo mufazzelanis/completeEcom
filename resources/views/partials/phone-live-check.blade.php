@@ -60,7 +60,8 @@
     var msg = document.createElement('p');
     msg.className = 'text-xs mt-1.5 hidden';
     msg.setAttribute('aria-live', 'polite');
-    var anchor = input.parentNode.classList.contains('relative') ? input.parentNode : input;
+    // below the icon wrapper (storefront/classic: .relative; landing themes: .lt-input-wrap), not inside it
+    var anchor = input.parentNode.classList.contains('relative') || input.parentNode.classList.contains('lt-input-wrap') ? input.parentNode : input;
     anchor.insertAdjacentElement('afterend', msg);
 
     function render() {

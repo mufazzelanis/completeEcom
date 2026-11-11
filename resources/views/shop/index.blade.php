@@ -29,7 +29,10 @@
         ? "Buy original {$currentBrand->name} products online in Bangladesh at {$siteName}. Best price, cash on delivery and fast delivery across Bangladesh."
         : "Shop {$shopSeoName} online in Bangladesh at {$siteName}. Original products, best price, cash on delivery and fast delivery across Bangladesh.";
     $shopSeoTitle = isset($category)
-        ? (meaningful_seo($category->meta_title, $ownNames) ?? "{$shopSeoName} Price in Bangladesh – Buy Online | {$siteName}")
+        // "– Buy Online" only while it fits: Google cuts titles past ~60 characters
+        ? (meaningful_seo($category->meta_title, $ownNames) ?? (mb_strlen("{$shopSeoName} Price in Bangladesh – Buy Online | {$siteName}") <= 60
+            ? "{$shopSeoName} Price in Bangladesh – Buy Online | {$siteName}"
+            : "{$shopSeoName} Price in Bangladesh | {$siteName}"))
         : (isset($currentBrand) ? "{$currentBrand->name} Products Price in Bangladesh | {$siteName}" : "Shop Original Skincare, Baby & Health Products | {$siteName}");
     $shopSeoDesc  = isset($category)
         ? (meaningful_seo($category->meta_description, $ownNames, 50) ?? (mb_strlen((string) $shopIntroText) >= 50 ? $shopIntroText : $shopFallbackDesc))

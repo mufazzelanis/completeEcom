@@ -69,6 +69,19 @@ class LandingThemeTest extends TestCase
         }
     }
 
+    public function test_a_bare_page_with_no_product_price_or_pictures_still_renders_in_every_theme(): void
+    {
+        foreach (LandingThemes::keys() as $theme) {
+            LandingPage::query()->delete();
+            LandingPage::forceCreate([
+                'title' => 'Free Consultation', 'slug' => 'free-consultation', 'status' => 'published', 'theme' => $theme,
+                'order_button_text' => 'Book now', 'thank_you_heading' => 'Thanks',
+            ]);
+
+            $this->get('/free-consultation')->assertOk()->assertSee('Free Consultation')->assertSee('name="phone"', false);
+        }
+    }
+
     public function test_the_offer_theme_puts_the_order_form_before_the_benefits(): void
     {
         $this->page('offer');
@@ -109,8 +122,8 @@ class LandingThemeTest extends TestCase
         $order = Order::with('items')->where('landing_page_id', $lp->id)->first();
         $this->assertNotNull($order);
         $this->assertSame(2, (int) $order->items->first()->quantity);
-        // thank-you screen
-        $this->get('/biotin-offer')->assertOk()->assertSee('ধন্যবাদ!');
+        // thank-you screen, in the theme's colour (Soft Care pink) rather than the site's
+        $this->get('/biotin-offer')->assertOk()->assertSee('ধন্যবাদ!')->assertSee('#e0567f', false);
     }
 
     public function test_the_admin_saves_the_chosen_theme_and_rejects_unknown_ones(): void

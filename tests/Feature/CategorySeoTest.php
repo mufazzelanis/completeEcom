@@ -49,6 +49,17 @@ class CategorySeoTest extends TestCase
         $this->get(route('shop.category', $top))->assertOk()->assertSee('<title>Hair Care Price in Bangladesh', false);
     }
 
+    public function test_a_long_category_title_drops_buy_online_to_stay_readable_in_google(): void
+    {
+        $food = $this->category('Health Foods Item', 'foods-item');
+        $long = $this->category('Food Supplements', 'food-supplements', $food->id);
+        $this->category('Food Supplements', 'food-supplements-2');
+        $short = $this->category('Baby', 'baby');
+
+        $this->get(route('shop.category', $long))->assertOk()->assertSee('<title>Food Supplements (Health Foods Item) Price in Bangladesh |', false)->assertDontSee('Buy Online |', false);
+        $this->get(route('shop.category', $short))->assertOk()->assertSee('<title>Baby Price in Bangladesh – Buy Online |', false);
+    }
+
     public function test_a_unique_category_keeps_its_short_title(): void
     {
         $parent = $this->category('Baby', 'baby');
