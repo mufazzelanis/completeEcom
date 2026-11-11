@@ -32,7 +32,17 @@ class SitemapController extends Controller
             $urls[] = ['loc' => $sale->url, 'lastmod' => $sale->updated_at->toAtomString(), 'changefreq' => 'hourly', 'priority' => '0.8'];
         }
 
-        foreach (Category::active()->where('noindex', false)->get() as $category) {
+        // Only categories with something to show (their own products or a sub-category's): an
+        // empty one renders "No products found", which Google reports as a soft 404.
+        $stocked = Product::active()->select('category_id', 'subcategory_id')->get()
+            ->flatMap(fn ($p) => [$p->category_id, $p->subcategory_id])->filter()->unique()->flip();
+        $parentOf = Category::pluck('parent_id', 'id');
+        foreach ($stocked->keys() as $id) {
+            for ($up = $parentOf[$id] ?? null, $depth = 0; $up && $depth < 10; $up = $parentOf[$up] ?? null, $depth++) {
+                $stocked[$up] = true;
+            }
+        }
+        foreach (Category::active()->where('noindex', false)->get()->filter(fn ($c) => isset($stocked[$c->id])) as $category) {
             $urls[] = [
                 'loc' => route('shop.category', $category->slug),
                 'lastmod' => $category->updated_at->toAtomString(),
@@ -152,6 +162,12 @@ class SitemapController extends Controller
             // one-click unsubscribe links act on a plain GET: a crawler must never follow one
             'Disallow: /email/',
             'Disallow: /newsletter/',
+            // Not pages at all: the host's cgi-bin answers 500, /live/ is the visitor heartbeat
+            // (POST only, 405 to a crawler) and /cdn-cgi/ is Cloudflare's own (email-protection
+            // links 404). Search Console listed them under server error / 4xx / not found.
+            'Disallow: /cgi-bin/',
+            'Disallow: /live/',
+            'Disallow: /cdn-cgi/',
         ];
 
         if (setting('sitemap_enabled', '1') === '1') {

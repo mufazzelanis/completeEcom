@@ -15,6 +15,17 @@
      never has to know which section it's in. --}}
 @if ($paginator->hasPages())
 @php
+    // page 1 is the plain URL — "?page=1" would be a second address for the same listing
+    // (LegacyUrlRedirects sends it to the plain one), so links point straight there
+    $pageUrl = function (int $page) use ($paginator) {
+        $url = $paginator->url($page);
+        if ($page > 1) {
+            return $url;
+        }
+        $url = preg_replace('/([?&])page=1(?:&|$)/', '$1', $url);
+
+        return rtrim($url, '?&');
+    };
     // Laravel's own $elements (its default onEachSide=3 window) shows up to 7 numbers
     // around the current page before it starts collapsing into "…" — wide enough that nearly
     // every list with more than ~10 pages never collapses at all. Computed independently here
@@ -40,7 +51,7 @@
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"/></svg>
             </span>
         @else
-            <a href="{{ $paginator->previousPageUrl() }}" rel="prev" aria-label="{{ __('pagination.previous') }}"
+            <a href="{{ $pageUrl($paginator->currentPage() - 1) }}" rel="prev" aria-label="{{ __('pagination.previous') }}"
                 class="w-9 h-9 flex items-center justify-center rounded-full text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 active:scale-95 transition">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"/></svg>
             </a>
@@ -59,7 +70,7 @@
                     {{ $page }}
                 </span>
             @else
-                <a href="{{ $paginator->url($page) }}" aria-label="{{ __('Go to page :page', ['page' => $page]) }}"
+                <a href="{{ $pageUrl($page) }}" aria-label="{{ __('Go to page :page', ['page' => $page]) }}"
                     class="w-9 h-9 flex items-center justify-center rounded-full text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 active:scale-95 transition">
                     {{ $page }}
                 </a>

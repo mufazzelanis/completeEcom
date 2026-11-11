@@ -33,6 +33,8 @@ class LegacyUrlRedirects
         'add-to-cart', 'add_to_wishlist', 'remove_item', 'removed_item', 'undo_item', 'wc-ajax',
         'orderby', 'product_cat', 'product_tag', 'product_brand', 'post_type', 'p', 'page_id',
         's', 'replytocom', 'rating_filter', 'min_rating', 'paged', 'amp',
+        // theme listing switches and nonces (Search Console: /shop/?per_page=9&per_row=4&shop_view=grid…)
+        'per_page', 'per_row', 'shop_view', '_wpnonce',
     ];
 
     private const LEGACY_PARAM_PREFIXES = ['filter_', 'query_type_', 'attribute_', 'pa_'];
@@ -54,6 +56,11 @@ class LegacyUrlRedirects
         // 1. legacy query parameters → same URL without them
         $query = $request->query();
         $clean = array_filter($query, fn ($key) => !$this->isLegacyParam((string) $key), ARRAY_FILTER_USE_KEY);
+        // ?page=1 is the listing itself — one URL for it, not two (Search Console: hundreds of
+        // "…?page=1" under "Alternative page with proper canonical tag")
+        if (($clean['page'] ?? null) === '1') {
+            unset($clean['page']);
+        }
         if (count($clean) !== count($query)) {
             $path = '/' . ltrim($request->path(), '/');
 

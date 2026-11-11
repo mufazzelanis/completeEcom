@@ -61,6 +61,11 @@
         if ($category->noimageindex) $shopRobotsParts[] = 'noimageindex';
         $shopRobots = implode(', ', $shopRobotsParts);
     }
+    // An empty category or brand ("No products found") is a soft 404 to Google — kept out of
+    // the index (and the sitemap) until it has products; its links are still followed.
+    if ((isset($category) || isset($currentBrand)) && isset($products) && method_exists($products, 'total') && $products->total() === 0) {
+        $shopRobots = 'noindex, follow';
+    }
 @endphp
 @section('title', $shopSeoTitle)
 @if($shopSeoDesc)@section('meta_description', $shopSeoDesc)@endif
