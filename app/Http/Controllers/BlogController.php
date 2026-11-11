@@ -21,6 +21,7 @@ class BlogController extends Controller
         }
 
         $posts      = $query->orderByDesc('published_at')->paginate(9)->withQueryString();
+        abort_past_last_page($posts);
         $categories = BlogCategory::where('is_active', true)
             ->withCount(['posts' => fn($q) => $q->published()])
             ->orderBy('name')->get();
@@ -111,6 +112,7 @@ class BlogController extends Controller
             ->orderByDesc('published_at')
             ->paginate(9)
             ->withQueryString();
+        abort_past_last_page($posts);
 
         $categories = BlogCategory::where('is_active', true)
             ->withCount(['posts' => fn($q) => $q->published()])

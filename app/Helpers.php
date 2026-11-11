@@ -785,3 +785,17 @@ if (!function_exists('brand_button_color')) {
         return brand_button_is_custom($key) ? setting($key) : brand_button_defaults()[$key][1];
     }
 }
+
+if (!function_exists('abort_past_last_page')) {
+    /**
+     * Public listings: "?page=N" beyond the last page is a 404, not an empty 200 page — Google
+     * reports those empty pages (e.g. /shop?page=9999, /blog?page=2 with one page of posts) as
+     * soft 404s and wastes crawl budget on them.
+     */
+    function abort_past_last_page(\Illuminate\Contracts\Pagination\LengthAwarePaginator $paginator): void
+    {
+        if ($paginator->currentPage() > 1 && $paginator->currentPage() > $paginator->lastPage()) {
+            abort(404);
+        }
+    }
+}

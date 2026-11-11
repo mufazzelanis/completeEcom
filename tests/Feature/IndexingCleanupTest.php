@@ -26,6 +26,9 @@ class IndexingCleanupTest extends TestCase
     public function test_page_one_has_a_single_address(): void
     {
         $cat = $this->category('Face Care');
+        foreach (range(1, 13) as $i) {
+            $this->product($cat, "item-$i"); // two pages of 12
+        }
         $this->get('/shop/category/face-care?page=1')->assertRedirect('/shop/category/face-care')->assertStatus(301);
         $this->get('/shop/category/face-care?page=2')->assertOk();
     }
@@ -68,6 +71,18 @@ class IndexingCleanupTest extends TestCase
         $this->assertStringNotContainsString('/shop/category/brand-mvn<', $sitemap);
         $this->assertStringContainsString('/shop/category/lotion<', $sitemap);
         $this->assertStringContainsString('/shop/category/baby<', $sitemap); // stocked through its sub-category
+    }
+
+    public function test_a_page_number_past_the_last_page_is_not_found(): void
+    {
+        $cat = $this->category('Face Care');
+        $this->product($cat, 'serum');
+
+        $this->get('/shop?page=9999')->assertNotFound();
+        $this->get('/shop/category/face-care?page=5')->assertNotFound();
+        $this->get('/blog?page=2')->assertNotFound();
+        $this->get('/blog')->assertOk();
+        $this->get('/shop/category/face-care')->assertOk();
     }
 
     public function test_an_empty_brand_page_is_noindex(): void

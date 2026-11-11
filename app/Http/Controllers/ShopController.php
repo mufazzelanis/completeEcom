@@ -101,6 +101,7 @@ class ShopController extends Controller
         };
 
         $products   = $query->paginate(12)->withQueryString();
+        abort_past_last_page($products);
         $categories = Category::whereNull('parent_id')
             ->active()
             ->withCount('products')
@@ -183,6 +184,7 @@ class ShopController extends Controller
             ->latest()
             ->paginate(12)
             ->withQueryString();
+        abort_past_last_page($products);
 
         $categories = Category::whereNull('parent_id')
             ->active()
