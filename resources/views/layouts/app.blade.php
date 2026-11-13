@@ -1292,12 +1292,28 @@ $navCategories = \App\Support\StorefrontCache::remember('nav_categories', fn () 
     $blogUrl     = setting('nav_blog_url') ?: route('blog.index');
     $contactUrl  = setting('nav_contact_url') ?: route('contact');
     // one cached lookup instead of three EXISTS queries on every page
-    // (the short slugs too: an About page saved as /pages/about still gets its footer link)
-    $footerPages = \App\Support\StorefrontCache::remember('footer_pages', fn () => \App\Models\Page::whereIn('slug', ['about-us', 'about', 'terms-conditions', 'terms', 'privacy-policy', 'privacy'])->active()->pluck('slug')->all());
-    $hasPage     = fn (string ...$slugs) => (bool) array_intersect($slugs, $footerPages);
-    $aboutUrl    = setting('nav_about_url') ?: ((int) setting('about_page_id', 0) || $hasPage('about-us', 'about') ? route('about') : null);
-    $termsUrl    = (int) setting('terms_page_id', 0) || $hasPage('terms-conditions', 'terms') ? route('terms') : null;
-    $privacyUrl  = (int) setting('privacy_page_id', 0) || $hasPage('privacy-policy', 'privacy') ? route('privacy') : null;
+    // Footer links go straight to each page's own address (/pages/{slug}, its canonical URL) — not
+    // the short /about, /terms, /privacy aliases. One fewer hop for Google, and a short alias that
+    // once 301-redirected elsewhere stays cached in visitors' browsers forever; the page URL doesn't.
+    // The page is the one assigned in Page Settings, else the usual slug or its short form.
+    $footerLinks = \App\Support\StorefrontCache::remember('footer_page_links', function () {
+        $find = function (string $key, array $slugs) {
+            $id = (int) setting($key, 0);
+            $page = ($id ? \App\Models\Page::active()->find($id) : null)
+                ?? \App\Models\Page::active()->whereIn('slug', $slugs)->orderByRaw('slug = ? desc', [$slugs[0]])->first();
+
+            return $page ? route('pages.show', $page) : null;
+        };
+
+        return [
+            'about'   => $find('about_page_id', ['about-us', 'about']),
+            'terms'   => $find('terms_page_id', ['terms-conditions', 'terms']),
+            'privacy' => $find('privacy_page_id', ['privacy-policy', 'privacy']),
+        ];
+    });
+    $aboutUrl    = setting('nav_about_url') ?: $footerLinks['about'];
+    $termsUrl    = $footerLinks['terms'];
+    $privacyUrl  = $footerLinks['privacy'];
     $copyright   = setting('copyright_text')
         ? str_replace('{year}', date('Y'), setting('copyright_text'))
         : t('footer.copyright_default', '© :year :site. All rights reserved.', ['year' => date('Y'), 'site' => $siteName], 'footer');

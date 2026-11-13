@@ -78,7 +78,8 @@ class AdminPageFormTest extends TestCase
         $this->get('/about')->assertOk()->assertSee('We sell original products.')
             ->assertSee('<link rel="canonical" href="' . url('/pages/about') . '">', false);
         \Illuminate\Support\Facades\Cache::flush();
-        $this->get('/')->assertSee('href="' . route('about') . '"', false); // footer link
+        // footer links to the page's own address, never the short alias a browser may still have cached as a redirect
+        $this->get('/')->assertSee('href="' . url('/pages/about') . '"', false)->assertDontSee('href="' . route('about') . '"', false);
     }
 
     public function test_menu_pages_keep_their_address(): void
