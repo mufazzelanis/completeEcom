@@ -112,6 +112,19 @@ class Redirect extends Model
             : null;
     }
 
+    /**
+     * A redirect that dumps an unrelated old address on the homepage. Google treats those as
+     * "soft 404s" (the old page is gone, but it isn't told so) — 410 Gone, or a related page, is better.
+     */
+    public function pointsHome(): bool
+    {
+        if ((int) $this->status_code === 410 || !$this->target) {
+            return false;
+        }
+
+        return self::targetAsSource($this->target) === '/';
+    }
+
     /** source => [id, target, status_code] for every active redirect. */
     public static function map(): array
     {

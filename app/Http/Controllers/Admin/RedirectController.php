@@ -38,6 +38,7 @@ class RedirectController extends Controller
             'redirects' => $redirects,
             'notFound' => $notFound,
             'search' => $search,
+            'toHome' => self::homeRedirects()->count(),
             'totals' => ['redirects' => Redirect::count(), 'hits' => (int) Redirect::sum('hits'), 'notFound' => NotFoundLog::whereNotIn('path', $redirected)->count()],
         ]);
     }
@@ -108,6 +109,21 @@ class RedirectController extends Controller
         $notFoundLog->delete();
 
         return back()->with('success', 'Removed from the 404 log.');
+    }
+
+    /** Active redirects whose target is the homepage (soft 404s for Google). */
+    private static function homeRedirects()
+    {
+        return Redirect::where('is_active', true)->where('status_code', '!=', 410)->get()->filter->pointsHome();
+    }
+
+    /** "Change all to 410 Gone": every homepage redirect becomes a clear "this address is finished". */
+    public function homeToGone()
+    {
+        $rules = self::homeRedirects();
+        $rules->each(fn (Redirect $r) => $r->update(['status_code' => 410, 'target' => null]));
+
+        return back()->with('success', $rules->count() . ' homepage ' . \Illuminate\Support\Str::plural('redirect', $rules->count()) . ' changed to 410 Gone.');
     }
 
     public function clearNotFound()

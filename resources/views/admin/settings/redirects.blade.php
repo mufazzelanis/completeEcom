@@ -107,6 +107,18 @@
                 class="px-4 py-2 text-sm font-medium border-b-2 -mb-px">404 log — broken links ({{ number_format($totals['notFound']) }})</button>
     </div>
 
+    {{-- Rules that dump old addresses on the homepage (soft 404s in Search Console) --}}
+    @if($toHome > 0)
+        <div x-show="tab === 'redirects'" class="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900 flex flex-wrap items-center justify-between gap-3">
+            <p><strong>{{ $toHome }} {{ $toHome === 1 ? 'redirect sends' : 'redirects send' }} visitors to the homepage.</strong>
+                Google reports those as "Soft 404" and they can hide a real page (like /about). A related page is best; otherwise "410 Gone" tells Google the address is finished.</p>
+            <form method="POST" action="{{ route('admin.redirects.home-to-gone') }}" x-data @submit.prevent="if (window.confirm('Change all {{ $toHome }} homepage redirects to 410 Gone?')) $el.submit()">
+                @csrf
+                <button class="px-3 py-2 rounded-lg bg-amber-600 text-white text-xs font-semibold hover:bg-amber-700">Change all to 410 Gone</button>
+            </form>
+        </div>
+    @endif
+
     {{-- Redirects list --}}
     <div x-show="tab === 'redirects'" class="bg-white rounded-xl shadow-sm border overflow-hidden">
         <form method="GET" action="{{ route('admin.redirects.index') }}" class="p-4 border-b flex gap-2">
@@ -138,6 +150,9 @@
                                     · last {{ $r->last_hit_at ? $r->last_hit_at->diffForHumans() : 'never' }}
                                     @if($r->note) · {{ $r->note }}@endif
                                 </p>
+                                @if($r->pointsHome())
+                                    <p class="text-xs text-amber-700 mt-1">⚠ Sends this address to the homepage — Google counts that as a "soft 404". Point it to a related page, or set it to 410 Gone.</p>
+                                @endif
                             </div>
                             <div class="flex items-center gap-2">
                                 <button type="button" @click="editing = true" class="px-3 py-1.5 text-xs border rounded-lg text-gray-700 hover:bg-gray-50">Edit</button>

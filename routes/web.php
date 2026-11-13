@@ -865,6 +865,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
         Route::get('settings/redirects', [\App\Http\Controllers\Admin\RedirectController::class, 'index'])->name('redirects.index');
         Route::post('settings/redirects', [\App\Http\Controllers\Admin\RedirectController::class, 'store'])->name('redirects.store');
         Route::post('settings/redirects/import', [\App\Http\Controllers\Admin\RedirectController::class, 'import'])->name('redirects.import');
+        Route::post('settings/redirects/home-to-gone', [\App\Http\Controllers\Admin\RedirectController::class, 'homeToGone'])->name('redirects.home-to-gone');
         Route::post('settings/redirects/404/clear', [\App\Http\Controllers\Admin\RedirectController::class, 'clearNotFound'])->name('redirects.404.clear');
         Route::delete('settings/redirects/404/{notFoundLog}', [\App\Http\Controllers\Admin\RedirectController::class, 'dismissNotFound'])->name('redirects.404.dismiss');
         Route::put('settings/redirects/{redirect}', [\App\Http\Controllers\Admin\RedirectController::class, 'update'])->name('redirects.update');
