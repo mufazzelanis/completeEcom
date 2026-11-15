@@ -41,7 +41,7 @@
     {{-- Mobile Search — opens the mobile menu (its search field sits right at the top)
          instead of just navigating to the shop page, so tapping this actually lets you
          type a search rather than dropping you on an unfiltered product listing. --}}
-    <button type="button" @click="mobileOpen = true; $nextTick(() => $refs.mobileSearchInput.focus())"
+    <button type="button" @click="mobileOpen = true; setTimeout(() => document.querySelector('[data-ss-drawer] input[type=search]')?.focus(), 60)"
         class="md:hidden w-10 h-10 flex items-center justify-center rounded-full text-gray-600 dark:text-gray-300 hover:text-orange-700 hover:bg-gray-100 dark:hover:bg-gray-800 active:scale-90 tap-spring transition-all duration-200" aria-label="Search">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
     </button>

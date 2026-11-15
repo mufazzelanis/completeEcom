@@ -32,17 +32,58 @@ class SearchController extends Controller
             ->get(['id', 'name', 'slug']);
 
         return response()->json([
-            'products' => $products->map(fn($p) => [
-                'name'  => $p->name,
-                'price' => '৳' . number_format($p->sale_price ?? $p->price),
-                'image' => $p->image ? image_thumb($p->image, 96) : null,
-                'url'   => route('products.show', $p->slug),
-            ]),
+            'products' => $products->map(fn($p) => self::productRow($p)),
             'categories' => $categories->map(fn($c) => [
                 'name' => $c->name,
                 'url'  => route('shop.category', $c->slug),
             ]),
         ]);
+    }
+
+    /** One product as the search dropdown shows it (name, price, regular price when on sale, thumb, link). */
+    private static function productRow(Product $p): array
+    {
+        $now = (float) ($p->sale_price && $p->sale_price < $p->price ? $p->sale_price : $p->price);
+
+        return [
+            'name'  => $p->name,
+            'price' => '৳' . number_format($now),
+            'was'   => $now < (float) $p->price ? '৳' . number_format((float) $p->price) : null,
+            'off'   => $now < (float) $p->price && $p->price > 0 ? (int) round(100 - $now / $p->price * 100) : null,
+            'image' => $p->image ? image_thumb($p->image, 96) : null,
+            'url'   => route('products.show', $p->slug),
+        ];
+    }
+
+    /**
+     * What the search box shows before anything is typed (and types out in its placeholder):
+     * what shoppers search for most (Search history, last 30 days) and the products they open
+     * most. Same for everyone, so cached for an hour and cacheable by the browser.
+     */
+    public function trending()
+    {
+        $data = \Illuminate\Support\Facades\Cache::remember('search:trending', 3600, function () {
+            $searches = \App\Models\SearchQuery::where('searched_at', '>=', now()->subDays(30))
+                ->selectRaw('LOWER(TRIM(`query`)) as q, COUNT(*) as n')
+                ->groupBy('q')->having('n', '>=', 2)->orderByDesc('n')->limit(10)->pluck('q')
+                ->filter(fn ($q) => mb_strlen($q) >= 3 && mb_strlen($q) <= 40)->values();
+
+            $products = Product::active()->where('stock', '>', 0)->whereNotNull('image')
+                ->orderByDesc('views')->limit(8)
+                ->get(['products.id', 'products.name', 'products.slug', 'products.image', 'products.price', 'products.sale_price']);
+
+            // a placeholder fits ~35 characters: the first words of a long product name
+            $short = fn (string $name) => \Illuminate\Support\Str::limit(trim(preg_replace('/\s+/', ' ', $name)), 34, '');
+
+            return [
+                'searches'     => $searches->all(),
+                'products'     => $products->take(4)->map(fn ($p) => self::productRow($p))->values()->all(),
+                'placeholders' => $searches->take(4)->merge($products->take(6)->map(fn ($p) => $short($p->name)))
+                    ->unique()->shuffle()->values()->all(),
+            ];
+        });
+
+        return response()->json($data)->header('Cache-Control', 'public, max-age=600');
     }
 
     /** Admin header quick-search: the list of admin pages, fetched once per session. */

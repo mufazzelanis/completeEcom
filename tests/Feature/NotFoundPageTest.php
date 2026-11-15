@@ -31,6 +31,16 @@ class NotFoundPageTest extends TestCase
         $this->get('/pages/does-not-exist')->assertNotFound()->assertSee('Oops! Page not found.');
     }
 
+    /** Live: a running flash sale, served from the cache on the second visit, broke the page (cached model came back incomplete). */
+    public function test_page_works_from_the_cache_with_a_live_flash_sale(): void
+    {
+        config(['cache.default' => 'array']);
+        \App\Models\FlashSale::forceCreate(['name' => 'Winter Sale', 'slug' => 'winter-sale', 'starts_at' => now()->subDay(), 'ends_at' => now()->addDay(), 'is_active' => true]);
+
+        $this->get('/locas')->assertNotFound()->assertSee('Winter Sale');
+        $this->get('/locas')->assertNotFound()->assertSee('Winter Sale')->assertSee('Oops! Page not found.'); // from the cache
+    }
+
     public function test_gone_pages_use_the_same_design(): void
     {
         $this->get('/wp-json/anything')->assertStatus(410)->assertSee('This page has moved on.')->assertSee('noindex, follow', false);

@@ -2,6 +2,7 @@ import Alpine from 'alpinejs';
 import * as Turbo from '@hotwired/turbo';
 import './datepicker';
 import './scroll-reveal';
+import smartSearch from './smart-search';
 
 window.Alpine = Alpine;
 window.Turbo = Turbo;
@@ -39,6 +40,9 @@ Alpine.store('adminSidebar', { open: false });
 // the tab stays open. Registered once here (module scripts never re-run under Turbo), with
 // a single shared scroll listener below, exactly like the theme/adminSidebar stores above.
 Alpine.store('mobileSearchBar', { visible: false });
+
+// Storefront search boxes (header, mobile menu, mobile sticky bar) — partials/storefront/smart-search
+Alpine.data('smartSearch', smartSearch);
 
 Alpine.start();
 

@@ -49,13 +49,19 @@
             }
         }
 
-        $cache = fn (string $key, \Closure $fn) => \Illuminate\Support\Facades\Cache::remember('notfound:v2:' . $key, 900, $fn);
+        // Cached as plain arrays, never models: this site's cache refuses to unserialize objects
+        // (config cache.serializable_classes), so a cached model would come back broken.
+        $cache = fn (string $key, \Closure $fn) => collect(\Illuminate\Support\Facades\Cache::remember('notfound:v3:' . $key, 900, $fn))
+            ->map(fn ($row) => (object) $row);
         $popular = $cache('popular', fn () => \App\Models\Product::active()->where('stock', '>', 0)->whereNotNull('image')
-            ->orderByDesc('views')->limit(14)->get($cols));
+            ->orderByDesc('views')->limit(14)->get($cols)
+            ->map(fn ($p) => $p->only(['id', 'name', 'slug', 'price', 'sale_price', 'image']))->all());
         $categories = $cache('categories', fn () => \App\Models\Category::active()->whereNull('parent_id')
             ->withCount(['products' => fn ($q) => $q->where('is_active', true)])->orderByDesc('products_count')
-            ->limit(8)->get(['id', 'name', 'slug', 'image'])->filter(fn ($c) => $c->products_count > 0)->values());
-        $flash = $cache('flash', fn () => \App\Models\FlashSale::live()->orderBy('ends_at')->first());
+            ->limit(8)->get(['id', 'name', 'slug', 'image'])->filter(fn ($c) => $c->products_count > 0)
+            ->map(fn ($c) => $c->only(['id', 'name', 'slug', 'image', 'products_count']))->values()->all());
+        $flash = $cache('flash', fn () => ($f = \App\Models\FlashSale::live()->orderBy('ends_at')->first())
+            ? [['name' => $f->name, 'url' => $f->url, 'ends' => $f->ends_at->toIso8601String()]] : [])->first();
     } catch (\Throwable $e) {
         // a broken database never turns "page not found" into "server error"
     }
@@ -370,7 +376,7 @@
     </div>
 
     @if($flash)
-        <a href="{{ $flash->url }}" class="flash reveal" data-ends="{{ $flash->ends_at->toIso8601String() }}">
+        <a href="{{ $flash->url }}" class="flash reveal" data-ends="{{ $flash->ends }}">
             <div><strong>⚡ {{ $flash->name }}</strong><div style="font-size: 14px; opacity: .9">Flash sale is live — ends in</div></div>
             <div class="clock"><span data-u="d">00<small>days</small></span><span data-u="h">00<small>hrs</small></span><span data-u="m">00<small>min</small></span><span data-u="s">00<small>sec</small></span></div>
             <span class="go">Shop the sale →</span>
