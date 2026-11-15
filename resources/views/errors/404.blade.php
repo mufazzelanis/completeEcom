@@ -21,6 +21,26 @@
     $popular = collect();
     $categories = collect();
     $flash = null;
+    $favicon = null;
+    $darkDefault = 'system';
+    $fontHref = null;
+    $fontStack = '"Inter"';
+
+    try {
+        $favicon = setting_file_url('favicon') ?: setting_file_url('site_logo');
+        $darkDefault = (string) setting('dark_mode_default', 'system');
+        // the storefront font (layouts/app does the same): a Google font unless it's a system stack
+        $fontFamily = (string) setting('font_family', 'Inter, sans-serif');
+        $fontName = trim(explode(',', $fontFamily)[0], " \t\"'");
+        if ($fontName !== '' && preg_match('/^[A-Za-z0-9 ]+$/', $fontName)) {
+            $fontStack = '"' . $fontName . '"';
+            if (!str_contains($fontFamily, 'system-ui')) {
+                $fontHref = 'https://fonts.googleapis.com/css2?family=' . str_replace(' ', '+', $fontName) . ':wght@400;600;700;800;900&display=swap';
+            }
+        }
+    } catch (\Throwable $e) {
+        // settings unavailable: keep the defaults
+    }
 
     try {
         $siteName = setting('site_name', $siteName) ?: $siteName;
@@ -82,19 +102,42 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <meta name="robots" content="noindex, follow">
     <title>{{ $gone ? 'This page is no longer available' : 'Page not found' }} | {{ $siteName }}</title>
+    {{-- the same browser-tab icon, home-screen icon, app manifest and theme colour as every storefront page --}}
+    @if($favicon)
+        <link rel="icon" href="{{ $favicon }}">
+        <link rel="apple-touch-icon" href="{{ $favicon }}">
+    @endif
+    <link rel="manifest" href="{{ url('/manifest.webmanifest') }}">
     <meta name="theme-color" content="{{ $primary }}">
+    <meta name="application-name" content="{{ $siteName }}">
+    {{-- the storefront's own font (Settings → Theme), loaded without blocking the first paint --}}
+    @if($fontHref)
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="{{ $fontHref }}" media="print" onload="this.media='all'; this.onload=null;">
+    @endif
+    <script>
+        // Same light/dark choice as the rest of the store (the visitor's theme toggle, else the
+        // admin's default, else the device setting) — applied before the first paint.
+        (function () {
+            var stored = null;
+            try { stored = localStorage.getItem('site-theme'); } catch (e) {}
+            var def = {{ Js::from($darkDefault) }};
+            var dark = stored ? stored === 'dark' : (def === 'dark' ? true : def === 'light' ? false : window.matchMedia('(prefers-color-scheme: dark)').matches);
+            document.documentElement.classList.toggle('dark', dark);
+        })();
+    </script>
     <style>
         :root {
             --p: {{ $primary }}; --s: {{ $secondary }};
             --bg: #f7f8fc; --bg2: #ffffff; --card: #ffffff; --ink: #0f172a; --muted: #64748b; --line: #e6e9f2;
             --glass: rgba(255, 255, 255, .7); --shadow: 0 24px 60px -28px rgba(15, 23, 42, .35);
+            color-scheme: light;
         }
-        @media (prefers-color-scheme: dark) {
-            :root { --bg: #070b14; --bg2: #0c1222; --card: #111a2e; --ink: #eef2ff; --muted: #94a3b8; --line: #1e293b; --glass: rgba(17, 26, 46, .72); --shadow: 0 24px 60px -24px rgba(0, 0, 0, .8); }
-        }
+        html.dark { --bg: #070b14; --bg2: #0c1222; --card: #111a2e; --ink: #eef2ff; --muted: #94a3b8; --line: #1e293b; --glass: rgba(17, 26, 46, .72); --shadow: 0 24px 60px -24px rgba(0, 0, 0, .8); color-scheme: dark; }
         * { box-sizing: border-box; }
         html { scroll-behavior: smooth; }
-        body { margin: 0; font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Hind Siliguri", sans-serif; background: var(--bg); color: var(--ink); overflow-x: hidden; -webkit-font-smoothing: antialiased; }
+        body { margin: 0; font-family: {!! $fontStack !!}, "Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Hind Siliguri", sans-serif; background: var(--bg); color: var(--ink); overflow-x: hidden; -webkit-font-smoothing: antialiased; }
         a { color: inherit; text-decoration: none; }
         button { font: inherit; }
         .grad { background: linear-gradient(110deg, var(--p), var(--s), var(--p)); background-size: 200% auto; -webkit-background-clip: text; background-clip: text; color: transparent; animation: shine 5s linear infinite; }

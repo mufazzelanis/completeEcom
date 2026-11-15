@@ -41,6 +41,22 @@ class NotFoundPageTest extends TestCase
         $this->get('/locas')->assertNotFound()->assertSee('Winter Sale')->assertSee('Oops! Page not found.'); // from the cache
     }
 
+    public function test_page_has_the_store_favicon_manifest_and_theme(): void
+    {
+        \Illuminate\Support\Facades\Storage::fake('public');
+        \Illuminate\Support\Facades\Storage::disk('public')->put('settings/fav.png', 'x');
+        \App\Models\Setting::set('favicon', 'settings/fav.png');
+        \App\Models\Setting::set('dark_mode_default', 'dark');
+
+        $this->get('/locas')->assertNotFound()
+            ->assertSee('<link rel="icon" href="', false)->assertSee('settings/fav.png', false)
+            ->assertSee('<link rel="apple-touch-icon"', false)
+            ->assertSee('<link rel="manifest" href="' . url('/manifest.webmanifest') . '">', false)
+            ->assertSee("localStorage.getItem('site-theme')", false) // follows the visitor's theme toggle
+            ->assertSee("var def = 'dark'", false);                    // …else the admin's default
+        $this->get('/wp-json/x')->assertStatus(410)->assertSee('settings/fav.png', false);
+    }
+
     public function test_gone_pages_use_the_same_design(): void
     {
         $this->get('/wp-json/anything')->assertStatus(410)->assertSee('This page has moved on.')->assertSee('noindex, follow', false);
