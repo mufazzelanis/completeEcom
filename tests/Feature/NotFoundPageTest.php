@@ -20,19 +20,19 @@ class NotFoundPageTest extends TestCase
 
         $this->get('/old-cerave-link-xyz')->assertNotFound()
             ->assertSee('noindex, follow', false)
-            ->assertSee('পেজটি খুঁজে পাওয়া যাচ্ছে না')
+            ->assertSee('Oops! Page not found.')
             ->assertSee('name="search"', false)
             ->assertSee(url('/shop'), false)
-            ->assertSee('আপনি কি এটা খুঁজছিলেন') // "did you mean" from the words in the address
+            ->assertSee('Were you looking for one of these?') // from the words in the address
             ->assertSee('CeraVe Hydrating Cleanser')
             ->assertSee('Face Care');                   // popular categories
 
         // 404s inside known sections use it too
-        $this->get('/pages/does-not-exist')->assertNotFound()->assertSee('পেজটি খুঁজে পাওয়া যাচ্ছে না');
+        $this->get('/pages/does-not-exist')->assertNotFound()->assertSee('Oops! Page not found.');
     }
 
     public function test_gone_pages_use_the_same_design(): void
     {
-        $this->get('/wp-json/anything')->assertStatus(410)->assertSee('এই পেজটি আর নেই')->assertSee('noindex, follow', false);
+        $this->get('/wp-json/anything')->assertStatus(410)->assertSee('This page has moved on.')->assertSee('noindex, follow', false);
     }
 }
