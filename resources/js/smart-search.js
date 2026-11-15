@@ -81,11 +81,14 @@ export default function smartSearch(opts = {}) {
             const base = opts.placeholder || 'Search products…';
             if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
                 let n = 0;
-                const rotate = () => { if (!this.focused && !this.query) this.placeholder = `Search “${words[n++ % words.length]}”`; this._type = setTimeout(rotate, 3500); };
+                const rotate = () => { if (!document.hidden && !this.focused && !this.query) this.placeholder = `Search “${words[n++ % words.length]}”`; this._type = setTimeout(rotate, 3500); };
                 return rotate();
             }
             let i = 0, j = 0, back = false;
+            // no work at all while this box can't be seen (desktop bar on a phone, hidden sticky bar, background tab)
+            const visible = () => !document.hidden && this.$refs.input && this.$refs.input.offsetParent !== null;
             const step = () => {
+                if (!visible()) { this._type = setTimeout(step, 2000); return; }
                 if (this.focused || this.query) { this.placeholder = base; this._type = setTimeout(step, 1200); return; }
                 const w = words[i % words.length];
                 this.placeholder = `Search “${w.slice(0, j)}${back || j < w.length ? '' : '”'}`;
