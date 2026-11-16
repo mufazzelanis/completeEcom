@@ -37,6 +37,26 @@ class BlogAdsLoadTest extends TestCase
         $this->get('/')->assertOk()->assertDontSee('turbo-visit-control', false)->assertSee('turbo:before-visit', false);
     }
 
+    /** Live: Adsterra sometimes sends nothing for a unit — an empty slot then runs the backup code. */
+    public function test_post_slots_carry_a_backup_ad(): void
+    {
+        $post = $this->makePost();
+        Setting::set('adsterra_enabled', '1');
+        Setting::set('adsterra_code_infeed', '<script>atOptions={key:"in-feed-300"}</script>');
+        Setting::set('adsterra_code_article', '<script>atOptions={key:"article-728"}</script>');
+
+        $this->get(route('blog.show', $post))->assertOk()
+            ->assertSee('data-adsterra>', false)
+            ->assertSee('<template data-adsterra-backup><script>atOptions={key:"in-feed-300"}</script></template>', false);
+
+        // an admin-chosen backup wins, and a slot never backs itself up with its own code
+        Setting::set('adsterra_code_fallback', '<script>atOptions={key:"backup"}</script>');
+        $this->get(route('blog.show', $post))->assertSee('{key:"backup"}', false)->assertDontSee('in-feed-300', false);
+
+        Setting::set('adsterra_code_fallback', '<script>atOptions={key:"article-728"}</script>');
+        $this->get(route('blog.show', $post))->assertDontSee('<template data-adsterra-backup>', false);
+    }
+
     public function test_nothing_changes_without_ads(): void
     {
         $post = $this->makePost();

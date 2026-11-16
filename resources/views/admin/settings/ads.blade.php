@@ -86,6 +86,12 @@
                   class="w-full border rounded-lg px-3 py-2 text-xs font-mono focus:ring-2 focus:ring-orange-500"
                   placeholder="<script>...</script>">{{ setting('adsterra_code_sidebar', '') }}</textarea>
     </div>
+    <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Backup Code <span class="text-gray-400 font-normal">(shown in any slot Adsterra leaves empty — a 300x250 Banner fills best; blank = use the In-Feed code)</span></label>
+        <textarea name="adsterra_code_fallback" rows="4"
+                  class="w-full border rounded-lg px-3 py-2 text-xs font-mono focus:ring-2 focus:ring-orange-500"
+                  placeholder="<script>...</script>">{{ setting('adsterra_code_fallback', '') }}</textarea>
+    </div>
 </div>
 
 <div class="flex justify-end mt-6">
