@@ -173,6 +173,16 @@ $pageTwitterImage = $meta('twitter_image', $pageOgImage);
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client={{ setting('adsense_publisher_id') }}" crossorigin="anonymous"></script>
     @endif
     @endif
+    {{-- Ad code (Adsterra's atOptions + invoke.js, AdSense's push) only works on a real page
+         load: after a Turbo visit the scripts re-run async, so units share one atOptions and
+         render empty. Blog pages with ads therefore always load in full (back/forward too). --}}
+    @php
+        $blogAds = (setting('ads_enabled', '0') === '1' && setting('adsense_publisher_id', '')) || setting('adsterra_enabled', '0') === '1';
+    @endphp
+    @if($blogAds && request()->routeIs('blog.*'))
+    <meta name="turbo-visit-control" content="reload">
+    <meta name="turbo-cache-control" content="no-cache">
+    @endif
 
     {{-- PWA — lets a phone browser offer "Add to Home Screen" and, once installed, launch
          full-screen under the store's own name/icon/color instead of inside browser chrome. --}}
@@ -503,6 +513,11 @@ $pageTwitterImage = $meta('twitter_image', $pageOgImage);
          visitor first came from, so on-page trackers (blog/partials/tracker) read window.mvCurUrl —
          at the time body scripts run it still holds the previous page (turbo:load comes after). --}}
     <script>if(!window.__mvNav){window.__mvNav=1;document.addEventListener('turbo:load',function(){window.mvCurUrl=location.href;});}</script>
+    @if($blogAds)
+    {{-- a click into the blog goes straight to a normal page load (one request, not Turbo's
+         fetch + the reload the meta above would then ask for), so its ads render --}}
+    <script>if(!window.__mvAdNav){window.__mvAdNav=1;var mvBlog=function(h){try{var u=new URL(h,location.href);return u.origin===location.origin&&/^\/blog(\/|$)/.test(u.pathname)?u:null;}catch(x){return null;}};document.addEventListener('turbo:before-visit',function(e){var u=mvBlog(e.detail.url);if(u){e.preventDefault();location.href=u.href;}});document.addEventListener('turbo:before-prefetch',function(e){if(mvBlog(e.target.href))e.preventDefault();});}</script>
+    @endif
     <script>
     /*
      * Ecommerce analytics — one sender for every GA4 event (gtag) and its GTM twin (dataLayer),
