@@ -1,6 +1,20 @@
 @extends('admin.settings.layout')
 @section('settings-title', 'Theme & Design')
 
+{{-- Every candidate font (not just the two currently saved) so the live preview below
+     actually shows each option's real typeface the instant it's picked, not just a
+     generic fallback that happens to look the same for every selection. --}}
+@push('styles')
+@php
+    $allFontFamilies = collect([
+        'Inter', 'Plus+Jakarta+Sans', 'Manrope', 'DM+Sans', 'Outfit', 'Poppins', 'Urbanist',
+        'Work+Sans', 'Montserrat', 'Nunito', 'Roboto', 'Open+Sans', 'Lato',
+        'Hind+Siliguri', 'Noto+Sans+Bengali', 'Baloo+Da+2', 'Tiro+Bangla', 'Atma', 'Mina',
+    ])->map(fn ($f) => "family={$f}:wght@400;500;600;700")->implode('&');
+@endphp
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?{{ $allFontFamilies }}&display=swap">
+@endpush
+
 @section('settings-content')
 <form method="POST" action="{{ route('admin.settings.update', 'theme') }}">
 @csrf @method('PATCH')
@@ -9,33 +23,82 @@
     Brand colors (Primary, Secondary, Accent, Text) moved to <a href="{{ route('admin.settings.show', 'branding') }}" class="font-semibold underline">Settings → Branding</a> — edit them there.
 </div>
 
-<div class="bg-white rounded-xl shadow-sm border p-6 space-y-4">
-    <h2 class="text-base font-semibold text-gray-900 pb-2 border-b">Typography</h2>
+<div class="bg-white rounded-xl shadow-sm border p-6 space-y-5"
+     x-data="{
+        en: @js(setting('font_family', 'Inter, sans-serif')),
+        bn: @js(setting('font_family_bn', 'Hind Siliguri, sans-serif')),
+        name(v) { return v.split(',')[0]; },
+     }">
+    <div>
+        <h2 class="text-base font-semibold text-gray-900 pb-2 border-b">Typography</h2>
+        <p class="text-xs text-gray-400 mt-2">
+            Two fonts, used together — this site shows English and Bengali side by side
+            everywhere (product names, UI text, blog posts, landing pages), not behind a
+            language switch. Browsers pick the right font per character automatically, so
+            pick one of each below and both scripts render correctly, everywhere, with no
+            further setup.
+        </p>
+    </div>
+
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Font Family</label>
-            <select name="font_family" class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-orange-500">
+            <label class="block text-sm font-medium text-gray-700 mb-1">English Font</label>
+            <select name="font_family" x-model="en" class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-orange-500">
                 @foreach([
-                    'Inter, sans-serif' => 'Inter',
-                    'Roboto, sans-serif' => 'Roboto',
-                    'Poppins, sans-serif' => 'Poppins',
-                    'Nunito, sans-serif' => 'Nunito',
-                    'Open Sans, sans-serif' => 'Open Sans',
-                    'Lato, sans-serif' => 'Lato',
-                    'system-ui, sans-serif' => 'System Default',
+                    'Inter, sans-serif' => 'Inter — clean, modern (default)',
+                    'Plus Jakarta Sans, sans-serif' => 'Plus Jakarta Sans — friendly & trendy',
+                    'Manrope' => 'Manrope — crisp, premium feel',
+                    'DM Sans, sans-serif' => 'DM Sans — warm, geometric',
+                    'Outfit, sans-serif' => 'Outfit — bold, confident',
+                    'Poppins, sans-serif' => 'Poppins — rounded, approachable',
+                    'Urbanist, sans-serif' => 'Urbanist — light, airy',
+                    'Work Sans, sans-serif' => 'Work Sans — versatile, readable',
+                    'Montserrat, sans-serif' => 'Montserrat — strong headings',
+                    'Nunito, sans-serif' => 'Nunito — soft, friendly',
+                    'Roboto, sans-serif' => 'Roboto — neutral, familiar',
+                    'Open Sans, sans-serif' => 'Open Sans — classic, safe',
+                    'Lato, sans-serif' => 'Lato — warm, professional',
+                    'system-ui, sans-serif' => 'System Default (fastest load)',
                 ] as $value => $name)
                 <option value="{{ $value }}" @selected(setting('font_family','Inter, sans-serif')===$value)>{{ $name }}</option>
                 @endforeach
             </select>
         </div>
         <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Button Style</label>
-            <select name="button_style" class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-orange-500">
-                <option value="rounded" @selected(setting('button_style','rounded')==='rounded')>Rounded (default)</option>
-                <option value="square" @selected(setting('button_style','rounded')==='square')>Square Corners</option>
-                <option value="pill" @selected(setting('button_style','rounded')==='pill')>Pill Shape</option>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Bengali Font</label>
+            <select name="font_family_bn" x-model="bn" class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-orange-500">
+                @foreach([
+                    'Hind Siliguri, sans-serif' => 'Hind Siliguri — clean, most popular (default)',
+                    'Noto Sans Bengali, sans-serif' => 'Noto Sans Bengali — modern, excellent coverage',
+                    'Baloo Da 2, sans-serif' => 'Baloo Da 2 — friendly, rounded, bold',
+                    'Tiro Bangla, serif' => 'Tiro Bangla — elegant serif, premium feel',
+                    'Atma, cursive' => 'Atma — warm, handwritten accent',
+                    'Mina, sans-serif' => 'Mina — compact, modern',
+                    'system-ui, sans-serif' => 'System Default (fastest load)',
+                ] as $value => $name)
+                <option value="{{ $value }}" @selected(setting('font_family_bn','Hind Siliguri, sans-serif')===$value)>{{ $name }}</option>
+                @endforeach
             </select>
         </div>
+    </div>
+
+    <div class="rounded-xl border border-gray-100 bg-gray-50 p-4">
+        <p class="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-2">Live Preview</p>
+        <p class="text-lg text-gray-800 leading-relaxed" :style="{ fontFamily: name(en) + ', ' + name(bn) + ', sans-serif' }">
+            Fresh Deals Every Day — আজই অর্ডার করুন, ফ্রি ডেলিভারি পান!
+        </p>
+        <p class="text-sm text-gray-500 mt-1" :style="{ fontFamily: name(en) + ', ' + name(bn) + ', sans-serif' }">
+            ৳1,250.00 · Add to Cart · কার্টে যোগ করুন
+        </p>
+    </div>
+
+    <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Button Style</label>
+        <select name="button_style" class="w-full md:w-1/2 border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-orange-500">
+            <option value="rounded" @selected(setting('button_style','rounded')==='rounded')>Rounded (default)</option>
+            <option value="square" @selected(setting('button_style','rounded')==='square')>Square Corners</option>
+            <option value="pill" @selected(setting('button_style','rounded')==='pill')>Pill Shape</option>
+        </select>
     </div>
 </div>
 

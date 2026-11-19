@@ -12,6 +12,21 @@
     $primaryColor = \App\Support\LandingThemes::primary($landingPage);
     $primaryColorDark = hex_shade($primaryColor, -0.22);
 
+    // Settings → Theme & Design — same site-wide font as the main storefront (see
+    // layouts/app.blade.php for why English + Bengali are chained into one stack rather
+    // than switched per-locale: a landing page's headline/copy often mixes both scripts in
+    // the same sentence, and font-family fallback happens per-glyph, not per-element).
+    $fontFamily       = setting('font_family', 'Inter, sans-serif');
+    $isSystemFont     = str_contains($fontFamily, 'system-ui');
+    $googleFontName   = trim(explode(',', $fontFamily)[0]);
+    $fontFamilyBn     = setting('font_family_bn', 'Hind Siliguri, sans-serif');
+    $isSystemFontBn   = str_contains($fontFamilyBn, 'system-ui');
+    $googleFontNameBn = trim(explode(',', $fontFamilyBn)[0]);
+    $fontStack = collect([
+        $isSystemFont ? null : "'{$googleFontName}'",
+        $isSystemFontBn ? null : "'{$googleFontNameBn}'",
+    ])->filter()->push('sans-serif')->implode(', ');
+
     // Pixel tracking — this page's own Facebook/Google IDs (Admin → Landing Pages → edit →
     // Pixel Tracking) override the site-wide Settings → Facebook Pixel / Google Analytics &
     // Ads ones, same override-or-inherit pattern as brand_color above. A page-level pixel ID
@@ -81,6 +96,18 @@
     {{-- Brand palette (orange/pink/red Tailwind colors = CSS variables): this page's own brand
          color when set, else the site's — so ring/border/text-orange-* etc. match the page. --}}
     <style>{!! brand_palette_css($primaryColor, setting('secondary_color'), setting('accent_color')) !!}</style>
+    @if(!$isSystemFont || !$isSystemFontBn)
+    @php
+        $fontFamilies = collect([
+            $isSystemFont ? null : 'family=' . str_replace(' ', '+', $googleFontName) . ':wght@400;500;600;700;800',
+            $isSystemFontBn ? null : 'family=' . str_replace(' ', '+', $googleFontNameBn) . ':wght@400;500;600;700',
+        ])->filter()->implode('&');
+    @endphp
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?{{ $fontFamilies }}&display=swap" rel="stylesheet">
+    <style>body, .font-sans { font-family: {{ $fontStack }} !important; }</style>
+    @endif
     @if($lpThemed)
     <meta name="theme-color" content="{{ in_array($lpTheme, ['offer', 'premium'], true) ? $lpTokens['hero'] : $lpTokens['surface'] }}">
     @include('landing.themes._styles')

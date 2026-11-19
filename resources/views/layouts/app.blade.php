@@ -30,6 +30,20 @@ $trackingData = $trackedUser ? pixel_advanced_matching_data($trackedUser->name, 
 $fontFamily      = setting('font_family', 'Inter, sans-serif');
 $isSystemFont    = str_contains($fontFamily, 'system-ui');
 $googleFontName  = trim(explode(',', $fontFamily)[0]);
+// Bengali text (product names, descriptions, UI strings) renders alongside English on the
+// very same line throughout this site — there's no single "Bangla mode" toggle, both
+// scripts just appear together wherever they occur. Rather than detecting language per
+// element, the font STACK itself does the work: browsers fall back per-glyph, not per-
+// element, so listing the Bengali font right after the English one makes every Bengali
+// character automatically render in it while English characters stay in the English font,
+// even mid-sentence — no JS, no per-component changes, anywhere this stack is applied.
+$fontFamilyBn    = setting('font_family_bn', 'Hind Siliguri, sans-serif');
+$isSystemFontBn  = str_contains($fontFamilyBn, 'system-ui');
+$googleFontNameBn = trim(explode(',', $fontFamilyBn)[0]);
+$fontStack = collect([
+    $isSystemFont ? null : "'{$googleFontName}'",
+    $isSystemFontBn ? null : "'{$googleFontNameBn}'",
+])->filter()->push('sans-serif')->implode(', ');
 $buttonStyle     = setting('button_style', 'rounded');
 $borderRadius    = setting('border_radius', 'soft');
 $shadowStyle     = setting('shadow_style', 'soft');
@@ -196,8 +210,16 @@ $pageTwitterImage = $meta('twitter_image', $pageOgImage);
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="{{ $siteName }}">
     @if($faviconUrl)<link rel="apple-touch-icon" href="{{ $faviconUrl }}">@endif
-    @if(!$isSystemFont)
-    @php $fontHref = 'https://fonts.googleapis.com/css2?family=' . str_replace(' ', '+', $googleFontName) . ':wght@400;500;600;700;800&display=swap'; @endphp
+    @if(!$isSystemFont || !$isSystemFontBn)
+    @php
+        // One request for both families — fewer round-trips than loading them separately,
+        // and each family only appears in the URL when it isn't "System Default".
+        $fontFamilies = collect([
+            $isSystemFont ? null : 'family=' . str_replace(' ', '+', $googleFontName) . ':wght@400;500;600;700;800',
+            $isSystemFontBn ? null : 'family=' . str_replace(' ', '+', $googleFontNameBn) . ':wght@400;500;600;700',
+        ])->filter()->implode('&');
+        $fontHref = 'https://fonts.googleapis.com/css2?' . $fontFamilies . '&display=swap';
+    @endphp
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     {{-- Non-render-blocking: loads with low priority (media="print" isn't relevant to a
@@ -267,14 +289,14 @@ $pageTwitterImage = $meta('twitter_image', $pageOgImage);
         html:not(.dark) .text-gray-800 { color: {{ $textColor }} !important; }
     </style>
     @endif
-    @if(!$isSystemFont || $radiusScale || $shadowScale || $containerScale || $buttonRadiusValue)
+    @if(!$isSystemFont || !$isSystemFontBn || $radiusScale || $shadowScale || $containerScale || $buttonRadiusValue)
     {{-- Theme & Design (Settings → Theme & Design): same literal-class-override approach
          as brand colors above — font/radius/shadow/width are hardcoded Tailwind utility
          classes throughout the storefront, so re-theming them means overriding those
          generated classes directly rather than templating every view. --}}
     <style>
-        @if(!$isSystemFont)
-        .font-sans { font-family: {{ $fontFamily }} !important; }
+        @if(!$isSystemFont || !$isSystemFontBn)
+        .font-sans { font-family: {{ $fontStack }} !important; }
         @endif
         @if($radiusScale)
         @foreach($radiusScale as $class => $px)

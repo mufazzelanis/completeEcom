@@ -4,6 +4,19 @@ $logoUrl  = setting_file_url('site_logo');
 $logoMobileUrl = setting_file_url('site_logo_mobile');
 $unread   = \App\Models\UserNotification::where('user_id', auth()->id())->where('is_read', false)->count();
 $cartCount = \App\Models\Cart::where('user_id', auth()->id())->sum('quantity');
+
+// Settings → Theme & Design — same site-wide font as the main storefront (see
+// layouts/app.blade.php for why English + Bengali are chained into one stack).
+$fontFamily       = setting('font_family', 'Inter, sans-serif');
+$isSystemFont     = str_contains($fontFamily, 'system-ui');
+$googleFontName   = trim(explode(',', $fontFamily)[0]);
+$fontFamilyBn     = setting('font_family_bn', 'Hind Siliguri, sans-serif');
+$isSystemFontBn   = str_contains($fontFamilyBn, 'system-ui');
+$googleFontNameBn = trim(explode(',', $fontFamilyBn)[0]);
+$fontStack = collect([
+    $isSystemFont ? null : "'{$googleFontName}'",
+    $isSystemFontBn ? null : "'{$googleFontNameBn}'",
+])->filter()->push('sans-serif')->implode(', ');
 @endphp
 <!DOCTYPE html>
 <html lang="en" class="scroll-smooth">
@@ -37,6 +50,18 @@ $cartCount = \App\Models\Cart::where('user_id', auth()->id())->sum('quantity');
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     {{-- Brand palette — same as layouts/app (Settings → Branding). --}}
     <style>{!! brand_palette_css(setting('primary_color'), setting('secondary_color'), setting('accent_color')) !!}</style>
+    @if(!$isSystemFont || !$isSystemFontBn)
+    @php
+        $fontFamilies = collect([
+            $isSystemFont ? null : 'family=' . str_replace(' ', '+', $googleFontName) . ':wght@400;500;600;700;800',
+            $isSystemFontBn ? null : 'family=' . str_replace(' ', '+', $googleFontNameBn) . ':wght@400;500;600;700',
+        ])->filter()->implode('&');
+    @endphp
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?{{ $fontFamilies }}&display=swap" rel="stylesheet">
+    <style>.font-sans { font-family: {{ $fontStack }} !important; }</style>
+    @endif
     {{-- theme store is registered once, unconditionally, in app.js itself — see the
          comment there. --}}
     <style>[x-cloak]{display:none!important}</style>
