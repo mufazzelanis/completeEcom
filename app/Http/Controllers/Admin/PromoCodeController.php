@@ -71,9 +71,15 @@ class PromoCodeController extends Controller
         ]);
     }
 
-    public function toggle(PromoCodeBatch $promoCode)
+    public function toggle(Request $request, PromoCodeBatch $promoCode)
     {
         $promoCode->update(['is_active' => ! $promoCode->is_active]);
-        return back()->with('success', 'Batch ' . ($promoCode->is_active ? 'activated' : 'deactivated') . '.');
+        $message = 'Batch ' . ($promoCode->is_active ? 'activated' : 'deactivated') . '.';
+
+        if ($request->expectsJson()) {
+            return response()->json(['is_active' => $promoCode->is_active, 'message' => $message]);
+        }
+
+        return back()->with('success', $message);
     }
 }

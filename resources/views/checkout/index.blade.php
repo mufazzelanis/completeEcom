@@ -50,28 +50,7 @@
                 @endif
 
     @unless(session('buy_now'))
-    <div class="bg-white rounded-xl shadow-sm p-6 mb-6">
-        <h3 class="font-semibold text-gray-800 mb-3 text-sm">Coupon / Promo Code</h3>
-        @if($coupon || $promoCode)
-            <div class="flex items-center justify-between bg-green-50 border border-green-200 rounded-xl px-4 py-3">
-                <div>
-                    <p class="text-sm font-semibold text-green-700">{{ $coupon ?? $promoCode }}</p>
-                    <p class="text-xs text-green-500">Discount applied!</p>
-                </div>
-                <form action="{{ route('cart.coupon.remove') }}" method="POST">
-                    @csrf @method('DELETE')
-                    <button type="submit" class="text-red-400 hover:text-red-600 text-xs">Remove</button>
-                </form>
-            </div>
-        @else
-            <form action="{{ route('cart.coupon') }}" method="POST" class="flex space-x-2">
-                @csrf
-                <input type="text" name="code" placeholder="Enter coupon or promo code"
-                    class="flex-1 min-w-0 border border-gray-200 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 uppercase">
-                <button type="submit" class="bg-orange-500 text-white px-4 py-2 rounded-xl text-sm font-medium hover:bg-orange-600 transition flex-shrink-0">Apply</button>
-            </form>
-        @endif
-    </div>
+    @include('partials.coupon-box')
     @endunless
 
     @auth

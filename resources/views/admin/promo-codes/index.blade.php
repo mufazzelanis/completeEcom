@@ -61,12 +61,38 @@
                     @endif
                 </td>
                 <td class="px-6 py-4 text-center">
-                    <form action="{{ route('admin.promo-codes.toggle', $batch) }}" method="POST">
-                        @csrf @method('PATCH')
-                        <button type="submit" class="text-xs px-2.5 py-1 rounded-full font-semibold {{ $batch->is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500' }}">
-                            {{ $batch->is_active ? 'Active' : 'Inactive' }}
+                    {{-- Instant, animated flip (no page reload) — optimistic (flips immediately
+                         on click) and reverts itself if the server call fails, so the switch
+                         never shows a state the database doesn't actually have. --}}
+                    <div class="inline-flex items-center gap-2" x-data="{
+                        active: {{ $batch->is_active ? 'true' : 'false' }},
+                        loading: false,
+                        toggle() {
+                            if (this.loading) return;
+                            const prev = this.active;
+                            this.active = !this.active;
+                            this.loading = true;
+                            fetch(@js(route('admin.promo-codes.toggle', $batch)), {
+                                method: 'PATCH',
+                                headers: {
+                                    'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content,
+                                    'Accept': 'application/json',
+                                },
+                            })
+                            .then(r => r.ok ? r.json() : Promise.reject())
+                            .then(data => { this.active = data.is_active; if (typeof showToast === 'function') showToast(data.message); })
+                            .catch(() => { this.active = prev; if (typeof showToast === 'function') showToast('Something went wrong — please try again.', 'error'); })
+                            .finally(() => this.loading = false);
+                        }
+                    }">
+                        <button type="button" @click="toggle" :disabled="loading" role="switch" :aria-checked="active"
+                            class="relative inline-flex h-6 w-11 flex-shrink-0 items-center rounded-full transition-colors duration-200 disabled:opacity-60"
+                            :class="active ? 'bg-green-500' : 'bg-gray-200'">
+                            <span class="inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform duration-200"
+                                  :class="active ? 'translate-x-[22px]' : 'translate-x-[2px]'"></span>
                         </button>
-                    </form>
+                        <span class="text-xs font-semibold" :class="active ? 'text-green-700' : 'text-gray-400'" x-text="active ? 'Active' : 'Inactive'"></span>
+                    </div>
                 </td>
                 <td class="px-6 py-4">
                     <div class="flex items-center justify-center gap-2">

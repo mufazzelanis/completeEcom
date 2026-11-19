@@ -338,35 +338,50 @@ class CartController extends Controller
         $coupon = Coupon::where('code', $code)->first();
         if ($coupon && $coupon->isValid()) {
             if ($subtotal < $coupon->min_order_amount) {
-                return back()->with('error', 'This coupon requires a minimum order of ৳' . number_format((float) $coupon->min_order_amount) . '.');
+                return $this->couponResponse($request, 'error', 'This coupon requires a minimum order of ৳' . number_format((float) $coupon->min_order_amount) . '.');
             }
 
             session(['coupon' => $coupon->code]);
             session()->forget('promo_code');
 
-            return back()->with('success', 'Coupon applied successfully!');
+            return $this->couponResponse($request, 'applied', 'Coupon applied successfully!', ['code' => $coupon->code]);
         }
 
         $promoCode = PromoCode::where('code', $code)->first();
         if ($promoCode && $promoCode->isValid()) {
             if ($subtotal < $promoCode->batch->min_order_amount) {
-                return back()->with('error', 'This promo code requires a minimum order of ৳' . number_format((float) $promoCode->batch->min_order_amount) . '.');
+                return $this->couponResponse($request, 'error', 'This promo code requires a minimum order of ৳' . number_format((float) $promoCode->batch->min_order_amount) . '.');
             }
 
             session(['promo_code' => $promoCode->code]);
             session()->forget('coupon');
 
-            return back()->with('success', 'Promo code applied successfully!');
+            return $this->couponResponse($request, 'applied', 'Promo code applied successfully!', ['code' => $promoCode->code]);
         }
 
-        return back()->with('error', 'Invalid or expired code.');
+        return $this->couponResponse($request, 'error', 'Invalid or expired code.');
     }
 
-    public function removeCoupon()
+    public function removeCoupon(Request $request)
     {
         session()->forget(['coupon', 'promo_code']);
 
-        return back()->with('success', 'Discount code removed.');
+        return $this->couponResponse($request, 'removed', 'Discount code removed.');
+    }
+
+    /**
+     * The coupon box (cart + checkout, see partials/coupon-box.blade.php) applies/removes
+     * via fetch() for instant, animated feedback instead of a full-page POST-redirect — this
+     * is the single place that decides JSON vs the old redirect-with-flash response, so both
+     * still work if JS is ever disabled (the <form> submits normally and this falls back).
+     */
+    private function couponResponse(Request $request, string $status, string $message, array $extra = [])
+    {
+        if ($request->expectsJson()) {
+            return response()->json(array_merge(['status' => $status, 'message' => $message], $extra), $status === 'error' ? 422 : 200);
+        }
+
+        return back()->with($status === 'error' ? 'error' : 'success', $message);
     }
 
     public function applyPoints(Request $request)
