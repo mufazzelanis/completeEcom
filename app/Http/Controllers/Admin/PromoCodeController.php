@@ -38,6 +38,14 @@ class PromoCodeController extends Controller
         unset($data['generate_count']);
         $data['is_active'] = $request->boolean('is_active', true);
 
+        // A single code with a prefix is used exactly as typed, not prefix+random (see
+        // PromoCodeBatch::generate()) — the one case where a collision is actually likely
+        // (two campaigns both trying "BF26"), so it's checked here with a friendly message
+        // instead of letting the unique constraint on promo_codes.code throw a raw 500.
+        if ($count === 1 && !empty($data['prefix']) && PromoCode::where('code', strtoupper($data['prefix']))->exists()) {
+            return back()->withInput()->withErrors(['prefix' => 'This code is already in use — pick a different one.']);
+        }
+
         $batch = PromoCodeBatch::create($data);
         $batch->generate($count);
 

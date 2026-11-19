@@ -10,6 +10,7 @@
 </div>
 
 <div x-data="{
+        mode: @js(old('generate_count', 100) == 1 ? 'single' : 'bulk'),
         name: @js(old('name', '')),
         prefix: @js(old('prefix', '')),
         discountType: @js(old('discount_type', 'percentage')),
@@ -19,8 +20,16 @@
         expiresAt: @js(old('expires_at', '')),
         isActive: {{ old('is_active', 1) ? 'true' : 'false' }},
         submitting: false,
+        setMode(m) {
+            this.mode = m;
+            if (m === 'single') { this.generateCount = '1'; }
+            else if (this.generateCount === '1') { this.generateCount = '100'; }
+        },
         get previewPrefix() { return (this.prefix || '').toUpperCase().replace(/[^A-Z0-9]/g, ''); },
-        get previewCode() { return (this.previewPrefix ? this.previewPrefix + '-' : '') + 'X7K2-M9QP'; },
+        get previewCode() {
+            if (this.mode === 'single') return this.previewPrefix || 'YOURCODE';
+            return (this.previewPrefix ? this.previewPrefix + '-' : '') + 'X7K2-M9QP';
+        },
         get discountLabel() {
             if (!this.discountValue) return '—';
             return this.discountType === 'percentage' ? this.discountValue + '% off' : '৳' + this.discountValue + ' off';
@@ -43,26 +52,62 @@
             </h2>
             <div class="space-y-4">
                 <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Code Type</label>
+                    <div class="grid grid-cols-2 gap-3">
+                        <button type="button" @click="setMode('single')"
+                            class="text-left rounded-xl border-2 px-4 py-3 transition"
+                            :class="mode === 'single' ? 'border-indigo-500 bg-indigo-50' : 'border-gray-200 hover:border-gray-300'">
+                            <p class="text-sm font-medium" :class="mode === 'single' ? 'text-indigo-700' : 'text-gray-700'">My own code</p>
+                            <p class="text-xs text-gray-400 mt-0.5">Type one exact code, e.g. "BF26"</p>
+                        </button>
+                        <button type="button" @click="setMode('bulk')"
+                            class="text-left rounded-xl border-2 px-4 py-3 transition"
+                            :class="mode === 'bulk' ? 'border-indigo-500 bg-indigo-50' : 'border-gray-200 hover:border-gray-300'">
+                            <p class="text-sm font-medium" :class="mode === 'bulk' ? 'text-indigo-700' : 'text-gray-700'">Bulk generate</p>
+                            <p class="text-xs text-gray-400 mt-0.5">Many unique random codes</p>
+                        </button>
+                    </div>
+                    <p x-show="mode === 'single'" x-cloak class="text-xs text-amber-600 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2 mt-2.5">
+                        This code works for the <b>first customer</b> who uses it, then it's used up — like every code here, it's single-use.
+                        Want one code many different customers can each use once (e.g. a sitewide "BF26")?
+                        Use <a href="{{ route('admin.coupons.create') }}" class="underline font-medium">Coupons</a> instead.
+                    </p>
+                </div>
+
+                <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Campaign Name <span class="text-red-500">*</span></label>
                     <input type="text" name="name" x-model="name" required placeholder="e.g. Black Friday 2026"
                         class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition">
                     @error('name')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
                 </div>
 
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <template x-if="mode === 'single'">
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Code Prefix <span class="text-gray-400 font-normal">(optional)</span></label>
-                        <input type="text" name="prefix" x-model="prefix" placeholder="BF26" maxlength="10"
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Coupon Code <span class="text-red-500">*</span></label>
+                        <input type="text" name="prefix" x-model="prefix" required placeholder="e.g. BF26" maxlength="10"
                             class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm font-mono uppercase focus:outline-none focus:ring-2 focus:ring-indigo-500 transition">
-                        <p class="text-xs text-gray-400 mt-1">Codes look like: <span class="font-mono text-gray-500" x-text="previewCode"></span></p>
+                        <p class="text-xs text-gray-400 mt-1">Customers will type exactly: <span class="font-mono text-gray-500" x-text="previewCode"></span></p>
+                        @error('prefix')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
+                        <input type="hidden" name="generate_count" value="1">
                     </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Number of Codes <span class="text-red-500">*</span></label>
-                        <input type="number" name="generate_count" x-model="generateCount" required min="1" max="10000"
-                            class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition">
-                        <p class="text-xs text-gray-400 mt-1">Max 10,000 per batch</p>
+                </template>
+
+                <template x-if="mode === 'bulk'">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Code Prefix <span class="text-gray-400 font-normal">(optional)</span></label>
+                            <input type="text" name="prefix" x-model="prefix" placeholder="BF26" maxlength="10"
+                                class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm font-mono uppercase focus:outline-none focus:ring-2 focus:ring-indigo-500 transition">
+                            <p class="text-xs text-gray-400 mt-1">Codes look like: <span class="font-mono text-gray-500" x-text="previewCode"></span></p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Number of Codes <span class="text-red-500">*</span></label>
+                            <input type="number" name="generate_count" x-model="generateCount" required min="2" max="10000"
+                                class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition">
+                            <p class="text-xs text-gray-400 mt-1">Max 10,000 per batch</p>
+                        </div>
                     </div>
-                </div>
+                </template>
             </div>
         </div>
 
@@ -150,7 +195,7 @@
             <button type="submit" :disabled="submitting"
                 class="bg-indigo-600 text-white px-6 py-2.5 rounded-xl text-sm font-medium hover:bg-indigo-700 transition disabled:opacity-60 flex items-center gap-2 min-w-[150px] justify-center">
                 <svg x-show="submitting" x-cloak class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
-                <span x-text="submitting ? 'Generating…' : 'Generate Codes'"></span>
+                <span x-text="submitting ? (mode === 'single' ? 'Creating…' : 'Generating…') : (mode === 'single' ? 'Create Code' : 'Generate Codes')"></span>
             </button>
             <a href="{{ route('admin.promo-codes.index') }}" class="bg-gray-100 text-gray-600 px-6 py-2.5 rounded-xl text-sm font-medium hover:bg-gray-200 transition">Cancel</a>
         </div>
@@ -174,7 +219,7 @@
                     <span class="text-indigo-200">Discount</span>
                     <span class="font-semibold" x-text="discountLabel"></span>
                 </div>
-                <div class="flex items-center justify-between">
+                <div class="flex items-center justify-between" x-show="mode === 'bulk'">
                     <span class="text-indigo-200">Codes generated</span>
                     <span class="font-semibold" x-text="generateCount || 0"></span>
                 </div>

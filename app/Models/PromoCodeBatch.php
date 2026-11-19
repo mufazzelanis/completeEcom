@@ -26,6 +26,15 @@ class PromoCodeBatch extends Model
 
     public function generate(int $count): void
     {
+        // A single code with a prefix is an admin picking one exact, memorable code (e.g.
+        // "BF26") rather than bulk-generating many random ones — used as-is, no random
+        // suffix appended, so what they typed is exactly what a customer types at checkout.
+        if ($count === 1 && $this->prefix) {
+            PromoCode::create(['batch_id' => $this->id, 'code' => strtoupper($this->prefix)]);
+            $this->increment('generated_count', 1);
+            return;
+        }
+
         $prefix = strtoupper($this->prefix ? $this->prefix . '-' : '');
         $codes  = [];
         $now    = now();
