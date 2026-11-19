@@ -276,6 +276,11 @@ class LandingPageController extends Controller
             'brand_color'              => 'nullable|regex:/^#[0-9a-fA-F]{6}$/',
             'theme'                    => 'nullable|in:' . implode(',', \App\Support\LandingThemes::keys()),
             'delivery_mode'            => 'nullable|in:site,custom,none',
+            // 0-180 min — long enough for a genuinely slow typer, short enough that "order fast,
+            // delivery's free" still reads as a real incentive rather than always-on free delivery.
+            'free_delivery_minutes'    => 'nullable|integer|min:0|max:180',
+            'tier_qty.*'               => 'nullable|integer|min:2|max:5',
+            'tier_price.*'             => 'nullable|numeric|min:0',
             // Pixel IDs — loosely shaped rather than byte-exact, so a pasted value with
             // stray whitespace or a slightly different but still valid format doesn't
             // bounce the whole form. Each one independently optional; leaving any blank
@@ -349,6 +354,9 @@ class LandingPageController extends Controller
         $data['theme'] = \App\Support\LandingThemes::key($request->input('theme'));
         // where the delivery charge comes from; Settings → Shipping unless the page says otherwise
         $data['delivery_mode'] = in_array($request->input('delivery_mode'), ['site', 'custom', 'none'], true) ? $request->input('delivery_mode') : 'site';
+        // "Order within N minutes of landing, delivery's free" — 0/blank disables it; see
+        // LandingPage::freeDeliveryMinutes() and LandingPageController@order (customer-facing).
+        $data['free_delivery_minutes'] = $request->filled('free_delivery_minutes') ? max(0, (int) $request->free_delivery_minutes) : null;
 
         return $data;
     }
@@ -371,6 +379,7 @@ class LandingPageController extends Controller
             'faqs'            => $this->normalizeRepeater($request, ['question' => 'faq_q', 'answer' => 'faq_a'], 'question'),
             'pricing_items'   => $this->normalizeRepeater($request, ['label' => 'price_label', 'price' => 'price_amount'], 'label'),
             'delivery_zones'  => $this->normalizeRepeater($request, ['label' => 'zone_label', 'charge' => 'zone_charge'], 'label'),
+            'quantity_tiers'  => $this->normalizeRepeater($request, ['qty' => 'tier_qty', 'price' => 'tier_price'], 'qty'),
         ];
     }
 

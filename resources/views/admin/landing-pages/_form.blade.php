@@ -476,6 +476,56 @@
             </div>
         </div>
 
+        {{-- Quantity Pricing: "buy 2, save ৳X" — a per-quantity TOTAL price, not a percentage.
+             Quantity 1 is never editable here; it's always the page's own price above. --}}
+        @php $qtyBasePrice = (float) (old('price_override') ?: ($lp->effective_price ?? 0)); @endphp
+        <div class="bg-white rounded-2xl shadow-sm p-6 space-y-4" x-data="{
+                base: {{ $qtyBasePrice }},
+                rows: {{ Js::from($seed(['qty' => 'tier_qty', 'price' => 'tier_price'], 'qty', collect($lp->quantity_tiers ?? [])->toArray())) }},
+                add() { this.rows.push({ qty: '', price: '' }); },
+                remove(i) { this.rows.splice(i, 1); },
+                savings(row) {
+                    const q = parseInt(row.qty) || 0, p = parseFloat(row.price) || 0;
+                    if (!q || !p) return null;
+                    const regular = this.base * q;
+                    return regular - p;
+                },
+            }">
+            <div>
+                <h3 class="font-medium text-gray-800">Quantity Pricing</h3>
+                <p class="text-xs text-gray-400 mt-0.5">
+                    Offer a lower total price for buying more at once — e.g. "Buy 2, pay ৳5,000
+                    instead of ৳5,500". Set the exact total for each quantity; "You save ৳X" is
+                    shown to the customer automatically. Any quantity left blank just charges
+                    the regular price × quantity, same as today.
+                </p>
+            </div>
+            <div class="space-y-2">
+                <template x-for="(row, i) in rows" :key="i">
+                    <div class="flex items-center gap-2">
+                        <select name="tier_qty[]" x-model="row.qty"
+                            class="w-28 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            <option value="">Qty</option>
+                            <option value="2">2 units</option>
+                            <option value="3">3 units</option>
+                            <option value="4">4 units</option>
+                            <option value="5">5 units</option>
+                        </select>
+                        <div class="relative flex-1">
+                            <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">৳</span>
+                            <input type="number" step="0.01" min="0" name="tier_price[]" x-model="row.price" placeholder="Total price for this quantity"
+                                class="w-full border border-gray-200 rounded-lg pl-7 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        </div>
+                        <span class="text-xs font-medium text-emerald-600 w-28 flex-shrink-0" x-show="savings(row) > 0" x-text="'Save ৳' + savings(row).toFixed(0)"></span>
+                        <button type="button" @click="remove(i)" class="text-red-400 hover:text-red-600 p-2" aria-label="Remove"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
+                    </div>
+                </template>
+            </div>
+            <button type="button" @click="add()" :disabled="rows.length >= 4" class="text-sm text-indigo-600 hover:text-indigo-800 font-medium flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg> Add Quantity Tier
+            </button>
+        </div>
+
         {{-- Order Form Builder --}}
         <div class="bg-white rounded-2xl shadow-sm p-6 space-y-4" x-data="{
                 fields: {{ Js::from(old('field_label') ? collect(old('field_label'))->map(fn($l, $i) => [
@@ -572,6 +622,28 @@
                 @endforeach
             </div>
             <p x-show="mode === 'site'" class="text-xs text-gray-400">Change the charges and the default area in <a href="{{ route('admin.settings.show', 'shipping') }}" target="_blank" class="text-indigo-600 hover:underline">Settings → Shipping</a> — every page using them follows.</p>
+
+            <div class="rounded-xl border border-amber-100 bg-amber-50 p-4" x-show="mode !== 'none'">
+                <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" value="1" :checked="{{ (int) old('free_delivery_minutes', $lp->free_delivery_minutes ?? 0) > 0 ? 'true' : 'false' }}"
+                        @change="$refs.freeDeliveryMinutes.disabled = !$event.target.checked; if (!$event.target.checked) $refs.freeDeliveryMinutes.value = ''"
+                        class="rounded text-amber-600">
+                    <span class="text-sm font-medium text-amber-800">⚡ Free delivery if ordered fast</span>
+                </label>
+                <p class="text-xs text-amber-700 mt-1 mb-2 ml-6">
+                    Waives the delivery charge above when a customer completes their order within
+                    this many minutes of first opening the page — a real, server-enforced
+                    deadline (not just a cosmetic countdown), shown live on the order form.
+                </p>
+                <div class="ml-6 flex items-center gap-2">
+                    <input type="number" name="free_delivery_minutes" x-ref="freeDeliveryMinutes" min="1" max="180"
+                        value="{{ old('free_delivery_minutes', $lp->free_delivery_minutes ?? '') }}"
+                        {{ (int) old('free_delivery_minutes', $lp->free_delivery_minutes ?? 0) > 0 ? '' : 'disabled' }}
+                        placeholder="e.g. 10"
+                        class="w-24 border border-amber-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 disabled:bg-amber-100/50 disabled:text-amber-300">
+                    <span class="text-sm text-amber-700">minutes</span>
+                </div>
+            </div>
             <div x-show="mode === 'custom'" x-cloak class="space-y-2">
             <p class="text-xs text-gray-400">e.g. "ঢাকার ভিতরে — ৳60", "ঢাকার বাইরে — ৳120". The zone whose name says inside / ভিতরে or outside / বাইরে is preselected to match Settings → Shipping → Default Delivery Area.</p>
                 <template x-for="(row, i) in rows" :key="i">

@@ -203,6 +203,14 @@ select.lt-input{background:var(--bg) url("data:image/svg+xml,%3Csvg xmlns=%27htt
 .lt-pack.is-on{border-color:var(--brand);background:color-mix(in srgb,var(--brand) 9%,var(--surface));box-shadow:0 0 0 3px color-mix(in srgb,var(--brand) 16%,transparent)}
 .lt-pack.is-on span{color:var(--brand);font-weight:700}
 .lt-pack small{position:absolute;top:-9px;left:50%;transform:translateX(-50%);white-space:nowrap;font-size:.66rem;font-weight:800;padding:2px 8px;border-radius:999px;background:var(--accent);color:#1f1300}
+.lt-pack-save{display:block;font-size:.72rem;font-weight:800;color:#15803d;margin-top:2px}
+/* "Order within N minutes, free delivery" live countdown — same urgent-bar DNA as .lt-urgent
+   (dark, brand-colored digits) but a distinct class since it's tied to the order form's own
+   server-enforced deadline, not the page-level cosmetic urgency bar. */
+.lt-fast-bar{background:var(--ink);color:var(--bg);font-size:.86rem;font-weight:700;text-align:center;padding:10px 14px;border-radius:calc(var(--radius) * .6);margin:14px 0;display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap}
+.lt-fast-bar span{font-variant-numeric:tabular-nums;background:var(--brand);color:var(--on-brand);padding:2px 9px;border-radius:6px;font-family:ui-monospace,Menlo,Consolas,monospace;font-weight:800}
+@keyframes lt-fast-pulse{0%,100%{opacity:1}50%{opacity:.82}}
+@media (prefers-reduced-motion: no-preference){.lt-fast-bar{animation:lt-fast-pulse 2s ease-in-out infinite}}
 .lt-step{display:flex;align-items:center;gap:10px;margin-top:10px;font-size:.88rem;color:var(--muted)}
 .lt-step button{width:38px;height:38px;border-radius:10px;border:1.5px solid var(--line);background:var(--surface);font-size:1.2rem;font-weight:800;cursor:pointer;touch-action:manipulation}
 .lt-step button:disabled{opacity:.35;cursor:default}

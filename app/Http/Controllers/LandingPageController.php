@@ -9,10 +9,17 @@ use App\Services\ActivityLogger;
 use App\Services\Facebook\ConversionsApi;
 use App\Services\Notifications\NotificationDispatcher;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\DB;
 
 class LandingPageController extends Controller
 {
+    /** One cookie per landing page, so viewing page B never starts (or resets) page A's clock. */
+    private function firstViewCookieName(LandingPage $landingPage): string
+    {
+        return 'lp_fv_' . $landingPage->id;
+    }
+
     public function show(LandingPage $landingPage)
     {
         // Draft pages 404 publicly (not just "not found styled differently") so an
@@ -22,7 +29,24 @@ class LandingPageController extends Controller
         $landingPage->load('product');
         $pageViewToken = \App\Support\PageView::record('landing', $landingPage->id); // not on a hover-prefetch
 
-        return view('landing.show', compact('landingPage', 'pageViewToken'));
+        // "Order within N minutes of landing, delivery's free" (see LandingPage::
+        // freeDeliveryMinutes()) is anchored to the moment this visitor FIRST saw this exact
+        // page — not "now", and not reset by a reload/back-button, or refreshing the page
+        // would let anyone keep restarting their own clock. Laravel's cookie jar is already
+        // signed+encrypted (EncryptCookies middleware), so this value can't be forged into an
+        // earlier timestamp from the browser; it can only be read back as what this app itself
+        // wrote. First visit sets it; every later visit (until it expires) just reads it back.
+        $cookieName = $this->firstViewCookieName($landingPage);
+        $firstViewedAt = request()->cookie($cookieName);
+        if ($firstViewedAt) {
+            $firstViewedAt = \Illuminate\Support\Carbon::parse($firstViewedAt);
+        } else {
+            $firstViewedAt = now();
+            Cookie::queue($cookieName, $firstViewedAt->toIso8601String(), 180); // minutes; matches the admin field's own 180 cap
+        }
+        $freeDeliveryMinutes = $landingPage->freeDeliveryMinutes();
+
+        return view('landing.show', compact('landingPage', 'pageViewToken', 'firstViewedAt', 'freeDeliveryMinutes'));
     }
 
     public function order(Request $request, LandingPage $landingPage)
@@ -112,7 +136,12 @@ class LandingPageController extends Controller
         }
 
         $unitPrice = (float) ($landingPage->effective_price ?? 0);
-        $subtotal = round($unitPrice * $quantity, 2);
+        // Quantity tiers (Admin → this page → Quantity Pricing): an explicit admin-set total
+        // for this exact quantity when one exists, else the plain unit price × quantity same
+        // as before — see LandingPage::priceForQuantity() for why this one method is the only
+        // place either the order form's display or this charge is computed from.
+        $pricing = $landingPage->priceForQuantity($quantity) ?? ['total' => round($unitPrice * $quantity, 2), 'savings' => 0];
+        $subtotal = $pricing['total'];
 
         $zone = null;
         $shippingCharge = 0.0;
@@ -121,6 +150,29 @@ class LandingPageController extends Controller
             // site settings: the store's own rate for the area, free-delivery threshold included
             $shippingCharge = $zone ? $landingPage->deliveryCharge((int) $validated['delivery_zone'], $subtotal) : 0.0;
         }
+
+        // "Order within N minutes of landing, delivery's free" — enforced here against the
+        // signed cookie set in show(), never against anything the client claims in the POST
+        // body. A missing/expired cookie (visitor cleared cookies, or the page was shared/
+        // opened fresh in another tab past the window) simply means no bonus, same as if the
+        // feature were off; it never errors the order out.
+        $freeDeliveryMinutes = $landingPage->freeDeliveryMinutes();
+        $fastOrderSeconds = null;
+        if ($freeDeliveryMinutes && $shippingCharge > 0) {
+            $firstViewedAt = $request->cookie($this->firstViewCookieName($landingPage));
+            if ($firstViewedAt) {
+                // Absolute + rounded to a whole second — diffInSeconds() here can otherwise
+                // return a small negative or fractional value depending on which side of
+                // "now" sub-second precision happens to land on, neither of which makes
+                // sense as "how many seconds elapsed".
+                $elapsedSeconds = (int) round(now()->diffInSeconds(\Illuminate\Support\Carbon::parse($firstViewedAt), true));
+                if ($elapsedSeconds <= $freeDeliveryMinutes * 60) {
+                    $fastOrderSeconds = $elapsedSeconds;
+                    $shippingCharge = 0.0;
+                }
+            }
+        }
+
         $total = round($subtotal + $shippingCharge, 2);
 
         // The zone label rides along in landing_page_data purely for display in the admin's
@@ -140,8 +192,17 @@ class LandingPageController extends Controller
         if ($zone) {
             $customData = ['_delivery_zone' => $zone['label']] + $customData;
         }
+        // The admin's own "document" that this specific order actually earned the fast-order
+        // bonus — shown on Admin → Orders/Landing Orders (see order detail view) rather than
+        // only inferred after the fact from the order's shipping charge being zero.
+        if ($fastOrderSeconds !== null) {
+            $customData = ['_free_delivery_fast_order_seconds' => $fastOrderSeconds] + $customData;
+        }
+        if ($pricing['savings'] > 0) {
+            $customData = ['_quantity_tier_savings' => $pricing['savings']] + $customData;
+        }
 
-        $order = DB::transaction(function () use ($landingPage, $validated, $quantity, $unitPrice, $subtotal, $shippingCharge, $total, $customData, $phone, $zone) {
+        $order = DB::transaction(function () use ($landingPage, $validated, $quantity, $pricing, $subtotal, $shippingCharge, $total, $customData, $phone, $zone) {
             // Row lock + re-check: two orders arriving at the same moment can both pass the
             // pre-check above against the same last unit; only one may take it.
             if ($landingPage->product_id) {
@@ -176,7 +237,11 @@ class LandingPageController extends Controller
                 'order_id'    => $order->id,
                 'product_id'  => $landingPage->product_id,
                 'product_name' => $landingPage->product?->name ?? $landingPage->title,
-                'price'       => $unitPrice,
+                // Per-unit price reflects whatever was actually charged (a quantity tier's
+                // total ÷ qty when one applied) — so price × quantity always equals subtotal
+                // everywhere else in the app that assumes a line item is linear (invoices,
+                // reports), rather than silently diverging only on tiered orders.
+                'price'       => $pricing['per_unit'] ?? $pricing['total'] / max(1, $quantity),
                 'quantity'    => $quantity,
                 'subtotal'    => $subtotal,
             ]);

@@ -106,6 +106,32 @@ $rc = $riskColors[$riskLevel];
             </div>
         </div>
 
+        @if($order->landing_page_id && $order->landingPage)
+        {{-- The "document" a landing page order earns at checkout time — which campaign it
+             came from, and whether it qualified for the fast-order free-delivery bonus or a
+             quantity-tier discount (both set once, server-side, in LandingPageController@order;
+             never editable after the fact, so this is a record of what was actually granted). --}}
+        <div class="bg-white rounded-2xl shadow-sm p-6">
+            <h2 class="font-semibold text-gray-800 mb-3">Landing Page</h2>
+            <div class="text-sm text-gray-600 space-y-1.5">
+                <p>
+                    <span class="text-gray-400">Campaign:</span>
+                    <a href="{{ route('admin.landing-pages.edit', $order->landingPage) }}" class="text-indigo-600 hover:underline font-medium">{{ $order->landingPage->title }}</a>
+                </p>
+                @if(!empty($order->landing_page_data['_delivery_zone']))
+                    <p><span class="text-gray-400">Delivery Zone:</span> {{ $order->landing_page_data['_delivery_zone'] }}</p>
+                @endif
+                @if(isset($order->landing_page_data['_free_delivery_fast_order_seconds']))
+                    @php $fds = (int) $order->landing_page_data['_free_delivery_fast_order_seconds']; @endphp
+                    <p class="inline-flex items-center gap-1 text-amber-600 font-medium">⚡ Free delivery bonus — ordered {{ intdiv($fds, 60) }}m {{ $fds % 60 }}s after first viewing the page</p>
+                @endif
+                @if(!empty($order->landing_page_data['_quantity_tier_savings']))
+                    <p class="text-emerald-600 font-medium">🎉 Quantity discount applied — ৳{{ number_format((float) $order->landing_page_data['_quantity_tier_savings'], 2) }} saved</p>
+                @endif
+            </div>
+        </div>
+        @endif
+
         {{-- Remarks: who called / wrote what, when — with status & payment changes in the same list --}}
         @include('admin.orders._remarks-js')
         @include('admin.orders._remarks', ['order' => $order])

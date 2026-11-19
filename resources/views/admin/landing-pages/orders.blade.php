@@ -63,12 +63,20 @@
                         @php
                             $fieldLabels = collect($order->landingPage->order_form_fields ?? [])->keyBy('key');
                         @endphp
-                        {{-- _delivery_zone is a reserved key set by LandingPageController@order (never an
-                             admin-defined custom field — see the underscore prefix), shown with its own
-                             friendly label instead of falling into the generic key:value dump below. --}}
-                        @php $otherData = collect($order->landing_page_data ?? [])->except('_delivery_zone'); @endphp
+                        {{-- _delivery_zone / _free_delivery_fast_order_seconds / _quantity_tier_savings are
+                             reserved keys set by LandingPageController@order (never an admin-defined custom
+                             field — see the underscore prefix), each shown with its own friendly label
+                             instead of falling into the generic key:value dump below. --}}
+                        @php $otherData = collect($order->landing_page_data ?? [])->except(['_delivery_zone', '_free_delivery_fast_order_seconds', '_quantity_tier_savings']); @endphp
                         @if(!empty($order->landing_page_data['_delivery_zone']))
                             <div><span class="text-gray-400">Delivery Zone:</span> {{ $order->landing_page_data['_delivery_zone'] }}</div>
+                        @endif
+                        @if(isset($order->landing_page_data['_free_delivery_fast_order_seconds']))
+                            @php $fds = (int) $order->landing_page_data['_free_delivery_fast_order_seconds']; @endphp
+                            <div class="inline-flex items-center gap-1 text-amber-600 font-medium">⚡ Free delivery — ordered in {{ intdiv($fds, 60) }}m {{ $fds % 60 }}s</div>
+                        @endif
+                        @if(!empty($order->landing_page_data['_quantity_tier_savings']))
+                            <div class="text-emerald-600 font-medium">🎉 Qty discount: ৳{{ number_format((float) $order->landing_page_data['_quantity_tier_savings'], 2) }} saved</div>
                         @endif
                         @forelse($otherData as $key => $value)
                             @if($value !== null && $value !== '')

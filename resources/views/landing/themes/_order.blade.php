@@ -14,12 +14,32 @@
     x-data="{
         qty: {{ max(1, min(5, (int) old('quantity', 1))) }},
         unit: {{ $unit }},
+        // {2: 5000, ...} — mirrors LandingPage::priceForQuantity() so the price shown here is
+        // always what LandingPageController@order actually charges.
+        tiers: {{ Js::from($lp->quantityTierMap()) }},
         zones: {{ Js::from($zones) }},
         zoneIndex: {{ $zoneStart === null ? 'null' : $zoneStart }},
         freeFrom: {{ $freeFrom === null ? 'null' : $freeFrom }},
-        get isFree() { return this.freeFrom !== null && this.subtotal >= this.freeFrom; },
+        // "Order within N minutes of first opening this page, delivery's free" — firstViewedAt
+        // is the server's own clock (the signed cookie LandingPageController@show sets), never
+        // this device's, so it can't be gamed by changing the phone's time.
+        firstViewedAt: {{ $firstViewedAt->timestamp * 1000 }},
+        freeDeliveryMinutes: {{ $freeDeliveryMinutes ?? 'null' }},
+        now: Date.now(),
+        get freeDeliverySecondsLeft() {
+            if (!this.freeDeliveryMinutes) return null;
+            return Math.max(0, Math.floor((this.firstViewedAt + this.freeDeliveryMinutes * 60000 - this.now) / 1000));
+        },
+        get freeDeliveryCountdown() {
+            const s = this.freeDeliverySecondsLeft;
+            if (s === null) return '';
+            return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
+        },
+        get fastOrderActive() { return this.freeDeliverySecondsLeft !== null && this.freeDeliverySecondsLeft > 0; },
+        get isFree() { return (this.freeFrom !== null && this.subtotal >= this.freeFrom) || this.fastOrderActive; },
         get zoneCharge() { return (this.zoneIndex !== null && this.zones[this.zoneIndex] && !this.isFree) ? parseFloat(this.zones[this.zoneIndex].charge || 0) : 0; },
-        get subtotal() { return this.unit * this.qty; },
+        get subtotal() { return this.tiers[this.qty] !== undefined ? parseFloat(this.tiers[this.qty]) : this.unit * this.qty; },
+        get savings() { return this.tiers[this.qty] !== undefined ? Math.max(0, (this.unit * this.qty) - parseFloat(this.tiers[this.qty])) : 0; },
         get total() { return this.subtotal + this.zoneCharge; },
         bn(n) { return String(n).replace(/[0-9]/g, d => '০১২৩৪৫৬৭৮৯'[d]); },
         money(n) { return {{ Js::from($currencySymbol) }} + Number(n).toLocaleString('en-US', { minimumFractionDigits: {{ $decimals }}, maximumFractionDigits: {{ $decimals }} }); },
@@ -32,8 +52,16 @@
             }
         },
     }"
-    x-init="new IntersectionObserver((entries, obs) => { if (entries[0].isIntersecting) { trackInitiateCheckout(); obs.disconnect(); } }, { threshold: 0.3 }).observe($el)">
+    x-init="
+        new IntersectionObserver((entries, obs) => { if (entries[0].isIntersecting) { trackInitiateCheckout(); obs.disconnect(); } }, { threshold: 0.3 }).observe($el);
+        if (freeDeliveryMinutes) { setInterval(() => now = Date.now(), 1000); }
+    ">
     <div class="lt-wrap">
+        @if($freeDeliveryMinutes)
+        <div x-show="fastOrderActive" x-cloak class="lt-fast-bar" role="status">
+            ⚡ এখনই অর্ডার করুন — ফ্রি ডেলিভারি বাকি আর <span x-text="freeDeliveryCountdown"></span>
+        </div>
+        @endif
         <div class="lt-order-grid">
             <aside class="lt-sum reveal">
                 @if($orderImg)
@@ -117,11 +145,17 @@
                     <div class="lt-field">
                         <span class="lt-label">পরিমাণ বেছে নিন</span>
                         <div class="lt-packs" role="radiogroup" aria-label="পরিমাণ">
+                            @php $tierMap = $lp->quantityTierMap(); @endphp
                             @foreach([1, 2, 3] as $n)
                             <button type="button" class="lt-pack" :class="{ 'is-on': qty === {{ $n }} }" @click="qty = {{ $n }}" role="radio" :aria-checked="qty === {{ $n }}">
                                 @if($n === 2)<small>জনপ্রিয়</small>@endif
                                 <b>{{ $bnDigits($n) }}টি</b>
-                                @if($unit)<span x-text="money(unit * {{ $n }})">{{ format_currency($unit * $n) }}</span>@endif
+                                @if($unit)
+                                <span x-text="money(tiers[{{ $n }}] !== undefined ? tiers[{{ $n }}] : unit * {{ $n }})">{{ format_currency($tierMap[$n] ?? $unit * $n) }}</span>
+                                @if(isset($tierMap[$n]))
+                                <span class="lt-pack-save">৳{{ number_format(($unit * $n) - $tierMap[$n], 0) }} সাশ্রয়</span>
+                                @endif
+                                @endif
                             </button>
                             @endforeach
                         </div>

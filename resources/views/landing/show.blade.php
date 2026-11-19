@@ -630,12 +630,34 @@
         x-data="{
             qty: 1,
             unit: {{ (float) ($landingPage->effective_price ?? 0) }},
+            // {2: 5000, 3: 7200, ...} — Admin → this page → Quantity Pricing. Mirrors
+            // LandingPage::priceForQuantity() exactly so what's shown here is always what
+            // LandingPageController@order actually charges.
+            tiers: {{ Js::from($landingPage->quantityTierMap()) }},
             zones: {{ Js::from($lpZones) }},
             zoneIndex: {{ $lpZoneStart === null ? 'null' : $lpZoneStart }},
             freeFrom: {{ $lpFreeFrom === null ? 'null' : $lpFreeFrom }},
-            get isFree() { return this.freeFrom !== null && this.subtotal >= this.freeFrom; },
+            // "Order within N minutes of first opening this page, delivery's free" — firstViewedAt
+            // is the server's own clock (the signed cookie set in show()), never this device's
+            // clock, so the countdown can't be gamed by changing the phone's time. `now` ticks
+            // every second (see x-init below) purely to re-render the countdown text/isFree.
+            firstViewedAt: {{ $firstViewedAt->timestamp * 1000 }},
+            freeDeliveryMinutes: {{ $freeDeliveryMinutes ?? 'null' }},
+            now: Date.now(),
+            get freeDeliverySecondsLeft() {
+                if (!this.freeDeliveryMinutes) return null;
+                return Math.max(0, Math.floor((this.firstViewedAt + this.freeDeliveryMinutes * 60000 - this.now) / 1000));
+            },
+            get freeDeliveryCountdown() {
+                const s = this.freeDeliverySecondsLeft;
+                if (s === null) return '';
+                return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
+            },
+            get fastOrderActive() { return this.freeDeliverySecondsLeft !== null && this.freeDeliverySecondsLeft > 0; },
+            get isFree() { return (this.freeFrom !== null && this.subtotal >= this.freeFrom) || this.fastOrderActive; },
             get zoneCharge() { return (this.zoneIndex !== null && this.zones[this.zoneIndex] && !this.isFree) ? parseFloat(this.zones[this.zoneIndex].charge || 0) : 0; },
-            get subtotal() { return this.unit * this.qty; },
+            get subtotal() { return this.tiers[this.qty] !== undefined ? parseFloat(this.tiers[this.qty]) : this.unit * this.qty; },
+            get savings() { return this.tiers[this.qty] !== undefined ? Math.max(0, (this.unit * this.qty) - parseFloat(this.tiers[this.qty])) : 0; },
             get total() { return this.subtotal + this.zoneCharge; },
             trackInitiateCheckout() {
                 if (typeof fbq === 'function') {
@@ -656,8 +678,21 @@
              visitor got there: a CTA click, or just scrolling), same "reached checkout"
              semantic as the main store's InitiateCheckout, without needing a handler wired
              onto every "Order Now" button on the page individually. --}}
-        x-init="new IntersectionObserver((entries, obs) => { if (entries[0].isIntersecting) { trackInitiateCheckout(); obs.disconnect(); } }, { threshold: 0.3 }).observe($el)">
+        x-init="
+            new IntersectionObserver((entries, obs) => { if (entries[0].isIntersecting) { trackInitiateCheckout(); obs.disconnect(); } }, { threshold: 0.3 }).observe($el);
+            if (freeDeliveryMinutes) { setInterval(() => now = Date.now(), 1000); }
+        ">
         <div class="bg-white rounded-2xl shadow-xl p-5 reveal">
+            @if($freeDeliveryMinutes)
+            {{-- The countdown itself is just honesty about a deadline the server already
+                 enforces (LandingPageController@order checks the same cookie) — not a
+                 cosmetic trick that resets on reload, since firstViewedAt is the server's
+                 timestamp from this visitor's very first view of this page. --}}
+            <div x-show="fastOrderActive" x-cloak class="mb-4 rounded-xl px-4 py-3 text-center text-white font-bold text-sm animate-pulse"
+                 style="background: linear-gradient(135deg, {{ $primary }}, {{ $primaryDark }});">
+                ⚡ এখনই অর্ডার করুন — ফ্রি ডেলিভারি বাকি আর <span x-text="freeDeliveryCountdown"></span>
+            </div>
+            @endif
             <div class="text-center mb-5">
                 <h2 class="text-lg font-extrabold text-gray-900">{{ $landingPage->title }}</h2>
                 @if($landingPage->effective_price)
@@ -763,7 +798,23 @@
                         <button type="button" @click="qty = Math.max(1, qty - 1)" :disabled="qty <= 1" class="w-11 h-11 rounded-xl border-2 text-lg font-bold flex items-center justify-center active:scale-90 transition-all duration-150 disabled:opacity-30 disabled:active:scale-100" style="border-color: {{ $primary }}33; color: {{ $primaryDark }};">−</button>
                         <span class="w-10 text-center font-extrabold text-lg" x-text="qty"></span>
                         <button type="button" @click="qty = Math.min(5, qty + 1)" :disabled="qty >= 5" class="w-11 h-11 rounded-xl border-2 text-lg font-bold flex items-center justify-center active:scale-90 transition-all duration-150 disabled:opacity-30 disabled:active:scale-100" style="border-color: {{ $primary }}33; color: {{ $primaryDark }};">+</button>
+                        <span x-show="savings > 0" x-cloak x-transition class="inline-flex items-center gap-1 bg-emerald-50 text-emerald-700 text-xs font-bold px-2.5 py-1.5 rounded-lg">
+                            🎉 <span x-text="'{{ $currencySymbol }}' + savings.toFixed({{ $decimals }}) + ' সাশ্রয়!'"></span>
+                        </span>
                     </div>
+                    @if($landingPage->quantityTierMap())
+                    <div class="flex flex-wrap gap-2 mt-2.5">
+                        @foreach($landingPage->quantityTierMap() as $tierQty => $tierPrice)
+                        <button type="button" @click="qty = {{ $tierQty }}"
+                            class="flex-1 min-w-[90px] text-center rounded-xl border-2 px-2 py-2 transition-all"
+                            :class="qty === {{ $tierQty }} ? 'shadow-sm' : 'border-gray-200'"
+                            :style="qty === {{ $tierQty }} ? 'border-color:{{ $primary }};background:{{ $primary }}0d' : ''">
+                            <span class="block text-xs font-bold text-gray-700">{{ $tierQty }}টি</span>
+                            <span class="block text-sm font-extrabold" style="color:{{ $primaryDark }}">{{ $currencySymbol }}{{ number_format($tierPrice, $decimals) }}</span>
+                        </button>
+                        @endforeach
+                    </div>
+                    @endif
                     <p class="text-xs text-gray-400 mt-1.5" x-show="qty >= 5" x-cloak>প্রতি অর্ডারে সর্বোচ্চ ৫টি নেওয়া যাবে। আরও প্রয়োজন হলে আলাদা অর্ডার করুন।</p>
                     <input type="hidden" name="quantity" :value="qty">
                 </div>

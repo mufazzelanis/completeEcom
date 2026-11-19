@@ -33,12 +33,16 @@ class LandingPage extends Model
         'testimonials_heading', 'testimonial_videos', 'testimonial_images',
         // Pricing / offer box
         'offer_badge_text', 'pricing_items', 'compare_at_price',
+        // Quantity-tiered pricing ("buy 2, save ৳X") — see priceForQuantity() below
+        'quantity_tiers',
         // FAQ
         'faqs_heading', 'faqs',
         // Certificates
         'certificates_heading', 'certificates_subheading', 'certificates',
         // Delivery zones (shipping charge picker on the order form)
         'delivery_zones', 'delivery_mode',
+        // Order-within-N-minutes-of-landing free delivery incentive — see freeDeliveryMinutes()
+        'free_delivery_minutes',
     ];
 
     protected $casts = [
@@ -61,6 +65,8 @@ class LandingPage extends Model
         'faqs'                 => 'array',
         'certificates'         => 'array',
         'delivery_zones'       => 'array',
+        'quantity_tiers'       => 'array',
+        'free_delivery_minutes' => 'integer',
     ];
 
     protected static function boot()
@@ -113,6 +119,53 @@ class LandingPage extends Model
         }
 
         return $this->product?->final_price;
+    }
+
+    /**
+     * [qty => total price] for every tier the admin actually configured, keyed by quantity
+     * for O(1) lookup — rows with no quantity or no price are dropped rather than crashing
+     * the order form on a half-filled admin form.
+     */
+    public function quantityTierMap(): array
+    {
+        return collect($this->quantity_tiers ?: [])
+            ->filter(fn ($t) => isset($t['qty'], $t['price']) && (int) $t['qty'] > 1 && (float) $t['price'] > 0)
+            ->mapWithKeys(fn ($t) => [(int) $t['qty'] => (float) $t['price']])
+            ->all();
+    }
+
+    /**
+     * What a customer actually pays for $qty units — the admin's explicit tier price when one
+     * exists for this exact quantity, otherwise today's plain effective_price * qty. Returns
+     * null entirely when there's no price to charge at all (lead-gen page, no product linked).
+     *
+     * This is the one place both the order form (display) and LandingPageController@order
+     * (the actual charge) compute a subtotal from — so a tier can never drift between what's
+     * shown and what's billed.
+     */
+    public function priceForQuantity(int $qty): ?array
+    {
+        $unit = $this->effective_price;
+        if ($unit === null) {
+            return null;
+        }
+
+        $regular = round($unit * $qty, 2);
+        $tiers   = $this->quantityTierMap();
+        $total   = $tiers[$qty] ?? $regular;
+
+        return [
+            'total'    => $total,
+            'regular'  => $regular,
+            'savings'  => round(max(0, $regular - $total), 2),
+            'per_unit' => round($total / max(1, $qty), 2),
+        ];
+    }
+
+    /** Null/0 = the "order within N minutes, free delivery" incentive is off for this page. */
+    public function freeDeliveryMinutes(): ?int
+    {
+        return $this->free_delivery_minutes > 0 ? (int) $this->free_delivery_minutes : null;
     }
 
     /** site | custom | none — where the order form's delivery charge comes from. */
