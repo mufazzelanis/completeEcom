@@ -637,9 +637,9 @@
             zones: {{ Js::from($lpZones) }},
             zoneIndex: {{ $lpZoneStart === null ? 'null' : $lpZoneStart }},
             freeFrom: {{ $lpFreeFrom === null ? 'null' : $lpFreeFrom }},
-            // "Order within N minutes of first opening this page, delivery's free" — firstViewedAt
+            // Order within N minutes of first opening this page, delivery's free — firstViewedAt
             // is the server's own clock (the signed cookie set in show()), never this device's
-            // clock, so the countdown can't be gamed by changing the phone's time. `now` ticks
+            // clock, so the countdown can't be gamed by changing the phone's time. now ticks
             // every second (see x-init below) purely to re-render the countdown text/isFree.
             firstViewedAt: {{ $firstViewedAt->timestamp * 1000 }},
             freeDeliveryMinutes: {{ $freeDeliveryMinutes ?? 'null' }},

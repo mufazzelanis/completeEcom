@@ -20,7 +20,7 @@
         zones: {{ Js::from($zones) }},
         zoneIndex: {{ $zoneStart === null ? 'null' : $zoneStart }},
         freeFrom: {{ $freeFrom === null ? 'null' : $freeFrom }},
-        // "Order within N minutes of first opening this page, delivery's free" — firstViewedAt
+        // Order within N minutes of first opening this page, delivery's free — firstViewedAt
         // is the server's own clock (the signed cookie LandingPageController@show sets), never
         // this device's, so it can't be gamed by changing the phone's time.
         firstViewedAt: {{ $firstViewedAt->timestamp * 1000 }},
