@@ -762,6 +762,10 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     });
 
     // CMS — Banners
+    // Must come before the banners/{banner} resource routes below — PATCH banners/reorder
+    // would otherwise match the resource's update route with {banner} literally "reorder",
+    // which fails route-model-binding instead of reaching this method.
+    Route::patch('banners/reorder', [AdminBannerController::class, 'reorder'])->name('banners.reorder');
     Route::resource('banners', AdminBannerController::class)->except(['show']);
     Route::patch('banners/{banner}/toggle', [AdminBannerController::class, 'toggle'])->name('banners.toggle');
 

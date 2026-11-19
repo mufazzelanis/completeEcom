@@ -28,7 +28,11 @@ class BannerController extends Controller
     }
     public function index()
     {
-        $banners = Banner::orderBy('position')->orderBy('sort_order')->paginate(20);
+        // Grouped by position (not paginated) — the storefront itself queries and orders
+        // banners separately per position (see HomeController::index(), hero vs top), so
+        // "order" only ever means something within one group; a flat mixed-position list
+        // made drag-reordering ambiguous (and a page boundary would split a group anyway).
+        $banners = Banner::orderBy('position')->orderBy('sort_order')->get()->groupBy('position');
         return view('admin.banners.index', compact('banners'));
     }
 
@@ -98,5 +102,21 @@ class BannerController extends Controller
     {
         $banner->update(['is_active' => !$banner->is_active]);
         return back()->with('success', 'Banner ' . ($banner->is_active ? 'deactivated' : 'activated') . '.');
+    }
+
+    /**
+     * Drag-and-drop reorder (see admin/banners/index.blade.php) — one position group's
+     * banner IDs in their new top-to-bottom order. A handful of rows per group at most,
+     * so N individual updates is simpler than a bulk CASE WHEN and costs nothing real.
+     */
+    public function reorder(Request $request)
+    {
+        $request->validate(['ids' => 'required|array', 'ids.*' => 'integer|exists:banners,id']);
+
+        foreach ($request->ids as $index => $id) {
+            Banner::where('id', $id)->update(['sort_order' => $index]);
+        }
+
+        return response()->json(['message' => 'Order updated.']);
     }
 }
