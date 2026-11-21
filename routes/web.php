@@ -912,4 +912,6 @@ require __DIR__.'/auth.php';
 // adding another bare single-segment route (or another require) below this one WOULD get
 // shadowed by it, so nothing else belongs after this in the file.
 Route::get('/{landingPage:slug}', [LandingPageController::class, 'show'])->name('landing.show');
-Route::post('/{landingPage:slug}', [LandingPageController::class, 'order'])->middleware('throttle:10,1,post-landingpage-slug')->name('landing.order');
+// Rate limiting for this route is session-keyed, handled inside LandingPageController@order
+// itself (not this route-level IP-keyed middleware) — see the comment there for why.
+Route::post('/{landingPage:slug}', [LandingPageController::class, 'order'])->name('landing.order');

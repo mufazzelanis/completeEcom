@@ -279,6 +279,17 @@ class CartController extends Controller
             if ($limitError = $this->flashLimitError($cart->product, $otherLines + $request->quantity)) {
                 return back()->with('error', $limitError);
             }
+
+            // Caught here, at cart-update time, instead of only at the very last step of
+            // checkout — CheckoutController::store() re-verifies this same figure under a row
+            // lock right before charging, so this is a friendlier early warning, not the only
+            // guard against overselling.
+            $availableStock = $cart->combination ? $cart->combination->stock : $cart->product->available_stock;
+            if ($request->quantity > $availableStock) {
+                return back()->with('error', $availableStock > 0
+                    ? "Sorry, only {$availableStock} of \"{$cart->product->name}\" left in stock."
+                    : "Sorry, \"{$cart->product->name}\" is currently out of stock.");
+            }
         }
 
         $cart->update(['quantity' => $request->quantity]);

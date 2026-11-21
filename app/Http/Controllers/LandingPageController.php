@@ -38,20 +38,44 @@ class LandingPageController extends Controller
         // wrote. First visit sets it; every later visit (until it expires) just reads it back.
         $cookieName = $this->firstViewCookieName($landingPage);
         $firstViewedAt = request()->cookie($cookieName);
-        if ($firstViewedAt) {
-            $firstViewedAt = \Illuminate\Support\Carbon::parse($firstViewedAt);
-        } else {
+        // A tampered cookie already reads back as null (EncryptCookies catches that), but a
+        // malformed-yet-validly-decrypted value is still a theoretical possibility — treat
+        // anything Carbon can't parse the same as "no cookie yet" rather than letting the
+        // whole page fail to render over what's just a free-delivery display nicety.
+        try {
+            $firstViewedAt = $firstViewedAt ? \Illuminate\Support\Carbon::parse($firstViewedAt) : null;
+        } catch (\Throwable $e) {
+            $firstViewedAt = null;
+        }
+        if (! $firstViewedAt) {
             $firstViewedAt = now();
             Cookie::queue($cookieName, $firstViewedAt->toIso8601String(), 180); // minutes; matches the admin field's own 180 cap
         }
         $freeDeliveryMinutes = $landingPage->freeDeliveryMinutes();
 
-        return view('landing.show', compact('landingPage', 'pageViewToken', 'firstViewedAt', 'freeDeliveryMinutes'));
+        // no-store: this page embeds a per-session CSRF token and the first-view timestamp the
+        // free-delivery countdown depends on — if a CDN/proxy ever cached it, a later visitor
+        // could get someone else's stale token (a broken "page expired" error on submit) or a
+        // countdown anchored to the wrong moment.
+        return response(view('landing.show', compact('landingPage', 'pageViewToken', 'firstViewedAt', 'freeDeliveryMinutes')))
+            ->header('Cache-Control', 'no-store, private, max-age=0');
     }
 
     public function order(Request $request, LandingPage $landingPage)
     {
         abort_if($landingPage->status !== 'published', 404);
+
+        // Session-keyed, not IP-keyed — this route used to carry a `throttle:10,1` middleware
+        // bucketed by raw IP, shared across every landing page. Bangladeshi mobile carriers
+        // commonly put many unrelated customers behind one public IP (carrier-grade NAT), so a
+        // handful of genuine, unrelated shoppers ordering from different pages in the same
+        // minute could all get blocked together. Same per-browser-session approach
+        // CheckoutController::store() already uses for the exact same reason.
+        $guestIdentifier = 'landing-order:' . (auth()->check() ? auth()->id() : session()->getId());
+        if (\Illuminate\Support\Facades\RateLimiter::tooManyAttempts($guestIdentifier, 10)) {
+            return back()->withInput()->withErrors(['error' => 'Too many attempts — please wait a moment and try again.']);
+        }
+        \Illuminate\Support\Facades\RateLimiter::hit($guestIdentifier, 60);
 
         // Name, phone and full address on every order, like the store's own checkout — without
         // all three an order can't be confirmed by phone or delivered. (The page's old "collect /
@@ -202,7 +226,8 @@ class LandingPageController extends Controller
             $customData = ['_quantity_tier_savings' => $pricing['savings']] + $customData;
         }
 
-        $order = DB::transaction(function () use ($landingPage, $validated, $quantity, $pricing, $subtotal, $shippingCharge, $total, $customData, $phone, $zone) {
+        try {
+            $order = DB::transaction(function () use ($landingPage, $validated, $quantity, $pricing, $subtotal, $shippingCharge, $total, $customData, $phone, $zone) {
             // Row lock + re-check: two orders arriving at the same moment can both pass the
             // pre-check above against the same last unit; only one may take it.
             if ($landingPage->product_id) {
@@ -251,7 +276,15 @@ class LandingPageController extends Controller
             }
 
             return $order;
-        });
+            });
+        } catch (\Throwable $e) {
+            // A DB deadlock, a lost connection, or any other mid-transaction failure must
+            // never reach the customer as a bare/unbranded error page with their typed
+            // details gone — report it for us to investigate, and let them simply try again.
+            report($e);
+
+            return back()->withInput()->withErrors(['error' => 'Something went wrong while placing your order. Please try again — nothing was charged.']);
+        }
 
         if (!$order) {
             return back()->withInput()->withErrors(['quantity' => 'Sorry, this product just went out of stock.']);

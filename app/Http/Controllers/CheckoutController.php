@@ -306,12 +306,16 @@ class CheckoutController extends Controller
             rawUserFields: $user ? ['name' => $user->name, 'email' => $user->email, 'phone' => $user->phone] : [],
         );
 
-        return view('checkout.index', compact(
+        // no-store: this page carries a per-session CSRF token and live cart/pricing state — if
+        // a CDN/proxy in front of the site ever cached it (e.g. an overly broad Cloudflare page
+        // rule), a later visitor could be served someone else's stale checkout page, which
+        // reads to them as a broken "page expired" (419) error on submit.
+        return response(view('checkout.index', compact(
             'cartItems', 'subtotal', 'discount', 'shipping', 'total',
             'coupon', 'promoCode', 'addresses', 'paymentMethods', 'methodCharges', 'base',
             'usesZones', 'shippingByZone', 'defaultZone', 'methodChargesByZone',
             'pointsBalance', 'pointsRedeemed', 'pointsDiscount', 'checkoutFields', 'fbInitiateCheckoutEventId', 'isPreorder', 'advanceByZone', 'flatAdvance'
-        ));
+        )))->header('Cache-Control', 'no-store, private, max-age=0');
     }
 
     /**
@@ -539,12 +543,46 @@ class CheckoutController extends Controller
         }
 
         $guestToken = null;
+        $stockError = null;
 
-        $order = DB::transaction(function () use (
-            $request, $cartItems, $subtotal, $discount, $shipping, $shippingZone,
-            $paymentCharge, $total, $couponCode, $couponId, $promoCodeId, $pointsRedeemed, $pointsDiscountValue, $paymentMethod, $isBuyNow,
-            $guestToken, $isPreorder, $advance
-        ) {
+        try {
+            $order = DB::transaction(function () use (
+                $request, $cartItems, $subtotal, $discount, $shipping, $shippingZone,
+                $paymentCharge, $total, $couponCode, $couponId, $promoCodeId, $pointsRedeemed, $pointsDiscountValue, $paymentMethod, $isBuyNow,
+                $guestToken, $isPreorder, $advance, &$stockError
+            ) {
+            // Row-lock + re-check every cart item's stock before writing anything — without
+            // this, two customers checking out the same last unit at the same moment could
+            // both pass the earlier (unlocked) check and both succeed, silently overselling
+            // it. Mirrors LandingPageController::order()'s identical guard. A pre-order
+            // deliberately skips this: that's exactly how a switched-off/zero-stock product
+            // is still sold, waiting for the restock.
+            if (! $isPreorder) {
+                foreach ($cartItems as $item) {
+                    if ($item->product->isBundle()) {
+                        foreach ($item->product->bundleItems as $bundleItem) {
+                            $locked = Product::whereKey($bundleItem->item_product_id)->lockForUpdate()->first();
+                            if (! $locked || $bundleItem->quantity * $item->quantity > $locked->stock) {
+                                $stockError = $item->product->name;
+                                return null;
+                            }
+                        }
+                    } elseif ($item->combination) {
+                        $locked = ProductVariantCombination::whereKey($item->product_variant_combination_id)->lockForUpdate()->first();
+                        if (! $locked || $item->quantity > $locked->stock) {
+                            $stockError = $item->product->name;
+                            return null;
+                        }
+                    } else {
+                        $locked = Product::whereKey($item->product_id)->lockForUpdate()->first();
+                        if (! $locked || $item->quantity > $locked->available_stock) {
+                            $stockError = $item->product->name;
+                            return null;
+                        }
+                    }
+                }
+            }
+
             if ($couponId) {
                 Coupon::where('id', $couponId)
                     ->where(fn($q) => $q->whereNull('max_uses')->orWhereColumn('used_count', '<', 'max_uses'))
@@ -679,7 +717,22 @@ class CheckoutController extends Controller
             }
 
             return $order;
-        });
+            });
+        } catch (\Throwable $e) {
+            // A DB deadlock, a lost connection, or any other failure mid-transaction must
+            // never reach the customer as a bare/unbranded error page with their typed
+            // details gone — report it for us to investigate, and let them simply try again.
+            report($e);
+
+            return back()->withInput()->withErrors(['error' => 'Something went wrong while placing your order. Please try again — nothing was charged.']);
+        }
+
+        if (! $order) {
+            return redirect()->route('cart.index')->with(
+                'error',
+                ($stockError ? '"' . $stockError . '"' : 'One or more items in your cart') . ' just went out of stock — please update your cart and try again.'
+            );
+        }
 
         session()->forget(['coupon', 'promo_code', 'points_redeemed']);
 
