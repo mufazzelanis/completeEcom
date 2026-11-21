@@ -319,7 +319,11 @@
                 {{-- Soft "ground shadow" ellipse beneath the product — makes it feel like it's
                      actually sitting/photographed somewhere rather than pasted flat on a page. --}}
                 <div class="absolute left-1/2 bottom-1 -translate-x-1/2 w-2/3 h-4 rounded-full blur-md" style="background: {{ $primary }}30;"></div>
-                <img src="{{ Storage::url($landingPage->hero_image) }}" alt="{{ $landingPage->title }}" class="relative w-full max-h-72 object-contain drop-shadow-2xl lp-float">
+                {{-- aspect-[4/3] reserves this image's space by width alone, before it ever
+                     downloads — without it, the hero (and everything below it, including the
+                     order form the CTA jumps to) visibly shifts down once the photo finishes
+                     loading, which feels like the page "jumping" right after a visitor lands. --}}
+                <img src="{{ Storage::url($landingPage->hero_image) }}" alt="{{ $landingPage->title }}" width="800" height="600" fetchpriority="high" decoding="async" class="relative w-full max-h-72 aspect-[4/3] object-contain drop-shadow-2xl lp-float">
 
                 @if($discountPct)
                     <span class="lp-pulse absolute top-1 left-3 inline-flex items-center gap-1 text-white text-xs font-extrabold px-3 py-1.5 rounded-full shadow-lg" style="background-color: {{ $primary }};">

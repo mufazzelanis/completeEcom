@@ -206,8 +206,12 @@ class LandingPage extends Model
     }
 
     /**
-     * Which option starts selected: Settings → Shipping → Default Delivery Area. On a page's own
-     * zones that's the one whose name says inside/ভিতরে or outside/বাইরে; null = the customer picks.
+     * Which option starts selected: Settings → Shipping → Default Delivery Area when one's
+     * configured, matched the same way as before; otherwise just the first listed zone, so a
+     * required radio group is never left with nothing pre-picked — a customer who's happy with
+     * the default can submit immediately, and still sees the charge and can change it before
+     * placing the order (whereas forcing a blank choice is a tap gained for correctness that
+     * most visitors don't actually need).
      */
     public function defaultDeliveryIndex(): ?int
     {
@@ -217,7 +221,7 @@ class LandingPage extends Model
         }
         $zone = \App\Services\ShippingCalculator::defaultZone();
         if ($zone === null) {
-            return null;
+            return 0;
         }
         foreach ($options as $i => $o) {
             if ($o['key'] === $zone) {
