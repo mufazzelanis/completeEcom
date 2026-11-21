@@ -51,6 +51,7 @@ class PermissionSeeder extends Seeder
 
             // Vendors
             ['name' => 'vendors.view',        'display_name' => 'View Vendors',        'group' => 'Vendors'],
+            ['name' => 'vendors.edit',        'display_name' => 'Edit Vendor Profiles', 'group' => 'Vendors'],
             ['name' => 'vendors.approve',     'display_name' => 'Approve Vendors',     'group' => 'Vendors'],
             ['name' => 'vendors.suspend',     'display_name' => 'Suspend Vendors',     'group' => 'Vendors'],
 
@@ -89,7 +90,7 @@ class PermissionSeeder extends Seeder
                 'orders.view', 'orders.update',
                 'coupons.view', 'coupons.create', 'coupons.edit', 'coupons.delete',
                 'reviews.view', 'reviews.edit', 'reviews.approve', 'reviews.delete',
-                'vendors.view',
+                'vendors.view', 'vendors.edit',
                 'reports.view',
                 'payments.view', 'payments.manage',
                 'crm.view', 'crm.manage',

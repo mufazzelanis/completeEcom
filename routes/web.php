@@ -412,36 +412,56 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::patch('translations', [AdminTranslationController::class, 'update'])->name('translations.update');
     Route::delete('translations', [AdminTranslationController::class, 'destroy'])->name('translations.destroy');
 
-    Route::resource('categories', AdminCategoryController::class);
-    Route::patch('categories/{category}/move-up', [AdminCategoryController::class, 'moveUp'])->name('categories.move-up');
-    Route::patch('categories/{category}/move-down', [AdminCategoryController::class, 'moveDown'])->name('categories.move-down');
-    Route::patch('categories/{category}/approve', [AdminCategoryController::class, 'approve'])->name('categories.approve');
-    Route::patch('categories/{category}/reject', [AdminCategoryController::class, 'reject'])->name('categories.reject');
-    // Subcategories — manual routes (bypass slug-based route model binding)
-    Route::get('subcategories', [AdminSubcategoryController::class, 'index'])->name('subcategories.index');
-    Route::get('subcategories/create', [AdminSubcategoryController::class, 'create'])->name('subcategories.create');
-    Route::post('subcategories', [AdminSubcategoryController::class, 'store'])->name('subcategories.store');
-    Route::get('subcategories/{id}/edit', [AdminSubcategoryController::class, 'edit'])->name('subcategories.edit');
-    Route::put('subcategories/{id}', [AdminSubcategoryController::class, 'update'])->name('subcategories.update');
-    Route::delete('subcategories/{id}', [AdminSubcategoryController::class, 'destroy'])->name('subcategories.destroy');
+    // Split by action so the "staff" role's documented view-only access (PermissionSeeder)
+    // actually holds — the single-call Route::resource() this used to be had no permission
+    // check at all beyond generic admin-panel access, letting any staff/custom low-trust
+    // admin account create/edit/delete categories and prices regardless of role.
+    // create/store MUST be registered before index/show: GET categories/create and GET
+    // categories/{category} (show) are the same URI shape, so whichever is registered
+    // first wins the match — Route::resource() normally orders these correctly within one
+    // call, but splitting into several calls loses that unless this order is kept explicit.
+    Route::resource('categories', AdminCategoryController::class)->only(['create', 'store'])->middleware('permission:categories.create');
+    Route::resource('categories', AdminCategoryController::class)->only(['index', 'show'])->middleware('permission:categories.view');
+    Route::resource('categories', AdminCategoryController::class)->only(['edit', 'update'])->middleware('permission:categories.edit');
+    Route::resource('categories', AdminCategoryController::class)->only(['destroy'])->middleware('permission:categories.delete');
+    Route::patch('categories/{category}/move-up', [AdminCategoryController::class, 'moveUp'])->middleware('permission:categories.edit')->name('categories.move-up');
+    Route::patch('categories/{category}/move-down', [AdminCategoryController::class, 'moveDown'])->middleware('permission:categories.edit')->name('categories.move-down');
+    Route::patch('categories/{category}/approve', [AdminCategoryController::class, 'approve'])->middleware('permission:categories.edit')->name('categories.approve');
+    Route::patch('categories/{category}/reject', [AdminCategoryController::class, 'reject'])->middleware('permission:categories.edit')->name('categories.reject');
+    // Subcategories — manual routes (bypass slug-based route model binding). A subcategory IS
+    // a Category row (see AdminSubcategoryController), so it shares categories.* permissions
+    // rather than needing a separate permission set that doesn't otherwise exist.
+    Route::get('subcategories', [AdminSubcategoryController::class, 'index'])->middleware('permission:categories.view')->name('subcategories.index');
+    Route::get('subcategories/create', [AdminSubcategoryController::class, 'create'])->middleware('permission:categories.create')->name('subcategories.create');
+    Route::post('subcategories', [AdminSubcategoryController::class, 'store'])->middleware('permission:categories.create')->name('subcategories.store');
+    Route::get('subcategories/{id}/edit', [AdminSubcategoryController::class, 'edit'])->middleware('permission:categories.edit')->name('subcategories.edit');
+    Route::put('subcategories/{id}', [AdminSubcategoryController::class, 'update'])->middleware('permission:categories.edit')->name('subcategories.update');
+    Route::delete('subcategories/{id}', [AdminSubcategoryController::class, 'destroy'])->middleware('permission:categories.delete')->name('subcategories.destroy');
     // Bulk upload must be before resource to prevent slug binding conflict
-    Route::get('products/ids', [AdminProductController::class, 'ids'])->name('products.ids');
-    Route::get('products/bulk-upload', [AdminBulkProductController::class, 'index'])->name('products.bulk-upload');
-    Route::get('products/bundle-options', [AdminProductController::class, 'bundleOptions'])->name('products.bundle-options');
-    Route::get('products/bulk-upload/template', [AdminBulkProductController::class, 'template'])->name('products.bulk-upload.template');
-    Route::post('products/bulk-upload', [AdminBulkProductController::class, 'import'])->name('products.bulk-upload.import');
-    Route::get('products/bulk-upload/{bulkImport}/status', [AdminBulkProductController::class, 'status'])->name('products.bulk-upload.status');
-    Route::get('products/bulk-upload/{bulkImport}/status-data', [AdminBulkProductController::class, 'statusData'])->name('products.bulk-upload.status-data');
-    Route::resource('products', AdminProductController::class);
-    Route::post('products/{product}/duplicate', [AdminProductController::class, 'duplicate'])->name('products.duplicate');
-    Route::post('products/bulk-action', [AdminProductController::class, 'bulkAction'])->name('products.bulk-action');
-    Route::patch('products/{product}/stock-switch', [AdminProductController::class, 'toggleStockSwitch'])->name('products.stock-switch');
-    Route::patch('products/{product}/quick', [AdminProductController::class, 'quickUpdate'])->name('products.quick-update');
-    Route::patch('products/{product}/move-up', [AdminProductController::class, 'moveUp'])->name('products.move-up');
-    Route::patch('products/{product}/move-down', [AdminProductController::class, 'moveDown'])->name('products.move-down');
-    Route::post('products/reorder', [AdminProductController::class, 'reorder'])->name('products.reorder');
-    Route::patch('products/{product}/approve', [AdminProductController::class, 'approve'])->name('products.approve');
-    Route::patch('products/{product}/reject', [AdminProductController::class, 'reject'])->name('products.reject');
+    Route::get('products/ids', [AdminProductController::class, 'ids'])->middleware('permission:products.view')->name('products.ids');
+    Route::get('products/bulk-upload', [AdminBulkProductController::class, 'index'])->middleware('permission:products.create')->name('products.bulk-upload');
+    Route::get('products/bundle-options', [AdminProductController::class, 'bundleOptions'])->middleware('permission:products.view')->name('products.bundle-options');
+    Route::get('products/bulk-upload/template', [AdminBulkProductController::class, 'template'])->middleware('permission:products.create')->name('products.bulk-upload.template');
+    Route::post('products/bulk-upload', [AdminBulkProductController::class, 'import'])->middleware('permission:products.create')->name('products.bulk-upload.import');
+    Route::get('products/bulk-upload/{bulkImport}/status', [AdminBulkProductController::class, 'status'])->middleware('permission:products.create')->name('products.bulk-upload.status');
+    Route::get('products/bulk-upload/{bulkImport}/status-data', [AdminBulkProductController::class, 'statusData'])->middleware('permission:products.create')->name('products.bulk-upload.status-data');
+    // Split by action — same reasoning as the identical categories fix above; a single
+    // Route::resource() call here had no permission check beyond generic admin access.
+    // create/store before index/show — same GET products/create vs GET products/{product}
+    // (show) ambiguity as the categories split above; whichever is registered first wins.
+    Route::resource('products', AdminProductController::class)->only(['create', 'store'])->middleware('permission:products.create');
+    Route::resource('products', AdminProductController::class)->only(['index', 'show'])->middleware('permission:products.view');
+    Route::resource('products', AdminProductController::class)->only(['edit', 'update'])->middleware('permission:products.edit');
+    Route::resource('products', AdminProductController::class)->only(['destroy'])->middleware('permission:products.delete');
+    Route::post('products/{product}/duplicate', [AdminProductController::class, 'duplicate'])->middleware('permission:products.create')->name('products.duplicate');
+    Route::post('products/bulk-action', [AdminProductController::class, 'bulkAction'])->middleware('permission:products.edit')->name('products.bulk-action');
+    Route::patch('products/{product}/stock-switch', [AdminProductController::class, 'toggleStockSwitch'])->middleware('permission:products.edit')->name('products.stock-switch');
+    Route::patch('products/{product}/quick', [AdminProductController::class, 'quickUpdate'])->middleware('permission:products.edit')->name('products.quick-update');
+    Route::patch('products/{product}/move-up', [AdminProductController::class, 'moveUp'])->middleware('permission:products.edit')->name('products.move-up');
+    Route::patch('products/{product}/move-down', [AdminProductController::class, 'moveDown'])->middleware('permission:products.edit')->name('products.move-down');
+    Route::post('products/reorder', [AdminProductController::class, 'reorder'])->middleware('permission:products.edit')->name('products.reorder');
+    Route::patch('products/{product}/approve', [AdminProductController::class, 'approve'])->middleware('permission:products.edit')->name('products.approve');
+    Route::patch('products/{product}/reject', [AdminProductController::class, 'reject'])->middleware('permission:products.edit')->name('products.reject');
 
     // Brands
     Route::resource('brands', AdminBrandController::class)->except(['show']); // no admin brand detail screen
@@ -481,7 +501,11 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     // Roles & Permissions management is itself the privilege-escalation surface —
     // require users.manage_roles (which manager is NOT granted by default).
     Route::resource('roles', AdminRoleController::class)->except(['show'])->middleware('permission:users.manage_roles');
-    Route::resource('coupons', AdminCouponController::class);
+    // Same create-before-show ordering requirement as the categories/products splits above.
+    Route::resource('coupons', AdminCouponController::class)->only(['create', 'store'])->middleware('permission:coupons.create');
+    Route::resource('coupons', AdminCouponController::class)->only(['index', 'show'])->middleware('permission:coupons.view');
+    Route::resource('coupons', AdminCouponController::class)->only(['edit', 'update'])->middleware('permission:coupons.edit');
+    Route::resource('coupons', AdminCouponController::class)->only(['destroy'])->middleware('permission:coupons.delete');
     Route::middleware('permission:reviews.view')->group(function () {
         Route::get('reviews', [AdminReviewController::class, 'index'])->name('reviews.index');
     });
@@ -492,17 +516,21 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::patch('reviews/{review}/approve', [AdminReviewController::class, 'approve'])->middleware('permission:reviews.approve')->name('reviews.approve');
     Route::delete('reviews/{review}', [AdminReviewController::class, 'destroy'])->middleware('permission:reviews.delete')->name('reviews.destroy');
 
-    // Vendors
-    Route::resource('vendors', AdminVendorController::class)->only(['index', 'show', 'edit', 'update']);
-    Route::post('vendors/{vendor}/approve', [AdminVendorController::class, 'approve'])->name('vendors.approve');
-    Route::post('vendors/{vendor}/reject', [AdminVendorController::class, 'reject'])->name('vendors.reject');
-    Route::post('vendors/{vendor}/suspend', [AdminVendorController::class, 'suspend'])->name('vendors.suspend');
-    Route::post('vendors/{vendor}/request-correction', [AdminVendorController::class, 'requestCorrection'])->name('vendors.request-correction');
-    Route::post('vendors/{vendor}/payout', [AdminVendorController::class, 'payout'])->name('vendors.payout');
-    Route::post('vendors/{vendor}/approve-profile', [AdminVendorController::class, 'approveProfile'])->name('vendors.approve-profile');
-    Route::post('vendors/{vendor}/reject-profile', [AdminVendorController::class, 'rejectProfile'])->name('vendors.reject-profile');
-    Route::get('vendors/{vendor}/document/{field}', [AdminVendorController::class, 'document'])->name('vendors.document');
-    Route::get('vendor-payments', [AdminVendorPaymentController::class, 'index'])->name('vendor-payments.index');
+    // Vendors — approve/reject/suspend were previously ungated beyond generic admin access,
+    // despite vendors.approve/vendors.suspend already existing as permissions (seeded, just
+    // never wired to a route); payout moves real money to a vendor's own account, so it's
+    // gated with the same payments.manage permission refunds already require.
+    Route::resource('vendors', AdminVendorController::class)->only(['index', 'show'])->middleware('permission:vendors.view');
+    Route::resource('vendors', AdminVendorController::class)->only(['edit', 'update'])->middleware('permission:vendors.edit');
+    Route::post('vendors/{vendor}/approve', [AdminVendorController::class, 'approve'])->middleware('permission:vendors.approve')->name('vendors.approve');
+    Route::post('vendors/{vendor}/reject', [AdminVendorController::class, 'reject'])->middleware('permission:vendors.approve')->name('vendors.reject');
+    Route::post('vendors/{vendor}/suspend', [AdminVendorController::class, 'suspend'])->middleware('permission:vendors.suspend')->name('vendors.suspend');
+    Route::post('vendors/{vendor}/request-correction', [AdminVendorController::class, 'requestCorrection'])->middleware('permission:vendors.edit')->name('vendors.request-correction');
+    Route::post('vendors/{vendor}/payout', [AdminVendorController::class, 'payout'])->middleware('permission:payments.manage')->name('vendors.payout');
+    Route::post('vendors/{vendor}/approve-profile', [AdminVendorController::class, 'approveProfile'])->middleware('permission:vendors.approve')->name('vendors.approve-profile');
+    Route::post('vendors/{vendor}/reject-profile', [AdminVendorController::class, 'rejectProfile'])->middleware('permission:vendors.approve')->name('vendors.reject-profile');
+    Route::get('vendors/{vendor}/document/{field}', [AdminVendorController::class, 'document'])->middleware('permission:vendors.view')->name('vendors.document');
+    Route::get('vendor-payments', [AdminVendorPaymentController::class, 'index'])->middleware('permission:payments.view')->name('vendor-payments.index');
 
     // Suppliers
     Route::resource('suppliers', AdminSupplierController::class)->except(['show']);
@@ -511,9 +539,13 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::resource('purchases', AdminPurchaseController::class);
     Route::post('purchases/{purchase}/receive', [AdminPurchaseController::class, 'receive'])->name('purchases.receive');
 
-    // Payment methods (admin CRUD)
-    Route::resource('payment-methods', AdminPaymentMethodController::class)->except(['show']);
-    Route::post('payment-methods/{paymentMethod}/toggle', [AdminPaymentMethodController::class, 'toggle'])->name('payment-methods.toggle');
+    // Payment methods — the receiving bank/mobile-banking account numbers shown to customers
+    // at checkout. Gated with settings.manage (admin-only by default, same tier as payment
+    // gateway keys/SMTP credentials — see Settings below), not payments.manage: a manager who
+    // can verify/refund a payment should not also be able to redirect where future payments
+    // get sent. Previously had no permission check at all.
+    Route::resource('payment-methods', AdminPaymentMethodController::class)->except(['show'])->middleware('permission:settings.manage');
+    Route::post('payment-methods/{paymentMethod}/toggle', [AdminPaymentMethodController::class, 'toggle'])->middleware('permission:settings.manage')->name('payment-methods.toggle');
 
     // Payments / Transactions — viewing vs verifying/refunding are separate permissions
     // since verify/refund move real money.
