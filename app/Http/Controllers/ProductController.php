@@ -28,10 +28,17 @@ class ProductController extends Controller
         // now, or (Turbo hover-prefetch) only once the page is actually shown; see PageView.
         $pageViewToken = PageView::record('product', $product->id, ['event' => $fbViewContentEventId]);
 
+        // .recommended's own reviews/brand are needed too — partials/product-card.blade.php
+        // reads both on every card it renders (star rating, brand name), and without this
+        // each recommended product in these two sections lazy-loaded both separately.
         $product->load([
             'category', 'brand', 'images', 'reviews.user', 'faqs', 'activeFlashSaleProduct',
             'crossSells.recommended.activeFlashSaleProduct',
+            'crossSells.recommended.reviews',
+            'crossSells.recommended.brand',
             'upsells.recommended.activeFlashSaleProduct',
+            'upsells.recommended.reviews',
+            'upsells.recommended.brand',
         ]);
 
         if ($product->isBundle()) {
@@ -77,13 +84,25 @@ class ProductController extends Controller
             return back()->with('error', 'You have already reviewed this product.');
         }
 
-        Review::create([
-            'user_id'    => auth()->id(),
-            'product_id' => $product->id,
-            'rating'     => $request->rating,
-            'comment'    => $request->comment,
-            'is_approved' => false,
-        ]);
+        // The check above and this create() aren't atomic — two near-simultaneous submits
+        // (a double-click, two open tabs) could both pass it. A unique index on
+        // (user_id, product_id) makes the database itself the real guard; this only
+        // turns the second one's failure into the same friendly message instead of a
+        // raw 500, rather than trying to prevent it from racing in the first place.
+        try {
+            Review::create([
+                'user_id'    => auth()->id(),
+                'product_id' => $product->id,
+                'rating'     => $request->rating,
+                'comment'    => $request->comment,
+                'is_approved' => false,
+            ]);
+        } catch (\Illuminate\Database\QueryException $e) {
+            if ((int) $e->getCode() === 23000) {
+                return back()->with('error', 'You have already reviewed this product.');
+            }
+            throw $e;
+        }
 
         return back()->with('success', 'Review submitted and pending approval.');
     }

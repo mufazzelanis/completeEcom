@@ -59,7 +59,7 @@ class AppServiceProvider extends ServiceProvider
         // (also the storefront header/footer data — see App\Support\StorefrontCache)
         $bumpHomeCache = fn () => \App\Support\StorefrontCache::bump();
         foreach ([
-            \App\Models\Category::class, \App\Models\Brand::class,
+            \App\Models\Category::class, \App\Models\Brand::class, \App\Models\Tag::class,
             \App\Models\Banner::class, \App\Models\HomeSection::class, \App\Models\Review::class,
             \App\Models\Page::class, \App\Models\PaymentMethod::class, \App\Models\PromoPopup::class,
         ] as $model) {

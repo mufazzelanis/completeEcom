@@ -13,7 +13,11 @@ class BlogController extends Controller
         $query = BlogPost::with(['category', 'author'])->published();
 
         if ($request->filled('search')) {
-            $s = $request->search;
+            // Escaped the same way Product::searchWordSql() already does — unescaped, a
+            // literal % or _ in the typed search term is treated as a SQL wildcard instead
+            // of a literal character, silently matching far more (or differently) than
+            // what was actually typed.
+            $s = addcslashes($request->search, '%_\\');
             $query->where(fn($q) => $q->where('title', 'like', "%$s%")->orWhere('excerpt', 'like', "%$s%"));
         }
         if ($request->filled('tag')) {

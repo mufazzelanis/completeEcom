@@ -1,7 +1,10 @@
 @extends('layouts.app')
 @section('title', $blogCategory->name . ' – Blog | ' . setting('site_name', 'ShopVista'))
 @section('meta_description', $blogCategory->description ?: (setting('site_name', 'ShopVista') . ' blog posts in ' . $blogCategory->name . '.'))
-@section('canonical', route('blog.category', $blogCategory))
+{{-- Paginated pages get their own canonical (Google's guidance: don't point page 2 at
+     page 1) — mirrors the same fix already applied to shop/index.blade.php for category/
+     brand listings. --}}
+@section('canonical', route('blog.category', $blogCategory) . (request()->integer('page') > 1 ? '?page=' . request()->integer('page') : ''))
 
 @section('content')
 <div class="max-w-7xl mx-auto px-3 sm:px-4 py-6 sm:py-10">

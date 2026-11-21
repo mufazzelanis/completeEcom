@@ -125,6 +125,10 @@ class BlogPostController extends Controller
         $data = $request->only(['title', 'excerpt', 'content', 'status', 'meta_title', 'meta_description', 'meta_keywords',
             'alt_title', 'alt_excerpt', 'alt_content', 'alt_meta_title', 'alt_meta_description']);
         $data['lang'] = $request->input('lang') ?: setting('ai_blog_default_lang', 'bn');
+        // Unlike Page::update() (Admin\PageController), a slug change here never redirected
+        // the old address — an indexed /blog/{old-slug} just 404'd with no fallback the
+        // instant an admin edited the slug, losing that URL's accumulated SEO value outright.
+        $oldSlug = $post->slug;
         if ($request->filled('slug') && Str::slug($request->slug) !== $post->slug) {
             $data['slug'] = $this->uniqueSlug(Str::slug($request->slug), $post->id);
         }
@@ -141,6 +145,10 @@ class BlogPostController extends Controller
         }
 
         $post->update($data);
+        if ($post->slug !== $oldSlug) {
+            \App\Models\Redirect::updateOrCreate(['source' => '/blog/' . $oldSlug],
+                ['target' => \App\Models\Redirect::normalizeTarget('/blog/' . $post->slug), 'status_code' => 301, 'is_active' => true, 'note' => 'Blog post slug changed']);
+        }
         $this->syncTags($post, $request->input('tags') ?? '');
         if ($request->boolean('products_sync')) {
             $this->syncProducts($post, (array) $request->input('products', []));

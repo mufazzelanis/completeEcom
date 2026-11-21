@@ -24,7 +24,12 @@ class SearchQuery extends Model
      */
     public static function record(string $term, ?int $userId, ?string $sessionId): void
     {
-        $term = trim($term);
+        // Truncated to the `query` column's own limit (150 chars, see its migration) — an
+        // unbounded term (a pasted paragraph, a scraper/bot probe) used to reach the
+        // database as-is and crash the whole page with an uncaught "data too long" error
+        // under MySQL strict mode, since nothing between the search box and here ever
+        // capped its length.
+        $term = mb_substr(trim($term), 0, 150);
         if ($term === '' || mb_strlen($term) < 2) {
             return;
         }

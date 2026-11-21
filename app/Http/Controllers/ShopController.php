@@ -7,6 +7,7 @@ use App\Models\Category;
 use App\Models\Product;
 use App\Models\SearchQuery;
 use App\Models\Tag;
+use App\Support\StorefrontCache;
 use Illuminate\Http\Request;
 
 class ShopController extends Controller
@@ -102,39 +103,55 @@ class ShopController extends Controller
 
         $products   = $query->paginate(12)->withQueryString();
         abort_past_last_page($products);
-        $categories = Category::whereNull('parent_id')
-            ->active()
-            ->withCount('products')
-            ->with(['children' => fn($q) => $q->active()->withCount('products')])
-            ->orderBy('sort_order')
-            ->get();
-        $brands     = Brand::where('is_active', true)->orderBy('name')->get(['id', 'name', 'slug']);
-        $tags       = Tag::orderBy('name')->get(['id', 'name', 'slug']);
+        [$categories, $brands, $tags] = $this->sidebarFilters();
 
         return view('shop.index', compact('products', 'categories', 'brands', 'tags', 'searchMode'));
     }
 
     public function categories()
     {
-        $categories = Category::whereNull('parent_id')
+        // Same "same for every visitor" data as the homepage's own category grid, which
+        // already caches this exact shape of query (StorefrontCache, see HomeController) —
+        // this page's withCount()s were recomputed from scratch on every single request.
+        $categories = StorefrontCache::remember('shop_categories_page', fn () => Category::whereNull('parent_id')
             ->active()
             ->withCount('products')
             ->with(['children' => fn($q) => $q->active()->withCount('products')->orderBy('sort_order')])
             ->orderBy('sort_order')
-            ->get();
+            ->get());
 
         return view('shop.categories', compact('categories'));
     }
 
     public function brands()
     {
-        $brands = Brand::where('is_active', true)
+        $brands = StorefrontCache::remember('shop_brands_page', fn () => Brand::where('is_active', true)
             ->withCount('products')
             ->orderBy('sort_order')
             ->orderBy('name')
-            ->get();
+            ->get());
 
         return view('shop.brands', compact('brands'));
+    }
+
+    /**
+     * The sidebar's category/brand/tag filter lists — identical for every visitor and every
+     * /shop, /shop/category/*, /shop/brand/* request, so shared under one cache key rather
+     * than each of those three recomputing the same withCount()s from scratch on every load.
+     */
+    private function sidebarFilters(): array
+    {
+        $categories = StorefrontCache::remember('shop_sidebar_categories', fn () => Category::whereNull('parent_id')
+            ->active()
+            ->withCount('products')
+            ->with(['children' => fn($q) => $q->active()->withCount('products')])
+            ->orderBy('sort_order')
+            ->get());
+        $brands = StorefrontCache::remember('shop_sidebar_brands', fn () => Brand::where('is_active', true)
+            ->orderBy('name')->get(['id', 'name', 'slug']));
+        $tags = StorefrontCache::remember('shop_sidebar_tags', fn () => Tag::orderBy('name')->get(['id', 'name', 'slug']));
+
+        return [$categories, $brands, $tags];
     }
 
     public function category(Category $category)
@@ -142,6 +159,11 @@ class ShopController extends Controller
         if ($category->redirect_url) {
             return redirect()->away($category->redirect_url, 301);
         }
+
+        // Parity with brand() below — a deactivated category (with no redirect set) stayed
+        // fully browsable (normal SEO metadata, breadcrumbs, JSON-LD) at its own canonical
+        // URL with no guard at all.
+        abort_unless($category->is_active, 404);
 
         // A parent category (e.g. "Women's Shop") usually has no products of its own — they're
         // all filed under its subcategories — so its page used to come up completely empty
@@ -185,15 +207,7 @@ class ShopController extends Controller
             ->paginate(12)
             ->withQueryString();
         abort_past_last_page($products);
-
-        $categories = Category::whereNull('parent_id')
-            ->active()
-            ->withCount('products')
-            ->with(['children' => fn($q) => $q->active()->withCount('products')])
-            ->orderBy('sort_order')
-            ->get();
-        $brands     = Brand::where('is_active', true)->orderBy('name')->get(['id', 'name', 'slug']);
-        $tags       = Tag::orderBy('name')->get(['id', 'name', 'slug']);
+        [$categories, $brands, $tags] = $this->sidebarFilters();
 
         return view('shop.index', compact('products', 'categories', 'brands', 'tags') + $context);
     }

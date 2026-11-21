@@ -42,7 +42,9 @@ class CartController extends Controller
     {
         session()->forget('buy_now');
 
-        $cartItems = $this->getCartQuery()->with(['product', 'combination.color', 'combination.size'])->get();
+        // product.category: cart/index.blade.php reads each line's category name — without
+        // eager-loading it, that's one extra query per distinct product in the cart.
+        $cartItems = $this->getCartQuery()->with(['product.category', 'combination.color', 'combination.size'])->get();
         $subtotal = $cartItems->sum('subtotal');
         $coupon = session('coupon');
         $promoCode = session('promo_code');

@@ -144,6 +144,7 @@ return [
         App\Models\HomeSection::class,
         App\Models\Product::class,
         App\Models\Review::class,
+        App\Models\Tag::class,
         App\Models\User::class,
     ],
 

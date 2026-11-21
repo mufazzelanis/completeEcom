@@ -407,8 +407,14 @@ class Product extends Model
     {
         $term = str_replace(['’', "'", '`', '‘'], '', mb_strtolower(normalize_digits($term)));
         $words = preg_split('/[^\p{L}\p{N}.]+/u', $term, -1, PREG_SPLIT_NO_EMPTY);
+        $words = array_values(array_unique(array_filter($words, fn ($w) => mb_strlen(trim($w, '.')) >= 2 || ctype_digit($w))));
 
-        return array_values(array_unique(array_filter($words, fn ($w) => mb_strlen(trim($w, '.')) >= 2 || ctype_digit($w))));
+        // Capped — scopeSearch()/scopeOrderByRelevance() build one LIKE + one correlated
+        // EXISTS subquery (brand match) per word below, so an unbounded word count (a
+        // pasted paragraph, or a deliberately long query string) turns one search into
+        // dozens of extra subqueries evaluated per scanned row. No real product search
+        // needs more than this many distinct terms.
+        return array_slice($words, 0, 8);
     }
 
     /** SQL condition (with bindings) for one word matching the name, SKU or brand. */

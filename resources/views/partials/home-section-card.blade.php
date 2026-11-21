@@ -5,8 +5,8 @@
 @if($hideOnMobile ?? false)
     <div x-show="expanded" x-cloak class="sm:!block"
          x-transition:enter="transition ease-out duration-400" x-transition:enter-start="opacity-0 translate-y-3" x-transition:enter-end="opacity-100 translate-y-0">
-        @include('partials.product-card', ['product' => $product])
+        @include('partials.product-card', ['product' => $product, 'imgEager' => $imgEager ?? false, 'imgPriority' => $imgPriority ?? false])
     </div>
 @else
-    @include('partials.product-card', ['product' => $product])
+    @include('partials.product-card', ['product' => $product, 'imgEager' => $imgEager ?? false, 'imgPriority' => $imgPriority ?? false])
 @endif

@@ -101,7 +101,10 @@ use App\Http\Controllers\WishlistController;
 use Illuminate\Support\Facades\Route;
 
 // Search suggest (public)
-Route::get('/search/suggest', [SearchController::class, 'suggest'])->name('search.suggest');
+// Fires on every autosuggest keystroke (see SearchController::suggest()'s own docblock) —
+// throttled like its sibling /search/trending below, instead of being the one AJAX endpoint
+// in this file with no rate limit at all against being hammered directly.
+Route::get('/search/suggest', [SearchController::class, 'suggest'])->middleware('throttle:30,1')->name('search.suggest');
 Route::get('/search/trending', [SearchController::class, 'trending'])->middleware('throttle:60,1')->name('search.trending');
 // Sample order emails to any inbox, for Postman/curl — needs EMAIL_TEST_TOKEN (off when unset)
 Route::post('/email-test', [\App\Http\Controllers\EmailPreviewController::class, 'send'])
