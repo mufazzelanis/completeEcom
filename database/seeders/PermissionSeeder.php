@@ -78,6 +78,18 @@ class PermissionSeeder extends Seeder
             // them) — previously reachable by any account with plain admin-panel access,
             // regardless of which permissions were actually granted to their role.
             ['name' => 'invoices.manage',     'display_name' => 'Create / Manage Custom Invoices', 'group' => 'Invoices'],
+
+            // Content & Marketing — a full sweep of routes found carrying NO permission
+            // check at all (just the base admin-panel-access gate): homepage builder,
+            // languages/translations, brands, attributes, tags, blog + AI blog, banners,
+            // CMS pages, landing pages, FAQs, promo popups, bundles, cross-sell, flash
+            // sales, sale pricing, the marketing report page.
+            ['name' => 'content.manage',      'display_name' => 'Manage Site Content & Marketing', 'group' => 'Content'],
+
+            // Inventory & Warehouse — same ungated-route sweep: suppliers, purchases,
+            // stock adjustments/management/reasons/transfers, warehouses + per-warehouse
+            // stock, low-stock thresholds, batches/lots, barcodes, SKU generation.
+            ['name' => 'inventory.manage',    'display_name' => 'Manage Inventory & Warehouse', 'group' => 'Inventory'],
         ];
 
         foreach ($permissions as $perm) {
@@ -106,6 +118,7 @@ class PermissionSeeder extends Seeder
                 'payments.view', 'payments.manage',
                 'crm.view', 'crm.manage',
                 'invoices.manage',
+                'content.manage', 'inventory.manage',
                 // settings.manage intentionally excluded — payment gateway keys, SMTP
                 // credentials etc. stay admin-only, same tier as users.delete/vendors.approve.
             ],
@@ -134,15 +147,21 @@ class PermissionSeeder extends Seeder
 
         // Any OTHER existing custom role (created by hand via Admin → Roles, outside the
         // two defaults above — this project has one, "anis") is left alone by the loop
-        // above, which only ever touches 'manager'/'staff'. Several admin routes that
-        // used to have no permission check at all (search/suggest, audit logs, live
-        // visitors, checkout leads, stock alerts, fraud checker, custom invoices) are
-        // now gated with permission:dashboard.view / orders.view / products.view /
-        // invoices.manage — granting every custom role that already has can_access_admin
-        // the dashboard/orders/products permissions it's missing (not invoices.manage,
-        // which is new and should be an explicit choice) means this round's RBAC
-        // tightening can't silently 403 an account that worked yesterday.
-        $backfillIds = DB::table('permissions')->whereIn('name', ['dashboard.view', 'orders.view', 'products.view'])->pluck('id', 'name');
+        // above, which only ever touches 'manager'/'staff'. A huge sweep of admin routes
+        // that used to have no permission check at all (orders, dashboard, search,
+        // checkout-leads, stock-alerts, fraud-checker, and now the entire catalog/
+        // content/inventory surface — banners, blog, pages, landing pages, bundles,
+        // flash sales, suppliers, purchases, stock management, warehouses, etc.) are now
+        // gated. Backfilling the permissions that cover a role already managing
+        // products/categories/orders day-to-day (dashboard/orders/products view, plus
+        // the two new broad content/inventory permissions) means this round's RBAC
+        // tightening can't silently 403 an account that worked yesterday. Deliberately
+        // NOT backfilled: invoices.manage, settings.manage, crm.view/crm.manage — those
+        // now gate Custom Invoices, Audit Logs, and Email Campaigns/Referrals/Newsletter/
+        // Support Tickets/Notifications respectively, none of which this role had before
+        // either; if a custom role genuinely needs one, grant it explicitly via Admin →
+        // Roles rather than having this seeder silently widen access to something new.
+        $backfillIds = DB::table('permissions')->whereIn('name', ['dashboard.view', 'orders.view', 'products.view', 'content.manage', 'inventory.manage'])->pluck('id', 'name');
         $customRoles = DB::table('roles')->where('can_access_admin', true)->whereNotIn('name', ['admin', 'manager', 'staff'])->pluck('name');
         foreach ($customRoles as $role) {
             $has = DB::table('role_permissions')->where('role', $role)->whereIn('permission_id', $backfillIds)->pluck('permission_id')->all();

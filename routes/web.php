@@ -406,21 +406,29 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     // header quick-search page list (layouts/admin.blade.php) — fetched once per session
     Route::get('nav-index', [SearchController::class, 'adminNavIndex'])->middleware('permission:dashboard.view')->name('nav-index');
 
-    // Homepage Sections (homepage builder)
-    Route::resource('home-sections', AdminHomeSectionController::class)->except(['show']);
-    Route::patch('home-sections/{home_section}/toggle', [AdminHomeSectionController::class, 'toggle'])->name('home-sections.toggle');
-    Route::patch('home-sections/{home_section}/move-up', [AdminHomeSectionController::class, 'moveUp'])->name('home-sections.move-up');
-    Route::patch('home-sections/{home_section}/move-down', [AdminHomeSectionController::class, 'moveDown'])->name('home-sections.move-down');
-    Route::post('home-sections/just-for-you', [AdminHomeSectionController::class, 'updateJustForYou'])->name('home-sections.just-for-you');
+    // Homepage Sections, Languages/Translations, Brands, Attributes, Tags — none of
+    // these carried any permission check at all beyond the base admin-panel-access
+    // gate, found in a full sweep of every admin route after noticing Orders/Dashboard
+    // had the same gap. Grouped under one content.manage permission as the site's
+    // general catalog/content/marketing surface, mirroring how categories.*/products.*
+    // already split out their own dedicated permissions.
+    Route::middleware('permission:content.manage')->group(function () {
+        // Homepage Sections (homepage builder)
+        Route::resource('home-sections', AdminHomeSectionController::class)->except(['show']);
+        Route::patch('home-sections/{home_section}/toggle', [AdminHomeSectionController::class, 'toggle'])->name('home-sections.toggle');
+        Route::patch('home-sections/{home_section}/move-up', [AdminHomeSectionController::class, 'moveUp'])->name('home-sections.move-up');
+        Route::patch('home-sections/{home_section}/move-down', [AdminHomeSectionController::class, 'moveDown'])->name('home-sections.move-down');
+        Route::post('home-sections/just-for-you', [AdminHomeSectionController::class, 'updateJustForYou'])->name('home-sections.just-for-you');
 
-    // Languages & Translations (multi-language system)
-    Route::resource('languages', AdminLanguageController::class)->except(['show', 'create', 'edit']);
-    Route::patch('languages/{language}/toggle', [AdminLanguageController::class, 'toggle'])->name('languages.toggle');
-    Route::patch('languages/{language}/set-default', [AdminLanguageController::class, 'setDefault'])->name('languages.set-default');
-    Route::get('translations', [AdminTranslationController::class, 'index'])->name('translations.index');
-    Route::post('translations', [AdminTranslationController::class, 'store'])->name('translations.store');
-    Route::patch('translations', [AdminTranslationController::class, 'update'])->name('translations.update');
-    Route::delete('translations', [AdminTranslationController::class, 'destroy'])->name('translations.destroy');
+        // Languages & Translations (multi-language system)
+        Route::resource('languages', AdminLanguageController::class)->except(['show', 'create', 'edit']);
+        Route::patch('languages/{language}/toggle', [AdminLanguageController::class, 'toggle'])->name('languages.toggle');
+        Route::patch('languages/{language}/set-default', [AdminLanguageController::class, 'setDefault'])->name('languages.set-default');
+        Route::get('translations', [AdminTranslationController::class, 'index'])->name('translations.index');
+        Route::post('translations', [AdminTranslationController::class, 'store'])->name('translations.store');
+        Route::patch('translations', [AdminTranslationController::class, 'update'])->name('translations.update');
+        Route::delete('translations', [AdminTranslationController::class, 'destroy'])->name('translations.destroy');
+    });
 
     // Split by action so the "staff" role's documented view-only access (PermissionSeeder)
     // actually holds — the single-call Route::resource() this used to be had no permission
@@ -473,22 +481,24 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::patch('products/{product}/approve', [AdminProductController::class, 'approve'])->middleware('permission:products.edit')->name('products.approve');
     Route::patch('products/{product}/reject', [AdminProductController::class, 'reject'])->middleware('permission:products.edit')->name('products.reject');
 
-    // Brands
-    Route::resource('brands', AdminBrandController::class)->except(['show']); // no admin brand detail screen
-    Route::patch('brands/{brand}/move-up', [AdminBrandController::class, 'moveUp'])->name('brands.move-up');
-    Route::patch('brands/{brand}/move-down', [AdminBrandController::class, 'moveDown'])->name('brands.move-down');
+    Route::middleware('permission:content.manage')->group(function () {
+        // Brands
+        Route::resource('brands', AdminBrandController::class)->except(['show']); // no admin brand detail screen
+        Route::patch('brands/{brand}/move-up', [AdminBrandController::class, 'moveUp'])->name('brands.move-up');
+        Route::patch('brands/{brand}/move-down', [AdminBrandController::class, 'moveDown'])->name('brands.move-down');
 
-    // Attributes
-    Route::get('attributes', [AdminAttributeController::class, 'index'])->name('attributes.index');
-    Route::post('attributes', [AdminAttributeController::class, 'store'])->name('attributes.store');
-    Route::patch('attributes/{attribute}', [AdminAttributeController::class, 'update'])->name('attributes.update');
-    Route::delete('attributes/{attribute}', [AdminAttributeController::class, 'destroy'])->name('attributes.destroy');
-    Route::patch('attributes/{attribute}/toggle', [AdminAttributeController::class, 'toggle'])->name('attributes.toggle');
+        // Attributes
+        Route::get('attributes', [AdminAttributeController::class, 'index'])->name('attributes.index');
+        Route::post('attributes', [AdminAttributeController::class, 'store'])->name('attributes.store');
+        Route::patch('attributes/{attribute}', [AdminAttributeController::class, 'update'])->name('attributes.update');
+        Route::delete('attributes/{attribute}', [AdminAttributeController::class, 'destroy'])->name('attributes.destroy');
+        Route::patch('attributes/{attribute}/toggle', [AdminAttributeController::class, 'toggle'])->name('attributes.toggle');
 
-    // Tags
-    // Tags are added/edited inline on the index page — there are no create/edit screens.
-    Route::resource('tags', AdminTagController::class)->except(['show', 'create', 'edit']);
-    Route::post('tags/quick-create', [AdminTagController::class, 'quickCreate'])->name('tags.quick-create');
+        // Tags
+        // Tags are added/edited inline on the index page — there are no create/edit screens.
+        Route::resource('tags', AdminTagController::class)->except(['show', 'create', 'edit']);
+        Route::post('tags/quick-create', [AdminTagController::class, 'quickCreate'])->name('tags.quick-create');
+    });
     // Manual/phone order entry — MUST be registered before the orders resource below:
     // that resource's 'show' route is GET orders/{order}, a wildcard that would otherwise
     // swallow "orders/create" first (matching {order} = "create") and this route would
@@ -511,7 +521,12 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::patch('order-remarks/{remark}/pin', [\App\Http\Controllers\Admin\OrderRemarkController::class, 'pin'])->middleware('permission:orders.update')->name('orders.remarks.pin');
     Route::delete('order-remarks/{remark}', [\App\Http\Controllers\Admin\OrderRemarkController::class, 'destroy'])->middleware('permission:orders.update')->name('orders.remarks.destroy');
     Route::post('orders/bulk-status', [AdminOrderController::class, 'bulkStatus'])->middleware('permission:orders.update')->name('orders.bulk-status');
-    Route::resource('users', AdminUserController::class)->except(['destroy']);
+    // Split by action, same reasoning/ordering requirement as categories/products above
+    // — the single Route::resource() call this used to be had no permission check at
+    // all beyond generic admin-panel access and only destroy (below) was ever gated.
+    Route::resource('users', AdminUserController::class)->only(['create', 'store'])->middleware('permission:users.create');
+    Route::resource('users', AdminUserController::class)->only(['index', 'show'])->middleware('permission:users.view');
+    Route::resource('users', AdminUserController::class)->only(['edit', 'update'])->middleware('permission:users.edit');
     Route::delete('users/{user}', [AdminUserController::class, 'destroy'])->middleware('permission:users.delete')->name('users.destroy');
     // Roles & Permissions management is itself the privilege-escalation surface —
     // require users.manage_roles (which manager is NOT granted by default).
@@ -547,12 +562,14 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::get('vendors/{vendor}/document/{field}', [AdminVendorController::class, 'document'])->middleware('permission:vendors.view')->name('vendors.document');
     Route::get('vendor-payments', [AdminVendorPaymentController::class, 'index'])->middleware('permission:payments.view')->name('vendor-payments.index');
 
-    // Suppliers
-    Route::resource('suppliers', AdminSupplierController::class)->except(['show']);
+    Route::middleware('permission:inventory.manage')->group(function () {
+        // Suppliers
+        Route::resource('suppliers', AdminSupplierController::class)->except(['show']);
 
-    // Purchases
-    Route::resource('purchases', AdminPurchaseController::class);
-    Route::post('purchases/{purchase}/receive', [AdminPurchaseController::class, 'receive'])->name('purchases.receive');
+        // Purchases
+        Route::resource('purchases', AdminPurchaseController::class);
+        Route::post('purchases/{purchase}/receive', [AdminPurchaseController::class, 'receive'])->name('purchases.receive');
+    });
 
     // Payment methods — the receiving bank/mobile-banking account numbers shown to customers
     // at checkout. Gated with settings.manage (admin-only by default, same tier as payment
@@ -574,29 +591,33 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
         Route::post('payments/{payment}/refund', [AdminPaymentController::class, 'refund'])->name('payments.refund');
     });
 
-    // Stock Adjustments (history + manual)
-    Route::get('stock-adjustments', [AdminStockAdjustmentController::class, 'index'])->name('stock-adjustments.index');
-    Route::get('stock-adjustments/create', [AdminStockAdjustmentController::class, 'create'])->name('stock-adjustments.create');
-    Route::post('stock-adjustments', [AdminStockAdjustmentController::class, 'store'])->name('stock-adjustments.store');
+    Route::middleware('permission:inventory.manage')->group(function () {
+        // Stock Adjustments (history + manual)
+        Route::get('stock-adjustments', [AdminStockAdjustmentController::class, 'index'])->name('stock-adjustments.index');
+        Route::get('stock-adjustments/create', [AdminStockAdjustmentController::class, 'create'])->name('stock-adjustments.create');
+        Route::post('stock-adjustments', [AdminStockAdjustmentController::class, 'store'])->name('stock-adjustments.store');
 
-    // Stock Management (bulk quick update)
-    Route::get('stock-management', [AdminStockManagementController::class, 'index'])->name('stock-management.index');
-    Route::post('stock-management', [AdminStockManagementController::class, 'update'])->name('stock-management.update');
-    Route::get('stock-management/ids', [AdminStockManagementController::class, 'ids'])->name('stock-management.ids');
-    Route::post('stock-management/bulk-apply', [AdminStockManagementController::class, 'bulkApply'])->name('stock-management.bulk-apply');
-    Route::patch('products/{product}/quick-stock', [AdminStockManagementController::class, 'quickUpdate'])->name('products.quick-stock');
+        // Stock Management (bulk quick update)
+        Route::get('stock-management', [AdminStockManagementController::class, 'index'])->name('stock-management.index');
+        Route::post('stock-management', [AdminStockManagementController::class, 'update'])->name('stock-management.update');
+        Route::get('stock-management/ids', [AdminStockManagementController::class, 'ids'])->name('stock-management.ids');
+        Route::post('stock-management/bulk-apply', [AdminStockManagementController::class, 'bulkApply'])->name('stock-management.bulk-apply');
+        Route::patch('products/{product}/quick-stock', [AdminStockManagementController::class, 'quickUpdate'])->name('products.quick-stock');
 
-    // Stock Reasons (manageable list used by Stock Adjustments/Management)
-    Route::get('stock-reasons', [AdminStockReasonController::class, 'index'])->name('stock-reasons.index');
-    Route::post('stock-reasons', [AdminStockReasonController::class, 'store'])->name('stock-reasons.store');
-    Route::put('stock-reasons/{stockReason}', [AdminStockReasonController::class, 'update'])->name('stock-reasons.update');
-    Route::delete('stock-reasons/{stockReason}', [AdminStockReasonController::class, 'destroy'])->name('stock-reasons.destroy');
-    Route::patch('stock-reasons/{stockReason}/toggle', [AdminStockReasonController::class, 'toggle'])->name('stock-reasons.toggle');
+        // Stock Reasons (manageable list used by Stock Adjustments/Management)
+        Route::get('stock-reasons', [AdminStockReasonController::class, 'index'])->name('stock-reasons.index');
+        Route::post('stock-reasons', [AdminStockReasonController::class, 'store'])->name('stock-reasons.store');
+        Route::put('stock-reasons/{stockReason}', [AdminStockReasonController::class, 'update'])->name('stock-reasons.update');
+        Route::delete('stock-reasons/{stockReason}', [AdminStockReasonController::class, 'destroy'])->name('stock-reasons.destroy');
+        Route::patch('stock-reasons/{stockReason}/toggle', [AdminStockReasonController::class, 'toggle'])->name('stock-reasons.toggle');
+    });
 
     // Sale Products
-    Route::get('sale-products', [AdminSaleProductController::class, 'index'])->name('sale-products.index');
-    Route::patch('sale-products/{product}', [AdminSaleProductController::class, 'update'])->name('sale-products.update');
-    Route::post('sale-products/clear-all', [AdminSaleProductController::class, 'clearAll'])->name('sale-products.clear-all');
+    Route::middleware('permission:content.manage')->group(function () {
+        Route::get('sale-products', [AdminSaleProductController::class, 'index'])->name('sale-products.index');
+        Route::patch('sale-products/{product}', [AdminSaleProductController::class, 'update'])->name('sale-products.update');
+        Route::post('sale-products/clear-all', [AdminSaleProductController::class, 'clearAll'])->name('sale-products.clear-all');
+    });
 
     // Returns — approve/reject restores or withholds real stock, so (like
     // products/categories/coupons/vendors/payment-methods fixed earlier) this needs its own
@@ -613,44 +634,50 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
         Route::patch('returns/{id}/status', [AdminReturnController::class, 'updateStatus'])->name('returns.status');
     });
 
-    // Support Tickets
-    Route::get('support-tickets', [AdminSupportTicketController::class, 'index'])->name('support-tickets.index');
-    Route::get('support-tickets/{ticket}', [AdminSupportTicketController::class, 'show'])->name('support-tickets.show');
-    Route::post('support-tickets/{ticket}/reply', [AdminSupportTicketController::class, 'reply'])->name('support-tickets.reply');
-    Route::patch('support-tickets/{ticket}/status', [AdminSupportTicketController::class, 'updateStatus'])->name('support-tickets.status');
+    // Support Tickets — customer PII (name/issue history), same view-vs-manage split as Returns.
+    Route::middleware('permission:crm.view')->group(function () {
+        Route::get('support-tickets', [AdminSupportTicketController::class, 'index'])->name('support-tickets.index');
+        Route::get('support-tickets/{ticket}', [AdminSupportTicketController::class, 'show'])->name('support-tickets.show');
+    });
+    Route::middleware('permission:crm.manage')->group(function () {
+        Route::post('support-tickets/{ticket}/reply', [AdminSupportTicketController::class, 'reply'])->name('support-tickets.reply');
+        Route::patch('support-tickets/{ticket}/status', [AdminSupportTicketController::class, 'updateStatus'])->name('support-tickets.status');
+    });
 
-    // Warehouses
-    Route::resource('warehouses', AdminWarehouseController::class)->except(['show']);
+    Route::middleware('permission:inventory.manage')->group(function () {
+        // Warehouses
+        Route::resource('warehouses', AdminWarehouseController::class)->except(['show']);
 
-    // Multi-Warehouse Stock
-    Route::get('warehouse-stock', [AdminWarehouseStockController::class, 'index'])->name('warehouse-stock.index');
-    Route::post('warehouse-stock', [AdminWarehouseStockController::class, 'update'])->name('warehouse-stock.update');
+        // Multi-Warehouse Stock
+        Route::get('warehouse-stock', [AdminWarehouseStockController::class, 'index'])->name('warehouse-stock.index');
+        Route::post('warehouse-stock', [AdminWarehouseStockController::class, 'update'])->name('warehouse-stock.update');
 
-    // Stock Transfers
-    Route::get('stock-transfers', [AdminStockTransferController::class, 'index'])->name('stock-transfers.index');
-    Route::get('stock-transfers/create', [AdminStockTransferController::class, 'create'])->name('stock-transfers.create');
-    Route::post('stock-transfers', [AdminStockTransferController::class, 'store'])->name('stock-transfers.store');
-    Route::get('stock-transfers/{stockTransfer}', [AdminStockTransferController::class, 'show'])->name('stock-transfers.show');
-    Route::patch('stock-transfers/{stockTransfer}/dispatch', [AdminStockTransferController::class, 'dispatch'])->name('stock-transfers.dispatch');
-    Route::patch('stock-transfers/{stockTransfer}/complete', [AdminStockTransferController::class, 'complete'])->name('stock-transfers.complete');
-    Route::patch('stock-transfers/{stockTransfer}/cancel', [AdminStockTransferController::class, 'cancel'])->name('stock-transfers.cancel');
+        // Stock Transfers
+        Route::get('stock-transfers', [AdminStockTransferController::class, 'index'])->name('stock-transfers.index');
+        Route::get('stock-transfers/create', [AdminStockTransferController::class, 'create'])->name('stock-transfers.create');
+        Route::post('stock-transfers', [AdminStockTransferController::class, 'store'])->name('stock-transfers.store');
+        Route::get('stock-transfers/{stockTransfer}', [AdminStockTransferController::class, 'show'])->name('stock-transfers.show');
+        Route::patch('stock-transfers/{stockTransfer}/dispatch', [AdminStockTransferController::class, 'dispatch'])->name('stock-transfers.dispatch');
+        Route::patch('stock-transfers/{stockTransfer}/complete', [AdminStockTransferController::class, 'complete'])->name('stock-transfers.complete');
+        Route::patch('stock-transfers/{stockTransfer}/cancel', [AdminStockTransferController::class, 'cancel'])->name('stock-transfers.cancel');
 
-    // Low Stock Alerts
-    Route::get('low-stock', [AdminLowStockController::class, 'index'])->name('low-stock.index');
-    Route::patch('low-stock/{product}/threshold', [AdminLowStockController::class, 'updateThreshold'])->name('low-stock.threshold');
+        // Low Stock Alerts
+        Route::get('low-stock', [AdminLowStockController::class, 'index'])->name('low-stock.index');
+        Route::patch('low-stock/{product}/threshold', [AdminLowStockController::class, 'updateThreshold'])->name('low-stock.threshold');
 
-    // Batch / Lot Management
-    Route::resource('batches', AdminBatchController::class)->except(['show']);
+        // Batch / Lot Management
+        Route::resource('batches', AdminBatchController::class)->except(['show']);
 
-    // Barcode Management
-    Route::get('barcodes', [AdminBarcodeController::class, 'index'])->name('barcodes.index');
-    Route::post('barcodes/bulk-update', [AdminBarcodeController::class, 'bulkUpdate'])->name('barcodes.bulk-update');
-    Route::patch('barcodes/{product}', [AdminBarcodeController::class, 'update'])->name('barcodes.update');
+        // Barcode Management
+        Route::get('barcodes', [AdminBarcodeController::class, 'index'])->name('barcodes.index');
+        Route::post('barcodes/bulk-update', [AdminBarcodeController::class, 'bulkUpdate'])->name('barcodes.bulk-update');
+        Route::patch('barcodes/{product}', [AdminBarcodeController::class, 'update'])->name('barcodes.update');
 
-    // SKU Management
-    Route::get('sku-management', [AdminSkuManagementController::class, 'index'])->name('sku-management.index');
-    Route::post('sku-management', [AdminSkuManagementController::class, 'update'])->name('sku-management.update');
-    Route::post('sku-management/generate', [AdminSkuManagementController::class, 'generate'])->name('sku-management.generate');
+        // SKU Management
+        Route::get('sku-management', [AdminSkuManagementController::class, 'index'])->name('sku-management.index');
+        Route::post('sku-management', [AdminSkuManagementController::class, 'update'])->name('sku-management.update');
+        Route::post('sku-management/generate', [AdminSkuManagementController::class, 'generate'])->name('sku-management.generate');
+    });
 
     // CRM — customers (phone-based, guests included), lifecycle/RFM intelligence, segments, lead pipeline, follow-ups
     Route::prefix('crm')->name('crm.')->group(function () {
@@ -783,6 +810,10 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::get('live-visitors/summary', [\App\Http\Controllers\Admin\LiveVisitorController::class, 'summary'])->middleware('permission:dashboard.view')->name('live-visitors.summary');
     Route::get('facebook-conversion-logs', [AdminFacebookConversionLogController::class, 'index'])->middleware('permission:dashboard.view')->name('facebook-conversion-logs.index');
 
+    // CMS — Blog, AI Blog, Banners, Pages, Landing Pages, FAQs, Marketing overview,
+    // Promo Popups — none of this block carried any permission check at all, found in
+    // the same full admin-route sweep as the catalog/content fixes above.
+    Route::middleware('permission:content.manage')->group(function () {
     // CMS — Blog
     Route::get('blog/analytics', [\App\Http\Controllers\Admin\BlogAnalyticsController::class, 'index'])->name('blog.analytics');
     Route::get('blog/analytics/visits', [\App\Http\Controllers\Admin\BlogAnalyticsController::class, 'visits'])->name('blog.analytics.visits');
@@ -872,15 +903,6 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::post('flash-sales/{flashSale}/duplicate', [AdminFlashSaleController::class, 'duplicate'])->name('flash-sales.duplicate');
     Route::delete('flash-sales/{flashSale}/products/{product}', [AdminFlashSaleController::class, 'removeProduct'])->name('flash-sales.products.remove');
 
-    // Marketing — Promo Code Batches
-    Route::get('promo-codes', [AdminPromoCodeController::class, 'index'])->name('promo-codes.index');
-    Route::get('promo-codes/create', [AdminPromoCodeController::class, 'create'])->name('promo-codes.create');
-    Route::post('promo-codes', [AdminPromoCodeController::class, 'store'])->name('promo-codes.store');
-    Route::get('promo-codes/{promoCode}', [AdminPromoCodeController::class, 'show'])->name('promo-codes.show');
-    Route::delete('promo-codes/{promoCode}', [AdminPromoCodeController::class, 'destroy'])->name('promo-codes.destroy');
-    Route::get('promo-codes/{promoCode}/download', [AdminPromoCodeController::class, 'download'])->name('promo-codes.download');
-    Route::patch('promo-codes/{promoCode}/toggle', [AdminPromoCodeController::class, 'toggle'])->name('promo-codes.toggle');
-
     // Marketing — Bundle Products
     Route::get('bundles', [AdminBundleController::class, 'index'])->name('bundles.index');
     Route::get('bundles/{product}/manage', [AdminBundleController::class, 'manage'])->name('bundles.manage');
@@ -893,33 +915,65 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::get('cross-sell/{product}/manage', [AdminCrossSellController::class, 'manage'])->name('cross-sell.manage');
     Route::post('cross-sell/{product}', [AdminCrossSellController::class, 'store'])->name('cross-sell.store');
     Route::delete('cross-sell/{product}/{recommendation}', [AdminCrossSellController::class, 'destroy'])->name('cross-sell.destroy');
+    }); // end permission:content.manage
 
-    // Marketing — Referral Program
-    Route::get('referrals', [AdminReferralProgramController::class, 'index'])->name('referrals.index');
-    Route::patch('referrals/rewards/{reward}', [AdminReferralProgramController::class, 'updateReward'])->name('referrals.reward');
-    Route::get('referrals/settings', [AdminReferralProgramController::class, 'settings'])->name('referrals.settings');
-    Route::post('referrals/settings', [AdminReferralProgramController::class, 'updateSettings'])->name('referrals.settings.update');
+    // Marketing — Promo Code Batches — same tier/permissions as Coupons (both are
+    // discount-code systems already fixed for race conditions in a prior round).
+    // GET promo-codes/create must stay registered before GET promo-codes/{promoCode}
+    // (show) — same wildcard-shadowing risk as every other split-by-action resource
+    // fixed earlier in this file.
+    Route::get('promo-codes', [AdminPromoCodeController::class, 'index'])->middleware('permission:coupons.view')->name('promo-codes.index');
+    Route::middleware('permission:coupons.create')->group(function () {
+        Route::get('promo-codes/create', [AdminPromoCodeController::class, 'create'])->name('promo-codes.create');
+        Route::post('promo-codes', [AdminPromoCodeController::class, 'store'])->name('promo-codes.store');
+    });
+    Route::middleware('permission:coupons.view')->group(function () {
+        Route::get('promo-codes/{promoCode}', [AdminPromoCodeController::class, 'show'])->name('promo-codes.show');
+        Route::get('promo-codes/{promoCode}/download', [AdminPromoCodeController::class, 'download'])->name('promo-codes.download');
+    });
+    Route::middleware('permission:coupons.edit')->group(function () {
+        Route::patch('promo-codes/{promoCode}/toggle', [AdminPromoCodeController::class, 'toggle'])->name('promo-codes.toggle');
+    });
+    Route::delete('promo-codes/{promoCode}', [AdminPromoCodeController::class, 'destroy'])->middleware('permission:coupons.delete')->name('promo-codes.destroy');
 
-    // Marketing — Email Campaigns
-    Route::resource('email-campaigns', AdminEmailCampaignController::class)->except(['show']);
-    Route::get('email-campaigns/{emailCampaign}', [AdminEmailCampaignController::class, 'show'])->name('email-campaigns.show');
-    Route::post('email-campaigns/{emailCampaign}/send', [AdminEmailCampaignController::class, 'send'])->name('email-campaigns.send');
-
-    // Marketing — Newsletter Subscribers
-    Route::get('newsletter', [AdminNewsletterController::class, 'index'])->name('newsletter.index');
-    Route::delete('newsletter/{subscriber}', [AdminNewsletterController::class, 'destroy'])->name('newsletter.destroy');
-
-    // Notifications
-    Route::get('notifications', [AdminNotificationController::class, 'index'])->name('notifications.index');
-    Route::get('notifications/settings', [AdminNotificationController::class, 'settings'])->name('notifications.settings');
-    Route::get('notifications/logs', [AdminNotificationController::class, 'logs'])->name('notifications.logs');
-    Route::get('notifications/templates', [AdminNotificationController::class, 'templates'])->name('notifications.templates');
-    Route::get('notifications/templates/create', [AdminNotificationController::class, 'createTemplate'])->name('notifications.templates.create');
-    Route::post('notifications/templates', [AdminNotificationController::class, 'storeTemplate'])->name('notifications.templates.store');
-    Route::get('notifications/templates/{template}/edit', [AdminNotificationController::class, 'editTemplate'])->name('notifications.templates.edit');
-    Route::put('notifications/templates/{template}', [AdminNotificationController::class, 'updateTemplate'])->name('notifications.templates.update');
-    Route::delete('notifications/templates/{template}', [AdminNotificationController::class, 'destroyTemplate'])->name('notifications.templates.destroy');
-    Route::get('notifications/seed', [AdminNotificationSeederController::class, 'seed'])->name('notifications.seed');
+    // Marketing — Referral Program, Email Campaigns, Newsletter Subscribers,
+    // Notifications — all customer-engagement/communication features (same domain as
+    // Support Tickets above), gated the same view-vs-manage way as CRM/Returns.
+    // GET email-campaigns/create is registered before GET email-campaigns/{emailCampaign}
+    // (show) — same wildcard-shadowing risk as every other split-by-action resource
+    // fixed earlier in this file.
+    Route::middleware('permission:crm.view')->group(function () {
+        Route::get('referrals', [AdminReferralProgramController::class, 'index'])->name('referrals.index');
+        Route::get('referrals/settings', [AdminReferralProgramController::class, 'settings'])->name('referrals.settings');
+        Route::get('email-campaigns', [AdminEmailCampaignController::class, 'index'])->name('email-campaigns.index');
+        Route::get('newsletter', [AdminNewsletterController::class, 'index'])->name('newsletter.index');
+        Route::get('notifications', [AdminNotificationController::class, 'index'])->name('notifications.index');
+        Route::get('notifications/settings', [AdminNotificationController::class, 'settings'])->name('notifications.settings');
+        Route::get('notifications/logs', [AdminNotificationController::class, 'logs'])->name('notifications.logs');
+        Route::get('notifications/templates', [AdminNotificationController::class, 'templates'])->name('notifications.templates');
+        Route::get('notifications/templates/create', [AdminNotificationController::class, 'createTemplate'])->name('notifications.templates.create');
+        Route::get('notifications/templates/{template}/edit', [AdminNotificationController::class, 'editTemplate'])->name('notifications.templates.edit');
+    });
+    Route::middleware('permission:crm.manage')->group(function () {
+        Route::get('email-campaigns/create', [AdminEmailCampaignController::class, 'create'])->name('email-campaigns.create');
+        Route::post('email-campaigns', [AdminEmailCampaignController::class, 'store'])->name('email-campaigns.store');
+    });
+    Route::middleware('permission:crm.view')->group(function () {
+        Route::get('email-campaigns/{emailCampaign}', [AdminEmailCampaignController::class, 'show'])->name('email-campaigns.show');
+    });
+    Route::middleware('permission:crm.manage')->group(function () {
+        Route::patch('referrals/rewards/{reward}', [AdminReferralProgramController::class, 'updateReward'])->name('referrals.reward');
+        Route::post('referrals/settings', [AdminReferralProgramController::class, 'updateSettings'])->name('referrals.settings.update');
+        Route::get('email-campaigns/{email_campaign}/edit', [AdminEmailCampaignController::class, 'edit'])->name('email-campaigns.edit');
+        Route::put('email-campaigns/{email_campaign}', [AdminEmailCampaignController::class, 'update'])->name('email-campaigns.update');
+        Route::delete('email-campaigns/{email_campaign}', [AdminEmailCampaignController::class, 'destroy'])->name('email-campaigns.destroy');
+        Route::post('email-campaigns/{emailCampaign}/send', [AdminEmailCampaignController::class, 'send'])->name('email-campaigns.send');
+        Route::delete('newsletter/{subscriber}', [AdminNewsletterController::class, 'destroy'])->name('newsletter.destroy');
+        Route::post('notifications/templates', [AdminNotificationController::class, 'storeTemplate'])->name('notifications.templates.store');
+        Route::put('notifications/templates/{template}', [AdminNotificationController::class, 'updateTemplate'])->name('notifications.templates.update');
+        Route::delete('notifications/templates/{template}', [AdminNotificationController::class, 'destroyTemplate'])->name('notifications.templates.destroy');
+        Route::get('notifications/seed', [AdminNotificationSeederController::class, 'seed'])->name('notifications.seed');
+    });
 
     // Settings
     // Settings pages pre-fill live secrets (payment gateway keys, SMTP password),
