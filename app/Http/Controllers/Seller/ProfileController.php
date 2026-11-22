@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Seller;
 
 use App\Http\Controllers\Controller;
 use App\Models\Vendor;
+use App\Services\AuditLogger;
 use Illuminate\Http\Request;
 
 class ProfileController extends Controller
@@ -60,6 +61,24 @@ class ProfileController extends Controller
             'profile_status' => 'pending',
             'profile_rejection_reason' => null,
         ]);
+
+        // This change touches where real payout money gets sent, and previously left
+        // zero trace anywhere — only pending_changes (nulled out once applied) and a
+        // bare updated_at timestamp. If this account were ever compromised, there'd be
+        // nothing to show the real owner didn't request the bank-detail change
+        // themselves. Logged on submission (what was proposed) and again on approval
+        // (what actually went live), mirroring how this app already audits other
+        // money-sensitive admin actions (orders, invoices, coupons).
+        if (($changes['payout_method'] ?? null) !== $vendor->getOriginal('payout_method')
+            || ($changes['payout_details'] ?? null) !== $vendor->getOriginal('payout_details')) {
+            AuditLogger::log(
+                'vendor.payout_details_proposed',
+                "Vendor {$vendor->business_name} (#{$vendor->id}) submitted a payout-details change, pending admin approval",
+                $vendor,
+                ['payout_method' => $vendor->getOriginal('payout_method'), 'payout_details' => $vendor->getOriginal('payout_details')],
+                ['payout_method' => $changes['payout_method'] ?? null, 'payout_details' => $changes['payout_details'] ?? null]
+            );
+        }
 
         return redirect()->route('seller.profile.edit')
             ->with('success', 'Your profile changes have been submitted and are awaiting admin approval.');

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Vendor;
 use App\Models\VendorPayout;
 use App\Models\VendorTransaction;
+use App\Services\AuditLogger;
 use App\Services\Notifications\NotificationDispatcher;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -189,7 +190,25 @@ class VendorController extends Controller
             return back()->with('error', 'No pending profile change to approve.');
         }
 
+        // Captured before applyPendingChanges() overwrites the live columns — this is
+        // the one point where a payout-detail change actually takes effect, and
+        // previously left no record of what the account used to be versus what it
+        // became (see the matching comment in Seller\ProfileController::update()).
+        $oldPayoutMethod = $vendor->payout_method;
+        $oldPayoutDetails = $vendor->payout_details;
+        $proposedChanges = $vendor->pending_changes ?? [];
+
         $vendor->applyPendingChanges();
+
+        if (array_key_exists('payout_method', $proposedChanges) || array_key_exists('payout_details', $proposedChanges)) {
+            AuditLogger::log(
+                'vendor.payout_details_approved',
+                "Admin approved a payout-details change for vendor {$vendor->business_name} (#{$vendor->id})",
+                $vendor,
+                ['payout_method' => $oldPayoutMethod, 'payout_details' => $oldPayoutDetails],
+                ['payout_method' => $vendor->payout_method, 'payout_details' => $vendor->payout_details]
+            );
+        }
 
         NotificationDispatcher::customer('vendor_profile_approved', $vendor->user, [
             'business_name' => $vendor->business_name,

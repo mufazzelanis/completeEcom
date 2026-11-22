@@ -73,6 +73,11 @@ class PermissionSeeder extends Seeder
             // CRM
             ['name' => 'crm.view',            'display_name' => 'View CRM',            'group' => 'CRM'],
             ['name' => 'crm.manage',          'display_name' => 'Manage CRM (edit contacts, leads, segments, tasks)', 'group' => 'CRM'],
+
+            // Custom Invoices (hand-written invoices + the customer/product lookup behind
+            // them) — previously reachable by any account with plain admin-panel access,
+            // regardless of which permissions were actually granted to their role.
+            ['name' => 'invoices.manage',     'display_name' => 'Create / Manage Custom Invoices', 'group' => 'Invoices'],
         ];
 
         foreach ($permissions as $perm) {
@@ -100,6 +105,7 @@ class PermissionSeeder extends Seeder
                 'reports.view',
                 'payments.view', 'payments.manage',
                 'crm.view', 'crm.manage',
+                'invoices.manage',
                 // settings.manage intentionally excluded — payment gateway keys, SMTP
                 // credentials etc. stay admin-only, same tier as users.delete/vendors.approve.
             ],
@@ -122,6 +128,27 @@ class PermissionSeeder extends Seeder
                         'role' => $role,
                         'permission_id' => $allIds[$name],
                     ]);
+                }
+            }
+        }
+
+        // Any OTHER existing custom role (created by hand via Admin → Roles, outside the
+        // two defaults above — this project has one, "anis") is left alone by the loop
+        // above, which only ever touches 'manager'/'staff'. Several admin routes that
+        // used to have no permission check at all (search/suggest, audit logs, live
+        // visitors, checkout leads, stock alerts, fraud checker, custom invoices) are
+        // now gated with permission:dashboard.view / orders.view / products.view /
+        // invoices.manage — granting every custom role that already has can_access_admin
+        // the dashboard/orders/products permissions it's missing (not invoices.manage,
+        // which is new and should be an explicit choice) means this round's RBAC
+        // tightening can't silently 403 an account that worked yesterday.
+        $backfillIds = DB::table('permissions')->whereIn('name', ['dashboard.view', 'orders.view', 'products.view'])->pluck('id', 'name');
+        $customRoles = DB::table('roles')->where('can_access_admin', true)->whereNotIn('name', ['admin', 'manager', 'staff'])->pluck('name');
+        foreach ($customRoles as $role) {
+            $has = DB::table('role_permissions')->where('role', $role)->whereIn('permission_id', $backfillIds)->pluck('permission_id')->all();
+            foreach ($backfillIds as $name => $id) {
+                if (! in_array($id, $has, true)) {
+                    DB::table('role_permissions')->insertOrIgnore(['role' => $role, 'permission_id' => $id]);
                 }
             }
         }

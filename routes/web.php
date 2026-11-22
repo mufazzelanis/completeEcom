@@ -377,8 +377,11 @@ Route::middleware('auth')->group(function () {
 
 // Admin Routes
 Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(function () {
-    Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
-    Route::get('dashboard/orders', [DashboardController::class, 'orders'])->name('dashboard.orders');
+    // dashboard.view existed as a permission since this project's RBAC was first built
+    // but was never actually checked anywhere — every account with plain admin-panel
+    // access saw full site revenue/order stats regardless of what was granted to its role.
+    Route::get('/', [DashboardController::class, 'index'])->middleware('permission:dashboard.view')->name('dashboard');
+    Route::get('dashboard/orders', [DashboardController::class, 'orders'])->middleware('permission:dashboard.view')->name('dashboard.orders');
 
     // Admin alerts — header bell, sound, and phone push for new orders / subscribers
     Route::prefix('alerts')->name('alerts.')->group(function () {
@@ -395,10 +398,13 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
         Route::post('{alert}/read', [AdminAlertController::class, 'read'])->name('read');
     });
 
-    // Admin search suggest
-    Route::get('search/suggest', [SearchController::class, 'adminSuggest'])->name('search.suggest');
+    // Admin search suggest — returns customer name/email/phone + order totals with no
+    // permission check at all; any account with plain admin-panel access could type a
+    // customer's name into the header search box and get back PII/order data regardless
+    // of whether its role was ever granted users.view/orders.view.
+    Route::get('search/suggest', [SearchController::class, 'adminSuggest'])->middleware('permission:dashboard.view')->name('search.suggest');
     // header quick-search page list (layouts/admin.blade.php) — fetched once per session
-    Route::get('nav-index', [SearchController::class, 'adminNavIndex'])->name('nav-index');
+    Route::get('nav-index', [SearchController::class, 'adminNavIndex'])->middleware('permission:dashboard.view')->name('nav-index');
 
     // Homepage Sections (homepage builder)
     Route::resource('home-sections', AdminHomeSectionController::class)->except(['show']);
@@ -489,17 +495,22 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     // never be reached. Named to match resource conventions (orders.create/orders.store)
     // so the "Create Order" link/form work exactly like every other admin resource's
     // create+store pair, even though the resource itself only registers index/show/update.
-    Route::get('orders/create', [AdminOrderController::class, 'create'])->name('orders.create');
-    Route::post('orders', [AdminOrderController::class, 'store'])->name('orders.store');
-    Route::resource('orders', AdminOrderController::class)->only(['index', 'show', 'update']);
+    // Index/show/update (and every mutating order action below) previously carried no
+    // permission check at all beyond the base ['auth','admin'] group — only destroy had
+    // one. Any account with plain admin-panel access, regardless of granted permissions,
+    // could view and edit every order on the site.
+    Route::get('orders/create', [AdminOrderController::class, 'create'])->middleware('permission:orders.update')->name('orders.create');
+    Route::post('orders', [AdminOrderController::class, 'store'])->middleware('permission:orders.update')->name('orders.store');
+    Route::resource('orders', AdminOrderController::class)->only(['index', 'show'])->middleware('permission:orders.view');
+    Route::resource('orders', AdminOrderController::class)->only(['update'])->middleware('permission:orders.update');
     Route::delete('orders/{order}', [AdminOrderController::class, 'destroy'])->middleware('permission:orders.delete')->name('orders.destroy');
-    Route::patch('orders/{order}/status', [AdminOrderController::class, 'updateStatus'])->name('orders.status');
-    Route::get('orders/{order}/quick', [AdminOrderController::class, 'quick'])->name('orders.quick');
-    Route::patch('orders/{order}/note', [AdminOrderController::class, 'note'])->name('orders.note');
-    Route::post('orders/{order}/remarks', [\App\Http\Controllers\Admin\OrderRemarkController::class, 'store'])->name('orders.remarks.store');
-    Route::patch('order-remarks/{remark}/pin', [\App\Http\Controllers\Admin\OrderRemarkController::class, 'pin'])->name('orders.remarks.pin');
-    Route::delete('order-remarks/{remark}', [\App\Http\Controllers\Admin\OrderRemarkController::class, 'destroy'])->name('orders.remarks.destroy');
-    Route::post('orders/bulk-status', [AdminOrderController::class, 'bulkStatus'])->name('orders.bulk-status');
+    Route::patch('orders/{order}/status', [AdminOrderController::class, 'updateStatus'])->middleware('permission:orders.update')->name('orders.status');
+    Route::get('orders/{order}/quick', [AdminOrderController::class, 'quick'])->middleware('permission:orders.view')->name('orders.quick');
+    Route::patch('orders/{order}/note', [AdminOrderController::class, 'note'])->middleware('permission:orders.update')->name('orders.note');
+    Route::post('orders/{order}/remarks', [\App\Http\Controllers\Admin\OrderRemarkController::class, 'store'])->middleware('permission:orders.update')->name('orders.remarks.store');
+    Route::patch('order-remarks/{remark}/pin', [\App\Http\Controllers\Admin\OrderRemarkController::class, 'pin'])->middleware('permission:orders.update')->name('orders.remarks.pin');
+    Route::delete('order-remarks/{remark}', [\App\Http\Controllers\Admin\OrderRemarkController::class, 'destroy'])->middleware('permission:orders.update')->name('orders.remarks.destroy');
+    Route::post('orders/bulk-status', [AdminOrderController::class, 'bulkStatus'])->middleware('permission:orders.update')->name('orders.bulk-status');
     Route::resource('users', AdminUserController::class)->except(['destroy']);
     Route::delete('users/{user}', [AdminUserController::class, 'destroy'])->middleware('permission:users.delete')->name('users.destroy');
     // Roles & Permissions management is itself the privilege-escalation surface —
@@ -727,43 +738,50 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     });
 
     // Order invoice PDF + fraud re-check
-    Route::get('orders/{order}/invoice', [AdminOrderController::class, 'invoice'])->name('orders.invoice');
+    Route::get('orders/{order}/invoice', [AdminOrderController::class, 'invoice'])->middleware('permission:orders.view')->name('orders.invoice');
 
-    // Incomplete checkouts (phone entered, no order) — call / WhatsApp / SMS follow-up
-    Route::get('checkout-leads', [\App\Http\Controllers\Admin\CheckoutLeadController::class, 'index'])->name('checkout-leads.index');
-    Route::patch('checkout-leads/{lead}', [\App\Http\Controllers\Admin\CheckoutLeadController::class, 'update'])->name('checkout-leads.update');
-    Route::post('checkout-leads/{lead}/sms', [\App\Http\Controllers\Admin\CheckoutLeadController::class, 'sms'])->middleware('throttle:20,1,post-checkout-leads-lead-sms')->name('checkout-leads.sms');
-    Route::post('checkout-leads/settings', [\App\Http\Controllers\Admin\CheckoutLeadController::class, 'settings'])->name('checkout-leads.settings');
+    // Incomplete checkouts (phone entered, no order) — call / WhatsApp / SMS follow-up.
+    // None of these (nor stock-alerts/custom-invoices/fraud-checker/audit-logs/
+    // activity-logs/live-visitors below) carried any permission check at all — just the
+    // base admin-panel-access gate — despite exposing customer phone numbers, PII, site
+    // security logs, or (custom invoices) being a full money-document CRUD feature.
+    Route::get('checkout-leads', [\App\Http\Controllers\Admin\CheckoutLeadController::class, 'index'])->middleware('permission:orders.view')->name('checkout-leads.index');
+    Route::patch('checkout-leads/{lead}', [\App\Http\Controllers\Admin\CheckoutLeadController::class, 'update'])->middleware('permission:orders.update')->name('checkout-leads.update');
+    Route::post('checkout-leads/{lead}/sms', [\App\Http\Controllers\Admin\CheckoutLeadController::class, 'sms'])->middleware(['throttle:20,1,post-checkout-leads-lead-sms', 'permission:orders.update'])->name('checkout-leads.sms');
+    Route::post('checkout-leads/settings', [\App\Http\Controllers\Admin\CheckoutLeadController::class, 'settings'])->middleware('permission:orders.update')->name('checkout-leads.settings');
 
     // "Notify me when it's back" requests
-    Route::get('stock-alerts', [\App\Http\Controllers\Admin\StockAlertController::class, 'index'])->name('stock-alerts.index');
-    Route::post('stock-alerts/{product}/notified', [\App\Http\Controllers\Admin\StockAlertController::class, 'notified'])->name('stock-alerts.notified');
-    Route::delete('stock-alerts/{alert}', [\App\Http\Controllers\Admin\StockAlertController::class, 'destroy'])->name('stock-alerts.destroy');
+    Route::get('stock-alerts', [\App\Http\Controllers\Admin\StockAlertController::class, 'index'])->middleware('permission:products.view')->name('stock-alerts.index');
+    Route::post('stock-alerts/{product}/notified', [\App\Http\Controllers\Admin\StockAlertController::class, 'notified'])->middleware('permission:products.edit')->name('stock-alerts.notified');
+    Route::delete('stock-alerts/{alert}', [\App\Http\Controllers\Admin\StockAlertController::class, 'destroy'])->middleware('permission:products.edit')->name('stock-alerts.destroy');
 
     // Custom invoices / quotations / receipts written by hand (no order, no stock change)
-    Route::get('custom-invoices/lookup', [\App\Http\Controllers\Admin\CustomInvoiceController::class, 'lookup'])->name('custom-invoices.lookup');
-    Route::post('custom-invoices/{custom_invoice}/duplicate', [\App\Http\Controllers\Admin\CustomInvoiceController::class, 'duplicate'])->name('custom-invoices.duplicate');
-    Route::post('custom-invoices/{custom_invoice}/payment', [\App\Http\Controllers\Admin\CustomInvoiceController::class, 'payment'])->name('custom-invoices.payment');
-    Route::patch('custom-invoices/{custom_invoice}/status', [\App\Http\Controllers\Admin\CustomInvoiceController::class, 'status'])->name('custom-invoices.status');
-    Route::get('custom-invoices/{custom_invoice}/pdf', [\App\Http\Controllers\Admin\CustomInvoiceController::class, 'pdf'])->name('custom-invoices.pdf');
-    Route::resource('custom-invoices', \App\Http\Controllers\Admin\CustomInvoiceController::class);
-    Route::patch('orders/{order}/fraud-recheck', [AdminOrderController::class, 'recheckFraud'])->name('orders.fraud-recheck');
+    Route::middleware('permission:invoices.manage')->group(function () {
+        Route::get('custom-invoices/lookup', [\App\Http\Controllers\Admin\CustomInvoiceController::class, 'lookup'])->name('custom-invoices.lookup');
+        Route::post('custom-invoices/{custom_invoice}/duplicate', [\App\Http\Controllers\Admin\CustomInvoiceController::class, 'duplicate'])->name('custom-invoices.duplicate');
+        Route::post('custom-invoices/{custom_invoice}/payment', [\App\Http\Controllers\Admin\CustomInvoiceController::class, 'payment'])->name('custom-invoices.payment');
+        Route::patch('custom-invoices/{custom_invoice}/status', [\App\Http\Controllers\Admin\CustomInvoiceController::class, 'status'])->name('custom-invoices.status');
+        Route::get('custom-invoices/{custom_invoice}/pdf', [\App\Http\Controllers\Admin\CustomInvoiceController::class, 'pdf'])->name('custom-invoices.pdf');
+        Route::resource('custom-invoices', \App\Http\Controllers\Admin\CustomInvoiceController::class);
+    });
+    Route::patch('orders/{order}/fraud-recheck', [AdminOrderController::class, 'recheckFraud'])->middleware('permission:orders.update')->name('orders.fraud-recheck');
 
     // Courier Fraud Checker — checks a phone number's delivery history across Bangladeshi
     // courier services (Pathao, Steadfast, RedX, Paperfly, etc. via bdcourier.com's
     // aggregator API). Separate from the fraud-recheck above, which scores an order's own
     // behavior rather than the customer's real-world delivery track record.
-    Route::get('fraud-checker', [AdminFraudCheckController::class, 'index'])->name('fraud-checker.index');
-    Route::post('fraud-checker/check', [AdminFraudCheckController::class, 'check'])->name('fraud-checker.check');
-    Route::post('orders/{order}/fraud-checker', [AdminFraudCheckController::class, 'checkOrder'])->name('orders.fraud-checker');
+    Route::get('fraud-checker', [AdminFraudCheckController::class, 'index'])->middleware('permission:orders.view')->name('fraud-checker.index');
+    Route::post('fraud-checker/check', [AdminFraudCheckController::class, 'check'])->middleware('permission:orders.view')->name('fraud-checker.check');
+    Route::post('orders/{order}/fraud-checker', [AdminFraudCheckController::class, 'checkOrder'])->middleware('permission:orders.view')->name('orders.fraud-checker');
 
-    // Audit Logs
-    Route::get('audit-logs', [AdminAuditLogController::class, 'index'])->name('audit-logs.index');
-    Route::get('activity-logs', [AdminActivityLogController::class, 'index'])->name('activity-logs.index');
-    Route::get('live-visitors', [\App\Http\Controllers\Admin\LiveVisitorController::class, 'index'])->name('live-visitors.index');
-    Route::get('live-visitors/feed', [\App\Http\Controllers\Admin\LiveVisitorController::class, 'feed'])->name('live-visitors.feed');
-    Route::get('live-visitors/summary', [\App\Http\Controllers\Admin\LiveVisitorController::class, 'summary'])->name('live-visitors.summary');
-    Route::get('facebook-conversion-logs', [AdminFacebookConversionLogController::class, 'index'])->name('facebook-conversion-logs.index');
+    // Audit Logs — a record of every admin action across the site, so kept at the same
+    // tier as settings.manage rather than something every manager/staff account sees.
+    Route::get('audit-logs', [AdminAuditLogController::class, 'index'])->middleware('permission:settings.manage')->name('audit-logs.index');
+    Route::get('activity-logs', [AdminActivityLogController::class, 'index'])->middleware('permission:dashboard.view')->name('activity-logs.index');
+    Route::get('live-visitors', [\App\Http\Controllers\Admin\LiveVisitorController::class, 'index'])->middleware('permission:dashboard.view')->name('live-visitors.index');
+    Route::get('live-visitors/feed', [\App\Http\Controllers\Admin\LiveVisitorController::class, 'feed'])->middleware('permission:dashboard.view')->name('live-visitors.feed');
+    Route::get('live-visitors/summary', [\App\Http\Controllers\Admin\LiveVisitorController::class, 'summary'])->middleware('permission:dashboard.view')->name('live-visitors.summary');
+    Route::get('facebook-conversion-logs', [AdminFacebookConversionLogController::class, 'index'])->middleware('permission:dashboard.view')->name('facebook-conversion-logs.index');
 
     // CMS — Blog
     Route::get('blog/analytics', [\App\Http\Controllers\Admin\BlogAnalyticsController::class, 'index'])->name('blog.analytics');
