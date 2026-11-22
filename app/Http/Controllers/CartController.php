@@ -26,6 +26,17 @@ class CartController extends Controller
         return Cart::where('session_id', session()->getId());
     }
 
+    /**
+     * update()/remove() take a route-bound Cart by id with no other scoping — without
+     * this check, any guest who can guess/enumerate another shopper's cart row id could
+     * modify or delete it (an IDOR), since implicit route-model binding alone proves
+     * nothing about who the row actually belongs to.
+     */
+    private function ownsCart(Cart $cart): bool
+    {
+        return auth()->check() ? $cart->user_id === auth()->id() : $cart->session_id === session()->getId();
+    }
+
     private function currentSubtotal(): float
     {
         if ($buyNow = session('buy_now')) {
@@ -274,6 +285,8 @@ class CartController extends Controller
 
     public function update(Request $request, Cart $cart)
     {
+        abort_unless($this->ownsCart($cart), 403);
+
         $request->validate(['quantity' => 'required|integer|min:1']);
 
         if ($cart->product) {
@@ -312,6 +325,8 @@ class CartController extends Controller
 
     public function remove(Cart $cart)
     {
+        abort_unless($this->ownsCart($cart), 403);
+
         $product = $cart->product;
         $cart->delete();
 

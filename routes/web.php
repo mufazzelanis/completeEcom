@@ -213,20 +213,24 @@ Route::get('/cart', [CartController::class, 'index'])->name('cart.index');
 // page instead of the app's own branding. A friendly redirect costs nothing and a
 // visitor just lands on their cart instead of a broken-looking error screen.
 Route::get('/cart/add', fn () => redirect()->route('cart.index'));
-Route::post('/cart/add', [CartController::class, 'add'])->name('cart.add');
+// Throttled like cart.add-many just below — unlike that route, these had no limit at
+// all: cart.add also fires a paid Facebook Conversions API call on every hit, and
+// cart.coupon runs an unthrottled DB lookup against any attacker-supplied code (coupon/
+// promo-code guessing).
+Route::post('/cart/add', [CartController::class, 'add'])->middleware('throttle:30,1,post-cart-add')->name('cart.add');
 Route::post('/cart/add-many', [CartController::class, 'addMany'])->middleware('throttle:20,1,post-cart-add-many')->name('cart.add-many');
 Route::post('/products/{product}/notify', [\App\Http\Controllers\StockAlertController::class, 'store'])->middleware('throttle:6,1,post-products-product-notify')->name('stock-alerts.store');
-Route::patch('/cart/{cart}', [CartController::class, 'update'])->name('cart.update');
-Route::delete('/cart/{cart}', [CartController::class, 'remove'])->name('cart.remove');
-Route::delete('/cart/product/{product}', [CartController::class, 'removeByProduct'])->name('cart.remove-by-product');
-Route::post('/cart/coupon', [CartController::class, 'applyCoupon'])->name('cart.coupon');
-Route::delete('/cart/coupon/remove', [CartController::class, 'removeCoupon'])->name('cart.coupon.remove');
+Route::patch('/cart/{cart}', [CartController::class, 'update'])->middleware('throttle:30,1,patch-cart')->name('cart.update');
+Route::delete('/cart/{cart}', [CartController::class, 'remove'])->middleware('throttle:30,1,delete-cart')->name('cart.remove');
+Route::delete('/cart/product/{product}', [CartController::class, 'removeByProduct'])->middleware('throttle:30,1,delete-cart-product')->name('cart.remove-by-product');
+Route::post('/cart/coupon', [CartController::class, 'applyCoupon'])->middleware('throttle:10,1,post-cart-coupon')->name('cart.coupon');
+Route::delete('/cart/coupon/remove', [CartController::class, 'removeCoupon'])->middleware('throttle:10,1,delete-cart-coupon')->name('cart.coupon.remove');
 Route::post('/cart/points', [CartController::class, 'applyPoints'])->name('cart.points')->middleware('auth');
 Route::delete('/cart/points/remove', [CartController::class, 'removePoints'])->name('cart.points.remove')->middleware('auth');
 
 // Wishlist — guest-favoritable via session_id (same pattern as cart above),
 // not gated behind auth::middleware; only checkout still requires an account.
-Route::post('/wishlist/toggle/{product}', [WishlistController::class, 'toggle'])->name('wishlist.toggle');
+Route::post('/wishlist/toggle/{product}', [WishlistController::class, 'toggle'])->middleware('throttle:30,1,post-wishlist-toggle')->name('wishlist.toggle');
 Route::get('/wishlist', [WishlistController::class, 'index'])->name('wishlist.index');
 
 // Checkout Routes

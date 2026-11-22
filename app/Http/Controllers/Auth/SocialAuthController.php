@@ -77,6 +77,18 @@ class SocialAuthController extends Controller
             $user = User::where('email', $socialUser->getEmail())->first();
 
             if ($user) {
+                // Linking by bare email match logs the OAuth caller straight into that
+                // existing account with no password or confirmation step — if the
+                // provider itself says this email isn't actually verified, linking here
+                // would be a full account takeover (attacker claims victim@example.com
+                // at a provider that lets them, never proving they control that inbox).
+                if (! $this->providerConfirmsEmailVerified($socialUser)) {
+                    return redirect()->route('login')->with(
+                        'error',
+                        'An account with this email already exists. Please log in with your password instead, or verify this email address with ' . ucfirst($provider) . ' first.'
+                    );
+                }
+
                 $user->update([$idColumn => $socialUser->getId()]);
             } else {
                 $user = User::create([
@@ -130,6 +142,22 @@ class SocialAuthController extends Controller
         }
 
         return redirect()->intended(route('home', absolute: false));
+    }
+
+    /**
+     * Google and LinkedIn's OIDC id_token carry an explicit email_verified claim.
+     * Facebook's Graph API never exposes this claim at all — but Meta's own platform
+     * policy is to only ever return a confirmed email in the first place, so its
+     * absence here isn't itself a red flag. Only block on an *explicit* false: a
+     * provider that actually tells us the email is unverified must never be allowed to
+     * silently link into (and log in as) an existing password-based account.
+     */
+    private function providerConfirmsEmailVerified($socialUser): bool
+    {
+        $raw = $socialUser->getRaw() ?? [];
+        $verified = $raw['email_verified'] ?? $raw['verified_email'] ?? null;
+
+        return $verified !== false && $verified !== 'false';
     }
 
     /**

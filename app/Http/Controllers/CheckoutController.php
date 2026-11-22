@@ -544,12 +544,13 @@ class CheckoutController extends Controller
 
         $guestToken = null;
         $stockError = null;
+        $discountError = null;
 
         try {
             $order = DB::transaction(function () use (
                 $request, $cartItems, $subtotal, $discount, $shipping, $shippingZone,
                 $paymentCharge, $total, $couponCode, $couponId, $promoCodeId, $pointsRedeemed, $pointsDiscountValue, $paymentMethod, $isBuyNow,
-                $guestToken, $isPreorder, $advance, &$stockError
+                $guestToken, $isPreorder, $advance, &$stockError, &$discountError
             ) {
             // Row-lock + re-check every cart item's stock before writing anything — without
             // this, two customers checking out the same last unit at the same moment could
@@ -583,14 +584,46 @@ class CheckoutController extends Controller
                 }
             }
 
+            // Atomic, but the affected-row count must actually be checked — otherwise a
+            // coupon at its cap still gets its discount applied to every concurrent
+            // checkout that raced here, even though the counter itself correctly stops
+            // incrementing past max_uses. Two tabs/scripted requests firing the same
+            // "first 100 only" code near its limit used to all succeed with the discount.
             if ($couponId) {
-                Coupon::where('id', $couponId)
+                $affected = Coupon::where('id', $couponId)
                     ->where(fn($q) => $q->whereNull('max_uses')->orWhereColumn('used_count', '<', 'max_uses'))
                     ->increment('used_count');
+                if (! $affected) {
+                    $discountError = 'This coupon has just reached its usage limit. Please remove it and try again.';
+                    return null;
+                }
             }
 
+            // whereNull('used_at') is the atomic claim — a plain unconditional update here
+            // let two concurrent checkouts both pass isValid() and both stamp the same
+            // single-use promo code as used (the second write just overwrote the first's
+            // order_id), so a single-use code could be redeemed more than once.
+            if ($promoCodeId) {
+                $claimed = PromoCode::where('id', $promoCodeId)
+                    ->whereNull('used_at')
+                    ->update(['user_id' => auth()->id(), 'used_at' => now()]);
+                if (! $claimed) {
+                    $discountError = 'This promo code has already been used. Please remove it and try again.';
+                    return null;
+                }
+            }
+
+            // Locked and re-verified against the balance right before spending it — the
+            // pre-transaction $pointsRedeemed was computed from an unlocked read, so two
+            // tabs/a replayed request could each decrement the same points past zero
+            // (points_balance has no DB-level floor), double-discounting off one balance.
             if ($pointsRedeemed > 0) {
-                auth()->user()->decrement('points_balance', $pointsRedeemed);
+                $lockedUser = User::whereKey(auth()->id())->lockForUpdate()->first();
+                if (! $lockedUser || $lockedUser->points_balance < $pointsRedeemed) {
+                    $discountError = 'Your points balance has changed. Please review your order and try again.';
+                    return null;
+                }
+                $lockedUser->decrement('points_balance', $pointsRedeemed);
             }
 
             $paymentStatus = 'pending';
@@ -638,12 +671,10 @@ class CheckoutController extends Controller
             }
 
             if ($promoCodeId) {
+                // user_id/used_at were already claimed atomically above — this row is
+                // exclusively ours now, just attach the order it was actually used on.
                 $promoCode = PromoCode::find($promoCodeId);
-                $promoCode->update([
-                    'user_id' => auth()->id(),
-                    'order_id' => $order->id,
-                    'used_at' => now(),
-                ]);
+                $promoCode->update(['order_id' => $order->id]);
                 $promoCode->batch->increment('used_count');
             }
 
@@ -728,6 +759,10 @@ class CheckoutController extends Controller
         }
 
         if (! $order) {
+            if ($discountError) {
+                return redirect()->route('cart.index')->with('error', $discountError);
+            }
+
             return redirect()->route('cart.index')->with(
                 'error',
                 ($stockError ? '"' . $stockError . '"' : 'One or more items in your cart') . ' just went out of stock — please update your cart and try again.'
