@@ -92,13 +92,20 @@ class VendorController extends Controller
             'notes' => 'nullable|string|max:255',
         ]);
 
-        $available = VendorTransaction::where('vendor_id', $vendor->id)->where('status', 'available')->get();
+        // Fetched, locked, and summed inside the transaction (not before it) — an admin
+        // double-clicking "Pay Out", or two tabs submitting at once, used to both read the
+        // same "available" transactions before either had committed its own UPDATE, so both
+        // could create a separate VendorPayout for the same underlying balance: the vendor
+        // got paid twice for the same money. Mirrors the stock-row-lock pattern already
+        // fixed in checkout.
+        $result = DB::transaction(function () use ($vendor, $request) {
+            $available = VendorTransaction::where('vendor_id', $vendor->id)->where('status', 'available')
+                ->lockForUpdate()->get();
 
-        if ($available->isEmpty()) {
-            return back()->with('error', 'No available balance to pay out.');
-        }
+            if ($available->isEmpty()) {
+                return null;
+            }
 
-        $payout = DB::transaction(function () use ($vendor, $available, $request) {
             $payout = VendorPayout::create([
                 'vendor_id' => $vendor->id,
                 'amount' => $available->sum('net_amount'),
@@ -111,8 +118,13 @@ class VendorController extends Controller
             VendorTransaction::whereIn('id', $available->pluck('id'))
                 ->update(['status' => 'paid', 'paid_at' => now(), 'payout_id' => $payout->id]);
 
-            return $payout;
+            return [$payout, $available->count()];
         });
+
+        if (! $result) {
+            return back()->with('error', 'No available balance to pay out.');
+        }
+        [$payout, $transactionCount] = $result;
 
         NotificationDispatcher::customer('vendor_payout_sent', $vendor->user, [
             'business_name' => $vendor->business_name,
@@ -120,7 +132,7 @@ class VendorController extends Controller
             'url' => route('seller.reports.index'),
         ]);
 
-        return back()->with('success', "Payout of ৳" . number_format($payout->amount, 2) . " recorded for {$available->count()} transaction(s).");
+        return back()->with('success', "Payout of ৳" . number_format($payout->amount, 2) . " recorded for {$transactionCount} transaction(s).");
     }
 
     public function approve(Vendor $vendor)

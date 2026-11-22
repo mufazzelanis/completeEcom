@@ -37,6 +37,11 @@ class PermissionSeeder extends Seeder
             ['name' => 'orders.update',       'display_name' => 'Update Orders',       'group' => 'Orders'],
             ['name' => 'orders.delete',       'display_name' => 'Delete Orders',       'group' => 'Orders'],
 
+            // Returns (approving/rejecting restores or withholds stock — a money/inventory
+            // decision, same tier as coupons/vendors, not just "view orders")
+            ['name' => 'returns.view',        'display_name' => 'View Returns',        'group' => 'Returns'],
+            ['name' => 'returns.manage',      'display_name' => 'Approve / Reject Returns', 'group' => 'Returns'],
+
             // Coupons
             ['name' => 'coupons.view',        'display_name' => 'View Coupons',        'group' => 'Coupons'],
             ['name' => 'coupons.create',      'display_name' => 'Create Coupons',      'group' => 'Coupons'],
@@ -88,6 +93,7 @@ class PermissionSeeder extends Seeder
                 'products.view', 'products.create', 'products.edit', 'products.delete',
                 'categories.view', 'categories.create', 'categories.edit', 'categories.delete',
                 'orders.view', 'orders.update',
+                'returns.view', 'returns.manage',
                 'coupons.view', 'coupons.create', 'coupons.edit', 'coupons.delete',
                 'reviews.view', 'reviews.edit', 'reviews.approve', 'reviews.delete',
                 'vendors.view', 'vendors.edit',
@@ -102,6 +108,7 @@ class PermissionSeeder extends Seeder
                 'products.view',
                 'categories.view',
                 'orders.view', 'orders.update',
+                'returns.view',
                 'reviews.view', 'reviews.approve',
                 'crm.view',
             ],

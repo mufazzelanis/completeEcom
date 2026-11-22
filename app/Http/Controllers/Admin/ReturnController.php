@@ -188,8 +188,14 @@ class ReturnController extends Controller
     {
         $return = ProductReturn::findOrFail($id);
 
+        // 'pending' and 'approved' are deliberately not selectable here (unlike the comment
+        // above once implied) — approve()'s own pending-only guard is what stops a return
+        // being restocked twice, but this endpoint could set status back to 'pending' with
+        // no stock change at all, then approve() would see 'pending' again and restock the
+        // same items a second time. Reaching 'approved' must always go through approve()
+        // itself, which is the only path that actually moves stock.
         $request->validate([
-            'status'     => 'required|in:pending,approved,in_progress,completed,rejected',
+            'status'     => 'required|in:in_progress,completed,rejected',
             'admin_note' => 'nullable|string|max:1000',
         ]);
 

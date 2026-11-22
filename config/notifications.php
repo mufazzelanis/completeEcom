@@ -80,6 +80,22 @@ return [
         'new_ticket'            => ['recipient' => 'admin', 'channels' => ['email', 'push']],
         'ticket_reply_received' => ['recipient' => 'admin', 'channels' => ['email', 'push']],
         'new_return'            => ['recipient' => 'admin', 'channels' => ['email']],
+
+        // Vendor lifecycle events — Admin\VendorController and Admin\ProductController
+        // already call NotificationDispatcher::customer() for all nine of these, but none of
+        // them existed here, so every one silently sent nothing on every channel (the vendor
+        // only ever got the in-app bell notification, never an email/SMS/push). Added so they
+        // show up in Admin → Notifications → Templates, where templates for them can be
+        // written/activated — recipient is always the vendor's own user account.
+        'vendor_payout_sent'          => ['recipient' => 'customer', 'channels' => ['email', 'push']],
+        'vendor_approved'             => ['recipient' => 'customer', 'channels' => ['email', 'push']],
+        'vendor_rejected'             => ['recipient' => 'customer', 'channels' => ['email']],
+        'vendor_suspended'            => ['recipient' => 'customer', 'channels' => ['email']],
+        'vendor_profile_approved'     => ['recipient' => 'customer', 'channels' => ['email', 'push']],
+        'vendor_profile_rejected'     => ['recipient' => 'customer', 'channels' => ['email']],
+        'vendor_correction_requested' => ['recipient' => 'customer', 'channels' => ['email', 'push']],
+        'vendor_product_approved'     => ['recipient' => 'customer', 'channels' => ['email', 'push']],
+        'vendor_product_rejected'     => ['recipient' => 'customer', 'channels' => ['email']],
     ],
 
 ];

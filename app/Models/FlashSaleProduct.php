@@ -92,12 +92,28 @@ class FlashSaleProduct extends Model
         return $caps ? min($caps) : null;
     }
 
-    /** Count units sold at checkout, never past the deal's stock cap. */
+    /**
+     * Count units sold at checkout, never past the deal's stock cap. Re-fetches and locks
+     * its own row first — two near-simultaneous checkouts for the same limited deal must not
+     * both read the same stale sold_count and both think there's room left, oversupplying
+     * units at the flash price past stock_limit (the same class of race already fixed for
+     * product stock in CheckoutController). Must be called from inside a DB transaction —
+     * the lock only serializes concurrent callers when one is active (CheckoutController's
+     * call site already wraps the whole order in one).
+     */
     public function recordSale(int $quantity): void
     {
-        $units = $this->remaining === null ? $quantity : min($quantity, $this->remaining);
+        $locked = static::whereKey($this->id)->lockForUpdate()->first();
+        if (! $locked) {
+            return;
+        }
+
+        $remaining = $locked->stock_limit > 0 ? max(0, $locked->stock_limit - $locked->sold_count) : null;
+        $units = $remaining === null ? $quantity : min($quantity, $remaining);
+
         if ($units > 0) {
-            $this->increment('sold_count', $units);
+            $locked->increment('sold_count', $units);
+            $this->sold_count = $locked->sold_count; // keep this in-memory instance consistent too
         }
     }
 }

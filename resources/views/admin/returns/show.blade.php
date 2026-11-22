@@ -126,8 +126,13 @@
                 <h3 class="font-semibold text-gray-800 mb-4">Change Status</h3>
                 <form action="{{ route('admin.returns.status', $return->id) }}" method="POST">
                     @csrf @method('PATCH')
+                    {{-- 'Pending' and 'Approved' aren't offered here — reaching Approved must
+                         always go through "Approve & Restock" below (the only path that
+                         actually moves stock); allowing this generic dropdown to set
+                         'Pending' again would let that stock movement run a second time for
+                         the same return once Approve & Restock is used again afterward. --}}
                     <select name="status" class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm mb-3 focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                        @foreach(['pending' => 'Pending', 'approved' => 'Approved', 'in_progress' => 'In Progress', 'completed' => 'Completed', 'rejected' => 'Rejected'] as $val => $label)
+                        @foreach(['in_progress' => 'In Progress', 'completed' => 'Completed', 'rejected' => 'Rejected'] as $val => $label)
                             <option value="{{ $val }}" {{ $return->status === $val ? 'selected' : '' }}>{{ $label }}</option>
                         @endforeach
                     </select>

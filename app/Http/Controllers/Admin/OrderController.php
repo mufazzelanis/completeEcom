@@ -438,6 +438,28 @@ class OrderController extends Controller
 
     public function destroy(Order $order)
     {
+        // vendor_transactions.order_id cascades on delete — a hard delete here would
+        // silently wipe out commission records a vendor is still owed (hold/available) or
+        // has already been paid for (paid, linked to a real VendorPayout), leaving that
+        // payout's ledger with a total but no supporting breakdown. 'cancelled' transactions
+        // represent no real money owed, so those don't block deletion.
+        $hasRealVendorEarnings = \App\Models\VendorTransaction::where('order_id', $order->id)
+            ->whereIn('status', ['hold', 'available', 'paid'])
+            ->exists();
+        if ($hasRealVendorEarnings) {
+            return back()->with('error', 'This order has vendor commission records (owed or already paid out) and cannot be deleted. Cancel/refund the order instead to keep its financial history intact.');
+        }
+
+        // returns.order_id also cascades on delete — same reasoning, for a return that's
+        // already had stock restored or a refund actually handled. A still-'pending' or
+        // 'rejected' return never moved anything, so those don't block deletion.
+        $hasProcessedReturn = \App\Models\ProductReturn::where('order_id', $order->id)
+            ->whereIn('status', ['approved', 'in_progress', 'completed'])
+            ->exists();
+        if ($hasProcessedReturn) {
+            return back()->with('error', 'This order has a processed return/refund record and cannot be deleted, to keep that history intact.');
+        }
+
         AuditLogger::log(
             'order.deleted',
             "Order {$order->order_number} was deleted (total: ৳{$order->total})",
