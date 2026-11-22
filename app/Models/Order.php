@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Services\PointsService;
+use App\Services\ReferralService;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 
@@ -57,6 +58,15 @@ class Order extends Model
         static::updated(function ($order) {
             if ($order->wasChanged('payment_status') && $order->payment_status === 'paid') {
                 PointsService::awardPurchasePoints($order);
+                // Moved here from CheckoutController::store() — it used to fire the
+                // instant an order was placed, before any payment was confirmed. A
+                // throwaway-phone-number account could place one unpaid/COD order using
+                // someone else's referral code, collect the referrer's reward
+                // immediately, then cancel/abandon the order with nothing clawing the
+                // points back — repeatable with a fresh number each time. Gating on
+                // payment_status actually reaching "paid" (same trigger as the
+                // purchase-points reward above) closes that farming loop.
+                ReferralService::maybeReward($order);
             }
         });
     }

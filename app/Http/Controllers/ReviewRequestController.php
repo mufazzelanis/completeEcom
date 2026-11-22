@@ -94,12 +94,32 @@ class ReviewRequestController extends Controller
     /**
      * Reviews already left for these products from this order — or, for a customer with an
      * account, from the product page — keyed by product, so nothing is reviewed twice.
+     *
+     * A guest order has no user_id, so none of that matched across a guest's OTHER
+     * orders — the same person could place several separate guest orders for one
+     * product and get a fresh "verified purchase" review link for each, posting more
+     * than one verified-looking review on the same product. For a guest order, also
+     * matches by the same shipping phone / guest email across their other guest orders.
      */
     private function existingReviews(Order $order, $productIds)
     {
         return Review::whereIn('product_id', $productIds)
-            ->where(fn ($q) => $q->where('order_id', $order->id)
-                ->when($order->user_id, fn ($q) => $q->orWhere('user_id', $order->user_id)))
+            ->where(function ($q) use ($order) {
+                $q->where('order_id', $order->id)
+                    ->when($order->user_id, fn ($q2) => $q2->orWhere('user_id', $order->user_id))
+                    ->when(! $order->user_id && ($order->shipping_phone || $order->guest_email), function ($q2) use ($order) {
+                        $q2->orWhereHas('order', function ($oq) use ($order) {
+                            $oq->whereNull('user_id')->where(function ($cq) use ($order) {
+                                if ($order->shipping_phone) {
+                                    $cq->orWhere('shipping_phone', $order->shipping_phone);
+                                }
+                                if ($order->guest_email) {
+                                    $cq->orWhere('guest_email', $order->guest_email);
+                                }
+                            });
+                        });
+                    });
+            })
             ->get()->keyBy('product_id');
     }
 

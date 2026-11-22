@@ -10,7 +10,12 @@ class ReviewController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Review::with(['user', 'product']);
+        // user.vendor + product.seller so the view can flag "this reviewer is a vendor"
+        // (and especially "...is this product's own seller") for the moderator —
+        // storeReview() now blocks a seller reviewing their own listing going forward,
+        // but this still matters for reviews already submitted before that fix, and for
+        // spotting a vendor leaving a review on a rival's product.
+        $query = Review::with(['user.vendor', 'product.seller']);
 
         if ($request->filled('status')) {
             $query->where('is_approved', $request->status === 'approved');
@@ -22,7 +27,7 @@ class ReviewController extends Controller
 
     public function edit(Review $review)
     {
-        $review->load(['user', 'product']);
+        $review->load(['user.vendor', 'product.seller']);
         return view('admin.reviews.edit', compact('review'));
     }
 

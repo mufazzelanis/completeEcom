@@ -24,6 +24,11 @@
             <div>
                 <p class="font-semibold text-gray-800">{{ $review->product->name ?? 'Unknown product' }}</p>
                 <p class="text-xs text-gray-400">by {{ $review->author_name }}{{ $review->isVerifiedPurchase() ? ' (verified purchase, order #' . $review->order_id . ')' : '' }} &middot; {{ $review->created_at->format('d M Y') }}</p>
+                @if($review->user?->vendor)
+                    <p class="text-xs font-semibold {{ $review->user->vendor->id === $review->product->seller_id ? 'text-red-700' : 'text-amber-700' }}">
+                        {{ $review->user->vendor->id === $review->product->seller_id ? '⚠ This reviewer is this product\'s own seller.' : 'Reviewer is a vendor: ' . $review->user->vendor->business_name }}
+                    </p>
+                @endif
             </div>
         </div>
 

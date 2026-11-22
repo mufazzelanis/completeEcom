@@ -20,6 +20,13 @@ class ProductController extends Controller
         if (!$product->isApproved() && !$isOwningVendor) {
             abort(404);
         }
+        // scopeActive() (used by every listing) already hides a suspended/rejected
+        // vendor's products — this direct-by-id page bypassed that same check, so the
+        // product page itself (reachable via an old bookmark/shared link) stayed live
+        // and purchasable even after the vendor was cut off.
+        if ($product->seller_id && $product->seller && in_array($product->seller->status, ['suspended', 'rejected'], true) && !$isOwningVendor) {
+            abort(404);
+        }
 
         // Shared with the client-side fbq('track', 'ViewContent', ..., {eventID}) call in
         // products/show.blade.php so Meta dedupes this pixel+CAPI pair into one event.
@@ -82,6 +89,14 @@ class ProductController extends Controller
 
         if ($existing) {
             return back()->with('error', 'You have already reviewed this product.');
+        }
+
+        // Nothing stopped a vendor from logging in as themselves and 5-starring their
+        // own listing to inflate its rating — admin moderation (is_approved) is the only
+        // other gate, and nothing there flags "this reviewer is the product's own
+        // seller" either, so a self-review could slip through unnoticed.
+        if (auth()->user()->vendor && $product->seller_id === auth()->user()->vendor->id) {
+            return back()->with('error', 'You can\'t review your own product.');
         }
 
         // The check above and this create() aren't atomic — two near-simultaneous submits

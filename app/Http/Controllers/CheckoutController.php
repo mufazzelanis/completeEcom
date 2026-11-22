@@ -18,7 +18,6 @@ use App\Models\User;
 use App\Services\ActivityLogger;
 use App\Services\Facebook\ConversionsApi;
 use App\Services\Notifications\NotificationDispatcher;
-use App\Services\ReferralService;
 use App\Services\ShippingCalculator;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -560,6 +559,16 @@ class CheckoutController extends Controller
             // is still sold, waiting for the restock.
             if (! $isPreorder) {
                 foreach ($cartItems as $item) {
+                    // A product already sitting in someone's cart before its vendor got
+                    // suspended/rejected must not still be purchasable at checkout — the
+                    // storefront listings and the product page both already hide it
+                    // (Product::scopeActive(), ProductController::show()), but neither
+                    // of those re-runs once an item is already in the cart.
+                    if ($item->product->seller_id && $item->product->seller && in_array($item->product->seller->status, ['suspended', 'rejected'], true)) {
+                        $stockError = $item->product->name;
+                        return null;
+                    }
+
                     if ($item->product->isBundle()) {
                         foreach ($item->product->bundleItems as $bundleItem) {
                             $locked = Product::whereKey($bundleItem->item_product_id)->lockForUpdate()->first();
@@ -658,7 +667,9 @@ class CheckoutController extends Controller
                 'advance_amount' => $advance,
             ]);
 
-            ReferralService::maybeReward($order);
+            // No longer rewarded here at placement — Order::boot()'s updated() hook now
+            // calls ReferralService::maybeReward() only once payment_status actually
+            // reaches "paid" (see that hook's comment for why).
 
             if ($pointsRedeemed > 0) {
                 PointTransaction::create([

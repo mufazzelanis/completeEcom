@@ -169,7 +169,14 @@ return [
     |
     */
 
-    'secure' => env('SESSION_SECURE_COOKIE'),
+    // SESSION_SECURE_COOKIE is defined in neither .env nor .env.example, so without this
+    // fallback a production deploy that simply forgot to set it ends up with `secure`
+    // resolving to null (falsy) — the session and remember-me cookies would then be sent
+    // over plain HTTP too, letting them be captured in transit. Defaulting by environment
+    // keeps local/dev working over plain http:// unchanged while failing safe in
+    // production. Reads the raw APP_ENV var (not app()->environment()) — config files
+    // load before the container is ready, and calling app() here breaks bootstrap.
+    'secure' => env('SESSION_SECURE_COOKIE', env('APP_ENV') === 'production'),
 
     /*
     |--------------------------------------------------------------------------

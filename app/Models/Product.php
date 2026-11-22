@@ -376,7 +376,17 @@ class Product extends Model
      */
     public function scopeActive($query)
     {
-        return $query->where('is_active', true)->where('approval_status', 'approved');
+        // Suspending/rejecting a vendor only ever flipped Vendor.status — nothing here
+        // checked it, so every product that vendor had approved before the suspension
+        // stayed fully visible and purchasable storefront-wide, defeating the point of
+        // cutting them off. seller_id is null for products that aren't vendor-owned
+        // (the admin's own catalog), which this must leave untouched.
+        return $query->where('is_active', true)
+            ->where('approval_status', 'approved')
+            ->where(function ($q) {
+                $q->whereNull('seller_id')
+                    ->orWhereHas('seller', fn ($s) => $s->whereNotIn('status', ['suspended', 'rejected']));
+            });
     }
 
     public function isApproved(): bool
