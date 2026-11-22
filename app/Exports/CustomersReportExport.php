@@ -4,6 +4,7 @@ namespace App\Exports;
 
 use App\Models\Order;
 use App\Models\User;
+use App\Support\ExcelSafe;
 use Illuminate\Support\Facades\DB;
 use Maatwebsite\Excel\Concerns\WithMultipleSheets;
 use Maatwebsite\Excel\Concerns\FromCollection;
@@ -43,7 +44,7 @@ class TopCustomersSheet implements FromCollection, WithHeadings, WithTitle, With
             ->whereNotNull('user_id')
             ->groupBy('user_id')->orderByDesc('total_spent')->get()
             ->map(fn($r) => [
-                $r->user?->name, $r->user?->email,
+                ExcelSafe::cell($r->user?->name), $r->user?->email,
                 $r->order_count,
                 number_format($r->total_spent,2),
                 number_format($r->avg_order,2),
@@ -72,7 +73,7 @@ class AllCustomersSheet implements FromCollection, WithHeadings, WithTitle, With
             ->orderByDesc('orders_sum_total')
             ->get()
             ->map(fn($u) => [
-                $u->name, $u->email,
+                ExcelSafe::cell($u->name), $u->email,
                 $u->created_at->format('Y-m-d'),
                 $u->orders_count,
                 number_format($u->orders_sum_total ?? 0, 2),

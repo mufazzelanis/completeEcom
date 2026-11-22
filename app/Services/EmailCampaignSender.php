@@ -28,7 +28,17 @@ class EmailCampaignSender
 
     public static function processBatch(EmailCampaign $campaign, int $batchSize = 30): void
     {
-        $logs = $campaign->logs()->where('status', 'pending')->with('user')->take($batchSize)->get();
+        // Claimed atomically (pending -> sending) before any email actually goes out,
+        // not just read-and-send — the scheduled command that calls this has
+        // withoutOverlapping(), but claiming here too means even a manual re-run or a
+        // slow batch that spills into the next tick can't re-select and re-send the
+        // same still-"pending" rows to the same customers twice.
+        $ids = $campaign->logs()->where('status', 'pending')->take($batchSize)->pluck('id');
+        if ($ids->isEmpty()) {
+            return;
+        }
+        EmailCampaignLog::whereIn('id', $ids)->where('status', 'pending')->update(['status' => 'sending']);
+        $logs = EmailCampaignLog::whereIn('id', $ids)->where('status', 'sending')->with('user')->get();
 
         $fromEmail = $campaign->from_email ?: config('mail.from.address');
         $fromName = $campaign->from_name ?: config('mail.from.name');

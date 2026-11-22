@@ -37,9 +37,16 @@ class PasswordResetLinkController extends Controller
             $request->only('email')
         );
 
-        return $status == Password::RESET_LINK_SENT
-                    ? back()->with('status', __($status))
-                    : back()->withInput($request->only('email'))
-                        ->withErrors(['email' => __($status)]);
+        // Deliberately not branching on Password::INVALID_USER — showing a different
+        // message for "no account with that email" vs. "link sent" lets anyone enumerate
+        // which emails are registered customers, one request at a time. Only an actual
+        // throttle (a real rate-limit message, not account-existence info) still gets its
+        // own message; everything else shows the same generic "sent" response.
+        if ($status === Password::RESET_THROTTLED) {
+            return back()->withInput($request->only('email'))
+                ->withErrors(['email' => __($status)]);
+        }
+
+        return back()->with('status', __(Password::RESET_LINK_SENT));
     }
 }

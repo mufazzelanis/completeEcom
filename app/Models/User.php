@@ -34,6 +34,22 @@ class User extends Authenticatable
         ];
     }
 
+    /**
+     * Rotate the remember-me token and drop every other active session for this user.
+     * Called right after a password change — without this, a remember-me cookie or
+     * session stolen before the change (XSS, shared device, leaked session-store row)
+     * kept working after the user "fixed" their account by changing the password.
+     */
+    public function invalidateOtherSessions(?string $currentSessionId = null): void
+    {
+        $this->forceFill(['remember_token' => \Illuminate\Support\Str::random(60)])->save();
+
+        DB::table('sessions')
+            ->where('user_id', $this->id)
+            ->when($currentSessionId, fn ($q) => $q->where('id', '!=', $currentSessionId))
+            ->delete();
+    }
+
     public function hasTwoFactorEnabled(): bool
     {
         // 2FA is email-OTP based (app/Models/Otp.php) rather than a persistent

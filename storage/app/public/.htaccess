@@ -1,0 +1,16 @@
+# Every file under here comes from an upload (product/category/banner images, vendor
+# KYC docs, admin-set images) — none of it should ever execute as PHP, even if some
+# future upload path ever regresses on content/extension validation. Defense-in-depth
+# only; every current upload path already validates file content, not just extension.
+<IfModule mod_php.c>
+    php_flag engine off
+</IfModule>
+<FilesMatch "\.(php|php3|php4|php5|php7|php8|phtml|phar)$">
+    Require all denied
+</FilesMatch>
+<IfModule !mod_authz_core.c>
+    <FilesMatch "\.(php|php3|php4|php5|php7|php8|phtml|phar)$">
+        Order allow,deny
+        Deny from all
+    </FilesMatch>
+</IfModule>

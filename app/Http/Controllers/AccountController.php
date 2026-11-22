@@ -72,6 +72,8 @@ class AccountController extends Controller
         }
 
         $user->update(['password' => $request->password]);
+        $user->invalidateOtherSessions($request->session()->getId());
+
         return back()->with('success', 'Password changed successfully.');
     }
 }

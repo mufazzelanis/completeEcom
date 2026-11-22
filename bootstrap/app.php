@@ -101,7 +101,12 @@ return Application::configure(basePath: dirname(__DIR__))
         // AI Blog: one article at a time (a write takes 1–3 min), in the background so it never
         // holds up the other every-minute jobs
         $schedule->command('ai-blog:run')->everyMinute()->withoutOverlapping(20)->runInBackground();
-        $schedule->command('email-campaigns:process')->everyMinute();
+        // withoutOverlapping: a batch of 30 emails occasionally takes longer than a
+        // minute (slow SMTP/TLS), and without this the next tick re-selects rows this
+        // run hasn't finished marking "sent" yet, re-sending the same campaign email to
+        // the same customers. EmailCampaignSender::processBatch() also now claims rows
+        // atomically (pending -> sending) as a second layer of protection.
+        $schedule->command('email-campaigns:process')->everyMinute()->withoutOverlapping();
         // Drains the default queue (bulk product imports, Facebook Conversions API
         // events, etc.) without needing a long-running `queue:work` process, which
         // most shared hosts don't allow — this piggybacks on the same one-cron-entry
@@ -123,12 +128,14 @@ return Application::configure(basePath: dirname(__DIR__))
         // DB writes that bypass Eloquent events.
         $schedule->command('sales-report:rebuild', ['--from' => now()->subDays(2)->toDateString()])->dailyAt('00:15');
 
+        $schedule->command('bulk-imports:watch-stuck')->everyFifteenMinutes()->withoutOverlapping();
+
         // CRM: nightly full recompute (RFM cut-offs shift as the customer base changes) + win-back tasks;
         // the hourly pass just fires reminders for tasks that have come due.
-        $schedule->command('crm:refresh')->dailyAt('01:00');
+        $schedule->command('crm:refresh')->dailyAt('01:00')->withoutOverlapping();
         // plain flag in the command string — ['--reminders' => true] is passed as --reminders='1',
         // which a value-less option rejects (the hourly run failed every time)
-        $schedule->command('crm:refresh --reminders')->hourly();
+        $schedule->command('crm:refresh --reminders')->hourly()->withoutOverlapping();
         // who's behind visitor IPs (Amazon AWS, Grameenphone, Googlebot's network …) for Blog analytics
         // and Activity Log — runs before the bot classifier needs it
         $schedule->command('visitors:resolve-ips')->everyMinute()->withoutOverlapping()->runInBackground();

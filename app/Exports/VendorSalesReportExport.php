@@ -3,6 +3,7 @@
 namespace App\Exports;
 
 use App\Models\VendorTransaction;
+use App\Support\ExcelSafe;
 use Carbon\Carbon;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\ShouldAutoSize;
@@ -50,7 +51,7 @@ class VendorOrderLinesSheet implements FromCollection, WithHeadings, WithTitle, 
             ->map(fn ($t) => [
                 $t->order->order_number ?? $t->order_id,
                 $t->created_at->format('Y-m-d'),
-                $t->orderItem->product_name ?? '—',
+                ExcelSafe::cell($t->orderItem->product_name ?? '—'),
                 number_format($t->sale_amount, 2),
                 number_format($t->commission_amount, 2),
                 number_format($t->net_amount, 2),

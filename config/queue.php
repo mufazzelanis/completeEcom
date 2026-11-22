@@ -40,7 +40,12 @@ return [
             'connection' => env('DB_QUEUE_CONNECTION'),
             'table' => env('DB_QUEUE_TABLE', 'jobs'),
             'queue' => env('DB_QUEUE', 'default'),
-            'retry_after' => (int) env('DB_QUEUE_RETRY_AFTER', 90),
+            // Must stay above every queued job's own $timeout — ImportProductsCsvJob sets
+            // $timeout = 3600 for large catalog imports. A retry_after shorter than that
+            // (the previous default of 90s) would let a second worker process consider
+            // the job "lost" and re-reserve it while the first is still legitimately
+            // running, risking a duplicate import run.
+            'retry_after' => (int) env('DB_QUEUE_RETRY_AFTER', 3700),
             'after_commit' => false,
         ],
 

@@ -59,26 +59,49 @@ class PaymentController extends Controller
 
     public function verify(Request $request, Payment $payment)
     {
-        if (!in_array($payment->status, ['pending_verification', 'pending'])) {
-            return back()->with('error', 'Payment is already ' . $payment->status . '.');
-        }
-
         $request->validate([
             'admin_note' => 'nullable|string|max:500',
         ]);
 
-        DB::transaction(function () use ($request, $payment) {
-            $payment->update([
+        // Locked and re-checked inside the transaction, not before it — a double-click or
+        // two admin tabs submitting "Verify" at once used to both pass the status check
+        // before either had committed, both mark the order paid, and both fire the
+        // points-award hook twice. Same lock-inside-transaction pattern already used for
+        // stock/vendor-payout races elsewhere in this app.
+        $result = DB::transaction(function () use ($request, $payment) {
+            $locked = Payment::whereKey($payment->id)->lockForUpdate()->first();
+
+            if (! in_array($locked->status, ['pending_verification', 'pending'])) {
+                return ['error', 'Payment is already ' . $locked->status . '.'];
+            }
+
+            // One real bKash/Nagad transfer, submitted on two different orders, must not
+            // both get approved and credited — the admin needs to catch the reuse here,
+            // since there's no gateway to verify the transaction server-side.
+            $duplicate = Payment::where('transaction_id', $locked->transaction_id)
+                ->where('payment_method_slug', $locked->payment_method_slug)
+                ->where('id', '!=', $locked->id)
+                ->whereIn('status', ['completed', 'pending_verification', 'pending'])
+                ->exists();
+            if ($duplicate) {
+                return ['error', 'This transaction ID is already used on another payment. Double-check with the sender before approving — it may be the same transfer claimed twice.'];
+            }
+
+            $locked->update([
                 'status'      => 'completed',
                 'verified_by' => auth()->id(),
                 'verified_at' => now(),
                 'admin_note'  => $request->admin_note,
             ]);
 
-            $payment->order->update(['payment_status' => 'paid']);
+            $locked->order->update(['payment_status' => 'paid']);
+
+            return ['success', 'Payment verified and marked as completed.'];
         });
 
-        return back()->with('success', 'Payment verified and marked as completed.');
+        [$type, $message] = $result;
+
+        return back()->with($type, $message);
     }
 
     public function reject(Request $request, Payment $payment)
