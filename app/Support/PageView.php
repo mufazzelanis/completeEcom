@@ -79,9 +79,47 @@ class PageView
             // crawlers / scripted clients don't add to a post's public "N views"
             'blog'    => \App\Models\ActivityLog::automationSignal(request()) === null
                 ? BlogPost::whereKey($id)->toBase()->increment('views') : null,
-            'landing' => LandingPage::whereKey($id)->toBase()->increment('views_count'),
+            'landing' => self::landing($id, $data, $url),
             default   => null,
         };
+    }
+
+    /**
+     * Previously just the view counter — the client-side fbq('track','ViewContent') on a
+     * landing page (layouts/landing.blade.php) had no server-side counterpart at all, unlike
+     * the product-page equivalent just above, so an ad-blocked/ITP-affected visitor's
+     * ViewContent was invisible to Meta entirely for this page type.
+     */
+    private static function landing(int $id, array $data, ?string $url): void
+    {
+        LandingPage::whereKey($id)->toBase()->increment('views_count');
+
+        if (empty($data['event'])) {
+            return;
+        }
+        $landingPage = LandingPage::find($id);
+        if (!$landingPage) {
+            return;
+        }
+
+        after_response(function () use ($landingPage, $data, $url) {
+            ConversionsApi::track(
+                eventName: 'ViewContent',
+                eventId: (string) $data['event'],
+                customData: [
+                    'content_ids'  => [$landingPage->product_id ? (string) $landingPage->product_id : $landingPage->slug],
+                    'content_type' => 'product',
+                    'content_name' => $landingPage->title,
+                    'value'        => (float) ($landingPage->effective_price ?? 0),
+                    'currency'     => setting('currency_code', 'BDT'),
+                ],
+                eventSourceUrl: $url,
+                pixelIdOverride: $landingPage->fb_pixel_id ?: null,
+                accessTokenOverride: $landingPage->fb_capi_access_token ?: null,
+                landingPageId: $landingPage->id,
+                testEventCodeOverride: $landingPage->fb_capi_test_event_code ?: null,
+            );
+        });
     }
 
     private static function product(int $id, array $data, ?string $url, ?string $ref): void

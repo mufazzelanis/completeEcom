@@ -771,7 +771,7 @@
                 <label class="block text-sm font-medium text-gray-700 mb-1">Facebook / Meta Pixel ID</label>
                 <input type="text" name="fb_pixel_id" value="{{ old('fb_pixel_id', $lp->fb_pixel_id ?? '') }}" placeholder="{{ setting('facebook_pixel_id') ?: 'e.g. 123456789012345' }}"
                     class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                <p class="text-xs text-gray-400 mt-1">Meta Events Manager → Data Sources → your pixel. Fires PageView, ViewContent, InitiateCheckout, and Purchase automatically.</p>
+                <p class="text-xs text-gray-400 mt-1">Meta Events Manager → Data Sources → your pixel. Fires PageView, ViewContent, InitiateCheckout, AddToCart, and Purchase — both the browser Pixel and a server-side (Conversions API) backup for each.</p>
             </div>
 
             <div>
@@ -782,6 +782,15 @@
                     A Conversions API token is tied to one specific pixel on Meta's side — if this page uses its own Pixel ID above (a different ad account than the main store), the
                     <a href="{{ route('admin.settings.show', 'facebook_pixel') }}" target="_blank" class="text-indigo-600 hover:underline">site-wide CAPI token</a>
                     won't authenticate for it and server-side Purchase events will fail silently. Generate a token for this specific pixel in Meta Events Manager → Data Sources → this pixel → Settings → Conversions API, and paste it here. Leave blank if this page uses the site's own pixel, or if you only want client-side (browser Pixel) tracking for it.
+                </p>
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Conversions API Test Event Code <span class="text-gray-400 font-normal">(temporary — while checking this page's own pixel)</span></label>
+                <input type="text" name="fb_capi_test_event_code" value="{{ old('fb_capi_test_event_code', $lp->fb_capi_test_event_code ?? '') }}" placeholder="TEST12345"
+                    class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                <p class="text-xs text-gray-400 mt-1">
+                    Paste this from Meta Events Manager → this pixel → Test Events while verifying this page's own setup (only meaningful alongside a custom Pixel ID + token above — it's separate from the site-wide test code in Settings → Facebook Pixel). Events sent with a test code are excluded from real reporting, so @if($lp)check this page's funnel on <a href="{{ route('admin.landing-pages.analytics', $lp) }}" target="_blank" class="text-indigo-600 hover:underline">Admin → Landing Pages → Analytics</a> after removing it again.@else remove it again once confirmed.@endif
                 </p>
             </div>
 

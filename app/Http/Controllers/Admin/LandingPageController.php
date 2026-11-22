@@ -291,6 +291,9 @@ class LandingPageController extends Controller
             // this page need this page's own token once it has its own pixel. No format regex
             // (Meta's tokens are long opaque strings with no fixed shape).
             'fb_capi_access_token'        => 'nullable|string|max:512',
+            // Pasted from Meta Events Manager → Test Events while verifying this page's own
+            // pixel/CAPI setup — remove it again once confirmed, same as the site-wide one.
+            'fb_capi_test_event_code'     => 'nullable|string|max:50',
             'ga_measurement_id'           => 'nullable|string|max:20|regex:/^G-[A-Za-z0-9]+$/',
             'google_ads_conversion_id'    => 'nullable|string|max:20|regex:/^AW-[0-9]+$/',
             'google_ads_conversion_label' => 'nullable|string|max:60|regex:/^[A-Za-z0-9_-]+$/',
@@ -325,7 +328,7 @@ class LandingPageController extends Controller
         // Trimmed and coerced to null (not '') when left blank — so `?:` fallbacks to the
         // site-wide setting elsewhere (layouts/landing.blade.php, show.blade.php) work the
         // same way brand_color's do, rather than an empty string silently "winning" over null.
-        foreach (['fb_pixel_id', 'fb_capi_access_token', 'ga_measurement_id', 'google_ads_conversion_id', 'google_ads_conversion_label'] as $pixelField) {
+        foreach (['fb_pixel_id', 'fb_capi_access_token', 'fb_capi_test_event_code', 'ga_measurement_id', 'google_ads_conversion_id', 'google_ads_conversion_label'] as $pixelField) {
             $value = trim((string) $request->input($pixelField, ''));
             $data[$pixelField] = $value !== '' ? $value : null;
         }

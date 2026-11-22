@@ -159,7 +159,7 @@
             fbq('track', 'ViewContent', {
                 content_ids: [product.id], content_type: 'product',
                 content_name: product.name, value: product.value, currency: currency,
-            });
+            }, { eventID: @js($fbViewContentEventId ?? null) });
         }
         if (typeof gtag === 'function') {
             gtag('event', 'view_item', {
@@ -199,6 +199,9 @@
     @unless($isPreview)
     @include('partials.tracking.tag-manager-clarity')
     @include('partials.tracking.live-heartbeat')
+    @if(!session('order_success'))
+    @include('landing.partials.tracker')
+    @endif
     @endunless
 </head>
 @if($lpThemed)

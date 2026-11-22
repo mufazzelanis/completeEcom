@@ -45,7 +45,9 @@
         money(n) { return {{ Js::from($currencySymbol) }} + Number(n).toLocaleString('en-US', { minimumFractionDigits: {{ $decimals }}, maximumFractionDigits: {{ $decimals }} }); },
         trackInitiateCheckout() {
             if (typeof fbq === 'function') {
-                fbq('track', 'InitiateCheckout', { value: this.total, currency: {{ Js::from($currencyCode) }}, content_type: 'product', content_ids: [{{ Js::from($trackProductId) }}] });
+                // Shared with LandingPageTrackController::reachedForm()'s server-side
+                // InitiateCheckout CAPI call so Meta dedupes the pair.
+                fbq('track', 'InitiateCheckout', { value: this.total, currency: {{ Js::from($currencyCode) }}, content_type: 'product', content_ids: [{{ Js::from($trackProductId) }}] }, { eventID: 'reached_form_' + {{ Js::from($visitKey ?? '') }} });
             }
             if (typeof gtag === 'function') {
                 gtag('event', 'begin_checkout', { currency: {{ Js::from($currencyCode) }}, value: this.total, items: [{ item_id: {{ Js::from($trackProductId) }}, item_name: {{ Js::from($lp->product?->name ?: $lp->title) }}, price: this.unit }] });
@@ -99,6 +101,7 @@
                 <form action="{{ route('landing.order', $lp) }}" method="POST"
                     x-data="{ sending: false }" @pageshow.window="sending = false" @submit="if (sending) { $event.preventDefault(); return; } sending = true">
                     @csrf
+                    <input type="hidden" name="_visit_key" value="{{ $visitKey ?? '' }}">
 
                     <div class="lt-field">
                         <label class="lt-label" for="lt-name">আপনার নাম <em>*</em></label>

@@ -32,6 +32,7 @@ class SendFacebookConversionEvent implements ShouldQueue
         private readonly string $accessToken,
         private readonly ?string $testEventCode,
         private readonly array $event,
+        private readonly ?int $landingPageId = null,
     ) {
     }
 
@@ -55,12 +56,13 @@ class SendFacebookConversionEvent implements ShouldQueue
             ->post("https://graph.facebook.com/{$this->graphVersion}/{$this->pixelId}/events", $payload);
 
         FacebookConversionLog::create([
-            'event_name'  => $this->event['event_name'],
-            'event_id'    => $this->event['event_id'],
-            'pixel_id'    => $this->pixelId,
-            'status'      => $response->successful() ? 'sent' : 'failed',
-            'http_status' => $response->status(),
-            'response'    => Str::limit($response->body(), 2000, ''),
+            'event_name'      => $this->event['event_name'],
+            'event_id'        => $this->event['event_id'],
+            'pixel_id'        => $this->pixelId,
+            'landing_page_id' => $this->landingPageId,
+            'status'          => $response->successful() ? 'sent' : 'failed',
+            'http_status'     => $response->status(),
+            'response'        => Str::limit($response->body(), 2000, ''),
         ]);
 
         if ($response->failed()) {

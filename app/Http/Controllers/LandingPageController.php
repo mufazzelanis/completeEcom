@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\LandingPage;
+use App\Models\LandingPageVisit;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Services\ActivityLogger;
@@ -11,6 +12,7 @@ use App\Services\Notifications\NotificationDispatcher;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class LandingPageController extends Controller
 {
@@ -27,7 +29,17 @@ class LandingPageController extends Controller
         abort_if($landingPage->status !== 'published', 404);
 
         $landingPage->load('product');
-        $pageViewToken = \App\Support\PageView::record('landing', $landingPage->id); // not on a hover-prefetch
+
+        // Shared with the client-side fbq('track', 'ViewContent') call in layouts/landing.blade.php
+        // so Meta dedupes the pair into one event instead of double-counting — same shape as the
+        // product-page equivalent (ProductController@show).
+        $fbViewContentEventId = (string) Str::uuid();
+        $pageViewToken = \App\Support\PageView::record('landing', $landingPage->id, ['event' => $fbViewContentEventId]); // not on a hover-prefetch
+
+        // Behavior tracker (scroll depth, CTA clicks, order-form engagement) — see
+        // landing/partials/tracker.blade.php + LandingPageTrackController. Null on a Turbo
+        // hover-prefetch; the tracker simply doesn't send anything in that case.
+        $visitKey = LandingPageVisit::begin($landingPage, request());
 
         // "Order within N minutes of landing, delivery's free" (see LandingPage::
         // freeDeliveryMinutes()) is anchored to the moment this visitor FIRST saw this exact
@@ -57,7 +69,7 @@ class LandingPageController extends Controller
         // free-delivery countdown depends on — if a CDN/proxy ever cached it, a later visitor
         // could get someone else's stale token (a broken "page expired" error on submit) or a
         // countdown anchored to the wrong moment.
-        return response(view('landing.show', compact('landingPage', 'pageViewToken', 'firstViewedAt', 'freeDeliveryMinutes')))
+        return response(view('landing.show', compact('landingPage', 'pageViewToken', 'firstViewedAt', 'freeDeliveryMinutes', 'visitKey', 'fbViewContentEventId')))
             ->header('Cache-Control', 'no-store, private, max-age=0');
     }
 
@@ -290,6 +302,17 @@ class LandingPageController extends Controller
             return back()->withInput()->withErrors(['quantity' => 'Sorry, this product just went out of stock.']);
         }
 
+        // Ties this order back to its full funnel (scroll depth, which CTA was tapped, whether
+        // they actually touched the form before submitting) for Admin → Landing Pages →
+        // Analytics — via a hidden form field rather than a cookie, so it works even for a
+        // visitor whose browser blocks third-party-style cookies on this page.
+        if ($request->filled('_visit_key')) {
+            LandingPageVisit::where('visit_key', $request->input('_visit_key'))
+                ->where('landing_page_id', $landingPage->id)
+                ->whereNull('order_id')
+                ->update(['order_id' => $order->id]);
+        }
+
         ActivityLogger::log(
             'order.place',
             "Placed order #{$order->order_number} via landing page \"{$landingPage->title}\" — {$order->shipping_name}, {$order->shipping_phone}",
@@ -341,6 +364,8 @@ class LandingPageController extends Controller
             rawUserFields: ['name' => $order->shipping_name, 'phone' => $order->shipping_phone],
             pixelIdOverride: $landingPage->fb_pixel_id ?: null,
             accessTokenOverride: $landingPage->fb_capi_access_token ?: null,
+            landingPageId: $landingPage->id,
+            testEventCodeOverride: $landingPage->fb_capi_test_event_code ?: null,
         );
 
         if ($landingPage->thank_you_redirect_url) {

@@ -245,6 +245,11 @@ Route::post('/pv', fn (\Illuminate\Http\Request $request) => response()->noConte
 // Posted with sendBeacon, which can't carry a CSRF header; it only ever writes analytics rows. A high per-IP limit:
 // mobile operators put many phones behind one address (CGNAT), and each reader pings ~4x a minute.
 Route::post('/blog-track', \App\Http\Controllers\BlogTrackController::class)->middleware('throttle:600,1,post-blog-track')->withoutMiddleware(\Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class)->name('blog.track');
+// Landing-page behavior tracker (scroll depth, active time, CTA clicks, order-form engagement)
+// — same beacon pattern as blog-track above: sendBeacon can't carry a CSRF header, and it only
+// ever writes analytics rows. See App\Http\Controllers\LandingPageTrackController.
+Route::post('/lp-track', \App\Http\Controllers\LandingPageTrackController::class)->middleware('throttle:600,1,post-lp-track')->withoutMiddleware(\Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class)->name('landing-pages.track');
+Route::post('/lp-track/reached-form', [\App\Http\Controllers\LandingPageTrackController::class, 'reachedForm'])->middleware('throttle:60,1,post-lp-track-form')->withoutMiddleware(\Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class)->name('landing-pages.track.reached-form');
 Route::post('/promo-popups/{promoPopup}/track', \App\Http\Controllers\PromoPopupTrackController::class)->middleware('throttle:60,1,post-promo-track')->name('promo-popups.track');
 Route::post('/checkout/lead', [CheckoutController::class, 'lead'])->middleware('throttle:30,1,post-checkout-lead')->name('checkout.lead');
 Route::post('/checkout/phone/send', [\App\Http\Controllers\CheckoutPhoneController::class, 'send'])->middleware('throttle:12,10,post-checkout-phone-send')->name('checkout.phone.send');
@@ -870,6 +875,10 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     // catch-all route at the very end of this file)
     Route::get('landing-pages-report', [AdminLandingPageController::class, 'report'])->name('landing-pages.report');
     Route::get('landing-pages-orders', [AdminLandingPageController::class, 'orders'])->name('landing-pages.orders');
+    // Full conversion funnel (scroll depth, CTA clicks, order-form engagement, pixel/CAPI
+    // health) for one page — the view→order totals above show THAT a page isn't converting,
+    // this shows WHERE visitors actually drop off.
+    Route::get('landing-pages/{landingPage}/analytics', [\App\Http\Controllers\Admin\LandingPageAnalyticsController::class, 'show'])->name('landing-pages.analytics');
     // Live preview of the create/edit form's unsaved state (see LandingPageController::preview)
     Route::post('landing-pages-preview', [AdminLandingPageController::class, 'preview'])->name('landing-pages.preview');
     Route::post('landing-pages-preview/upload', [AdminLandingPageController::class, 'previewUpload'])->name('landing-pages.preview-upload');

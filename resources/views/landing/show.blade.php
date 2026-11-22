@@ -356,7 +356,7 @@
             @if($landingPage->rating_count)<span class="text-gray-400">({{ number_format($landingPage->rating_count) }} রিভিউ)</span>@endif
         </div>
         @endif
-        <a href="#order-form" id="hero-cta" class="lp-cta block w-full text-center text-white font-extrabold py-3.5 rounded-xl text-base shadow-lg active:scale-[0.99] transition-transform">
+        <a href="#order-form" id="hero-cta" data-lp-cta="hero" class="lp-cta block w-full text-center text-white font-extrabold py-3.5 rounded-xl text-base shadow-lg active:scale-[0.99] transition-transform">
             {{ $landingPage->order_button_text }}
         </a>
         </div>
@@ -566,7 +566,7 @@
                 @endif
             </div>
 
-            <a href="#order-form" class="lp-cta block w-full text-center text-white font-extrabold py-3.5 rounded-xl text-base shadow-lg active:scale-[0.99] transition-transform mt-4">
+            <a href="#order-form" data-lp-cta="offer" class="lp-cta block w-full text-center text-white font-extrabold py-3.5 rounded-xl text-base shadow-lg active:scale-[0.99] transition-transform mt-4">
                 {{ $landingPage->order_button_text }}
             </a>
             </div>
@@ -665,10 +665,13 @@
             get total() { return this.subtotal + this.zoneCharge; },
             trackInitiateCheckout() {
                 if (typeof fbq === 'function') {
+                    // Shared with LandingPageTrackController::reachedForm()'s server-side
+                    // InitiateCheckout CAPI call (landing/partials/tracker.blade.php's
+                    // IntersectionObserver fires that one) so Meta dedupes the pair.
                     fbq('track', 'InitiateCheckout', {
                         value: this.total, currency: {{ Js::from($currencyCode) }},
                         content_type: 'product', content_ids: [{{ Js::from($trackProductId) }}],
-                    });
+                    }, { eventID: 'reached_form_' + {{ Js::from($visitKey ?? '') }} });
                 }
                 if (typeof gtag === 'function') {
                     gtag('event', 'begin_checkout', {
@@ -726,6 +729,10 @@
             <form action="{{ route('landing.order', $landingPage) }}" method="POST" class="space-y-4"
                 x-data="{ sending: false }" @pageshow.window="sending = false" @submit="if (sending) { $event.preventDefault(); return; } sending = true">
                 @csrf
+                {{-- Ties the eventual order back to its full funnel (scroll depth, which CTA
+                     was tapped, form engagement) — see LandingPageController@order and
+                     landing/partials/tracker.blade.php. --}}
+                <input type="hidden" name="_visit_key" value="{{ $visitKey ?? '' }}">
                 <div>
                     <label class="flex items-center gap-1.5 text-base font-bold text-gray-900 mb-1.5">
                         <span class="w-1 h-4 rounded-full shrink-0" style="background: {{ $primary }};"></span>
@@ -914,7 +921,7 @@
                 <p class="lp-price-gradient text-sm font-extrabold">{{ format_currency($landingPage->effective_price) }}</p>
                 @endif
             </div>
-            <a href="#order-form" class="lp-cta shrink-0 text-white text-sm font-bold px-4 py-2.5 rounded-xl shadow-md active:scale-[0.97] transition-transform whitespace-nowrap">
+            <a href="#order-form" data-lp-cta="sticky-bar" class="lp-cta shrink-0 text-white text-sm font-bold px-4 py-2.5 rounded-xl shadow-md active:scale-[0.97] transition-transform whitespace-nowrap">
                 {{ $landingPage->order_button_text }}
             </a>
         </div>

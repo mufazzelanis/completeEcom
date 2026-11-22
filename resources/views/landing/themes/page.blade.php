@@ -66,7 +66,7 @@
                 @endif
 
                 <div class="lt-cta-row">
-                    <a href="#order-form" id="hero-cta" class="lt-btn">{{ $lp->order_button_text }} {!! $arrowSvg !!}</a>
+                    <a href="#order-form" id="hero-cta" data-lp-cta="hero" class="lt-btn">{{ $lp->order_button_text }} {!! $arrowSvg !!}</a>
                 </div>
 
                 @if($badges)
@@ -270,7 +270,7 @@
                 @if($discountPct)<span class="lt-save">{{ $bnDigits($discountPct) }}% ছাড়</span>@endif
             </div>
             @endif
-            <a href="#order-form" class="lt-btn lt-btn--block">{{ $lp->order_button_text }} {!! $arrowSvg !!}</a>
+            <a href="#order-form" data-lp-cta="offer" class="lt-btn lt-btn--block">{{ $lp->order_button_text }} {!! $arrowSvg !!}</a>
             <p class="lt-cod">💵 পণ্য হাতে পেয়ে টাকা পরিশোধ করুন</p>
         </div>
     </div>
@@ -325,5 +325,5 @@
         <p>{{ $lp->product?->name ?: $lp->title }}</p>
         @if($price)<b>{{ format_currency($price) }}</b>@endif
     </div>
-    <a href="#order-form" class="lt-btn">{{ $lp->order_button_text }}</a>
+    <a href="#order-form" data-lp-cta="sticky-bar" class="lt-btn">{{ $lp->order_button_text }}</a>
 </div>

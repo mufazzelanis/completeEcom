@@ -58,6 +58,12 @@ class ConversionsApi
      *                          site-wide one is scoped to the site's own pixel and would fail
      *                          Meta's auth check (logged as a 'failed' row, same as any other
      *                          rejected event) if used for a different pixel.
+     * @param int|null $landingPageId Stamped on the resulting FacebookConversionLog row only —
+     *                          lets Admin → Landing Pages → Analytics answer "is this specific
+     *                          page's pixel/CAPI actually working?" instead of only a site-wide total.
+     * @param string|null $testEventCodeOverride A landing page's own fb_capi_test_event_code —
+     *                          lets a page running its own ad account verify its events in
+     *                          Meta's Test Events tool independently of the site-wide pixel's own.
      */
     public static function track(
         string $eventName,
@@ -68,6 +74,8 @@ class ConversionsApi
         ?string $eventSourceUrl = null,
         ?string $pixelIdOverride = null,
         ?string $accessTokenOverride = null,
+        ?int $landingPageId = null,
+        ?string $testEventCodeOverride = null,
     ): void {
         $pixelId = $pixelIdOverride ?: setting('facebook_pixel_id', '');
         $accessToken = $accessTokenOverride ?: setting('facebook_capi_access_token', '');
@@ -86,7 +94,7 @@ class ConversionsApi
         }
 
         $request ??= request();
-        $testEventCode = setting('facebook_capi_test_event_code', '');
+        $testEventCode = $testEventCodeOverride ?: setting('facebook_capi_test_event_code', '');
 
         $userData = self::buildUserData($rawUserFields, $request);
 
@@ -103,7 +111,7 @@ class ConversionsApi
         }
 
         SendFacebookConversionEvent::dispatch(
-            self::GRAPH_VERSION, $pixelId, $accessToken, $testEventCode ?: null, $event
+            self::GRAPH_VERSION, $pixelId, $accessToken, $testEventCode ?: null, $event, $landingPageId
         );
     }
 
