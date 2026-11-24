@@ -81,7 +81,7 @@
         <p class="text-xs text-gray-500 dark:text-gray-400">Visitors appear here within seconds of opening any page — this updates by itself.</p>
     </div>
 </div>
-<div class="mt-4 max-w-xl">@include('admin.live-visitors._fb-events')</div>
+<div class="mt-4">@include('admin.live-visitors._fb-events')</div>
 @else
 <div class="lv-grid">
     {{-- ── Visitors ─────────────────────────────────────────────────────── --}}
@@ -176,6 +176,9 @@
                 <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Visitors appear here within seconds of opening any page.</p>
             </div>
         @endforelse
+
+        {{-- under the visitors, in the wide column — so the left side never sits empty next to the panels --}}
+        @include('admin.live-visitors._fb-events')
     </div>
 
     {{-- ── Side panels ──────────────────────────────────────────────────── --}}
@@ -198,8 +201,6 @@
                 <p class="text-sm text-gray-400 py-4 text-center">No product pages open right now.</p>
             @endforelse
         </div>
-
-        @include('admin.live-visitors._fb-events')
 
         <div class="bg-white dark:bg-gray-900 rounded-2xl p-5 shadow-sm">
             <h3 class="font-bold text-gray-900 dark:text-gray-100">👋 Left in the last 10 minutes</h3>

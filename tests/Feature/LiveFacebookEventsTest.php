@@ -44,4 +44,29 @@ class LiveFacebookEventsTest extends TestCase
         $this->actingAs($admin)->getJson(route('admin.live-visitors.feed'))->assertOk()
             ->assertJsonPath('html', fn ($html) => str_contains($html, 'Facebook events') && str_contains($html, 'Order #135'));
     }
+
+    /** Each event shows its product and opens it in one click. */
+    public function test_events_record_and_link_their_product(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        Setting::set('two_factor_enabled', '0');
+        $cat = \App\Models\Category::forceCreate(['name' => 'Hair', 'slug' => 'hair', 'is_active' => true]);
+        $product = \App\Models\Product::forceCreate(['category_id' => $cat->id, 'name' => 'Biotin 5000mcg', 'slug' => 'biotin-5000',
+            'price' => 1200, 'stock' => 5, 'is_active' => true, 'approval_status' => 'approved']);
+
+        \Illuminate\Support\Facades\Http::fake(['graph.facebook.com/*' => \Illuminate\Support\Facades\Http::response(['events_received' => 1])]);
+        (new \App\Jobs\SendFacebookConversionEvent('v21.0', '1124', 'T', null, [
+            'event_name' => 'AddToCart', 'event_id' => 'x1', 'event_source_url' => url('/products/biotin-5000'),
+            'custom_data' => ['content_ids' => [(string) $product->id, '99'], 'value' => 2400, 'currency' => 'BDT'],
+        ]))->handle();
+
+        $row = FacebookConversionLog::sole();
+        $this->assertSame([$product->id, 2, '2400.00'], [$row->product_id, $row->items, (string) $row->value]);
+
+        $this->actingAs($admin)->get(route('admin.live-visitors.index'))->assertOk()
+            ->assertSee('Biotin 5000mcg')
+            ->assertSee('+1 more')
+            ->assertSee('৳2,400')
+            ->assertSee('href="' . route('products.show', $product) . '"', false);
+    }
 }

@@ -55,11 +55,20 @@ class SendFacebookConversionEvent implements ShouldQueue
         $response = Http::timeout(10)
             ->post("https://graph.facebook.com/{$this->graphVersion}/{$this->pixelId}/events", $payload);
 
+        // what the event was about — shown (and linked) in Admin → Live & Traffic
+        $ids = array_values((array) ($this->event['custom_data']['content_ids'] ?? []));
+        $productId = isset($ids[0]) && ctype_digit((string) $ids[0]) ? (int) $ids[0] : null; // a landing page without a product sends its slug
+        $value = $this->event['custom_data']['value'] ?? null;
+
         FacebookConversionLog::create([
             'event_name'      => $this->event['event_name'],
             'event_id'        => $this->event['event_id'],
             'pixel_id'        => $this->pixelId,
             'landing_page_id' => $this->landingPageId,
+            'product_id'      => $productId,
+            'items'           => $ids ? min(count($ids), 65535) : null,
+            'value'           => is_numeric($value) ? (float) $value : null,
+            'source_url'      => isset($this->event['event_source_url']) ? Str::limit((string) $this->event['event_source_url'], 500, '') : null,
             'status'          => $response->successful() ? 'sent' : 'failed',
             'http_status'     => $response->status(),
             'response'        => Str::limit($response->body(), 2000, ''),

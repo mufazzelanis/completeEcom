@@ -9,8 +9,14 @@ class FacebookConversionLog extends Model
     public $timestamps = false;
 
     protected $fillable = [
-        'event_name', 'event_id', 'pixel_id', 'landing_page_id', 'status', 'http_status', 'response', 'sent_at',
+        'event_name', 'event_id', 'pixel_id', 'landing_page_id', 'product_id', 'items', 'value', 'source_url',
+        'status', 'http_status', 'response', 'sent_at',
     ];
+
+    public function product()
+    {
+        return $this->belongsTo(Product::class);
+    }
 
     protected $casts = [
         'sent_at' => 'datetime',

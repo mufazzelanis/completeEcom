@@ -210,7 +210,7 @@ class LiveVisitorController extends Controller
             'on' => \App\Services\Facebook\ConversionsApi::isEnabled() || \App\Models\LandingPage::whereNotNull('fb_capi_access_token')->where('fb_capi_access_token', '!=', '')->exists(),
             'today' => $today,
             'failedToday' => (int) $counts->where('status', 'failed')->sum('c'),
-            'recent' => \App\Models\FacebookConversionLog::with('landingPage:id,title,slug')->latest('sent_at')->latest('id')->take(12)->get(),
+            'recent' => \App\Models\FacebookConversionLog::with(['landingPage:id,title,slug', 'product:id,name,slug,image'])->latest('sent_at')->latest('id')->take(12)->get(),
         ];
     }
 
