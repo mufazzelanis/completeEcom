@@ -80,6 +80,13 @@ class ConversionsApi
         $pixelId = $pixelIdOverride ?: setting('facebook_pixel_id', '');
         $accessToken = $accessTokenOverride ?: setting('facebook_capi_access_token', '');
 
+        // A landing page with its own pixel but no token of its own: the site token belongs to the
+        // site's pixel, so Meta would reject every event — skip the server half (its browser
+        // pixel still fires) instead of filling the log with guaranteed failures.
+        if ($pixelIdOverride && !$accessTokenOverride && $pixelIdOverride !== (string) setting('facebook_pixel_id', '')) {
+            return;
+        }
+
         // Overridden pixel+token pairs (a landing page running its own ad account) are checked
         // directly rather than through isEnabled(), which only reflects the SITE-WIDE
         // credentials — gating a page that supplies both of its own on the site's separate
