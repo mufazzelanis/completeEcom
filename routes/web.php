@@ -812,7 +812,8 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::get('activity-logs', [AdminActivityLogController::class, 'index'])->middleware('permission:dashboard.view')->name('activity-logs.index');
     Route::get('live-visitors', [\App\Http\Controllers\Admin\LiveVisitorController::class, 'index'])->middleware('permission:dashboard.view')->name('live-visitors.index');
     Route::get('live-visitors/feed', [\App\Http\Controllers\Admin\LiveVisitorController::class, 'feed'])->middleware('permission:dashboard.view')->name('live-visitors.feed');
-    Route::get('live-visitors/summary', [\App\Http\Controllers\Admin\LiveVisitorController::class, 'summary'])->middleware('permission:dashboard.view')->name('live-visitors.summary');
+    Route::get('live-visitors/fb-events', [\App\Http\Controllers\Admin\LiveFacebookEventsController::class, 'stream'])->middleware('permission:dashboard.view')->name('live-visitors.fb-events');
+    route::get('live-visitors/summary', [\App\Http\Controllers\Admin\LiveVisitorController::class, 'summary'])->middleware('permission:dashboard.view')->name('live-visitors.summary');
     Route::get('facebook-conversion-logs', [AdminFacebookConversionLogController::class, 'index'])->middleware('permission:dashboard.view')->name('facebook-conversion-logs.index');
 
     // CMS — Blog, AI Blog, Banners, Pages, Landing Pages, FAQs, Marketing overview,

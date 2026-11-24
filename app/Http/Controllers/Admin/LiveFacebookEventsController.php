@@ -1,0 +1,151 @@
+<?php
+
+namespace App\Http\Controllers\Admin;
+
+use App\Http\Controllers\Controller;
+use App\Models\FacebookConversionLog;
+use App\Models\LandingPage;
+use App\Services\Facebook\ConversionsApi;
+use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
+
+/**
+ * Admin → Live & Traffic → "Meta events": the Conversions API events the server sent, filterable
+ * by event ID, event, main site / landing page, status and time. The page renders the filter bar
+ * once and polls stream() for the results only, so typing in a filter is never interrupted by
+ * the live refresh.
+ */
+class LiveFacebookEventsController extends Controller
+{
+    public const EVENTS = [
+        'ViewContent' => ['Viewed product', '#0ea5e9', '👀'],
+        'AddToCart' => ['Add to cart', '#f59e0b', '🛒'],
+        'InitiateCheckout' => ['Checkout', '#8b5cf6', '💳'],
+        'Purchase' => ['Purchase', '#16a34a', '✅'],
+        'PageView' => ['Page view', '#64748b', '📄'],
+    ];
+
+    /** Rows shown here; everything else is one click away in the full log. */
+    public const SHOW = 5;
+
+    public const MAX = 100;
+
+    public const RANGES = ['live' => 'Last hour', 'today' => 'Today', 'yesterday' => 'Yesterday', '7d' => '7 days', '30d' => '30 days', 'custom' => 'Custom'];
+
+    public static function meta(string $event): array
+    {
+        return self::EVENTS[$event] ?? [$event, '#6366f1', '⚡'];
+    }
+
+    /** JSON for the live poll: the results block only. */
+    public function stream(Request $request)
+    {
+        $data = self::data($request);
+
+        return response()->json([
+            'html' => view('admin.live-visitors._fb-results', $data)->render(),
+            'top' => $data['topId'],
+            'total' => $data['total'],
+        ]);
+    }
+
+    /** The filters from the query string, cleaned up. */
+    public static function filters(Request $request): array
+    {
+        $event = (string) $request->query('fb_event', '');
+        $status = (string) $request->query('fb_status', '');
+        $source = (string) $request->query('fb_source', '');
+        $range = (string) $request->query('fb_range', 'today');
+
+        return [
+            'q' => mb_substr(trim((string) $request->query('fb_q', '')), 0, 80),
+            'event' => preg_match('/^[A-Za-z]{2,40}$/', $event) ? $event : '',
+            'status' => in_array($status, ['sent', 'failed'], true) ? $status : '',
+            'source' => $source === 'main' || preg_match('/^lp:\d+$/', $source) ? $source : '',
+            'range' => array_key_exists($range, self::RANGES) ? $range : 'today',
+            'from' => self::dt($request->query('fb_from')),
+            'to' => self::dt($request->query('fb_to')),
+            'limit' => max(self::SHOW, min(self::MAX, (int) $request->query('fb_limit', self::SHOW))), // the latest few; "Show more" opens 10 at a time
+            'after' => max(0, (int) $request->query('fb_after', 0)), // rows newer than this get the "new" glow
+        ];
+    }
+
+    private static function dt($value): ?string
+    {
+        return is_string($value) && preg_match('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/', $value) ? $value : null;
+    }
+
+    /** [from, to) in UTC for the chosen time filter, plus a human label. */
+    private static function window(array $f): array
+    {
+        $tz = setting('timezone', 'Asia/Dhaka');
+        $now = now($tz);
+
+        [$from, $to] = match ($f['range']) {
+            'live' => [$now->copy()->subHour(), null],
+            'yesterday' => [$now->copy()->subDay()->startOfDay(), $now->copy()->startOfDay()],
+            '7d' => [$now->copy()->subDays(6)->startOfDay(), null],
+            '30d' => [$now->copy()->subDays(29)->startOfDay(), null],
+            'custom' => [
+                $f['from'] ? Carbon::createFromFormat('Y-m-d\TH:i', $f['from'], $tz) : $now->copy()->startOfDay(),
+                $f['to'] ? Carbon::createFromFormat('Y-m-d\TH:i', $f['to'], $tz)->addMinute() : null,
+            ],
+            default => [$now->copy()->startOfDay(), null],
+        };
+
+        return [$from->utc(), $to?->utc()];
+    }
+
+    public static function data(Request $request): array
+    {
+        $f = self::filters($request);
+        [$from, $to] = self::window($f);
+
+        // everything but the event filter — the event cards show the breakdown and act as that filter
+        $base = FacebookConversionLog::query()
+            ->where('sent_at', '>=', $from)
+            ->when($to, fn ($q) => $q->where('sent_at', '<', $to))
+            ->when($f['status'], fn ($q) => $q->where('status', $f['status']))
+            ->when($f['source'] === 'main', fn ($q) => $q->whereNull('landing_page_id'))
+            ->when(str_starts_with($f['source'], 'lp:'), fn ($q) => $q->where('landing_page_id', (int) substr($f['source'], 3)))
+            ->when($f['q'] !== '', fn ($q) => $q->where('event_id', 'like', '%' . addcslashes($f['q'], '%_\\') . '%'));
+
+        $counts = (clone $base)->selectRaw('event_name, status, COUNT(*) AS c, SUM(value) AS v')->groupBy('event_name', 'status')->get();
+        $byEvent = [];
+        foreach ($counts as $row) {
+            $byEvent[$row->event_name]['sent'] = ($byEvent[$row->event_name]['sent'] ?? 0) + ($row->status === 'sent' ? (int) $row->c : 0);
+            $byEvent[$row->event_name]['failed'] = ($byEvent[$row->event_name]['failed'] ?? 0) + ($row->status === 'failed' ? (int) $row->c : 0);
+            $byEvent[$row->event_name]['value'] = ($byEvent[$row->event_name]['value'] ?? 0) + (float) $row->v;
+        }
+        $names = collect(array_keys(self::EVENTS))->reject(fn ($e) => $e === 'PageView' && empty($byEvent['PageView']))
+            ->merge(array_keys($byEvent))->unique()->values()->all();
+
+        $list = (clone $base)->when($f['event'], fn ($q) => $q->where('event_name', $f['event']));
+        $total = (clone $list)->count();
+        $rows = $list->with(['landingPage:id,title,slug', 'product:id,name,slug,image'])
+            ->orderByDesc('sent_at')->orderByDesc('id')->take($f['limit'])->get();
+
+        return [
+            'f' => $f,
+            'rows' => $rows,
+            'total' => $total,
+            'byEvent' => $byEvent,
+            'names' => $names,
+            'all' => ['sent' => (int) $counts->where('status', 'sent')->sum('c'), 'failed' => (int) $counts->where('status', 'failed')->sum('c')],
+            'topId' => (int) ($rows->max('id') ?? 0),
+            'isLive' => in_array($f['range'], ['live', 'today', '7d', '30d'], true) || ($f['range'] === 'custom' && !$f['to']),
+        ];
+    }
+
+    /** What the filter bar needs once, on page load. */
+    public static function shell(Request $request): array
+    {
+        $lpIds = FacebookConversionLog::whereNotNull('landing_page_id')->distinct()->pluck('landing_page_id');
+
+        return self::data($request) + [
+            'enabled' => ConversionsApi::isEnabled() || LandingPage::whereNotNull('fb_capi_access_token')->where('fb_capi_access_token', '!=', '')->exists(),
+            'landings' => LandingPage::whereIn('id', $lpIds)->orWhere(fn ($q) => $q->whereNotNull('fb_pixel_id')->where('fb_pixel_id', '!=', ''))
+                ->orderBy('title')->get(['id', 'title']),
+        ];
+    }
+}

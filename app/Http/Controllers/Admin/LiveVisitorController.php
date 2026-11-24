@@ -23,7 +23,10 @@ class LiveVisitorController extends Controller
 {
     public function index(Request $request)
     {
-        return view('admin.live-visitors.index', $this->snapshot($request) + ['stats' => $this->analytics($request)]);
+        return view('admin.live-visitors.index', $this->snapshot($request) + [
+            'stats' => $this->analytics($request),
+            'fbx' => LiveFacebookEventsController::shell($request),
+        ]);
     }
 
     /** Date range presets → [label, from, to) in the store's time zone. */
@@ -187,33 +190,6 @@ class LiveVisitorController extends Controller
         ]);
     }
 
-    /**
-     * Facebook Conversions API events for the live feed: today's totals per event (Bangladesh day)
-     * and the latest few sends, so the admin sees "a visitor opened a product → ViewContent sent"
-     * on the same screen instead of Admin → Facebook Conversions API.
-     */
-    private function facebookEvents(): array
-    {
-        $since = now(setting('timezone', 'Asia/Dhaka'))->startOfDay()->utc();
-        $counts = \App\Models\FacebookConversionLog::where('sent_at', '>=', $since)
-            ->selectRaw('event_name, status, COUNT(*) AS c')->groupBy('event_name', 'status')->get();
-
-        $today = [];
-        foreach ($counts as $row) {
-            $today[$row->event_name][$row->status] = (int) $row->c;
-        }
-        // the funnel order first, anything else after
-        $order = ['PageView', 'ViewContent', 'AddToCart', 'InitiateCheckout', 'Purchase'];
-        uksort($today, fn ($a, $b) => (array_search($a, $order) === false ? 99 : array_search($a, $order)) <=> (array_search($b, $order) === false ? 99 : array_search($b, $order)));
-
-        return [
-            'on' => \App\Services\Facebook\ConversionsApi::isEnabled() || \App\Models\LandingPage::whereNotNull('fb_capi_access_token')->where('fb_capi_access_token', '!=', '')->exists(),
-            'today' => $today,
-            'failedToday' => (int) $counts->where('status', 'failed')->sum('c'),
-            'recent' => \App\Models\FacebookConversionLog::with(['landingPage:id,title,slug', 'product:id,name,slug,image'])->latest('sent_at')->latest('id')->take(12)->get(),
-        ];
-    }
-
     private function snapshot(Request $request): array
     {
         $includeTeam = $request->boolean('team');
@@ -257,7 +233,6 @@ class LiveVisitorController extends Controller
         $today = LiveVisitor::where('first_seen_at', '>=', now()->setTimezone(setting('timezone', 'Asia/Dhaka'))->startOfDay()->utc())->count();
 
         return [
-            'fb' => $this->facebookEvents(),
             'live' => $live,
             'left' => $left,
             'byType' => $byType,

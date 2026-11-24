@@ -81,7 +81,6 @@
         <p class="text-xs text-gray-500 dark:text-gray-400">Visitors appear here within seconds of opening any page — this updates by itself.</p>
     </div>
 </div>
-<div class="mt-4">@include('admin.live-visitors._fb-events')</div>
 @else
 <div class="lv-grid">
     {{-- ── Visitors ─────────────────────────────────────────────────────── --}}
@@ -177,8 +176,6 @@
             </div>
         @endforelse
 
-        {{-- under the visitors, in the wide column — so the left side never sits empty next to the panels --}}
-        @include('admin.live-visitors._fb-events')
     </div>
 
     {{-- ── Side panels ──────────────────────────────────────────────────── --}}

@@ -144,6 +144,9 @@
         @include('admin.live-visitors._feed')
     </div>
 
+    {{-- ───────── Meta (Facebook) events — its own filters and live refresh ───────── --}}
+    @include('admin.live-visitors._fb-stream')
+
     {{-- ───────── traffic & sales for a date range ───────── --}}
     <div class="flex flex-wrap items-baseline gap-2 mb-3 pt-6 border-t border-gray-200 dark:border-gray-800">
         <h2 class="text-lg font-bold text-gray-800 dark:text-gray-100">📊 Traffic &amp; sales</h2>
