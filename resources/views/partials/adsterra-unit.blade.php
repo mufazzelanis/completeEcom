@@ -50,6 +50,7 @@
         // is shrunk to fit whole, instead of being cut off at the column edge
         var fit = function () {
             [].forEach.call(document.querySelectorAll('[data-adsterra] iframe'), function (f) {
+                if (!f.title) f.title = 'Advertisement'; // screen readers name the frame
                 var w = parseInt(f.getAttribute('width'), 10), h = parseInt(f.getAttribute('height'), 10);
                 var room = f.parentNode.clientWidth;
                 if (!w || !h || !room) return;

@@ -113,8 +113,10 @@ class DefaultDeliveryAreaTest extends TestCase
         $this->settings(['shipping_default_zone' => 'ask']);
         $lp = $this->page();
 
-        $this->assertNull($lp->defaultDeliveryIndex());
-        $this->get('/aveeno')->assertSee('zoneIndex: null', false)->assertSee('এলাকা বেছে নিন');
+        // since 21 Nov: with no site default, a landing page pre-picks its first zone (the customer
+        // still sees the charge and can change it) — but an order that sends no zone is still refused
+        $this->assertSame(0, $lp->defaultDeliveryIndex());
+        $this->get('/aveeno')->assertSee('zoneIndex: 0', false);
         $this->order()->assertSessionHasErrors(['delivery_zone' => 'ডেলিভারি এলাকা বেছে নিন।']);
         $this->assertSame(0, Order::count());
     }

@@ -64,7 +64,7 @@
 
 @section('content')
 <div class="max-w-7xl mx-auto px-3 sm:px-4 py-6 sm:py-10">
-    <a href="{{ route('blog.index') }}" class="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 mb-5">
+    <a href="{{ route('blog.index') }}" class="inline-flex items-center gap-1.5 text-sm text-gray-600 hover:text-gray-800 mb-5">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
         All Posts
     </a>
@@ -113,7 +113,21 @@
                  whole frame lost their top or bottom the moment the box's aspect ratio
                  didn't match the source). w-full + h-auto always shows the complete image,
                  scaled to the column width, on every screen size. --}}
-            <img src="{{ Storage::url($blogPost->image) }}" alt="{{ $view['title'] }}" class="w-full h-auto rounded-2xl mb-6 sm:mb-8">
+            {{-- The page's LCP: resized WebP (400/800/1200) instead of the uploaded original (live: a
+                 1.6 MB PNG → 11 s LCP on a phone), fetched first, with its real width/height so the
+                 article below doesn't jump down when it arrives (was CLS 0.22). --}}
+            @php
+                $heroDims = \Illuminate\Support\Facades\Cache::rememberForever('img_dims:' . $blogPost->image, function () use ($blogPost) {
+                    $path = \Illuminate\Support\Facades\Storage::disk('public')->path($blogPost->image);
+                    $size = is_file($path) ? @getimagesize($path) : false;
+                    return $size ? [$size[0], $size[1]] : [1200, 630];
+                });
+            @endphp
+            <img src="{{ image_thumb($blogPost->image, 1200) }}"
+                 srcset="{{ image_thumb($blogPost->image, 400) }} 400w, {{ image_thumb($blogPost->image, 800) }} 800w, {{ image_thumb($blogPost->image, 1200) }} 1200w"
+                 sizes="(min-width: 1024px) 760px, 100vw"
+                 width="{{ $heroDims[0] }}" height="{{ $heroDims[1] }}" fetchpriority="high" decoding="async"
+                 alt="{{ $view['title'] }}" class="w-full h-auto rounded-2xl mb-6 sm:mb-8">
             @endif
 
             <div class="flex flex-wrap items-center gap-x-3 gap-y-1.5 mb-4 text-sm text-gray-500">
@@ -213,7 +227,7 @@
                     @foreach($related as $r)
                     <a href="{{ route('blog.show', $r) }}" class="flex gap-3 group">
                         @if($r->image)
-                        <img src="{{ image_thumb($r->image, 200) }}" alt="{{ $r->title }}" loading="lazy" class="w-16 h-16 object-cover rounded-xl flex-shrink-0">
+                        <img src="{{ image_thumb($r->image, 200) }}" alt="" loading="lazy" width="64" height="64" class="w-16 h-16 object-cover rounded-xl flex-shrink-0">{{-- the title right beside it already says it --}}
                         @endif
                         <div class="min-w-0">
                             <p class="text-sm font-medium text-gray-700 group-hover:text-indigo-600 transition line-clamp-2">{{ $r->title }}</p>

@@ -38,7 +38,7 @@
         $sbFinal = (float) $primaryProduct->final_price;
         $sbBase = (float) $primaryProduct->price;
     @endphp
-    <div id="blog-sb" class="bsb" hidden aria-hidden="true">
+    <div id="blog-sb" class="bsb" hidden aria-hidden="true" inert>
         <div class="bsb-in" data-bp="{{ $primaryProduct->id }}" data-bp-place="sticky" data-track-item="{{ json_encode(tracking_item($primaryProduct), JSON_UNESCAPED_UNICODE) }}">
             <a href="{{ route('products.show', $primaryProduct->slug) }}" class="bsb-img" tabindex="-1">
                 @if($primaryProduct->image)
@@ -113,6 +113,7 @@
         if (!sb) return;
         sb.classList.toggle('is-on', on);
         sb.setAttribute('aria-hidden', on ? 'false' : 'true');
+        sb.inert = !on; // off-screen = not reachable by Tab either (aria-hidden alone left its links focusable)
         document.body.classList.toggle('bsb-on', on);
     }
     function measure() {
