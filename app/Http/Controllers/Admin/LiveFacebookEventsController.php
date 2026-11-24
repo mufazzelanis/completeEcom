@@ -5,9 +5,12 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\FacebookConversionLog;
 use App\Models\LandingPage;
+use App\Models\LiveVisitor;
 use App\Services\Facebook\ConversionsApi;
+use App\Support\VisitorIntel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Admin → Live & Traffic → "Meta events": the Conversions API events the server sent, filterable
@@ -108,7 +111,10 @@ class LiveFacebookEventsController extends Controller
             ->when($f['status'], fn ($q) => $q->where('status', $f['status']))
             ->when($f['source'] === 'main', fn ($q) => $q->whereNull('landing_page_id'))
             ->when(str_starts_with($f['source'], 'lp:'), fn ($q) => $q->where('landing_page_id', (int) substr($f['source'], 3)))
-            ->when($f['q'] !== '', fn ($q) => $q->where('event_id', 'like', '%' . addcslashes($f['q'], '%_\\') . '%'));
+            // one box: part of an event ID, or a visitor's IP (clicking an IP fills it in)
+            ->when($f['q'] !== '', fn ($q) => filter_var($f['q'], FILTER_VALIDATE_IP)
+                ? $q->where('ip_address', $f['q'])
+                : $q->where('event_id', 'like', '%' . addcslashes($f['q'], '%_\\') . '%'));
 
         $counts = (clone $base)->selectRaw('event_name, status, COUNT(*) AS c, SUM(value) AS v')->groupBy('event_name', 'status')->get();
         $byEvent = [];
@@ -128,6 +134,7 @@ class LiveFacebookEventsController extends Controller
         return [
             'f' => $f,
             'rows' => $rows,
+            'visitors' => self::visitors($rows, $from, $to),
             'total' => $total,
             'byEvent' => $byEvent,
             'names' => $names,
@@ -135,6 +142,43 @@ class LiveFacebookEventsController extends Controller
             'topId' => (int) ($rows->max('id') ?? 0),
             'isLive' => in_array($f['range'], ['live', 'today', '7d', '30d'], true) || ($f['range'] === 'custom' && !$f['to']),
         ];
+    }
+
+    /**
+     * The Visitor column, per IP on screen: network ("BRACNet", "☁️ Google"), city/country, how
+     * many Meta events that IP fired in this time window, and whether it had visited the site
+     * before the window (Returning) or not (New). Network/location come from the shared IP cache
+     * (App\Support\VisitorIntel); IPs not looked up yet are resolved right after the response.
+     */
+    private static function visitors($rows, $from, $to): array
+    {
+        $ips = $rows->pluck('ip_address')->filter()->unique()->values();
+        if ($ips->isEmpty()) {
+            return [];
+        }
+
+        $intel = VisitorIntel::ips($ips);
+        after_response(fn () => VisitorIntel::resolveQueued(1));
+
+        $events = FacebookConversionLog::whereIn('ip_address', $ips)->where('sent_at', '>=', $from)
+            ->when($to, fn ($q) => $q->where('sent_at', '<', $to))
+            ->groupBy('ip_address')->selectRaw('ip_address, COUNT(*) AS c')->pluck('c', 'ip_address');
+        // seen on the site before this window → returning (activity log has an (ip_address, created_at) index)
+        $before = DB::table('activity_logs')->whereIn('ip_address', $ips)->where('created_at', '<', $from)
+            ->distinct()->pluck('ip_address')->flip();
+
+        return $ips->mapWithKeys(function ($ip) use ($intel, $events, $before) {
+            $info = $intel[$ip] ?? null;
+
+            return [$ip => [
+                'count' => (int) ($events[$ip] ?? 0),
+                'returning' => isset($before[$ip]),
+                'network' => VisitorIntel::network($info),
+                'hosting' => !empty($info['hosting']),
+                'location' => VisitorIntel::location($info),
+                'flag' => LiveVisitor::flag($info['cc'] ?? null),
+            ]];
+        })->all();
     }
 
     /** What the filter bar needs once, on page load. */

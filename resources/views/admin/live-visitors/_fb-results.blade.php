@@ -37,7 +37,7 @@
 {{-- ── events ── --}}
 <div class="fbx-table" role="table" aria-label="Meta events">
     <div class="fbx-row fbx-head" role="row">
-        <span>Time</span><span>Event</span><span>Product / page</span><span>Source</span><span class="fbx-r">Value</span><span>Event ID</span><span>Status</span>
+        <span>Time</span><span>Event</span><span>Product / page</span><span>Visitor</span><span class="fbx-r">Value</span><span>Event ID</span><span>Status</span>
     </div>
 
     @forelse($rows as $log)
@@ -79,19 +79,45 @@
                     @else
                         <span class="fbx-name fbx-muted">—</span>
                     @endif
-                    <small>
-                        @if($more)+{{ $more }} more product{{ $more > 1 ? 's' : '' }}@endif
+                    <small class="fbx-sub">
+                        {{-- where it happened: the main site or which landing page --}}
+                        @if($log->landingPage)
+                            <span class="fbx-tag" style="--t:#db2777" title="{{ $log->landingPage->title }}">🚀 {{ \Illuminate\Support\Str::limit($log->landingPage->title, 18) }}</span>
+                        @else
+                            <span class="fbx-tag" style="--t:#4f46e5">🏬 Main site</span>
+                        @endif
+                        @if($more)<span>+{{ $more }} more product{{ $more > 1 ? 's' : '' }}</span>@endif
                         @if($orderId && $title)<a href="{{ route('admin.orders.show', $orderId) }}" class="fbx-order">Order #{{ $orderId }}</a>@endif
                     </small>
                 </span>
             </span>
 
-            {{-- source --}}
-            <span class="fbx-src">
-                @if($log->landingPage)
-                    <span class="fbx-tag" style="--t:#db2777" title="{{ $log->landingPage->title }}">🚀 {{ \Illuminate\Support\Str::limit($log->landingPage->title, 16) }}</span>
+            {{-- visitor: IP (click = only this visitor's events), how active, new / returning, network, place --}}
+            @php
+                $ip = $log->ip_address;
+                $v = $ip ? ($visitors[$ip] ?? null) : null;
+                $bot = $log->user_agent ? \App\Support\VisitorIntel::botFromUserAgent($log->user_agent) : null;
+            @endphp
+            <span class="fbx-vis">
+                @if($ip)
+                    <button type="button" class="fbx-ip" @click="q = @js($ip); apply()" title="Show only this visitor's events">{{ $ip }}</button>
+                    <span class="fbx-vis-tags">
+                        @if($v && $v['count'] > 1)
+                            <span class="fbx-pill" style="{{ $v['count'] >= 20 ? 'background:#fff7ed;color:#c2410c' : 'background:#eef2ff;color:#4338ca' }}"
+                                  title="{{ $v['count'] }} Meta events from this IP in this time range">{{ $v['count'] }}×</span>
+                        @endif
+                        @if($v)
+                            <span class="fbx-pill" style="{{ $v['returning'] ? 'background:#f1f5f9;color:#475569' : 'background:#ecfdf5;color:#047857' }}"
+                                  title="{{ $v['returning'] ? 'Visited the site before this time range' : 'First seen on the site in this time range' }}">{{ $v['returning'] ? 'Returning' : 'New' }}</span>
+                        @endif
+                        @if($bot)<span class="fbx-pill" style="background:#fef3c7;color:#b45309" title="{{ $log->user_agent }}">🤖 {{ \Illuminate\Support\Str::limit($bot['name'], 14) }}</span>@endif
+                    </span>
+                    @if($v && $v['network'])
+                        <span class="fbx-net" style="{{ $v['hosting'] ? 'color:#2563eb' : '' }}" title="{{ $v['hosting'] ? 'Data centre / cloud server — not a home or mobile connection' : 'Internet provider' }}">{{ $v['hosting'] ? '☁️ ' : '' }}{{ $v['network'] }}</span>
+                    @endif
+                    <span class="fbx-loc">{{ $v && $v['location'] ? $v['flag'] . ' ' . $v['location'] : 'Locating…' }}</span>
                 @else
-                    <span class="fbx-tag" style="--t:#4f46e5">🏬 Main site</span>
+                    <span class="fbx-muted text-xs">—</span>
                 @endif
             </span>
 

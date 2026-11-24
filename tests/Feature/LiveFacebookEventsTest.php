@@ -114,6 +114,43 @@ class LiveFacebookEventsTest extends TestCase
         $this->assertSame(24, $count($this->stream(['fb_limit' => 9999]))); // capped at 100, all 24 here
     }
 
+    /** Visitor column: IP, how many events, new / returning, network and place; click the IP to see only that visitor. */
+    public function test_visitor_column_and_ip_filter(): void
+    {
+        config(['cache.default' => 'array']);
+        $ip = '115.127.10.100';
+        \Illuminate\Support\Facades\Cache::put('ip_intel:' . $ip, ['ok' => true, 'city' => 'Dhaka', 'country' => 'Bangladesh', 'cc' => 'BD', 'isp' => 'BRACNet Limited', 'org' => null, 'asn' => null, 'asname' => null, 'hosting' => false, 'proxy' => false, 'mobile' => false], 3600);
+        $mk = fn ($id, $at = null) => FacebookConversionLog::create(['event_name' => 'ViewContent', 'event_id' => $id, 'pixel_id' => '1124', 'status' => 'sent', 'http_status' => 200, 'response' => '{}',
+            'ip_address' => $ip, 'user_agent' => 'Mozilla/5.0 (Linux; Android 14) Chrome/130 Mobile', 'sent_at' => $at ?? now()]);
+        $mk('ip-1'); $mk('ip-2'); $mk('ip-3');
+        \Illuminate\Support\Facades\DB::table('activity_logs')->insert(['event' => 'page.view', 'description' => 'x', 'ip_address' => $ip, 'created_at' => now()->subDays(5)]);
+
+        $html = $this->stream();
+        $this->assertStringContainsString($ip, $html);
+        $this->assertStringContainsString('3×', $html);
+        $this->assertStringContainsString('Returning', $html);
+        $this->assertStringContainsString('BRACNet', $html);
+        $this->assertStringContainsString('Dhaka, Bangladesh', $html);
+        $this->assertStringContainsString("q = '115.127.10.100'; apply()", $html);
+
+        // the search box takes an IP too: only that visitor's events
+        $html = $this->stream(['fb_q' => $ip]);
+        $this->assertSame(3, substr_count($html, 'aria-label="Copy event ID'));
+        $this->assertStringNotContainsString('view-aaa', $html);
+    }
+
+    public function test_job_records_the_visitor_ip_and_browser(): void
+    {
+        Http::fake(['graph.facebook.com/*' => Http::response(['events_received' => 1])]);
+        (new \App\Jobs\SendFacebookConversionEvent('v21.0', '1124', 'T', null, [
+            'event_name' => 'ViewContent', 'event_id' => 'ua1',
+            'user_data' => ['client_ip_address' => '103.4.5.6', 'client_user_agent' => 'Mozilla/5.0 Test'],
+        ]))->handle();
+
+        $row = FacebookConversionLog::where('event_id', 'ua1')->sole();
+        $this->assertSame(['103.4.5.6', 'Mozilla/5.0 Test'], [$row->ip_address, $row->user_agent]);
+    }
+
     public function test_only_new_rows_glow_on_a_live_poll(): void
     {
         $top = FacebookConversionLog::max('id');

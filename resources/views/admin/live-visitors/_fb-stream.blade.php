@@ -43,7 +43,7 @@
     .fbx-card-s { display:block; font-size:.7rem; font-weight:600; color:#64748b; }
 
     .fbx-table { border:1px solid #eef2f7; border-radius:1rem; overflow:hidden; }
-    .fbx-row { display:grid; grid-template-columns:6.6rem 8.6rem minmax(0,1fr) 8.5rem 5.2rem 12rem 6.6rem; gap:.75rem; align-items:center; padding:.6rem .9rem; border-top:1px solid #f1f5f9; position:relative; font-size:.8rem; }
+    .fbx-row { display:grid; grid-template-columns:6.4rem 8.4rem minmax(0,1fr) 10.5rem 5rem 11.5rem 6.4rem; gap:.75rem; align-items:center; padding:.6rem .9rem; border-top:1px solid #f1f5f9; position:relative; font-size:.8rem; }
     .fbx-row::before { content:""; position:absolute; left:0; top:.55rem; bottom:.55rem; width:3px; border-radius:0 3px 3px 0; background:var(--c); }
     .fbx-row:hover { background:#f8fafc; }
     .fbx-head { border-top:0; background:#f8fafc; font-size:.66rem; font-weight:800; text-transform:uppercase; letter-spacing:.06em; color:#94a3b8; padding-top:.5rem; padding-bottom:.5rem; }
@@ -63,6 +63,16 @@
     .fbx-muted { color:#94a3b8; font-weight:400; }
     .fbx-order { display:inline-block; margin-left:.15rem; padding:0 .4rem; border-radius:.35rem; font-weight:700; color:#16a34a; background:#16a34a1a; }
     .fbx-tag { display:inline-block; max-width:100%; padding:.15rem .5rem; border-radius:.45rem; font-size:.7rem; font-weight:700; color:var(--t); background:color-mix(in srgb, var(--t) 10%, transparent); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .fbx-sub { display:flex !important; flex-wrap:wrap; align-items:center; gap:.3rem; margin-top:.15rem; }
+    .fbx-sub .fbx-tag { font-size:.64rem; padding:.05rem .4rem; }
+    .fbx-vis { min-width:0; font-size:.7rem; line-height:1.35; }
+    .fbx-ip { font-family:ui-monospace, SFMono-Regular, Menlo, monospace; font-size:.72rem; font-weight:600; color:#64748b; }
+    .fbx-ip:hover { color:var(--fb); text-decoration:underline; }
+    .fbx-vis-tags { display:flex; flex-wrap:wrap; gap:.2rem; margin:.15rem 0; }
+    .fbx-pill { display:inline-block; padding:0 .4rem; border-radius:999px; font-size:.64rem; font-weight:800; white-space:nowrap; }
+    .fbx-net { display:block; font-weight:600; color:#64748b; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .fbx-loc { display:block; color:#94a3b8; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .dark .fbx-ip, .dark .fbx-net { color:#94a3b8; } .dark .fbx-loc { color:#64748b; }
     .fbx-val { font-weight:800; color:#0f172a; font-variant-numeric:tabular-nums; }
     .fbx-id { display:flex; align-items:center; gap:.3rem; min-width:0; }
     .fbx-id code { flex:1; min-width:0; padding:.22rem .45rem; border-radius:.45rem; background:#f1f5f9; color:#334155; font-size:.7rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; cursor:copy; border:1px dashed transparent; }
@@ -105,9 +115,9 @@
     /* phones / narrow: each event becomes a small card */
     @media (max-width: 1023px) {
         .fbx-head { display:none; }
-        .fbx-row { grid-template-columns:minmax(0,1fr) auto; grid-template-areas:"what what" "ev status" "id id" "time val"; row-gap:.45rem; padding:.8rem .9rem; }
+        .fbx-row { grid-template-columns:minmax(0,1fr) auto; grid-template-areas:"what what" "ev status" "vis vis" "id id" "time val"; row-gap:.45rem; padding:.8rem .9rem; }
         .fbx-row > :nth-child(1) { grid-area:time; } .fbx-row > :nth-child(2) { grid-area:ev; } .fbx-row > :nth-child(3) { grid-area:what; }
-        .fbx-row > :nth-child(4) { display:none; } .fbx-row > :nth-child(5) { grid-area:val; } .fbx-row > :nth-child(6) { grid-area:id; } .fbx-row > :nth-child(7) { grid-area:status; justify-self:end; }
+        .fbx-row > :nth-child(4) { grid-area:vis; } .fbx-row > :nth-child(5) { grid-area:val; } .fbx-row > :nth-child(6) { grid-area:id; } .fbx-row > :nth-child(7) { grid-area:status; justify-self:end; }
         .fbx-time { display:flex; gap:.4rem; align-items:baseline; } .fbx-time small { display:inline; }
         .fbx-bar { padding:.8rem 1rem; } .fbx-body { padding:.9rem 1rem 1rem; } .fbx-hero { padding:1rem; }
         .fbx-seg { overflow-x:auto; max-width:100%; }
@@ -198,7 +208,7 @@
         <div class="fbx-bar">
             <label class="fbx-search">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
-                <input type="search" class="fbx-in" x-model="q" @input="search()" placeholder="Search event ID… e.g. purchase_135" aria-label="Search by event ID" autocomplete="off" spellcheck="false">
+                <input type="search" class="fbx-in" x-model="q" @input="search()" placeholder="Search event ID or IP… e.g. purchase_135" aria-label="Search by event ID or IP" autocomplete="off" spellcheck="false">
             </label>
 
             <select class="fbx-in fbx-sel" x-model="source" @change="apply()" aria-label="Main site or landing page">

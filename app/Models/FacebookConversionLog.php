@@ -9,7 +9,7 @@ class FacebookConversionLog extends Model
     public $timestamps = false;
 
     protected $fillable = [
-        'event_name', 'event_id', 'pixel_id', 'landing_page_id', 'product_id', 'items', 'value', 'source_url',
+        'event_name', 'event_id', 'pixel_id', 'landing_page_id', 'product_id', 'items', 'value', 'source_url', 'ip_address', 'user_agent',
         'status', 'http_status', 'response', 'sent_at',
     ];
 
