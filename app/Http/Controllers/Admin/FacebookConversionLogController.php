@@ -19,8 +19,8 @@ class FacebookConversionLogController extends Controller
         $eventNames = FacebookConversionLog::query()->distinct()->orderBy('event_name')->pluck('event_name');
 
         $stats = [
-            'sent_today'   => FacebookConversionLog::where('status', 'sent')->whereDate('sent_at', today())->count(),
-            'failed_today' => FacebookConversionLog::where('status', 'failed')->whereDate('sent_at', today())->count(),
+            'sent_today'   => FacebookConversionLog::where('status', 'sent')->where('sent_at', '>=', now(setting('timezone', 'Asia/Dhaka'))->startOfDay()->utc())->count(),
+            'failed_today' => FacebookConversionLog::where('status', 'failed')->where('sent_at', '>=', now(setting('timezone', 'Asia/Dhaka'))->startOfDay()->utc())->count(),
             'sent_total'   => FacebookConversionLog::where('status', 'sent')->count(),
             'last_sent_at' => FacebookConversionLog::max('sent_at'),
         ];

@@ -73,7 +73,7 @@
             @forelse($logs as $log)
             <tr class="hover:bg-gray-50 transition">
                 <td class="px-5 py-3 whitespace-nowrap text-xs text-gray-500">
-                    {{ $log->sent_at->format('M d, H:i:s') }}
+                    {{ $log->sent_at->copy()->setTimezone(setting('timezone', 'Asia/Dhaka'))->format('M d, h:i:s A') }}
                 </td>
                 <td class="px-5 py-3">
                     <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-700">{{ $log->event_name }}</span>
