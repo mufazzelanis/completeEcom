@@ -44,8 +44,14 @@ class SendFacebookConversionEvent implements ShouldQueue
 
     public function handle(): void
     {
+        // a guest's city / country from their IP, looked up here off the visitor's request (see ConversionsApi::addIpLocation)
+        $event = $this->event;
+        if (isset($event['user_data'])) {
+            $event['user_data'] = \App\Services\Facebook\ConversionsApi::addIpLocation((array) $event['user_data']);
+        }
+
         $payload = [
-            'data' => [$this->event],
+            'data' => [$event],
             'access_token' => $this->accessToken,
         ];
         if ($this->testEventCode) {
@@ -56,24 +62,24 @@ class SendFacebookConversionEvent implements ShouldQueue
             ->post("https://graph.facebook.com/{$this->graphVersion}/{$this->pixelId}/events", $payload);
 
         // what the event was about — shown (and linked) in Admin → Live & Traffic
-        $ids = array_values((array) ($this->event['custom_data']['content_ids'] ?? []));
+        $ids = array_values((array) ($event['custom_data']['content_ids'] ?? []));
         $productId = isset($ids[0]) && ctype_digit((string) $ids[0]) ? (int) $ids[0] : null; // a landing page without a product sends its slug
-        $value = $this->event['custom_data']['value'] ?? null;
+        $value = $event['custom_data']['value'] ?? null;
 
         FacebookConversionLog::create([
-            'event_name'      => $this->event['event_name'],
-            'event_id'        => $this->event['event_id'],
+            'event_name'      => $event['event_name'],
+            'event_id'        => $event['event_id'],
             'pixel_id'        => $this->pixelId,
             'landing_page_id' => $this->landingPageId,
             'product_id'      => $productId,
             'items'           => $ids ? min(count($ids), 65535) : null,
             'value'           => is_numeric($value) ? (float) $value : null,
-            'source_url'      => isset($this->event['event_source_url']) ? Str::limit((string) $this->event['event_source_url'], 500, '') : null,
+            'source_url'      => isset($event['event_source_url']) ? Str::limit((string) $event['event_source_url'], 500, '') : null,
             // the visitor behind it (already in user_data for Meta's matching) — the Visitor column
-            'ip_address'      => isset($this->event['user_data']['client_ip_address']) ? Str::limit((string) $this->event['user_data']['client_ip_address'], 45, '') : null,
-            'user_agent'      => isset($this->event['user_data']['client_user_agent']) ? Str::limit((string) $this->event['user_data']['client_user_agent'], 255, '') : null,
+            'ip_address'      => isset($event['user_data']['client_ip_address']) ? Str::limit((string) $event['user_data']['client_ip_address'], 45, '') : null,
+            'user_agent'      => isset($event['user_data']['client_user_agent']) ? Str::limit((string) $event['user_data']['client_user_agent'], 255, '') : null,
             // which matching keys went with it (names only, never the hashed values)
-            'match_keys'      => FacebookConversionLog::matchKeysFrom((array) ($this->event['user_data'] ?? [])),
+            'match_keys'      => FacebookConversionLog::matchKeysFrom((array) ($event['user_data'] ?? [])),
             'status'          => $response->successful() ? 'sent' : 'failed',
             'http_status'     => $response->status(),
             'response'        => Str::limit($response->body(), 2000, ''),
@@ -84,7 +90,7 @@ class SendFacebookConversionEvent implements ShouldQueue
             // captured in the log row above — this is just so a persistently failing setup
             // also surfaces in the app's normal error log without needing to check that table.
             Log::warning('Facebook Conversions API event failed', [
-                'event_name' => $this->event['event_name'],
+                'event_name' => $event['event_name'],
                 'status'     => $response->status(),
                 'body'       => $response->body(),
             ]);

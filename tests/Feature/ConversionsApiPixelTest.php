@@ -104,6 +104,44 @@ class ConversionsApiPixelTest extends TestCase
         $this->assertSame(hash('sha256', 'bd'), $user['country']);
     }
 
+    /** Meta Diagnostics "Missing user data parameters" (69% of events): a browsing guest sent no email / phone / name / city. */
+    public function test_a_returning_customer_is_recognised_on_later_guest_events(): void
+    {
+        config(['cache.default' => 'array']);
+        $req = fn () => tap(\Illuminate\Http\Request::create('/products/x'), fn ($r) => $r->attributes->set('mv_vid', 'browserabcdefghijklmnopqrst'));
+
+        // they order once from this browser…
+        ConversionsApi::track('Purchase', 'p1', [], ['name' => 'Rahim Uddin', 'phone' => '01712345678', 'city' => 'Dhaka'], $req());
+        Queue::fake();
+        // …and come back later, not logged in
+        $user = $this->userDataFor($req());
+
+        $this->assertArrayHasKey('ph', $user);
+        $this->assertArrayHasKey('fn', $user);
+        $this->assertArrayHasKey('ct', $user);
+        $this->assertSame(64, strlen($user['ph'])); // hashed, never the number itself
+    }
+
+    public function test_the_job_adds_a_guests_city_from_their_ip(): void
+    {
+        config(['cache.default' => 'array']);
+        \Illuminate\Support\Facades\Http::fake([
+            'ip-api.com/*' => \Illuminate\Support\Facades\Http::response([['status' => 'success', 'query' => '103.4.5.6', 'city' => "Cox's Bazar", 'country' => 'Bangladesh', 'countryCode' => 'BD', 'isp' => 'X', 'org' => '', 'as' => 'AS1 X', 'asname' => 'X', 'mobile' => false, 'proxy' => false, 'hosting' => false]]),
+            'graph.facebook.com/*' => \Illuminate\Support\Facades\Http::response(['events_received' => 1]),
+        ]);
+
+        (new SendFacebookConversionEvent('v21.0', '1124', 'T', null, [
+            'event_name' => 'ViewContent', 'event_id' => 'g1', 'user_data' => ['client_ip_address' => '103.4.5.6', 'client_user_agent' => 'UA'],
+        ]))->handle();
+
+        \Illuminate\Support\Facades\Http::assertSent(function ($r) {
+            $u = $r['data'][0]['user_data'] ?? null;
+            return str_contains($r->url(), 'graph.facebook.com') && $u
+                && $u['ct'] === hash('sha256', 'coxsbazar') && $u['country'] === hash('sha256', 'bd');
+        });
+        $this->assertStringContainsString(',ct,', \App\Models\FacebookConversionLog::where('event_id', 'g1')->value('match_keys'));
+    }
+
     public function test_every_storefront_visit_gets_the_anonymous_visitor_cookie(): void
     {
         $this->get('/')->assertCookie('mv_vid');

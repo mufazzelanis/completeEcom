@@ -141,7 +141,7 @@ class LiveFacebookEventsTest extends TestCase
 
     public function test_job_records_the_visitor_ip_and_browser(): void
     {
-        Http::fake(['graph.facebook.com/*' => Http::response(['events_received' => 1])]);
+        Http::fake(['ip-api.com/*' => Http::response([]), 'graph.facebook.com/*' => Http::response(['events_received' => 1])]);
         (new \App\Jobs\SendFacebookConversionEvent('v21.0', '1124', 'T', null, [
             'event_name' => 'ViewContent', 'event_id' => 'ua1',
             'user_data' => ['client_ip_address' => '103.4.5.6', 'client_user_agent' => 'Mozilla/5.0 Test'],
@@ -154,7 +154,7 @@ class LiveFacebookEventsTest extends TestCase
     /** Customer match: which matching keys went with each event (names only), a score, the details panel and the summary. */
     public function test_customer_match_keys_score_details_and_summary(): void
     {
-        Http::fake(['graph.facebook.com/*' => Http::response(['events_received' => 1, 'fbtrace_id' => 'TRACE123'])]);
+        Http::fake(['ip-api.com/*' => Http::response([]), 'graph.facebook.com/*' => Http::response(['events_received' => 1, 'fbtrace_id' => 'TRACE123'])]);
         (new \App\Jobs\SendFacebookConversionEvent('v21.0', '1124', 'T', null, [
             'event_name' => 'Purchase', 'event_id' => 'purchase_777',
             'user_data' => ['em' => hash('sha256', 'a@b.c'), 'ph' => hash('sha256', '8801'), 'fbp' => 'fb.1.1.2', 'external_id' => 'x',
@@ -208,7 +208,7 @@ class LiveFacebookEventsTest extends TestCase
         $product = Product::forceCreate(['category_id' => $cat->id, 'name' => 'Biotin 5000mcg', 'slug' => 'biotin-5000',
             'price' => 1200, 'stock' => 5, 'is_active' => true, 'approval_status' => 'approved']);
 
-        Http::fake(['graph.facebook.com/*' => Http::response(['events_received' => 1])]);
+        Http::fake(['ip-api.com/*' => Http::response([]), 'graph.facebook.com/*' => Http::response(['events_received' => 1])]);
         (new \App\Jobs\SendFacebookConversionEvent('v21.0', '1124', 'T', null, [
             'event_name' => 'AddToCart', 'event_id' => 'x1', 'event_source_url' => url('/products/biotin-5000'),
             'custom_data' => ['content_ids' => [(string) $product->id, '99'], 'value' => 2400, 'currency' => 'BDT'],

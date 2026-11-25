@@ -4,6 +4,7 @@ namespace App\Services\Facebook;
 
 use App\Jobs\SendFacebookConversionEvent;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 
 /**
  * Facebook/Meta Conversions API (server-side event tracking) — the counterpart to the
@@ -24,6 +25,47 @@ use Illuminate\Http\Request;
 class ConversionsApi
 {
     private const GRAPH_VERSION = 'v21.0';
+
+    /** Hashed user_data fields kept per browser once known (see buildUserData). */
+    private const REMEMBERED = ['em', 'ph', 'fn', 'ln', 'ct', 'st', 'zp', 'country'];
+
+    /**
+     * Meta's own normalisation for city: lowercase, letters only (no spaces or punctuation) —
+     * "Cox's Bazar" → "coxsbazar". Bangla script is kept as is.
+     */
+    public static function normalizeCity(string $city): string
+    {
+        return preg_replace('/[^\p{L}]+/u', '', mb_strtolower(trim($city)));
+    }
+
+    /**
+     * For a guest Meta knows nothing else about: the city (and country) of their IP, hashed —
+     * from the IP lookup the site already caches for Activity Log / Live Visitors, looked up now
+     * when it isn't cached yet (at most a few per minute: the free lookup allows 15 a minute and
+     * the admin pages share it). Runs inside the queued job, so a visitor never waits on it.
+     */
+    public static function addIpLocation(array $userData): array
+    {
+        $ip = $userData['client_ip_address'] ?? null;
+        if (!$ip || (isset($userData['ct']) && isset($userData['country']))) {
+            return $userData;
+        }
+        $info = \App\Support\VisitorIntel::ip($ip);
+        if ($info === null && Cache::add('capi_iplookup:' . now()->format('YmdHi') . ':' . intdiv((int) now()->format('s'), 15), 1, 120)) {
+            \App\Support\VisitorIntel::lookup([$ip]); // one per 15 s at most
+            $info = \App\Support\VisitorIntel::ip($ip);
+        }
+        if (!empty($info['ok'])) {
+            if (!isset($userData['ct']) && ($city = self::normalizeCity((string) ($info['city'] ?? ''))) !== '') {
+                $userData['ct'] = self::hash($city);
+            }
+            if (!isset($userData['country']) && !empty($info['cc'])) {
+                $userData['country'] = self::hash(strtolower($info['cc']));
+            }
+        }
+
+        return $userData;
+    }
 
     /**
      * Whether the merchant has actually turned this on and given it what it needs to run —
@@ -143,6 +185,20 @@ class ConversionsApi
         $userData = [];
         foreach ($raw as $field => $value) {
             $userData[$field] = self::hash((string) $value);
+        }
+
+        // A customer who once ordered (or logged in) from this browser: remember their hashed
+        // details against the anonymous visitor id, and send them with later guest events too —
+        // Meta counts only email / phone / name / city / region / postcode as "user data", so a
+        // browsing guest otherwise trips "Missing user data parameters" on every event.
+        $vid = \App\Http\Middleware\VisitorId::of($request);
+        if ($vid) {
+            $key = 'capi_who:' . $vid;
+            if (isset($userData['em']) || isset($userData['ph'])) {
+                Cache::put($key, array_intersect_key($userData, array_flip(self::REMEMBERED)), now()->addDays(180));
+            } elseif (is_array($known = Cache::get($key))) {
+                $userData += $known;
+            }
         }
 
         $userData['client_ip_address'] = $request->ip();
