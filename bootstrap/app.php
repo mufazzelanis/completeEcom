@@ -54,12 +54,15 @@ return Application::configure(basePath: dirname(__DIR__))
         );
         // set by the blog reading tracker in the browser (blog/partials/tracker) when a shopper
         // clicks a product inside a post: plain "postId.readKey", read back by BlogOrderObserver
-        $middleware->encryptCookies(except: ['blg']);
+        // _fbp / _fbc: set by Meta's pixel script in the browser, never encrypted by us — without this
+        // Laravel failed to decrypt them and read null, so the Conversions API never sent fbp and
+        // rebuilt fbc itself (Meta Diagnostics: "missing user data", "modified fbclid in fbc")
+        $middleware->encryptCookies(except: ['blg', '_fbp', '_fbc']);
         $middleware->web(prepend: [\App\Http\Middleware\ServerTiming::class, ForceHttps::class]);
         // Link: rel=preload headers for the Vite CSS/JS — Cloudflare Early Hints replays them as a
         // 103 response straight from its edge, so the browser starts fetching the (edge-cached)
         // assets while the origin is still building the page.
-        $middleware->web(append: [SetLocale::class, MaintenanceMode::class, SecurityHeaders::class, \Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets::class]);
+        $middleware->web(append: [\App\Http\Middleware\VisitorId::class, SetLocale::class, MaintenanceMode::class, SecurityHeaders::class, \Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets::class]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         // A guest sent from /account to /login gets that redirect from the exception handler,

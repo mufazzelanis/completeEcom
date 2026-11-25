@@ -148,7 +148,10 @@ class ConversionsApi
         $userData['client_ip_address'] = $request->ip();
         $userData['client_user_agent'] = $request->userAgent();
 
-        if ($fbp = $request->cookie('_fbp')) {
+        // the pixel's own cookies, passed on exactly as the browser has them (they're excluded from
+        // cookie encryption in bootstrap/app.php — before that they always read as null)
+        $fbp = (string) $request->cookie('_fbp');
+        if (preg_match('/^fb\.\d+\.\d+\.\d+$/', $fbp)) {
             $userData['fbp'] = $fbp;
         }
         if ($fbc = self::resolveFbc($request)) {
@@ -158,6 +161,14 @@ class ConversionsApi
             // A consistent hashed customer identifier — helps Meta match this event to the
             // same person across devices/sessions even when em/ph aren't provided this time.
             $userData['external_id'] = self::hash((string) auth()->id());
+        } elseif ($vid = \App\Http\Middleware\VisitorId::of($request)) {
+            // a guest: this browser's anonymous id (App\Http\Middleware\VisitorId) — before this a
+            // guest's ViewContent/AddToCart/InitiateCheckout carried only IP + browser, which Meta
+            // flags as "missing user data" and can't use for matching or optimisation
+            $userData['external_id'] = self::hash('v:' . $vid);
+        }
+        if (!isset($userData['country']) && ($cc = \App\Support\VisitorIntel::ip($request->ip())['cc'] ?? null)) {
+            $userData['country'] = self::hash(strtolower($cc)); // from the IP lookup the site already caches
         }
 
         return $userData;
@@ -172,13 +183,32 @@ class ConversionsApi
      */
     private static function resolveFbc(Request $request): ?string
     {
-        if ($fbc = $request->cookie('_fbc')) {
+        // 1. the browser's own _fbc, untouched — what Meta wants (Diagnostics: "modified fbclid in fbc")
+        $cookie = (string) $request->cookie('_fbc');
+        if (preg_match('/^fb\.\d+\.\d+\.[A-Za-z0-9_\-]+$/', $cookie)) {
+            return $cookie;
+        }
+
+        // 2. this visit's click, built once and reused, so every later event (AddToCart, Purchase…)
+        //    sends the identical value instead of a new timestamp each time
+        $session = $request->hasSession() ? $request->session() : null;
+        $fbclid = (string) $request->query('fbclid');
+        // an fbclid that isn't plain URL-safe text was cut or mangled on its way here — sending it
+        // would be exactly the "modified fbclid" Meta flags, so it's left out instead
+        if ($fbclid !== '' && preg_match('/^[A-Za-z0-9_\-]{10,}$/', $fbclid)) {
+            $saved = $session?->get('meta_fbc');
+            if (is_string($saved) && str_ends_with($saved, '.' . $fbclid)) {
+                return $saved;
+            }
+            $fbc = 'fb.1.' . (int) round(microtime(true) * 1000) . '.' . $fbclid;
+            $session?->put('meta_fbc', $fbc);
+
             return $fbc;
         }
-        if ($fbclid = $request->query('fbclid')) {
-            return 'fb.1.' . (int) round(microtime(true) * 1000) . '.' . $fbclid;
-        }
-        return null;
+
+        $saved = $session?->get('meta_fbc');
+
+        return is_string($saved) ? $saved : null;
     }
 
     private static function hash(string $value): string
