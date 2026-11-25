@@ -3,6 +3,11 @@
     $pageSeoImage = $page->og_image ?: ($page->image ? Storage::url($page->image) : null);
     // Meta text that only repeats the page title ("Privacy Policy") is ignored — see meaningful_seo().
     $pageSeoTitle = meaningful_seo($page->meta_title, [$page->title]) ?? $page->title . ' | ' . setting('site_name', 'ShopVista');
+    // "Privacy Policy | Mitavin" (24 chars) is too thin for a search result — short titles get
+    // the shop's line added, unless that would push them past ~60 characters
+    if (mb_strlen($pageSeoTitle) < 30 && mb_strlen($pageSeoTitle . ' – Online Shopping in Bangladesh') <= 62) {
+        $pageSeoTitle .= ' – Online Shopping in Bangladesh';
+    }
     $pageSeoDesc  = meaningful_seo($page->meta_description, [$page->title], 50)
         ?? meaningful_seo($page->excerpt, [$page->title], 50)
         ?? Str::limit(trim(preg_replace('/\s+/u', ' ', strip_tags((string) $page->content))), 155, '…');
