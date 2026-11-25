@@ -72,6 +72,8 @@ class SendFacebookConversionEvent implements ShouldQueue
             // the visitor behind it (already in user_data for Meta's matching) — the Visitor column
             'ip_address'      => isset($this->event['user_data']['client_ip_address']) ? Str::limit((string) $this->event['user_data']['client_ip_address'], 45, '') : null,
             'user_agent'      => isset($this->event['user_data']['client_user_agent']) ? Str::limit((string) $this->event['user_data']['client_user_agent'], 255, '') : null,
+            // which matching keys went with it (names only, never the hashed values)
+            'match_keys'      => FacebookConversionLog::matchKeysFrom((array) ($this->event['user_data'] ?? [])),
             'status'          => $response->successful() ? 'sent' : 'failed',
             'http_status'     => $response->status(),
             'response'        => Str::limit($response->body(), 2000, ''),

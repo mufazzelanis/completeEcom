@@ -151,6 +151,46 @@ class LiveFacebookEventsTest extends TestCase
         $this->assertSame(['103.4.5.6', 'Mozilla/5.0 Test'], [$row->ip_address, $row->user_agent]);
     }
 
+    /** Customer match: which matching keys went with each event (names only), a score, the details panel and the summary. */
+    public function test_customer_match_keys_score_details_and_summary(): void
+    {
+        Http::fake(['graph.facebook.com/*' => Http::response(['events_received' => 1, 'fbtrace_id' => 'TRACE123'])]);
+        (new \App\Jobs\SendFacebookConversionEvent('v21.0', '1124', 'T', null, [
+            'event_name' => 'Purchase', 'event_id' => 'purchase_777',
+            'user_data' => ['em' => hash('sha256', 'a@b.c'), 'ph' => hash('sha256', '8801'), 'fbp' => 'fb.1.1.2', 'external_id' => 'x',
+                'client_ip_address' => '1.2.3.4', 'client_user_agent' => 'UA', 'fn' => ''],
+        ]))->handle();
+        (new \App\Jobs\SendFacebookConversionEvent('v21.0', '1124', 'T', null, [
+            'event_name' => 'ViewContent', 'event_id' => 'view-guest',
+            'user_data' => ['client_ip_address' => '1.2.3.4', 'client_user_agent' => 'UA', 'fbp' => 'fb.1.1.2', 'external_id' => 'y', 'country' => 'z'],
+        ]))->handle();
+
+        $row = FacebookConversionLog::where('event_id', 'purchase_777')->sole();
+        $this->assertSame(',em,ph,fbp,external_id,ip,ua,', $row->match_keys);          // names only, empty fn skipped
+        $this->assertStringNotContainsString('a@b.c', (string) $row->match_keys);
+        $this->assertSame(9.0, FacebookConversionLog::scoreFor($row->matchKeyList())); // em3 + ph3 + fbp1 + ext1 + ip.6 + ua.4
+        $this->assertSame('Great', FacebookConversionLog::grade(9.0)[0]);
+
+        $html = $this->stream(['fb_q' => 'purchase_777']);
+        $this->assertStringContainsString('Customer match: <span style="color:#16a34a">Great</span>', $html);
+        $this->assertStringContainsString('Meta got this customer', $html);
+        $this->assertStringContainsString('TRACE123', $html);
+        $this->assertMatchesRegularExpression('/fbx-key on"[^>]*>\s*<span class="fbx-key-i">✓<\/span>✉️ Email/', $html);
+        $this->assertMatchesRegularExpression('/fbx-key "[^>]*>\s*<span class="fbx-key-i">–<\/span>🎯 Ad click/', $html);
+
+        $guest = $this->stream(['fb_q' => 'view-guest']);
+        $this->assertStringContainsString('A guest browsing', $guest);
+
+        // summary over both tracked events: browser ID 100%, email/phone 50%
+        $all = $this->stream();
+        $this->assertStringContainsString('Customer match ·', $all);
+        $this->assertMatchesRegularExpression('/🍪 Browser ID<\/span>.*?<b>100%<\/b>/s', $all);
+        $this->assertMatchesRegularExpression('/✉️ Email \/ phone<\/span>.*?<b>50%<\/b>/s', $all);
+
+        // events from before key tracking just say so
+        $this->assertStringContainsString('Sent before this shop recorded', $this->stream(['fb_q' => 'view-aaa']));
+    }
+
     public function test_only_new_rows_glow_on_a_live_poll(): void
     {
         $top = FacebookConversionLog::max('id');

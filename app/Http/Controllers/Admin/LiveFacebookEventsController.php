@@ -134,6 +134,7 @@ class LiveFacebookEventsController extends Controller
         return [
             'f' => $f,
             'rows' => $rows,
+            'match' => self::matchSummary(clone $list),
             'visitors' => self::visitors($rows, $from, $to),
             'total' => $total,
             'byEvent' => $byEvent,
@@ -141,6 +142,45 @@ class LiveFacebookEventsController extends Controller
             'all' => ['sent' => (int) $counts->where('status', 'sent')->sum('c'), 'failed' => (int) $counts->where('status', 'failed')->sum('c')],
             'topId' => (int) ($rows->max('id') ?? 0),
             'isLive' => in_array($f['range'], ['live', 'today', '7d', '30d'], true) || ($f['range'] === 'custom' && !$f['to']),
+        ];
+    }
+
+    /**
+     * "How well can Meta recognise these customers?" for the filtered events: the average match
+     * score and, per key, the share of events that carried it. One grouped query — the distinct
+     * key combinations are few — over events logged since key tracking began.
+     */
+    private static function matchSummary($query): ?array
+    {
+        $combos = $query->whereNotNull('match_keys')->groupBy('match_keys')
+            ->selectRaw('match_keys, COUNT(*) AS c')->pluck('c', 'match_keys');
+        $n = (int) $combos->sum();
+        if (!$n) {
+            return null;
+        }
+
+        $score = 0.0; $contact = 0;
+        $has = array_fill_keys(array_keys(FacebookConversionLog::MATCH_KEYS), 0);
+        foreach ($combos as $keys => $c) {
+            $list = array_filter(explode(',', $keys));
+            $score += FacebookConversionLog::scoreFor($list) * $c;
+            $contact += array_intersect(['em', 'ph'], $list) ? $c : 0; // email or phone
+            foreach ($list as $k) {
+                if (isset($has[$k])) {
+                    $has[$k] += $c;
+                }
+            }
+        }
+        $avg = round($score / $n, 1);
+
+        return [
+            'n' => $n,
+            'score' => $avg,
+            'grade' => FacebookConversionLog::grade($avg),
+            // the ones worth watching; IP / browser are always there
+            'cover' => collect(['fbp', 'external_id', 'fbc', 'em', 'ph', 'country'])
+                ->mapWithKeys(fn ($k) => [$k => (int) round($has[$k] / $n * 100)])->all(),
+            'contact' => (int) round($contact / $n * 100),
         ];
     }
 

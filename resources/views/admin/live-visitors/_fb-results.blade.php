@@ -34,6 +34,35 @@
     @endforeach
 </div>
 
+{{-- ── how well Meta can recognise these customers ── --}}
+@if($match)
+    @php [$gLabel, $gColor] = $match['grade']; $mk = \App\Models\FacebookConversionLog::MATCH_KEYS; @endphp
+    <div class="fbx-mq">
+        <div class="fbx-mq-score">
+            <div class="fbx-ring" style="--m:{{ $gColor }}; --p:{{ $match['score'] * 10 }}"><b>{{ $match['score'] }}</b><small>/10</small></div>
+            <div>
+                <p class="fbx-mq-t">Customer match · <span style="color:{{ $gColor }}">{{ $gLabel }}</span></p>
+                <p class="fbx-mq-s">How well Meta can recognise who did these {{ number_format($match['n']) }} events. Higher = Meta finds your buyers more often → better ad results.</p>
+            </div>
+        </div>
+        <div class="fbx-mq-bars">
+            @foreach(['fbp', 'external_id', 'fbc', 'contact', 'country'] as $k)
+                @php
+                    $pct = $k === 'contact' ? $match['contact'] : $match['cover'][$k];
+                    [$kLabel, $kIcon] = $k === 'contact' ? ['Email / phone', '✉️'] : $mk[$k];
+                    $hint = $k === 'contact' ? 'Sent once the customer logs in or orders — browsing guests don\'t have it yet.' : $mk[$k][3];
+                    $barColor = $pct >= 80 ? '#16a34a' : ($pct >= 40 ? '#0ea5e9' : '#f59e0b');
+                @endphp
+                <div class="fbx-mq-bar" title="{{ $hint }}">
+                    <span class="fbx-mq-l">{{ $kIcon }} {{ $kLabel }}</span>
+                    <span class="fbx-mq-track"><span style="width:{{ max(2, $pct) }}%;background:{{ $barColor }}"></span></span>
+                    <b>{{ $pct }}%</b>
+                </div>
+            @endforeach
+        </div>
+    </div>
+@endif
+
 {{-- ── events ── --}}
 <div class="fbx-table" role="table" aria-label="Meta events">
     <div class="fbx-row fbx-head" role="row">
@@ -134,16 +163,74 @@
                 </button>
             </span>
 
-            {{-- status --}}
-            <span>
+            {{-- status + how well Meta can recognise this customer; the button opens the details --}}
+            @php
+                $keys = $log->matchKeyList();
+                $mScore = $keys !== null ? \App\Models\FacebookConversionLog::scoreFor($keys) : null;
+                [$mLabel, $mColor, $mBars] = $mScore !== null ? \App\Models\FacebookConversionLog::grade($mScore) : ['—', '#94a3b8', 0];
+            @endphp
+            <span class="fbx-stat">
                 @if($ok)
                     <span class="fbx-status is-ok" title="Meta received it{{ isset($body['fbtrace_id']) ? ' · fbtrace ' . $body['fbtrace_id'] : '' }}">✓ Sent <i>{{ $log->http_status }}</i></span>
                 @else
                     <span class="fbx-status is-bad" title="{{ $error }}">✕ Failed <i>{{ $log->http_status ?: '—' }}</i></span>
                 @endif
+                <button type="button" class="fbx-match" style="--m:{{ $mColor }}" @click="toggle({{ $log->id }})" :aria-expanded="!!opened[{{ $log->id }}]"
+                        title="{{ $mScore !== null ? 'Customer match ' . $mScore . '/10 (' . $mLabel . ') — click for what Meta received' : 'Details' }}">
+                    @if($mScore !== null)
+                        <span class="fbx-sig" aria-hidden="true">@for($b = 1; $b <= 4; $b++)<i class="{{ $b <= $mBars ? 'on' : '' }}" style="height:{{ 3 + $b * 2.5 }}px"></i>@endfor</span>
+                        <b>{{ $mLabel }}</b>
+                    @else
+                        <span>Details</span>
+                    @endif
+                    <svg :class="opened[{{ $log->id }}] && 'rot'" viewBox="0 0 20 20" fill="currentColor"><path d="M5.3 7.3a1 1 0 0 1 1.4 0L10 10.6l3.3-3.3a1 1 0 1 1 1.4 1.4l-4 4a1 1 0 0 1-1.4 0l-4-4a1 1 0 0 1 0-1.4z"/></svg>
+                </button>
             </span>
 
             @if($error)<p class="fbx-err">⚠ {{ $error }}</p>@endif
+
+            {{-- details: what Meta received to recognise the customer, in plain words --}}
+            <div class="fbx-detail" x-show="opened[{{ $log->id }}]" x-cloak x-transition.opacity>
+                @if($keys !== null)
+                    <div class="fbx-d-head">
+                        <div class="fbx-ring" style="--m:{{ $mColor }}; --p:{{ $mScore * 10 }}">
+                            <b>{{ $mScore }}</b><small>/10</small>
+                        </div>
+                        <div class="min-w-0">
+                            <p class="fbx-d-title">Customer match: <span style="color:{{ $mColor }}">{{ $mLabel }}</span></p>
+                            <p class="fbx-d-text">
+                                @if(array_intersect(['em', 'ph'], $keys))
+                                    Meta got this customer's contact details — it can tie this {{ strtolower($label) }} to a real Facebook account and credit your ads.
+                                @elseif(in_array('fbc', $keys))
+                                    This visitor came from a Facebook ad — Meta can credit that ad. Email / phone are added once they order or log in.
+                                @elseif(in_array('fbp', $keys))
+                                    A guest browsing — Meta recognises them by the pixel's browser ID and this shop's visitor ID. Email / phone are added once they order or log in.
+                                @else
+                                    Only basic details went with this event (no pixel cookie — likely an ad blocker or a bot), so Meta has little to match it with.
+                                @endif
+                            </p>
+                        </div>
+                    </div>
+                    <div class="fbx-keys">
+                        @foreach(\App\Models\FacebookConversionLog::MATCH_KEYS as $k => [$kLabel, $kIcon, $kWeight, $kHelp])
+                            @php $on = in_array($k, $keys, true); @endphp
+                            <span class="fbx-key {{ $on ? 'on' : '' }}" title="{{ $kHelp }}">
+                                <span class="fbx-key-i">{{ $on ? '✓' : '–' }}</span>{{ $kIcon }} {{ $kLabel }}
+                            </span>
+                        @endforeach
+                    </div>
+                    <p class="fbx-d-note">Hover any item to see what it is. Only <i>which</i> details were sent is kept here — the values themselves go to Meta encrypted (hashed) and are never stored.</p>
+                @else
+                    <p class="fbx-d-note">Sent before this shop recorded which customer details go with each event — newer events show them here.</p>
+                @endif
+                <dl class="fbx-d-tech">
+                    <div><dt>Event ID</dt><dd><code>{{ $log->event_id }}</code></dd></div>
+                    @if(isset($body['fbtrace_id']))<div><dt>Meta trace ID</dt><dd><code>{{ $body['fbtrace_id'] }}</code></dd></div>@endif
+                    <div><dt>Pixel</dt><dd><code>{{ $log->pixel_id }}</code></dd></div>
+                    @if($log->source_url)<div><dt>Page</dt><dd><a href="{{ $log->source_url }}" target="_blank" rel="noopener" class="fbx-link">{{ \Illuminate\Support\Str::limit(urldecode($log->source_url), 90) }}</a></dd></div>@endif
+                    @if($log->user_agent)<div><dt>Browser</dt><dd>{{ \Illuminate\Support\Str::limit($log->user_agent, 120) }}</dd></div>@endif
+                </dl>
+            </div>
         </div>
     @empty
         <div class="fbx-empty">
