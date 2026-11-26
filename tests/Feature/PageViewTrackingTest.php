@@ -45,6 +45,8 @@ class PageViewTrackingTest extends TestCase
         $this->assertMatchesRegularExpression('/data-pv="([0-9a-f-]{36})"/', $html);
         preg_match('/data-pv="([0-9a-f-]{36})"/', $html, $m);
         $this->assertStringContainsString("fbq('track','PageView',{},id ? {eventID:id} : undefined)", $html);
+        $this->assertStringContainsString('fbq.disablePushState = true;', $html);       // no second, id-less PageView of the pixel's own on Turbo navigations
+        $this->assertStringContainsString('fbq.allowDuplicatePageViews = true;', $html); // …and ours goes out on every page
 
         $pv = collect($this->sent())->firstWhere('event_name', 'PageView');
         $this->assertSame($m[1], $pv['event_id']);

@@ -650,6 +650,11 @@ $pageTwitterImage = $meta('twitter_image', $pageOgImage);
             evs.forEach(function(ev){f.addEventListener(ev,load,{passive:true})});
             if(b.readyState==='complete'){setTimeout(load,4000)}else{f.addEventListener('load',function(){setTimeout(load,4000)})}
         }(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');
+        {{-- The pixel fires its own PageView (with its own id) whenever the URL changes through the
+             History API — i.e. on every Turbo navigation — so the page's PageView went out twice /
+             without the id the server's copy carries. Off: the turbo:load PageView below is the one. --}}
+        fbq.disablePushState = true;
+        fbq.allowDuplicatePageViews = true; // …and lets that one through on every Turbo page, not only the first
         fbq('init','{{ $pixelId }}'@if($fbAdvancedMatchingOn && $fbPixelMatch), {!! Js::from($fbPixelMatch) !!}@endif);
         {{-- each page's own event id rides on <body data-pv> (Turbo swaps the body), matching the server's PageView --}}
         document.addEventListener('turbo:load', function () { var id = document.body.dataset.pv; fbq('track','PageView',{},id ? {eventID:id} : undefined); });
