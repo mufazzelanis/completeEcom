@@ -137,7 +137,8 @@
         html.dark { --bg: #070b14; --bg2: #0c1222; --card: #111a2e; --ink: #eef2ff; --muted: #94a3b8; --line: #1e293b; --glass: rgba(17, 26, 46, .72); --shadow: 0 24px 60px -24px rgba(0, 0, 0, .8); color-scheme: dark; }
         * { box-sizing: border-box; }
         html { scroll-behavior: smooth; }
-        body { margin: 0; font-family: {!! $fontStack !!}, "Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Hind Siliguri", sans-serif; background: var(--bg); color: var(--ink); overflow-x: hidden; -webkit-font-smoothing: antialiased; }
+        html { overflow-x: clip; } /* the floating decorations never widen the page on a phone (body hidden alone still let iOS pan sideways) */
+        body { margin: 0; font-family: {!! $fontStack !!}, "Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Hind Siliguri", sans-serif; background: var(--bg); color: var(--ink); overflow-x: clip; -webkit-font-smoothing: antialiased; }
         a { color: inherit; text-decoration: none; }
         button { font: inherit; }
         .grad { background: linear-gradient(110deg, var(--p), var(--s), var(--p)); background-size: 200% auto; -webkit-background-clip: text; background-clip: text; color: transparent; animation: shine 5s linear infinite; }

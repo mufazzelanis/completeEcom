@@ -153,7 +153,7 @@
         #checkout-form { counter-reset: co-step; }
         /* numbered steps: 1 Contact · 2 Delivery address · 3 Payment */
         #checkout-form .co-card > h2 { display: flex; align-items: center; gap: .6rem; font-size: 1.05rem; font-weight: 800; color: #0f172a; }
-        #checkout-form .co-card > h2::before { counter-increment: co-step; content: counter(co-step); flex-shrink: 0; width: 1.75rem; height: 1.75rem; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; font-size: .85rem; font-weight: 900; color: #fff; background: linear-gradient(135deg, #f97316, #ea580c); box-shadow: 0 4px 10px -3px #f9731699; }
+        #checkout-form .co-card > h2::before { counter-increment: co-step; content: counter(co-step); flex-shrink: 0; width: 1.75rem; height: 1.75rem; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; font-size: .85rem; font-weight: 900; color: #fff; background: linear-gradient(135deg, rgb(var(--brand-500)), rgb(var(--brand-600))); box-shadow: 0 4px 10px -3px rgb(var(--brand-500))99; }
         #checkout-form .co-card { border: 1px solid #eef2f7; }
         /* labels: dark, bold, a touch bigger */
         #checkout-form .co-card label.block { font-size: .9rem !important; font-weight: 700 !important; color: #1e293b !important; margin-bottom: .4rem !important; }
@@ -168,7 +168,7 @@
         #checkout-form .co-card :is(input, textarea, select)::placeholder { color: #94a3b8; opacity: 1; }
         #checkout-form .co-card :is(input, textarea, select):not([type="radio"]):not([type="checkbox"]):hover { border-color: #94a3b8; }
         #checkout-form .co-card :is(input, textarea, select):not([type="radio"]):not([type="checkbox"]):focus {
-            outline: none; background: #fff; border-color: #f97316; box-shadow: 0 0 0 4px rgba(249, 115, 22, .15);
+            outline: none; background: #fff; border-color: rgb(var(--brand-500)); box-shadow: 0 0 0 4px rgb(var(--brand-500) / .15);
         }
         /* filled in and valid: a calm green edge and a tick — the shopper sees what's done */
         #checkout-form .co-card :is(input[type="text"], input[type="tel"], input[type="email"]):required:valid:not(:placeholder-shown):not(:focus):not(.border-red-400) {
@@ -176,14 +176,14 @@
         }
         #checkout-form .co-card :is(input, textarea).border-red-400 { border-color: #f87171 !important; background-color: #fef2f2 !important; }
         #checkout-form .co-card .relative > span.pointer-events-none { color: #64748b; }
-        #checkout-form .co-hint { margin-top: .45rem; font-size: .78rem; line-height: 1.4; color: #475569; background: #fff7ed; border: 1px solid #fed7aa; border-radius: .7rem; padding: .45rem .65rem; }
+        #checkout-form .co-hint { margin-top: .45rem; font-size: .78rem; line-height: 1.4; color: #475569; background: rgb(var(--brand-50)); border: 1px solid rgb(var(--brand-200)); border-radius: .7rem; padding: .45rem .65rem; }
         .dark #checkout-form .co-card { border-color: #1f2937; }
         .dark #checkout-form .co-card > h2 { color: #f8fafc; }
         .dark #checkout-form .co-card label.block { color: #e2e8f0 !important; }
         .dark #checkout-form .co-card :is(input[type="text"], input[type="tel"], input[type="email"], input[type="number"], textarea, select):not([readonly]) { background: #0f172a; border-color: #334155; color: #f1f5f9; }
         .dark #checkout-form .co-card :is(input, textarea, select):not([type="radio"]):not([type="checkbox"]):focus { background: #111827; }
         .dark #checkout-form .co-card :is(input[type="text"], input[type="tel"], input[type="email"]):required:valid:not(:placeholder-shown):not(:focus):not(.border-red-400) { background-color: #052e16; border-color: #16a34a; }
-        .dark #checkout-form .co-hint { background: #1c1917; border-color: #7c2d12; color: #fdba74; }
+        .dark #checkout-form .co-hint { background: rgb(var(--brand-950)); border-color: rgb(var(--brand-800)); color: rgb(var(--brand-300)); }
     </style>
     <form id="checkout-form" action="{{ route('checkout.store') }}" method="POST"
         data-show-loader data-loader-message="Placing your order&hellip;"

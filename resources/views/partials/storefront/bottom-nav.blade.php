@@ -155,7 +155,7 @@
     .bn-tab.is-on .bn-label { font-weight: 800; }
     .bn-badge { position: absolute; top: -.35rem; right: -.55rem; min-width: 1rem; height: 1rem; padding: 0 .2rem; border-radius: 999px; background: #ef4444; color: #fff; font-size: .56rem; font-weight: 800; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 0 2px #fff; }
     .dark .bn-badge { box-shadow: 0 0 0 2px #111827; }
-    .bn-avatar { width: 1.35rem; height: 1.35rem; border-radius: 999px; display: flex; align-items: center; justify-content: center; font-size: .6rem; font-weight: 800; color: #fff; background: linear-gradient(135deg, #fb923c, #ef4444); }
+    .bn-avatar { width: 1.35rem; height: 1.35rem; border-radius: 999px; display: flex; align-items: center; justify-content: center; font-size: .6rem; font-weight: 800; color: #fff; background: linear-gradient(135deg, rgb(var(--brand-400)), rgb(var(--brand-600))); }
     /* the cart orb */
     .bn-cart { position: relative; z-index: 2; display: flex; flex-direction: column; align-items: center; gap: .25rem; margin-top: -1.65rem; padding-bottom: .5rem; -webkit-tap-highlight-color: transparent; }
     .bn-cart .bn-label { color: #4b5563; font-weight: 700; } .dark .bn-cart .bn-label { color: #d1d5db; }
@@ -167,7 +167,7 @@
     .bn-orb-icon { position: relative; z-index: 1; width: 1.5rem; height: 1.5rem; }
     /* a spinning conic glow round the orb while there's something in the cart */
     .bn-orb-ring { position: absolute; inset: -6px; border-radius: 999px; opacity: 0; transition: opacity .4s;
-        background: conic-gradient(from 0deg, transparent 0 55%, rgba(251, 191, 36, .95) 70%, rgba(249, 115, 22, .9) 85%, transparent 100%);
+        background: conic-gradient(from 0deg, transparent 0 55%, rgb(var(--brand-300) / .95) 70%, rgb(var(--brand-500) / .9) 85%, transparent 100%);
         -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 2px)); mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 2px)); }
     .bn-orb.has-items .bn-orb-ring { opacity: 1; animation: bnSpin 3.2s linear infinite; }
     @keyframes bnSpin { to { transform: rotate(360deg); } }
