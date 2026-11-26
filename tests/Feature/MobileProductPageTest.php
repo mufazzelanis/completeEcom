@@ -45,6 +45,21 @@ class MobileProductPageTest extends TestCase
             ->assertJsonStructure(['fb_event_id', 'track' => ['name', 'price', 'fb_event_id', 'ga']]);
     }
 
+    /** Cart + checkout are "focus mode": no pinned search, menu or chat over them; a sticky Checkout bar instead. */
+    public function test_cart_is_in_focus_mode_with_a_checkout_bar(): void
+    {
+        $product = $this->product();
+        $this->actingAs(\App\Models\User::factory()->create()); // a user's cart survives between test requests
+        $this->postJson(route('cart.add'), ['product_id' => $product->id, 'quantity' => 1])->assertOk();
+
+        $this->get(route('cart.index'))->assertOk()
+            ->assertSee('class="shop-focus ', false)
+            ->assertSee('id="ct-bar"', false)
+            ->assertSee('Proceed to Checkout')
+            ->assertDontSee('$store.mobileSearchBar.visible', false);
+        $this->get('/')->assertOk()->assertDontSee('class="shop-focus ', false);
+    }
+
     public function test_the_bottom_dock_and_its_cart_orb(): void
     {
         $this->get('/')->assertOk()

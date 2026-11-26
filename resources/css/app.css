@@ -1036,3 +1036,13 @@ html[aria-busy="true"] { cursor: progress; }
 .cfx-count-pop { animation: cfxPop .5s cubic-bezier(.34, 1.56, .64, 1); }
 @keyframes cfxPop { 0% { transform: scale(.4); } 60% { transform: scale(1.35); } 100% { transform: scale(1); } }
 @media (prefers-reduced-motion: reduce) { .cfx-gulp, .cfx-ripple, .cfx-plus, .cfx-count-pop { animation: none; } }
+
+/* "Focus mode" for the cart and checkout on phones/tablets: the page is about finishing the
+   order, so no bottom menu, chat bubble / greeting card or back-to-top over it — the page's
+   own Checkout / Place Order bar sits at the very bottom instead (layouts/app.blade.php adds
+   .shop-focus on those two routes; cart/index + checkout/index mark their bar data-focus-bar). */
+@media (max-width: 1023px) {
+    body.shop-focus [data-fab], body.shop-focus [data-to-top], body.shop-focus [data-bottom-nav] { display: none !important; }
+    body.shop-focus [data-focus-bar] { bottom: calc(.6rem + env(safe-area-inset-bottom, 0px)) !important; }
+    body.shop-focus { padding-bottom: calc(5.75rem + env(safe-area-inset-bottom, 0px)) !important; }
+}

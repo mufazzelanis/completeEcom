@@ -641,7 +641,7 @@ $pageTwitterImage = $meta('twitter_image', $pageOgImage);
      (now a direct child of it, see below) has the full page height to stick within,
      same as before the off-canvas drawer was introduced. Confirmed by reproducing the
      broken behavior with the old wrapper and fixing it by removing it. --}}
-<body data-theme-key="site-theme" x-data="{ mobileOpen: false }" x-effect="document.body.style.overflow = mobileOpen ? 'hidden' : ''" class="bg-gray-100 dark:bg-gray-950 font-sans antialiased transition-colors pb-[calc(4.9rem_+_env(safe-area-inset-bottom))] md:pb-0">
+<body data-theme-key="site-theme" x-data="{ mobileOpen: false }" x-effect="document.body.style.overflow = mobileOpen ? 'hidden' : ''" class="{{ request()->routeIs('cart.index', 'checkout.index') ? 'shop-focus' : '' }} bg-gray-100 dark:bg-gray-950 font-sans antialiased transition-colors pb-[calc(4.9rem_+_env(safe-area-inset-bottom))] md:pb-0">
 
 @include('partials.delivery-loader')
 @include('partials.confirm-modal')

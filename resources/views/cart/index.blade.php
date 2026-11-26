@@ -8,8 +8,25 @@
 @endpush
 
 @section('content')
-<div class="max-w-7xl mx-auto px-4 py-8">
-    <h1 class="text-2xl font-bold text-gray-900 mb-8">Shopping Cart</h1>
+@php
+    $itemCount = (int) $cartItems->sum('quantity');
+    $cartHelpWa = whatsapp_chat_url("Hi, I need help with my order on " . setting('site_name', 'the shop') . '.');
+@endphp
+{{-- 2026-11 redesign — "focus mode" on phones (no bottom menu / chat bubble / pinned search,
+     see .shop-focus in resources/css/app.css): the items, a clear total, and one obvious way
+     forward — the sticky Checkout bar at the bottom of the screen. --}}
+<div class="max-w-7xl mx-auto px-3 sm:px-4 pt-4 pb-6 md:py-8">
+    <div class="flex items-end justify-between gap-3 mb-2">
+        <h1 class="text-xl sm:text-2xl font-extrabold text-gray-900">Shopping Cart</h1>
+        @if($itemCount)
+            <span class="ct-chip">{{ $itemCount }} {{ \Illuminate\Support\Str::plural('item', $itemCount) }}</span>
+        @endif
+    </div>
+    @if($cartItems->isNotEmpty())
+        <div class="ct-trust mb-4 md:mb-6">
+            <span>🔒 Secure checkout</span><span>💵 Cash on Delivery</span><span>🚚 Fast delivery</span>
+        </div>
+    @endif
 
     @if($cartItems->isEmpty())
         <div class="bg-white rounded-2xl shadow-sm p-8 md:p-16 text-center">
@@ -23,92 +40,58 @@
             </a>
         </div>
     @else
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-5 lg:gap-8">
             <div class="lg:col-span-2 space-y-3">
                 @foreach($cartItems as $item)
-                    <div class="bg-white rounded-2xl shadow-sm p-4 md:p-6">
-                        {{-- Desktop layout --}}
-                        <div class="hidden md:flex items-center space-x-4">
-                            <div class="w-24 h-24 bg-gray-100 rounded-xl overflow-hidden flex-shrink-0 p-2">
+                    @php $stock = $item->product->available_stock; @endphp
+                    <div class="ct-item bg-white rounded-2xl shadow-sm p-3 sm:p-4 md:p-5">
+                        <div class="flex gap-3 sm:gap-4">
+                            <a href="{{ route('products.show', $item->product->slug) }}" class="ct-img">
                                 @if($item->product->image)
                                     <img src="{{ image_thumb($item->product->image, 200) }}" alt="{{ $item->product->name }}" loading="lazy" decoding="async" class="w-full h-full object-contain">
                                 @else
-                                    <div class="w-full h-full flex items-center justify-center">
-                                        <svg class="w-10 h-10 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-                                    </div>
+                                    <svg class="w-8 h-8 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
                                 @endif
-                            </div>
+                            </a>
                             <div class="flex-1 min-w-0">
-                                <a href="{{ route('products.show', $item->product->slug) }}" class="font-semibold text-gray-800 hover:text-orange-700 text-sm block truncate">{{ $item->product->name }}</a>
-                                <p class="text-xs text-gray-400 mt-1">{{ $item->product->category->name }}</p>
-                                @if($item->combination?->label)
-                                    <p class="text-xs text-gray-500 mt-0.5">{{ $item->combination->label }}</p>
-                                @endif
-                                <p class="text-orange-700 font-bold mt-2">৳{{ number_format($item->unit_price) }}</p>
-                            </div>
-                            <div class="flex flex-col items-end space-y-3">
-                                <form action="{{ route('cart.update', $item->id) }}" method="POST" class="flex items-center border border-gray-200 rounded-lg overflow-hidden">
-                                    @csrf @method('PATCH')
-                                    <button type="button" onclick="this.form.quantity.value = Math.max(1, parseInt(this.form.quantity.value)-1); this.form.submit();" class="px-3 py-1 text-gray-500 hover:bg-gray-100">-</button>
-                                    <input type="number" name="quantity" value="{{ $item->quantity }}" min="1" max="{{ $item->product->available_stock }}" onchange="this.form.submit()" class="w-12 text-center text-sm border-0 focus:outline-none">
-                                    <button type="button" onclick="this.form.quantity.value = Math.min({{ $item->product->available_stock }}, parseInt(this.form.quantity.value)+1); this.form.submit();" class="px-3 py-1 text-gray-500 hover:bg-gray-100">+</button>
-                                </form>
-                                <div class="flex items-center space-x-3">
-                                    <span class="font-bold text-gray-900 text-sm">৳{{ number_format($item->subtotal) }}</span>
-                                    <form action="{{ route('cart.remove', $item->id) }}" method="POST">
+                                <div class="flex items-start gap-2">
+                                    <a href="{{ route('products.show', $item->product->slug) }}" class="flex-1 min-w-0 font-semibold text-gray-900 text-sm sm:text-base leading-snug line-clamp-2 hover:text-orange-700">{{ $item->product->name }}</a>
+                                    <form action="{{ route('cart.remove', $item->id) }}" method="POST" class="flex-shrink-0">
                                         @csrf @method('DELETE')
-                                        <button type="submit" class="text-red-400 hover:text-red-600 transition" aria-label="Remove {{ $item->product->name ?? 'item' }}" title="Remove">
-                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                        <button type="submit" class="ct-remove" aria-label="Remove {{ $item->product->name ?? 'item' }}" title="Remove">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
                                         </button>
                                     </form>
                                 </div>
-                            </div>
-                        </div>
-                        {{-- Mobile layout --}}
-                        <div class="md:hidden">
-                            <div class="flex items-start space-x-3 mb-3">
-                                <div class="w-20 h-20 bg-gray-100 rounded-xl overflow-hidden flex-shrink-0 p-1.5">
-                                    @if($item->product->image)
-                                        <img src="{{ image_thumb($item->product->image, 200) }}" alt="{{ $item->product->name }}" loading="lazy" decoding="async" class="w-full h-full object-contain">
-                                    @else
-                                        <div class="w-full h-full flex items-center justify-center">
-                                            <svg class="w-8 h-8 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-                                        </div>
-                                    @endif
+                                <p class="text-xs text-gray-500 mt-0.5 truncate">
+                                    {{ $item->product->category->name ?? '' }}@if($item->combination?->label) · {{ $item->combination->label }}@endif
+                                </p>
+                                <p class="text-sm font-bold text-orange-700 mt-1">৳{{ number_format($item->unit_price) }} <span class="text-xs font-medium text-gray-400">each</span></p>
+
+                                <div class="flex items-center justify-between gap-2 mt-2.5">
+                                    <form action="{{ route('cart.update', $item->id) }}" method="POST" class="ct-qty">
+                                        @csrf @method('PATCH')
+                                        <button type="button" aria-label="One less" onclick="this.form.quantity.value = Math.max(1, parseInt(this.form.quantity.value)-1); this.form.submit();" @disabled($item->quantity <= 1)>−</button>
+                                        <input type="number" name="quantity" aria-label="Quantity" value="{{ $item->quantity }}" min="1" max="{{ $stock }}" onchange="this.form.submit()">
+                                        <button type="button" aria-label="One more" onclick="this.form.quantity.value = Math.min({{ $stock }}, parseInt(this.form.quantity.value)+1); this.form.submit();" @disabled($item->quantity >= $stock)>+</button>
+                                    </form>
+                                    <span class="text-base sm:text-lg font-extrabold text-gray-900 tabular-nums">৳{{ number_format($item->subtotal) }}</span>
                                 </div>
-                                <div class="flex-1 min-w-0">
-                                    <a href="{{ route('products.show', $item->product->slug) }}" class="font-semibold text-gray-800 text-sm line-clamp-2">{{ $item->product->name }}</a>
-                                    @if($item->combination?->label)
-                                        <p class="text-xs text-gray-500 mt-0.5">{{ $item->combination->label }}</p>
-                                    @endif
-                                    <p class="text-orange-700 font-bold mt-1">৳{{ number_format($item->unit_price) }}</p>
-                                </div>
-                                <form action="{{ route('cart.remove', $item->id) }}" method="POST">
-                                    @csrf @method('DELETE')
-                                    <button type="submit" class="text-gray-300 hover:text-red-500 transition p-1" aria-label="Remove {{ $item->product->name ?? 'item' }}" title="Remove">
-                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-                                    </button>
-                                </form>
-                            </div>
-                            <div class="flex items-center justify-between">
-                                <form action="{{ route('cart.update', $item->id) }}" method="POST" class="flex items-center border border-gray-200 rounded-lg overflow-hidden">
-                                    @csrf @method('PATCH')
-                                    <button type="button" onclick="this.form.quantity.value = Math.max(1, parseInt(this.form.quantity.value)-1); this.form.submit();" class="w-9 h-9 flex items-center justify-center text-gray-500 hover:bg-gray-100 text-lg">-</button>
-                                    <input type="number" name="quantity" value="{{ $item->quantity }}" min="1" max="{{ $item->product->available_stock }}" onchange="this.form.submit()" class="w-12 text-center text-sm border-0 focus:outline-none">
-                                    <button type="button" onclick="this.form.quantity.value = Math.min({{ $item->product->available_stock }}, parseInt(this.form.quantity.value)+1); this.form.submit();" class="w-9 h-9 flex items-center justify-center text-gray-500 hover:bg-gray-100 text-lg">+</button>
-                                </form>
-                                <span class="font-bold text-gray-900">৳{{ number_format($item->subtotal) }}</span>
+                                @if($stock > 0 && $stock <= 5)
+                                    <p class="text-[11px] font-semibold text-red-600 mt-1.5">⚡ Only {{ $stock }} left in stock</p>
+                                @endif
                             </div>
                         </div>
                     </div>
                 @endforeach
+                <a href="{{ route('shop.index') }}" class="hidden lg:inline-flex items-center gap-1.5 text-sm font-semibold text-gray-500 hover:text-orange-700 pt-1">← Continue shopping</a>
             </div>
 
             <div class="space-y-4">
                 @include('partials.coupon-box')
 
                 @auth
-                <div class="bg-white rounded-2xl shadow-sm p-6">
+                <div class="bg-white rounded-2xl shadow-sm p-5 sm:p-6">
                     <h3 class="font-semibold text-gray-800 mb-4">Use Your Points</h3>
                     <p class="text-xs text-gray-400 mb-3">Balance: <span class="font-semibold text-gray-600">{{ number_format($pointsBalance) }} pts</span></p>
                     @if($pointsRedeemed > 0)
@@ -135,13 +118,13 @@
                 </div>
                 @endauth
 
-                <div class="bg-white rounded-2xl shadow-sm p-6">
-                    <h3 class="font-semibold text-gray-800 mb-4">Order Summary</h3>
+                <div class="bg-white rounded-2xl shadow-sm p-5 sm:p-6 lg:sticky lg:top-24">
+                    <h3 class="font-bold text-gray-900 mb-4">Order Summary</h3>
                     @include('partials.free-delivery-progress', ['subtotal' => $subtotal, 'class' => 'mb-4'])
                     <div class="space-y-3 text-sm">
                         <div class="flex justify-between text-gray-600">
-                            <span>Subtotal</span>
-                            <span>৳{{ number_format($subtotal) }}</span>
+                            <span>Subtotal ({{ $itemCount }} {{ \Illuminate\Support\Str::plural('item', $itemCount) }})</span>
+                            <span class="font-semibold text-gray-800">৳{{ number_format($subtotal) }}</span>
                         </div>
                         @if(($discount - $pointsDiscount) > 0)
                             <div class="flex justify-between text-green-600">
@@ -155,27 +138,38 @@
                                 <span>-৳{{ number_format($pointsDiscount) }}</span>
                             </div>
                         @endif
-                        <div class="flex justify-between text-gray-600">
-                            @php
-    $cartZone = $shippingZone ?? \App\Services\ShippingCalculator::estimateZone();
-    $cartOther = \App\Services\ShippingCalculator::otherZone($cartZone);
-@endphp
-<span>Shipping @if(\App\Services\ShippingCalculator::usesZones() && $shipping > 0)<span class="text-xs text-gray-400">({{ \App\Services\ShippingCalculator::label($cartZone) }} · {{ \App\Services\ShippingCalculator::label($cartOther) }} ৳{{ number_format(\App\Services\ShippingCalculator::calculate($subtotal, $cartOther)) }})</span>@endif</span>
-                            <span>{{ $shipping > 0 ? '৳' . number_format($shipping) : 'Free' }}</span>
+                        @php
+                            $cartZone = $shippingZone ?? \App\Services\ShippingCalculator::estimateZone();
+                            $cartOther = \App\Services\ShippingCalculator::otherZone($cartZone);
+                        @endphp
+                        <div class="flex justify-between gap-3 text-gray-600">
+                            <span>Delivery
+                                @if(\App\Services\ShippingCalculator::usesZones() && $shipping > 0)
+                                    <span class="block text-xs text-gray-400">{{ \App\Services\ShippingCalculator::label($cartZone) }} · {{ \App\Services\ShippingCalculator::label($cartOther) }} ৳{{ number_format(\App\Services\ShippingCalculator::calculate($subtotal, $cartOther)) }} — pick at checkout</span>
+                                @endif
+                            </span>
+                            <span class="font-semibold {{ $shipping > 0 ? 'text-gray-800' : 'text-green-600' }} whitespace-nowrap">{{ $shipping > 0 ? '৳' . number_format($shipping) : 'Free' }}</span>
                         </div>
-                        <div class="border-t border-gray-100 pt-3 flex justify-between font-bold text-gray-900 text-base">
-                            <span>Total</span>
-                            <span>৳{{ number_format($total) }}</span>
+                        <div class="border-t border-dashed border-gray-200 pt-3 flex justify-between items-baseline">
+                            <span class="font-bold text-gray-900">Total</span>
+                            <span class="text-2xl font-extrabold text-gray-900 tabular-nums">৳{{ number_format($total) }}</span>
                         </div>
                     </div>
 
-                    <a href="{{ route('checkout.index') }}" class="block w-full mt-6 bg-orange-500 text-white py-3 rounded-xl text-center font-bold hover:bg-orange-600 transition">
+                    <a href="{{ route('checkout.index') }}" id="ct-checkout" class="ct-go mt-5">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
                         Proceed to Checkout
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
                     </a>
+                    <p class="text-center text-xs text-gray-500 mt-2.5">No payment now — pay cash when it arrives</p>
 
-                    <a href="{{ route('shop.index') }}" class="block text-center text-sm text-gray-500 mt-3 hover:text-orange-700">
-                        Continue Shopping
-                    </a>
+                    <div class="flex items-center justify-center gap-4 mt-4 pt-4 border-t border-gray-100 text-sm">
+                        <a href="{{ route('shop.index') }}" class="font-semibold text-gray-500 hover:text-orange-700">← Continue shopping</a>
+                        @if($cartHelpWa)
+                            <span class="text-gray-200">|</span>
+                            <a href="{{ $cartHelpWa }}" target="_blank" rel="noopener" class="font-semibold text-green-600 hover:text-green-700">💬 Need help?</a>
+                        @endif
+                    </div>
                 </div>
             </div>
         </div>
@@ -183,16 +177,65 @@
         @if($crossSellProducts->isNotEmpty())
             <div class="mt-10">
                 <h2 class="text-lg font-bold text-gray-900 mb-4">You may also like</h2>
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-6">
                     @foreach($crossSellProducts as $p)
                         @include('partials.product-card', ['product' => $p])
                     @endforeach
                 </div>
             </div>
         @endif
+
+        {{-- phones / tablets: total + Checkout always at hand; slides away while the summary's own button is on screen --}}
+        <div class="ct-bar lg:hidden" data-focus-bar id="ct-bar">
+            <div class="ct-bar-in">
+                <div class="min-w-0 flex-1">
+                    <p class="text-[11px] text-gray-500 leading-none">Total · {{ $itemCount }} {{ \Illuminate\Support\Str::plural('item', $itemCount) }}</p>
+                    <p class="text-lg font-extrabold text-gray-900 leading-tight tabular-nums">৳{{ number_format($total) }}</p>
+                </div>
+                <a href="{{ route('checkout.index') }}" class="ct-bar-go">Checkout
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
+                </a>
+            </div>
+        </div>
     @endif
 </div>
+
+<style>
+    .ct-chip { font-size: .75rem; font-weight: 700; color: #c2410c; background: #fff7ed; border: 1px solid #fed7aa; padding: .2rem .6rem; border-radius: 999px; white-space: nowrap; }
+    .ct-trust { display: flex; flex-wrap: wrap; gap: .35rem .9rem; font-size: .72rem; font-weight: 600; color: #475569; }
+    .ct-img { flex-shrink: 0; width: 5.25rem; height: 5.25rem; border-radius: .9rem; background: #f8fafc; border: 1px solid #eef2f7; padding: .35rem; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+    @media (min-width: 768px) { .ct-img { width: 6rem; height: 6rem; } }
+    .ct-remove { width: 2rem; height: 2rem; border-radius: .6rem; display: flex; align-items: center; justify-content: center; color: #94a3b8; background: #f8fafc; transition: color .15s, background .15s; }
+    .ct-remove:hover, .ct-remove:active { color: #dc2626; background: #fef2f2; }
+    .ct-qty { display: inline-flex; align-items: center; border: 1.5px solid #e2e8f0; border-radius: .8rem; background: #f8fafc; overflow: hidden; }
+    .ct-qty button { width: 2.35rem; height: 2.35rem; display: flex; align-items: center; justify-content: center; font-size: 1.15rem; font-weight: 700; color: #334155; }
+    .ct-qty button:active:not(:disabled) { background: #e2e8f0; }
+    .ct-qty button:disabled { color: #cbd5e1; }
+    .ct-qty input { width: 2.6rem; height: 2.35rem; text-align: center; font-weight: 800; font-size: .95rem; color: #0f172a; background: #fff; border: 0; border-left: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0; -moz-appearance: textfield; }
+    .ct-qty input::-webkit-outer-spin-button, .ct-qty input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+    .ct-go { display: flex; align-items: center; justify-content: center; gap: .5rem; width: 100%; padding: .95rem 1rem; border-radius: 1rem; font-weight: 800; font-size: 1rem; color: #fff;
+        background: linear-gradient(135deg, #f97316, #ea580c); box-shadow: 0 10px 24px -10px rgba(234, 88, 12, .8); transition: transform .15s, box-shadow .15s; }
+    .ct-go:hover { box-shadow: 0 14px 28px -10px rgba(234, 88, 12, .9); } .ct-go:active { transform: scale(.98); }
+    .ct-bar { position: fixed; left: 0; right: 0; bottom: 5rem; z-index: 40; padding: 0 .75rem; transition: transform .28s ease, opacity .28s ease; }
+    .ct-bar.is-off { transform: translateY(140%); opacity: 0; pointer-events: none; }
+    .ct-bar-in { max-width: 28rem; margin: 0 auto; display: flex; align-items: center; gap: .75rem; padding: .5rem .5rem .5rem 1rem; border-radius: 1.15rem;
+        background: rgba(255, 255, 255, .96); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); box-shadow: 0 14px 34px -10px rgba(15, 23, 42, .35); border: 1px solid rgba(15, 23, 42, .06); }
+    .ct-bar-go { flex-shrink: 0; display: inline-flex; align-items: center; gap: .35rem; padding: .85rem 1.25rem; border-radius: .9rem; font-weight: 800; color: #fff; background: linear-gradient(135deg, #f97316, #ea580c); box-shadow: 0 8px 18px -8px rgba(234, 88, 12, .9); }
+    .ct-bar-go:active { transform: scale(.96); }
+    .dark .ct-trust { color: #94a3b8; } .dark .ct-chip { background: #431407; border-color: #7c2d12; color: #fdba74; }
+    .dark .ct-img, .dark .ct-remove, .dark .ct-qty { background: #111827; border-color: #1f2937; }
+    .dark .ct-qty input { background: #0b1222; color: #f8fafc; border-color: #1f2937; } .dark .ct-qty button { color: #e2e8f0; }
+    .dark .ct-bar-in { background: rgba(17, 24, 39, .95); border-color: rgba(255, 255, 255, .08); }
+</style>
 @if($cartItems->isNotEmpty())
+<script>
+(function () {
+    var bar = document.getElementById('ct-bar'), go = document.getElementById('ct-checkout');
+    if (!bar || !go || !('IntersectionObserver' in window)) return;
+    document.body.appendChild(bar); // fixed position must not sit inside a transformed parent
+    new IntersectionObserver(function (e) { bar.classList.toggle('is-off', e[0].isIntersecting); }, { threshold: 0.4 }).observe(go);
+})();
+</script>
 @php
     $cartItems->pluck('product')->filter()->each->loadMissing('brand', 'category');
     $gaCartItems = $cartItems->filter(fn ($i) => $i->product)->map(fn ($i) => tracking_item($i->product, [

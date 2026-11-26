@@ -655,7 +655,7 @@
              Sits at bottom-20 — same clearance partials.storefront.bottom-nav's other
              floating siblings (Chat/Back-to-top) already use to stay above that bar. --}}
         <template x-teleport="body">
-            <div class="lg:hidden fixed inset-x-0 bottom-20 z-40 px-3">
+            <div class="lg:hidden fixed inset-x-0 bottom-20 z-40 px-3" data-focus-bar>
                 <div class="max-w-md mx-auto bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl backdrop-saturate-150 rounded-2xl shadow-2xl shadow-black/15 dark:shadow-black/40 ring-1 ring-black/5 dark:ring-white/10 pl-4 pr-2 py-2 flex items-center gap-3">
                     <div class="flex-1 min-w-0">
                         <p class="text-[11px] text-gray-400 dark:text-gray-500 leading-none">Total</p>

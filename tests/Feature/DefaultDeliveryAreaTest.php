@@ -67,7 +67,7 @@ class DefaultDeliveryAreaTest extends TestCase
         $this->withCookie(config('session.cookie'), session()->getId());
 
         $this->get(route('checkout.index'))->assertOk()->assertSee("zone: 'dhaka'", false);
-        $this->get(route('cart.index'))->assertOk()->assertSee('(Inside Dhaka · Outside Dhaka ৳150)')->assertSee('৳80');
+        $this->get(route('cart.index'))->assertOk()->assertSee('Inside Dhaka · Outside Dhaka ৳150 — pick at checkout')->assertSee('৳80');
     }
 
     public function test_checkout_preselects_nothing_when_the_customer_should_choose(): void
