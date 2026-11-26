@@ -62,7 +62,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // Link: rel=preload headers for the Vite CSS/JS — Cloudflare Early Hints replays them as a
         // 103 response straight from its edge, so the browser starts fetching the (edge-cached)
         // assets while the origin is still building the page.
-        $middleware->web(append: [\App\Http\Middleware\VisitorId::class, SetLocale::class, MaintenanceMode::class, SecurityHeaders::class, \Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets::class]);
+        $middleware->web(append: [\App\Http\Middleware\VisitorId::class, \App\Http\Middleware\MetaCookies::class, SetLocale::class, MaintenanceMode::class, SecurityHeaders::class, \Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets::class]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         // A guest sent from /account to /login gets that redirect from the exception handler,

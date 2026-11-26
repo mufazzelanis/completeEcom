@@ -126,7 +126,8 @@ class LiveFacebookEventsController extends Controller
         $names = collect(array_keys(self::EVENTS))->reject(fn ($e) => $e === 'PageView' && empty($byEvent['PageView']))
             ->merge(array_keys($byEvent))->unique()->values()->all();
 
-        $list = (clone $base)->when($f['event'], fn ($q) => $q->where('event_name', $f['event']));
+        // "All events" = the shopping events; page views (one per page, every visitor) only on their own card
+        $list = (clone $base)->when($f['event'], fn ($q) => $q->where('event_name', $f['event']), fn ($q) => $q->where('event_name', '!=', 'PageView'));
         $total = (clone $list)->count();
         $rows = $list->with(['landingPage:id,title,slug', 'product:id,name,slug,image'])
             ->orderByDesc('sent_at')->orderByDesc('id')->take($f['limit'])->get();
@@ -139,7 +140,7 @@ class LiveFacebookEventsController extends Controller
             'total' => $total,
             'byEvent' => $byEvent,
             'names' => $names,
-            'all' => ['sent' => (int) $counts->where('status', 'sent')->sum('c'), 'failed' => (int) $counts->where('status', 'failed')->sum('c')],
+            'all' => ['sent' => (int) $counts->where('event_name', '!=', 'PageView')->where('status', 'sent')->sum('c'), 'failed' => (int) $counts->where('event_name', '!=', 'PageView')->where('status', 'failed')->sum('c')],
             'topId' => (int) ($rows->max('id') ?? 0),
             'isLive' => in_array($f['range'], ['live', 'today', '7d', '30d'], true) || ($f['range'] === 'custom' && !$f['to']),
         ];

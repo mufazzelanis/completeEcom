@@ -25,6 +25,28 @@ $customCss    = setting('custom_css', '');
 $trackedUser = auth()->check() ? auth()->user() : null;
 $trackingData = $trackedUser ? pixel_advanced_matching_data($trackedUser->name, $trackedUser->email, $trackedUser->phone) : ['fb' => [], 'google' => []];
 
+// PageView, browser + server, with one shared event id (Meta dedupes the pair). Server-side it
+// carries what the pixel alone can't: the visitor id, the ad click, city / region / postcode
+// (Cloudflare) and a returning customer's details — Events Manager's PageView match quality was
+// 6.2 with only IP / browser / fbp on most events. Not for hover-prefetches nor bots (the
+// Conversions API skips those itself).
+$pvEventId = $pixelOn ? (string) \Illuminate\Support\Str::uuid() : null;
+if ($pvEventId && !\App\Support\PageView::isPrefetch(request())) {
+    $pvUserFields = $trackedUser ? ['name' => $trackedUser->name, 'email' => $trackedUser->email, 'phone' => $trackedUser->phone] : [];
+    after_response(fn () => \App\Services\Facebook\ConversionsApi::track('PageView', $pvEventId, [], $pvUserFields, request(), request()->fullUrl()));
+}
+// The pixel's Advanced Matching for guests too: this browser's visitor id, and a returning
+// customer's (already hashed) details remembered from their last order — the same values the
+// server sends, so browser and server events describe the same person.
+$fbPixelMatch = $trackingData['fb'];
+if ($pixelOn && $fbAdvancedMatchingOn) {
+    $vid = \App\Http\Middleware\VisitorId::of(request());
+    $fbPixelMatch['external_id'] = hash('sha256', $trackedUser ? (string) $trackedUser->id : 'v:' . $vid);
+    if (!$trackedUser && $vid && is_array($known = \Illuminate\Support\Facades\Cache::get('capi_who:' . $vid))) {
+        $fbPixelMatch += $known;
+    }
+}
+
 // Theme & Design (Settings → Theme & Design) — same "override the literal Tailwind
 // utility classes already hardcoded throughout the storefront" approach as brand colors.
 $fontFamily      = setting('font_family', 'Inter, sans-serif');
@@ -628,8 +650,9 @@ $pageTwitterImage = $meta('twitter_image', $pageOgImage);
             evs.forEach(function(ev){f.addEventListener(ev,load,{passive:true})});
             if(b.readyState==='complete'){setTimeout(load,4000)}else{f.addEventListener('load',function(){setTimeout(load,4000)})}
         }(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');
-        fbq('init','{{ $pixelId }}'@if($fbAdvancedMatchingOn && $trackingData['fb']), {!! Js::from($trackingData['fb']) !!}@endif);
-        document.addEventListener('turbo:load', function () { fbq('track','PageView'); });
+        fbq('init','{{ $pixelId }}'@if($fbAdvancedMatchingOn && $fbPixelMatch), {!! Js::from($fbPixelMatch) !!}@endif);
+        {{-- each page's own event id rides on <body data-pv> (Turbo swaps the body), matching the server's PageView --}}
+        document.addEventListener('turbo:load', function () { var id = document.body.dataset.pv; fbq('track','PageView',{},id ? {eventID:id} : undefined); });
     </script>
     @endif
 </head>
@@ -641,7 +664,7 @@ $pageTwitterImage = $meta('twitter_image', $pageOgImage);
      (now a direct child of it, see below) has the full page height to stick within,
      same as before the off-canvas drawer was introduced. Confirmed by reproducing the
      broken behavior with the old wrapper and fixing it by removing it. --}}
-<body data-theme-key="site-theme" x-data="{ mobileOpen: false }" x-effect="document.body.style.overflow = mobileOpen ? 'hidden' : ''" class="{{ request()->routeIs('cart.index', 'checkout.index') ? 'shop-focus' : '' }} bg-gray-100 dark:bg-gray-950 font-sans antialiased transition-colors pb-[calc(4.9rem_+_env(safe-area-inset-bottom))] md:pb-0">
+<body data-theme-key="site-theme" @if($pvEventId) data-pv="{{ $pvEventId }}" @endif x-data="{ mobileOpen: false }" x-effect="document.body.style.overflow = mobileOpen ? 'hidden' : ''" class="{{ request()->routeIs('cart.index', 'checkout.index') ? 'shop-focus' : '' }} bg-gray-100 dark:bg-gray-950 font-sans antialiased transition-colors pb-[calc(4.9rem_+_env(safe-area-inset-bottom))] md:pb-0">
 
 @include('partials.delivery-loader')
 @include('partials.confirm-modal')
