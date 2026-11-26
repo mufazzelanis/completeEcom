@@ -694,20 +694,98 @@ $navCategories = \App\Support\StorefrontCache::remember('nav_categories', fn () 
      Header), so a plain promo line reads as a living, attention-grabbing banner rather
      than inert text, without touching the admin's own color choices. --}}
 @if($announcementEnabled && $announcementText && request()->routeIs('home')) {{-- the offer bar only on the home page: on product / cart / checkout pages it just pushes the product down --}}
-<div style="background: {{ $announcementBg }}; color: {{ $announcementColor }};" class="relative overflow-hidden text-sm py-2 text-center font-semibold px-10" x-data="{ show: true }" x-show="show">
-    <div class="pointer-events-none absolute inset-0 announcement-drift"></div>
-    <div class="pointer-events-none absolute inset-0 announcement-glint"></div>
-    <span class="relative inline-flex items-center gap-2">
-        <span class="relative flex h-2 w-2 flex-shrink-0">
-            <span class="absolute inline-flex h-full w-full rounded-full opacity-75 animate-ping" style="background: {{ $announcementColor }};"></span>
-            <span class="relative inline-flex rounded-full h-2 w-2" style="background: {{ $announcementColor }};"></span>
-        </span>
-        {!! $announcementText !!}
-    </span>
-    <button @click="show = false" class="absolute right-3 top-1/2 -translate-y-1/2 opacity-70 hover:opacity-100 transition" style="color: {{ $announcementColor }};" aria-label="Dismiss">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
+@php
+    // a coupon in the admin's text ("Use code SAVE02 …") becomes a tap-to-copy ticket
+    $annPlain = trim(html_entity_decode(strip_tags($announcementText)));
+    $annCode = preg_match('/\bcode\b\s*[:\-–]?\s*["“\']?([A-Z0-9][A-Z0-9_-]{2,19})\b/iu', $annPlain, $annM) ? strtoupper($annM[1]) : null;
+@endphp
+{{-- 2026-11 redesign: an animated offer ticket — the admin's colours with a soft light sweep, a
+     wiggling gift, the text gliding by when it's longer than the screen, and the coupon code as a
+     perforated "ticket" chip: tap → copied (with a little confetti), and the cart / checkout
+     coupon box fills it in by itself (partials/coupon-box). Dismissed = gone for this visit. --}}
+<div class="ann" style="--ann-bg: {{ $announcementBg }}; --ann-fg: {{ $announcementColor }};" role="region" aria-label="Offer"
+     x-data="{
+        show: true, copied: false, ticker: false,
+        init() {
+            try { if (sessionStorage.getItem('ann-closed') === @js(md5($announcementText))) this.show = false; } catch (e) {}
+            this.$nextTick(() => {
+                const box = this.$refs.box, track = this.$refs.track;
+                if (!box || !track || track.scrollWidth <= box.clientWidth + 2 || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+                track.innerHTML = track.innerHTML + '<span class=&quot;ann-gap&quot; aria-hidden=&quot;true&quot;>✦</span>' + track.innerHTML;
+                track.style.setProperty('--ann-dur', Math.max(9, track.scrollWidth / 45) + 's');
+                this.ticker = true;
+            });
+        },
+        close() { this.show = false; try { sessionStorage.setItem('ann-closed', @js(md5($announcementText))); } catch (e) {} },
+        copy(code) {
+            const done = () => {
+                this.copied = true;
+                try { localStorage.setItem('mv-coupon', code); } catch (e) {}
+                this.burst(); try { navigator.vibrate && navigator.vibrate(10); } catch (e) {}
+                setTimeout(() => this.copied = false, 2200);
+            };
+            if (navigator.clipboard && window.isSecureContext) navigator.clipboard.writeText(code).then(done, done); else done();
+        },
+        burst() {
+            if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+            const chip = this.$refs.chip; if (!chip) return;
+            const colors = ['#fde047', '#f472b6', '#60a5fa', '#34d399', '#fb923c', '#ffffff'];
+            for (let i = 0; i < 14; i++) {
+                const s = document.createElement('i');
+                const a = (Math.PI * 2 * i) / 14 + Math.random() * .4, d = 28 + Math.random() * 26;
+                s.className = 'ann-bit';
+                s.style.cssText = `--dx:${Math.cos(a) * d}px;--dy:${Math.sin(a) * d}px;background:${colors[i % colors.length]}`;
+                chip.appendChild(s); setTimeout(() => s.remove(), 900);
+            }
+        },
+     }"
+     x-show="show" x-transition.opacity.duration.300ms>
+    <span class="ann-sweep" aria-hidden="true"></span>
+    <span class="ann-gift" aria-hidden="true">🎁</span>
+    <div class="ann-box" x-ref="box">
+        <span class="ann-track" :class="ticker && 'is-ticker'" x-ref="track">{!! $announcementText !!}</span>
+    </div>
+    @if($annCode)
+        <button type="button" class="ann-code" x-ref="chip" @click="copy(@js($annCode))" :aria-label="copied ? 'Copied' : 'Copy coupon code {{ $annCode }}'">
+            <span class="ann-code-val" x-text="copied ? '✓ Copied' : @js($annCode)">{{ $annCode }}</span>
+            <span class="ann-code-tip" x-text="copied ? 'Auto-filled at checkout' : 'Tap to copy'">Tap to copy</span>
+        </button>
+    @endif
+    <button type="button" class="ann-x" @click="close()" aria-label="Dismiss offer">
+        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
     </button>
 </div>
+<style>
+    .ann { position: relative; overflow: hidden; display: flex; align-items: center; gap: .55rem; min-height: 2.6rem; padding: .35rem .5rem .35rem .75rem; color: var(--ann-fg);
+        background: linear-gradient(110deg, var(--ann-bg), color-mix(in srgb, var(--ann-bg) 70%, #000) 55%, var(--ann-bg)); font-size: .82rem; font-weight: 700; }
+    .ann-sweep { position: absolute; inset: 0; pointer-events: none; background: linear-gradient(100deg, transparent 30%, rgba(255, 255, 255, .22) 45%, transparent 60%); transform: translateX(-100%); animation: annSweep 3.8s ease-in-out infinite; }
+    @keyframes annSweep { 0%, 35% { transform: translateX(-100%); } 75%, 100% { transform: translateX(100%); } }
+    .ann-gift { position: relative; font-size: 1.15rem; line-height: 1; flex-shrink: 0; transform-origin: 50% 90%; animation: annWiggle 2.6s ease-in-out infinite; }
+    @keyframes annWiggle { 0%, 60%, 100% { transform: rotate(0) scale(1); } 66% { transform: rotate(-14deg) scale(1.12); } 72% { transform: rotate(12deg) scale(1.12); } 78% { transform: rotate(-8deg); } 84% { transform: rotate(5deg); } }
+    .ann-box { position: relative; flex: 1; min-width: 0; overflow: hidden; white-space: nowrap; }
+    .ann-box:has(.is-ticker) { -webkit-mask-image: linear-gradient(90deg, transparent, #000 6%, #000 90%, transparent); mask-image: linear-gradient(90deg, transparent, #000 6%, #000 90%, transparent); }
+    .ann-track { display: inline-block; }
+    .ann-track.is-ticker { animation: annTick var(--ann-dur, 14s) linear infinite; }
+    .ann:hover .ann-track.is-ticker, .ann:focus-within .ann-track.is-ticker { animation-play-state: paused; }
+    .ann-gap { display: inline-block; padding: 0 1.2rem; opacity: .7; }
+    @keyframes annTick { to { transform: translateX(-50%); } }
+    /* the coupon "ticket": perforated edge, notches, a light glint running over it */
+    .ann-code { position: relative; flex-shrink: 0; display: flex; flex-direction: column; align-items: center; line-height: 1; padding: .32rem .7rem .28rem; border-radius: .55rem;
+        background: #fff; color: var(--ann-bg); border: 1.5px dashed color-mix(in srgb, var(--ann-bg) 55%, #fff); box-shadow: 0 4px 14px -4px rgba(0, 0, 0, .35); overflow: visible;
+        animation: annPulse 2.6s ease-in-out infinite; }
+    .ann-code::before, .ann-code::after { content: ''; position: absolute; top: 50%; width: .6rem; height: .6rem; border-radius: 999px; background: var(--ann-bg); transform: translateY(-50%); }
+    .ann-code::before { left: -.36rem; } .ann-code::after { right: -.36rem; }
+    @keyframes annPulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.06); } }
+    .ann-code:active { transform: scale(.94); }
+    .ann-code-val { font-size: .86rem; font-weight: 900; letter-spacing: .06em; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+    .ann-code-tip { font-size: .55rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; opacity: .75; margin-top: .14rem; }
+    .ann-bit { position: absolute; left: 50%; top: 50%; width: 6px; height: 6px; border-radius: 2px; pointer-events: none; animation: annBit .85s cubic-bezier(.2, .7, .3, 1) forwards; }
+    @keyframes annBit { 0% { transform: translate(-50%, -50%) scale(1) rotate(0); opacity: 1; } 100% { transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(.6) rotate(220deg); opacity: 0; } }
+    .ann-x { position: relative; flex-shrink: 0; width: 1.6rem; height: 1.6rem; border-radius: 999px; display: flex; align-items: center; justify-content: center; color: var(--ann-fg); opacity: .75; }
+    .ann-x:hover { opacity: 1; background: rgba(255, 255, 255, .15); }
+    @media (min-width: 768px) { .ann { justify-content: center; } .ann-box { flex: 0 1 auto; } }
+    @media (prefers-reduced-motion: reduce) { .ann-sweep, .ann-gift, .ann-code, .ann-track.is-ticker { animation: none; } }
+</style>
 @endif
 
 {{-- Main Header --}}
@@ -1146,13 +1224,21 @@ $navCategories = \App\Support\StorefrontCache::remember('nav_categories', fn () 
              x-data="{
                 open: false,
                 showTip: false,
+                // at most once a day, and it leaves by itself — it used to sit over the products
+                // until closed, on every new visit
                 init() {
-                    try { if (sessionStorage.getItem('fabTipDismissed')) return; } catch (e) {}
-                    setTimeout(() => { if (!this.open) this.showTip = true; }, 2500);
+                    const today = new Date().toDateString();
+                    try { if (localStorage.getItem('fabTipDay') === today) return; } catch (e) {}
+                    setTimeout(() => {
+                        if (this.open) return;
+                        this.showTip = true;
+                        try { localStorage.setItem('fabTipDay', today); } catch (e) {}
+                        setTimeout(() => { this.showTip = false; }, 8000);
+                    }, 4000);
                 },
                 dismiss() {
                     this.showTip = false;
-                    try { sessionStorage.setItem('fabTipDismissed', '1'); } catch (e) {}
+                    try { localStorage.setItem('fabTipDay', new Date().toDateString()); } catch (e) {}
                 },
                 toggle() {
                     this.open = !this.open;
@@ -1168,7 +1254,7 @@ $navCategories = \App\Support\StorefrontCache::remember('nav_categories', fn () 
             <div x-show="showTip" x-cloak
                  x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-2 scale-95" x-transition:enter-end="opacity-100 translate-y-0 scale-100"
                  x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100 scale-100" x-transition:leave-end="opacity-0 scale-95"
-                 class="absolute bottom-0 left-14 md:left-16 w-64 bg-white dark:bg-gray-800 rounded-2xl shadow-2xl ring-1 ring-black/5 dark:ring-white/10 p-4">
+                 class="absolute bottom-0 left-14 md:left-16 w-52 md:w-64 bg-white dark:bg-gray-800 rounded-2xl shadow-2xl ring-1 ring-black/5 dark:ring-white/10 p-3 md:p-4">
                 <button @click="dismiss()" type="button" class="absolute -top-2 -right-2 w-5 h-5 bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 rounded-full flex items-center justify-center text-gray-600 dark:text-gray-200 transition" aria-label="Close">
                     <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
                 </button>

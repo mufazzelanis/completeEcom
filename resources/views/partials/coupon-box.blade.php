@@ -41,6 +41,7 @@
             <span x-show="!loading">Apply</span>
         </button>
     </form>
+    <p x-show="fromOffer && !applied && !error" x-cloak class="text-xs mt-2 font-medium" style="color:#16a34a">🎁 Your offer code is filled in — tap <b>Apply</b> to save.</p>
     <p x-show="error" x-cloak x-text="error" x-transition.opacity class="text-red-500 text-xs mt-2"></p>
 </div>
 
@@ -72,8 +73,14 @@ function couponBox(initial) {
         applied: !!initial,
         appliedCode: initial || '',
         code: '',
+        fromOffer: false,
         loading: false,
         error: '',
+        // a code copied from the home page's offer ticket (layouts/app 'mv-coupon') is filled in, ready to Apply
+        init() {
+            if (this.applied) return;
+            try { const c = localStorage.getItem('mv-coupon'); if (c) { this.code = c; this.fromOffer = true; } } catch (e) {}
+        },
         async apply() {
             if (!this.code.trim() || this.loading) return;
             this.loading = true;
@@ -95,7 +102,8 @@ function couponBox(initial) {
                     return;
                 }
                 this.appliedCode = data.code || this.code.toUpperCase();
-                this.applied = true;
+                this.applied = true; this.fromOffer = false;
+                try { localStorage.removeItem('mv-coupon'); } catch (e) {}
                 if (typeof showToast === 'function') showToast(data.message || 'Coupon applied successfully!');
                 // Totals (discount, total, grand total) live server-side only — a short
                 // reload after the success animation plays keeps this box and the rest of
