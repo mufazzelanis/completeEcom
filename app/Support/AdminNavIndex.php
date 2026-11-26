@@ -95,6 +95,7 @@ class AdminNavIndex
             ['label' => 'Fraud Alerts', 'url' => route('admin.orders.index', ['fraud' => 1]), 'group' => 'Security'],
             ['label' => 'Activity Log', 'url' => route('admin.activity-logs.index'), 'group' => 'Security'],
             ['label' => 'Audit Logs', 'url' => route('admin.audit-logs.index'), 'group' => 'Security'],
+            ['label' => 'Error Log', 'url' => route('admin.error-log.index'), 'group' => 'Security'],
             // Settings sub-pages (labels match resources/views/admin/settings/layout.blade.php)
             ['label' => 'Two-Factor Authentication', 'url' => route('admin.two-factor.show'), 'group' => 'Settings'],
             ['label' => 'General Settings', 'url' => route('admin.settings.show', 'general'), 'group' => 'Settings'],

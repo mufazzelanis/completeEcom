@@ -87,7 +87,7 @@
                     @if($code === $view['lang'])
                         <span aria-current="true" class="px-4 py-1.5 rounded-full bg-white dark:bg-gray-900 text-gray-900 dark:text-white shadow-sm">{{ \App\Models\BlogPost::LANGS[$code] }}</span>
                     @else
-                        <a href="{{ $url }}" hreflang="{{ $code }}" lang="{{ $code }}" data-blog-lang-pick="{{ $code }}" class="px-4 py-1.5 rounded-full text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition">{{ \App\Models\BlogPost::LANGS[$code] }}</a>
+                        <a href="{{ $url }}" hreflang="{{ $code }}" lang="{{ $code }}" data-blog-lang-pick="{{ $code }}" class="px-4 py-1.5 rounded-full text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition">{{ \App\Models\BlogPost::LANGS[$code] }}</a>
                     @endif
                 @endforeach
             </nav>

@@ -9,7 +9,7 @@
     $sbWas = !$product->isVariable() && $product->price > $sbPrice ? (float) $product->price : null;
     $sbWa = whatsapp_chat_url("Hi, I'd like to order this:\n{$product->name} — ৳" . number_format($sbPrice) . "\n" . route('products.show', $product));
 @endphp
-<div id="pd-sticky-buy" class="pd-sb" hidden aria-hidden="true">
+<div id="pd-sticky-buy" class="pd-sb" hidden aria-hidden="true" inert>
     <div class="pd-sb-in">
         @if($product->image)
             <img src="{{ image_thumb($product->image, 200) }}" alt="" class="pd-sb-img">
@@ -91,6 +91,7 @@
     var set = function (on) {
         bar.classList.toggle('is-on', on);
         bar.setAttribute('aria-hidden', on ? 'false' : 'true');
+        bar.inert = !on; // slid away = not reachable with Tab either
         document.body.classList.toggle('pd-sb-on', on);
     };
     new IntersectionObserver(function (entries) { set(!entries[0].isIntersecting); }, { threshold: 0 }).observe(form);

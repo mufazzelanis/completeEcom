@@ -176,6 +176,18 @@ class ConversionsApiPixelTest extends TestCase
         $this->withCookie('mv_vid', 'keepthisidabcdefghijklmnop')->get('/')->assertCookieMissing('mv_vid'); // set once, then kept
     }
 
+    public function test_bots_send_no_browsing_events_but_an_order_always_goes(): void
+    {
+        $bot = \Illuminate\Http\Request::create('/products/x', 'GET', [], [], [], ['HTTP_USER_AGENT' => 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)']);
+
+        ConversionsApi::track('ViewContent', 'b1', request: $bot);
+        ConversionsApi::track('AddToCart', 'b2', request: $bot);
+        Queue::assertNothingPushed();
+
+        ConversionsApi::track('Purchase', 'purchase_1', request: $bot);
+        Queue::assertPushed(SendFacebookConversionEvent::class, 1);
+    }
+
     public function test_landing_pixel_without_its_own_token_never_borrows_the_site_token(): void
     {
         ConversionsApi::track('Purchase', 'e3', pixelIdOverride: '1484');

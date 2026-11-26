@@ -186,6 +186,13 @@ class ConversionsApi
         }
 
         $request ??= request();
+
+        // Search engines, SEO crawlers and scripts open product pages by the thousand: their
+        // "ViewContent" is junk for Meta (and one queued job + DB write each). A Purchase is
+        // always sent — an order is real whoever's browser placed it.
+        if ($eventName !== 'Purchase' && \App\Models\ActivityLog::automationSignal($request) !== null) {
+            return;
+        }
         $testEventCode = $testEventCodeOverride ?: setting('facebook_capi_test_event_code', '');
 
         $userData = self::buildUserData($rawUserFields, $request);

@@ -13,7 +13,7 @@
     .lg-chips { display: flex; flex-wrap: wrap; gap: .4rem; }
     .lg-chips a { font-size: .8rem; font-weight: 600; padding: .35rem .75rem; border-radius: 999px; border: 1px solid #e5e7eb; color: #374151; background: #fff; }
     .lg-chips a:hover { border-color: #fb923c; color: #c2410c; }
-    .lg-chips small { color: #9ca3af; font-weight: 500; }
+    .lg-chips small { color: #6b7280; font-weight: 500; } /* gray-500: readable (gray-400 failed contrast) */
     .lg-pop { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .1rem 1.25rem; }
     .lg-pop a { display: flex; justify-content: space-between; gap: .75rem; padding: .5rem 0; border-bottom: 1px dashed #eef2f7; font-size: .86rem; color: #374151; }
     .lg-pop a:hover { color: #c2410c; }

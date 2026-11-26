@@ -808,6 +808,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
 
     // Audit Logs — a record of every admin action across the site, so kept at the same
     // tier as settings.manage rather than something every manager/staff account sees.
+    Route::get('error-log', [\App\Http\Controllers\Admin\ErrorLogController::class, 'index'])->middleware('permission:settings.manage')->name('error-log.index');
     Route::get('audit-logs', [AdminAuditLogController::class, 'index'])->middleware('permission:settings.manage')->name('audit-logs.index');
     Route::get('activity-logs', [AdminActivityLogController::class, 'index'])->middleware('permission:dashboard.view')->name('activity-logs.index');
     Route::get('live-visitors', [\App\Http\Controllers\Admin\LiveVisitorController::class, 'index'])->middleware('permission:dashboard.view')->name('live-visitors.index');
