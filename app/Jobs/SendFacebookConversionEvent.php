@@ -46,6 +46,14 @@ class SendFacebookConversionEvent implements ShouldQueue
     {
         // a guest's city / country from their IP, looked up here off the visitor's request (see ConversionsApi::addIpLocation)
         $event = $this->event;
+        // no city yet and the IP not looked up: try once more in ~75 s, after the every-minute
+        // IP resolver has had its turn (Meta takes events up to 7 days old)
+        if ($this->job && $this->attempts() < 2 && isset($event['user_data'])
+            && \App\Services\Facebook\ConversionsApi::waitingForIpLocation((array) $event['user_data'])) {
+            $this->release(75);
+
+            return;
+        }
         if (isset($event['user_data'])) {
             $event['user_data'] = \App\Services\Facebook\ConversionsApi::addIpLocation((array) $event['user_data']);
         }

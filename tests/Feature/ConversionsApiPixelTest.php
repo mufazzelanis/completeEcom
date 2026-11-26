@@ -142,6 +142,34 @@ class ConversionsApiPixelTest extends TestCase
         $this->assertStringContainsString(',ct,', \App\Models\FacebookConversionLog::where('event_id', 'g1')->value('match_keys'));
     }
 
+    public function test_cloudflare_location_headers_give_city_region_and_postcode(): void
+    {
+        $req = \Illuminate\Http\Request::create('/products/x', 'GET', [], [], [], [
+            'HTTP_CF_IPCITY' => 'Chittagong', 'HTTP_CF_REGION' => 'Chattogram Division', 'HTTP_CF_POSTAL_CODE' => '4000', 'HTTP_CF_IPCOUNTRY' => 'BD',
+        ]);
+        $user = $this->userDataFor($req);
+
+        $this->assertSame(hash('sha256', 'chittagong'), $user['ct']);
+        $this->assertSame(hash('sha256', 'chattogramdivision'), $user['st']);
+        $this->assertSame(hash('sha256', '4000'), $user['zp']);
+        $this->assertSame(hash('sha256', 'bd'), $user['country']);
+    }
+
+    public function test_a_guest_event_waits_for_the_ip_lookup_instead_of_going_without_a_city(): void
+    {
+        config(['cache.default' => 'array']);
+        $guest = ['client_ip_address' => '103.4.5.7', 'client_user_agent' => 'UA'];
+
+        $this->assertTrue(ConversionsApi::waitingForIpLocation($guest));                       // unknown IP → wait (and it's queued)
+        $this->assertContains('103.4.5.7', \Illuminate\Support\Facades\Cache::get('ip_intel:queue'));
+        $this->assertFalse(ConversionsApi::waitingForIpLocation($guest + ['ct' => 'x']));       // already has a city
+        $this->assertFalse(ConversionsApi::waitingForIpLocation($guest + ['ph' => 'x']));       // has a phone
+        $this->assertFalse(ConversionsApi::waitingForIpLocation(['client_ip_address' => '127.0.0.1'])); // can't be looked up
+
+        \Illuminate\Support\Facades\Cache::put('ip_intel:103.4.5.7', ['ok' => true, 'city' => 'Dhaka', 'cc' => 'BD'], 60);
+        $this->assertFalse(ConversionsApi::waitingForIpLocation($guest));                      // looked up → send now
+    }
+
     public function test_every_storefront_visit_gets_the_anonymous_visitor_cookie(): void
     {
         $this->get('/')->assertCookie('mv_vid');

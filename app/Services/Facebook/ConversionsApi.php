@@ -44,6 +44,49 @@ class ConversionsApi
      * when it isn't cached yet (at most a few per minute: the free lookup allows 15 a minute and
      * the admin pages share it). Runs inside the queued job, so a visitor never waits on it.
      */
+    /** Hashed ct / st / zp / country from Cloudflare's location headers, normalised Meta's way. */
+    private static function cloudflareLocation(Request $request): array
+    {
+        $out = [];
+        $city = self::normalizeCity((string) $request->header('CF-IPCity'));
+        if ($city !== '') {
+            $out['ct'] = self::hash($city);
+        }
+        $region = self::normalizeCity((string) $request->header('CF-Region'));
+        if ($region !== '') {
+            $out['st'] = self::hash($region);
+        }
+        $zip = strtolower(preg_replace('/[^A-Za-z0-9]/', '', (string) $request->header('CF-Postal-Code')));
+        if ($zip !== '') {
+            $out['zp'] = self::hash($zip);
+        }
+        $cc = strtolower((string) $request->header('CF-IPCountry'));
+        if (preg_match('/^[a-z]{2}$/', $cc) && !in_array($cc, ['xx', 't1'], true)) { // XX unknown, T1 Tor
+            $out['country'] = self::hash($cc);
+        }
+
+        return $out;
+    }
+
+    /**
+     * True while a guest's event still has no city and their IP isn't looked up yet — the job
+     * then waits a minute for the every-minute IP resolver (visitors:resolve-ips) instead of
+     * going out without one (Meta Diagnostics: "Missing user data parameters").
+     */
+    public static function waitingForIpLocation(array $userData): bool
+    {
+        $ip = $userData['client_ip_address'] ?? null;
+        if (!$ip || isset($userData['ct']) || isset($userData['em']) || isset($userData['ph'])) {
+            return false;
+        }
+        if (\App\Support\VisitorIntel::ip($ip) !== null || !filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE)) {
+            return false;
+        }
+        \App\Support\VisitorIntel::queue([$ip]);
+
+        return true;
+    }
+
     public static function addIpLocation(array $userData): array
     {
         $ip = $userData['client_ip_address'] ?? null;
@@ -200,6 +243,10 @@ class ConversionsApi
                 $userData += $known;
             }
         }
+
+        // Cloudflare's visitor-location headers (Rules → Managed Transforms → "Add visitor location
+        // headers"): city, region and postcode for every request, no lookup needed
+        $userData += self::cloudflareLocation($request);
 
         $userData['client_ip_address'] = $request->ip();
         $userData['client_user_agent'] = $request->userAgent();
