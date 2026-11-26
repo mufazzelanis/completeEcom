@@ -30,7 +30,9 @@ class ErrorLogController extends Controller
                     continue;
                 }
                 // the same error with different ids / numbers counts as one
-                $key = $e['level'] . '|' . preg_replace('/\d+/', '#', mb_substr($e['message'], 0, 300));
+                // (the query's own values — a product slug, an id — don't make it a different problem)
+                $sig = preg_replace(['/\(Connection:.*$/s', "/'[^']*'|\"[^\"]*\"|`[^`]*`/", '/\d+/'], ['', "'…'", '#'], $e['message']);
+                $key = $e['level'] . '|' . mb_substr(trim($sig), 0, 300);
                 $g = $groups[$key] ?? ['level' => $e['level'], 'message' => $e['message'], 'where' => $e['where'], 'count' => 0, 'first' => $e['at'], 'last' => $e['at'], 'urls' => []];
                 $g['count']++;
                 $g['first'] = min($g['first'], $e['at']);

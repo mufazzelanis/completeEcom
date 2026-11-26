@@ -422,7 +422,7 @@ class VisitorIntel
                 if ($info === null && self::isPublic($ip)) {
                     continue; // not looked up yet: stays pending
                 }
-                $net[$ip] = self::network($info);
+                $net[$ip] = ($n = self::network($info)) !== null ? mb_substr($n, 0, 60) : null; // blog_reads.net is 60 chars (live: "Emirates Telecommunications Group Company (etisalat Group) Pjsc" broke the whole batch)
                 $host[$ip] = $info && !empty($info['hosting']);
             }
             if (!$net) {
