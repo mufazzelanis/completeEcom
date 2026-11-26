@@ -39,15 +39,7 @@
         </div>
     @endif
 
-                @if(!auth()->check())
-                <div class="bg-orange-50 border border-orange-200 rounded-xl p-4 mb-6 flex items-center gap-3">
-                    <svg class="w-5 h-5 text-orange-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                    <div class="text-sm">
-                        <p class="font-semibold text-orange-700">No separate registration needed!</p>
-                        <p class="text-orange-600">An account will be created automatically using your phone number. Next time, just enter your phone number to track orders.</p>
-                    </div>
-                </div>
-                @endif
+    {{-- (the "No separate registration needed!" box was removed — the same note sits right under the phone field) --}}
 
     @unless(session('buy_now'))
     @include('partials.coupon-box')
@@ -154,6 +146,45 @@
         $extraFields = collect(['state', 'zip', 'notes'])->filter(fn ($f) => $checkoutFields[$f]['mode'] === 'optional');
         $openExtras = $errors->hasAny(['shipping_state', 'shipping_zip', 'notes']) || old('shipping_state') || old('shipping_zip') || old('notes');
     @endphp
+    {{-- Checkout fields that read as fields on a phone (live: white boxes with a hairline border on
+         a white card, small grey labels — shoppers couldn't tell where to type). Page-local, so no
+         other form changes. Error states (border-red-400) keep their red. --}}
+    <style>
+        #checkout-form { counter-reset: co-step; }
+        /* numbered steps: 1 Contact · 2 Delivery address · 3 Payment */
+        #checkout-form .co-card > h2 { display: flex; align-items: center; gap: .6rem; font-size: 1.05rem; font-weight: 800; color: #0f172a; }
+        #checkout-form .co-card > h2::before { counter-increment: co-step; content: counter(co-step); flex-shrink: 0; width: 1.75rem; height: 1.75rem; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; font-size: .85rem; font-weight: 900; color: #fff; background: linear-gradient(135deg, #f97316, #ea580c); box-shadow: 0 4px 10px -3px #f9731699; }
+        #checkout-form .co-card { border: 1px solid #eef2f7; }
+        /* labels: dark, bold, a touch bigger */
+        #checkout-form .co-card label.block { font-size: .9rem !important; font-weight: 700 !important; color: #1e293b !important; margin-bottom: .4rem !important; }
+        #checkout-form .co-card label.block .text-gray-400 { font-weight: 500; color: #94a3b8 !important; }
+        /* fields: tinted, clearly bordered, finger-sized; 16px text so iPhones don't zoom in */
+        #checkout-form .co-card :is(input[type="text"], input[type="tel"], input[type="email"], input[type="number"], textarea, select):not([readonly]) {
+            width: 100%; min-height: 3.15rem; padding: .8rem 1rem; font-size: 1rem; line-height: 1.35; color: #0f172a;
+            background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: .9rem; transition: border-color .15s, box-shadow .15s, background-color .15s;
+        }
+        #checkout-form .co-card textarea { min-height: 5rem; }
+        #checkout-form .co-card :is(input, textarea).pl-11 { padding-left: 2.85rem !important; } /* room for the field icon */
+        #checkout-form .co-card :is(input, textarea, select)::placeholder { color: #94a3b8; opacity: 1; }
+        #checkout-form .co-card :is(input, textarea, select):not([type="radio"]):not([type="checkbox"]):hover { border-color: #94a3b8; }
+        #checkout-form .co-card :is(input, textarea, select):not([type="radio"]):not([type="checkbox"]):focus {
+            outline: none; background: #fff; border-color: #f97316; box-shadow: 0 0 0 4px rgba(249, 115, 22, .15);
+        }
+        /* filled in and valid: a calm green edge and a tick — the shopper sees what's done */
+        #checkout-form .co-card :is(input[type="text"], input[type="tel"], input[type="email"]):required:valid:not(:placeholder-shown):not(:focus):not(.border-red-400) {
+            border-color: #22c55e; background: #f0fdf4 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2316a34a' stroke-width='3'%3E%3Cpath d='M5 12l5 5L20 7'/%3E%3C/svg%3E") no-repeat right .9rem center / 1rem; padding-right: 2.5rem;
+        }
+        #checkout-form .co-card :is(input, textarea).border-red-400 { border-color: #f87171 !important; background-color: #fef2f2 !important; }
+        #checkout-form .co-card .relative > span.pointer-events-none { color: #64748b; }
+        #checkout-form .co-hint { margin-top: .45rem; font-size: .78rem; line-height: 1.4; color: #475569; background: #fff7ed; border: 1px solid #fed7aa; border-radius: .7rem; padding: .45rem .65rem; }
+        .dark #checkout-form .co-card { border-color: #1f2937; }
+        .dark #checkout-form .co-card > h2 { color: #f8fafc; }
+        .dark #checkout-form .co-card label.block { color: #e2e8f0 !important; }
+        .dark #checkout-form .co-card :is(input[type="text"], input[type="tel"], input[type="email"], input[type="number"], textarea, select):not([readonly]) { background: #0f172a; border-color: #334155; color: #f1f5f9; }
+        .dark #checkout-form .co-card :is(input, textarea, select):not([type="radio"]):not([type="checkbox"]):focus { background: #111827; }
+        .dark #checkout-form .co-card :is(input[type="text"], input[type="tel"], input[type="email"]):required:valid:not(:placeholder-shown):not(:focus):not(.border-red-400) { background-color: #052e16; border-color: #16a34a; }
+        .dark #checkout-form .co-hint { background: #1c1917; border-color: #7c2d12; color: #fdba74; }
+    </style>
     <form id="checkout-form" action="{{ route('checkout.store') }}" method="POST"
         data-show-loader data-loader-message="Placing your order&hellip;"
         x-init="window.mvCheckoutMemory && mvCheckoutMemory.init($data, {{ $errors->any() || session()->hasOldInput() ? 'true' : 'false' }}); $watch('zone', z => autoCity(z)); autoCity(zone)"
@@ -213,7 +244,7 @@
             <div class="lg:col-span-3 space-y-6">
                 {{-- Guest Info --}}
                 @if(!auth()->check())
-                <div class="bg-white dark:bg-gray-900 rounded-xl shadow-sm p-6">
+                <div class="co-card bg-white dark:bg-gray-900 rounded-xl shadow-sm p-4 sm:p-6">
                     <h2 class="text-lg font-bold text-gray-800 dark:text-gray-100 mb-4">Contact Information</h2>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
@@ -241,13 +272,13 @@
                             @error('shipping_phone')<p class="text-red-500 text-xs mt-1.5">{{ $message }}</p>@enderror
                             @include('checkout._phone-verify')
                             @include('partials.phone-live-check', ['selector' => '#shipping_phone'])
-                            <p class="text-xs text-gray-400 dark:text-gray-500 mt-1.5">Your account will be created with this number</p>
+                            <p class="co-hint">📲 Order updates come to this number — and it's your login next time (no password, no separate sign-up).</p>
                         </div>
                     </div>
                 </div>
                 @endif
 
-                <div class="bg-white rounded-xl shadow-sm p-6">
+                <div class="co-card bg-white rounded-xl shadow-sm p-4 sm:p-6">
                     <h2 class="text-lg font-bold text-gray-800 mb-4">Shipping Address</h2>
 
                     <div x-show="remembered" x-cloak class="flex flex-wrap items-center justify-between gap-2 rounded-xl px-4 py-2.5 mb-4 text-sm"
@@ -422,7 +453,7 @@
                     @endif
                 </div>
 
-                <div class="bg-white rounded-xl shadow-sm p-6">
+                <div class="co-card bg-white rounded-xl shadow-sm p-4 sm:p-6">
                     <h2 class="text-lg font-bold text-gray-800 mb-4">Payment Method</h2>
 
                     @error('payment_method')
