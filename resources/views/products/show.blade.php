@@ -180,16 +180,16 @@
 @endpush
 
 @section('content')
-<div class="max-w-7xl mx-auto px-4 py-8">
+<div class="max-w-7xl mx-auto px-3 sm:px-4 pt-3 pb-6 md:py-8">
     <!-- Breadcrumb -->
-    <div class="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400 mb-6">
+    <div class="flex items-center gap-2 text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-3 md:mb-6 whitespace-nowrap overflow-hidden">
         <a href="{{ route('home') }}" class="hover:text-indigo-600">Home</a>
         <span>/</span>
         <a href="{{ route('shop.index') }}" class="hover:text-indigo-600">Shop</a>
         <span>/</span>
         <a href="{{ route('shop.category', $product->category->slug) }}" class="hover:text-indigo-600">{{ $product->category->name }}</a>
         <span>/</span>
-        <span class="text-gray-900 font-medium line-clamp-1">{{ $product->breadcrumb_title ?: $product->name }}</span>
+        <span class="text-gray-900 font-medium truncate min-w-0">{{ $product->breadcrumb_title ?: $product->name }}</span>
     </div>
 
     <div class="bg-white rounded-2xl shadow-sm overflow-hidden">
@@ -210,7 +210,7 @@
             $priceMin = $comboPrices->isNotEmpty() ? $comboPrices->min() : $basePrice;
             $priceMax = $comboPrices->isNotEmpty() ? $comboPrices->max() : $basePrice;
         @endphp
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 p-8"
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5 md:gap-8 p-4 md:p-8"
             x-data="{
                 active: '{{ $product->image ? image_thumb($product->image, 1200) : '' }}',
                 zoomX: 50, zoomY: 50,
@@ -253,7 +253,7 @@
                      the whole product at the largest size that fits, whatever the upload's
                      original dimensions — the padding + soft gradient keep it from looking
                      like a bare image floating in an empty box. --}}
-                <div class="aspect-square rounded-xl overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100 mb-4 relative group cursor-zoom-in p-6 md:p-10"
+                <div class="aspect-square rounded-xl overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100 mb-3 md:mb-4 relative group cursor-zoom-in p-3 md:p-10"
                      @mousemove="zoomX = (($event.offsetX / $event.currentTarget.offsetWidth) * 100).toFixed(2); zoomY = (($event.offsetY / $event.currentTarget.offsetHeight) * 100).toFixed(2)"
                      @mouseleave="zoomX = 50; zoomY = 50">
                     {{-- The main photo is the page's LCP element, so it's in the server HTML with a real
@@ -323,7 +323,7 @@
                     @endauth
                 </div>
 
-                <h1 class="text-2xl md:text-3xl font-bold text-gray-900 mb-4">{{ $product->name }}</h1>
+                <h1 class="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 mb-3 md:mb-4 leading-snug">{{ $product->name }}</h1>
 
                 <!-- Rating -->
                 <div class="flex items-center space-x-2 mb-4">
@@ -647,7 +647,7 @@
         </div>
 
         <!-- Description + Reviews Tabs -->
-        <div class="border-t border-gray-100 p-8" x-data="{ tab: 'description' }">
+        <div class="border-t border-gray-100 p-4 md:p-8" x-data="{ tab: 'description' }">
             <div class="flex space-x-6 border-b border-gray-200 mb-6">
                 <button @click="tab = 'description'" :class="tab === 'description' ? 'border-b-2 border-indigo-600 text-indigo-600' : 'text-gray-500'" class="pb-3 font-medium text-sm">
                     Description

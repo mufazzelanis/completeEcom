@@ -15,6 +15,9 @@
      regardless of its own visible/hidden state. When the header ISN'T sticky it scrolls
      away entirely, so this bar correctly becomes the topmost sticky element at top:0 once
      reached — no offset needed in that case. --}}
+{{-- Not on a product page: there the screen belongs to the product and its buy buttons (the
+     header's search icon still opens search) — the pinned bar took ~60px from the photo/price. --}}
+@unless(request()->routeIs('products.show'))
 <div class="md:hidden sticky z-30" style="top: {{ $stickyHeader ? 'var(--header-height, 56px)' : '0px' }};">
     <div x-show="$store.mobileSearchBar.visible" x-cloak
          x-transition:enter="transition ease-out duration-250" x-transition:enter-start="opacity-0 -translate-y-3" x-transition:enter-end="opacity-100 translate-y-0"
@@ -24,3 +27,4 @@
         @include('partials.storefront.smart-search', ['variant' => 'bar'])
     </div>
 </div>
+@endunless

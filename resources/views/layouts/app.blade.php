@@ -693,7 +693,7 @@ $navCategories = \App\Support\StorefrontCache::remember('nav_categories', fn () 
      the <style> block above) over whatever bg/text color the admin picked (Settings ->
      Header), so a plain promo line reads as a living, attention-grabbing banner rather
      than inert text, without touching the admin's own color choices. --}}
-@if($announcementEnabled && $announcementText)
+@if($announcementEnabled && $announcementText && request()->routeIs('home')) {{-- the offer bar only on the home page: on product / cart / checkout pages it just pushes the product down --}}
 <div style="background: {{ $announcementBg }}; color: {{ $announcementColor }};" class="relative overflow-hidden text-sm py-2 text-center font-semibold px-10" x-data="{ show: true }" x-show="show">
     <div class="pointer-events-none absolute inset-0 announcement-drift"></div>
     <div class="pointer-events-none absolute inset-0 announcement-glint"></div>
@@ -1142,7 +1142,7 @@ $navCategories = \App\Support\StorefrontCache::remember('nav_categories', fn () 
              permanently-visible pinging circles reads as cluttered/spammy rather than
              inviting. One bubble, click to reveal the rest, click again (or tap outside,
              or Escape) to collapse. --}}
-        <div class="fixed left-3 md:left-4 bottom-20 md:bottom-6 z-40"
+        <div class="fixed left-3 md:left-4 bottom-20 md:bottom-6 z-40" data-fab
              x-data="{
                 open: false,
                 showTip: false,
@@ -1493,7 +1493,7 @@ $navCategories = \App\Support\StorefrontCache::remember('nav_categories', fn () 
      mismatch nobody had reason to notice until they were compared side by side. --}}
 <div x-data="{ show: false }" @scroll.window="show = window.scrollY > 400"
      x-show="show" x-cloak x-transition
-     class="fixed bottom-20 right-3 md:right-4 md:bottom-6 z-40">
+     class="fixed bottom-20 right-3 md:right-4 md:bottom-6 z-40" data-to-top>
     <button onclick="window.scrollTo({top:0,behavior:'smooth'})" aria-label="Back to top" class="w-12 h-12 md:w-14 md:h-14 bg-orange-500 text-white rounded-full shadow-xl hover:shadow-2xl hover:-translate-y-0.5 active:scale-95 tap-spring hover:bg-orange-600 transition-all duration-300 flex items-center justify-center">
         <svg class="w-5 h-5 md:w-6 md:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 15l7-7 7 7"/></svg>
     </button>

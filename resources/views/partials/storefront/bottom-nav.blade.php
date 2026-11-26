@@ -69,7 +69,7 @@
         ],
     ];
 @endphp
-<nav class="md:hidden fixed bottom-0 inset-x-0 z-40 bg-white/75 dark:bg-gray-900/75 backdrop-blur-xl backdrop-saturate-150 border-t border-gray-100/80 dark:border-gray-800/80 rounded-t-2xl shadow-[0_-4px_16px_rgba(0,0,0,0.08)]"
+<nav data-bottom-nav class="md:hidden fixed bottom-0 inset-x-0 z-40 bg-white/75 dark:bg-gray-900/75 backdrop-blur-xl backdrop-saturate-150 border-t border-gray-100/80 dark:border-gray-800/80 rounded-t-2xl shadow-[0_-4px_16px_rgba(0,0,0,0.08)]"
      style="padding-bottom: env(safe-area-inset-bottom);">
     <div class="grid grid-cols-5 px-1 pt-1.5">
         @foreach($bnLeftItems as $item)

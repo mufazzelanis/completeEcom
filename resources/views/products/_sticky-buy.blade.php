@@ -24,6 +24,11 @@
                 <span class="pd-sb-dot" aria-hidden="true"></span>
             </a>
         @endif
+        @if($product->available_stock > 0 && !$product->isVariable())
+            <button type="button" class="pd-sb-cart" data-sb-cart aria-label="Add to cart" title="Add to cart">
+                <svg width="21" height="21" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.3 2.3c-.63.63-.18 1.7.7 1.7H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+            </button>
+        @endif
         <button type="button" class="pd-sb-btn" data-sb-order>
             {{ setting('buy_now_button_text', 'Buy Now') }}
             <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
@@ -54,10 +59,26 @@
     .dark .pd-sb-call { background: rgba(22, 163, 74, .15); border-color: rgba(134, 239, 172, .3); color: #4ade80; }
     .pd-sb-btn { flex-shrink: 0; display: inline-flex; align-items: center; gap: .35rem; padding: .8rem 1.1rem; border-radius: .85rem; font-weight: 800; font-size: .92rem; color: #fff; background: #4f46e5; box-shadow: 0 8px 18px -8px #4f46e5; }
     .pd-sb-btn:active { transform: scale(.96); }
-    /* the floating Chat / Back-to-top buttons share this spot — lift them above the bar while it shows */
+    .pd-sb-cart { flex-shrink: 0; width: 2.75rem; height: 2.75rem; border-radius: .85rem; display: flex; align-items: center; justify-content: center; color: #4f46e5; background: #eef2ff; border: 1px solid #c7d2fe; }
+    .pd-sb-cart:active { transform: scale(.94); }
+    .dark .pd-sb-cart { background: rgba(79, 70, 229, .18); border-color: rgba(165, 180, 252, .3); color: #a5b4fc; }
+    /* a phone-width bar with cart + WhatsApp + Order: the price needs the room more than the thumbnail */
+    @media (max-width: 430px) {
+        .pd-sb-in { gap: .45rem; }
+        .pd-sb-in:has(.pd-sb-cart) .pd-sb-img { display: none; }
+        .pd-sb-btn { padding: .8rem .85rem; font-size: .88rem; }
+        .pd-sb-call, .pd-sb-cart { width: 2.6rem; height: 2.6rem; }
+    }
     @media (max-width: 1023px) {
-        body .fixed.bottom-20 { transition: bottom .28s ease; }
-        body.pd-sb-on .fixed.bottom-20 { bottom: calc(9.25rem + env(safe-area-inset-bottom, 0px)); }
+        /* a product page belongs to the product: no floating chat bubble / greeting card or
+           back-to-top over the photo and buttons (live: the "Hi there!" card covered the title
+           and Add to Cart) — WhatsApp is right here in the buy bar */
+        [data-fab], [data-to-top] { display: none !important; }
+        /* while the buy bar shows, it takes the bottom menu's place (shop-app style) instead of
+           stacking on top of it — 65px more of the page stays visible */
+        [data-bottom-nav] { transition: transform .28s ease; }
+        body.pd-sb-on [data-bottom-nav] { transform: translateY(calc(100% + 3rem)); } /* + the raised centre cart button */
+        .pd-sb { bottom: calc(.6rem + env(safe-area-inset-bottom, 0px)); }
     }
 </style>
 <script>
@@ -82,6 +103,12 @@
             return;
         }
         buy.click();
+    });
+    // 🛒 presses the page's own Add to Cart — same quantity, loader and tracking
+    var cartBtn = bar.querySelector('[data-sb-cart]');
+    cartBtn && cartBtn.addEventListener('click', function () {
+        var add = form.querySelector('button[type="submit"]:not([data-buy-now])');
+        add && !add.disabled ? add.click() : form.scrollIntoView({ behavior: 'smooth', block: 'center' });
     });
 })();
 </script>
