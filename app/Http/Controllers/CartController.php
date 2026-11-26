@@ -260,6 +260,19 @@ class CartController extends Controller
                 'status' => 'added',
                 'cart_count' => (int) $this->getCartQuery()->sum('quantity'),
                 'fb_event_id' => $fbAddToCartEventId,
+                // the product page's own Add to Cart (now in place, with the fly-to-cart
+                // animation) fires its AddToCart from this — same shape as the flash below
+                'track' => [
+                    'id' => $product->id,
+                    'name' => $product->name,
+                    'price' => $addedPrice,
+                    'quantity' => (int) $request->quantity,
+                    'fb_event_id' => $fbAddToCartEventId,
+                    'ga' => tracking_item($product->loadMissing('brand', 'category'), [
+                        'price' => $addedPrice,
+                        'item_variant' => $combination?->label ?? null,
+                    ]),
+                ],
             ]);
         }
 

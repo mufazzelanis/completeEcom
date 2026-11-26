@@ -641,7 +641,7 @@ $pageTwitterImage = $meta('twitter_image', $pageOgImage);
      (now a direct child of it, see below) has the full page height to stick within,
      same as before the off-canvas drawer was introduced. Confirmed by reproducing the
      broken behavior with the old wrapper and fixing it by removing it. --}}
-<body data-theme-key="site-theme" x-data="{ mobileOpen: false }" x-effect="document.body.style.overflow = mobileOpen ? 'hidden' : ''" class="bg-gray-100 dark:bg-gray-950 font-sans antialiased transition-colors pb-[calc(4rem_+_env(safe-area-inset-bottom))] md:pb-0">
+<body data-theme-key="site-theme" x-data="{ mobileOpen: false }" x-effect="document.body.style.overflow = mobileOpen ? 'hidden' : ''" class="bg-gray-100 dark:bg-gray-950 font-sans antialiased transition-colors pb-[calc(4.9rem_+_env(safe-area-inset-bottom))] md:pb-0">
 
 @include('partials.delivery-loader')
 @include('partials.confirm-modal')
@@ -1679,6 +1679,8 @@ async function toggleCartItem(productId, btn) {
                 });
                 const name = btn.dataset.productName;
                 showToast(name ? `Added "${name}" to cart!` : 'Added to cart!');
+                // the product photo flies into the cart, which then updates its own count (cart-fx.js)
+                if (window.mvCartFx) { window.mvCartFx.fly(btn, { count: data.cart_count }); return; }
             }
 
             // Header's badge (desktop only now) and the bottom tab bar's (mobile's only

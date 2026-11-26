@@ -69,84 +69,124 @@
         ],
     ];
 @endphp
-<nav data-bottom-nav class="md:hidden fixed bottom-0 inset-x-0 z-40 bg-white/75 dark:bg-gray-900/75 backdrop-blur-xl backdrop-saturate-150 border-t border-gray-100/80 dark:border-gray-800/80 rounded-t-2xl shadow-[0_-4px_16px_rgba(0,0,0,0.08)]"
-     style="padding-bottom: env(safe-area-inset-bottom);">
-    <div class="grid grid-cols-5 px-1 pt-1.5">
-        @foreach($bnLeftItems as $item)
-            <a href="{{ $item['url'] }}" class="relative flex flex-col items-center justify-center gap-1 py-2 active:scale-90 tap-spring transition-transform duration-200">
-                <span class="relative flex items-center justify-center w-11 h-7 rounded-full transition-all {{ $item['active'] ? 'bg-gradient-to-b from-orange-400/20 to-orange-500/10 dark:from-orange-500/25 dark:to-orange-500/10 shadow-[0_0_0_1px_rgb(var(--brand-500)/0.15)]' : '' }}">
-                    @if($item['active'] && !empty($item['iconFilled']))
-                        {{-- Solid/filled variant when active — an iOS tab bar's real "you are
-                             here" signal, not just a color swap on the same outline glyph. --}}
-                        <svg class="w-5 h-5 text-orange-600 dark:text-orange-400" fill="currentColor" viewBox="0 0 24 24">
-                            @foreach(explode('|', $item['iconFilled']) as $path)
-                                <path d="{{ $path }}"/>
-                            @endforeach
-                        </svg>
-                    @else
-                        <svg class="w-5 h-5 {{ $item['active'] ? 'text-orange-600 dark:text-orange-400' : 'text-gray-500 dark:text-gray-400' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="{{ $item['active'] ? '2.5' : '2' }}" d="{{ $item['icon'] }}"/></svg>
-                    @endif
-                </span>
-                <span class="text-[10px] font-medium leading-none {{ $item['active'] ? 'text-orange-600 dark:text-orange-400' : 'text-gray-500 dark:text-gray-400' }}">{{ $item['label'] }}</span>
-            </a>
-        @endforeach
+@php
+    // the five slots in order — the sliding highlight sits under whichever one is active
+    $bnAccountActive = auth()->check()
+        ? request()->routeIs('account.*') && !request()->routeIs('account.notifications*')
+        : request()->routeIs('login');
+    $bnSlots = [
+        $bnLeftItems[0]['active'], $bnLeftItems[1]['active'], request()->routeIs('cart.*'),
+        $bnRightItems[0]['active'], $bnAccountActive,
+    ];
+    $bnActive = array_search(true, $bnSlots, true);
+    $bnActive = $bnActive === false ? -1 : $bnActive;
+@endphp
+{{-- 2026-11 redesign: a floating glass "dock" a few px off the screen edges — the active tab
+     gets a soft brand-coloured pill that slides to whichever tab is tapped (moved instantly on
+     tap, so it never waits for the next page), and the centre cart is a glowing orb whose ring
+     slowly spins while the cart has something in it. resources/js/cart-fx.js flies the product
+     photo into this orb on every Add to Cart. --}}
+<nav data-bottom-nav class="bn md:hidden fixed inset-x-0 bottom-0 z-40 px-2.5" aria-label="Main"
+     style="padding-bottom: calc(env(safe-area-inset-bottom) + .45rem); --bn-active: {{ $bnActive }};">
+    <div class="bn-dock">
+        <span class="bn-pill {{ $bnActive < 0 || $bnActive === 2 ? 'is-off' : '' }}" aria-hidden="true"></span>
 
-        {{-- Cart — raised circular button in the center column. -mt-7 lifts it clear of the
-             bar's top edge; the ring (same color as the bar's own frosted background) is what
-             makes it read as "cut into" the bar rather than just floating independently above
-             it. Always the gradient/white-icon treatment regardless of active state — this is
-             the one tab meant to stand out at a glance on every page, not just when selected. --}}
-        <a href="{{ route('cart.index') }}" aria-label="Cart" class="relative flex flex-col items-center justify-center -mt-7 active:scale-90 tap-spring transition-transform duration-200">
-            {{-- Neutral shadow (not tinted orange) — the gradient itself is whatever the
-                 admin picked, which won't always be orange, and a hardcoded orange glow
-                 would clash under a custom brand color. --}}
-            <span class="relative flex items-center justify-center w-14 h-14 rounded-full shadow-lg shadow-black/25 dark:shadow-black/50 ring-[5px] ring-white/75 dark:ring-gray-900/75" style="background-image: {{ $bnCartGradient }};">
-                <svg class="w-6 h-6" style="color: {{ $bnCartTextColor }};" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
-                {{-- Always rendered (not just when > 0) and toggled via the 'hidden' class —
-                     the quick-add-to-cart AJAX handler in app.blade.php needs a permanent
-                     element here to update live, not one that only exists in the DOM when the
-                     page happened to load with items already in it. --}}
-                <span id="bottom-nav-cart-count" class="absolute -top-1 -right-1 bg-white text-red-600 text-[10px] rounded-full min-w-[18px] h-[18px] px-0.5 flex items-center justify-center font-extrabold ring-2 ring-red-500 {{ $bnCartCount > 0 ? '' : 'hidden' }}">{{ $bnCartCount > 99 ? '99+' : $bnCartCount }}</span>
-            </span>
-            <span class="text-[10px] font-semibold leading-none mt-1 {{ request()->routeIs('cart.*') ? 'text-orange-600 dark:text-orange-400' : 'text-gray-600 dark:text-gray-300' }}">Cart</span>
-        </a>
-
-        @foreach($bnRightItems as $item)
-            <a href="{{ $item['url'] }}" class="relative flex flex-col items-center justify-center gap-1 py-2 active:scale-90 tap-spring transition-transform duration-200">
-                <span class="relative flex items-center justify-center w-11 h-7 rounded-full transition-all {{ $item['active'] ? 'bg-gradient-to-b from-orange-400/20 to-orange-500/10 dark:from-orange-500/25 dark:to-orange-500/10 shadow-[0_0_0_1px_rgb(var(--brand-500)/0.15)]' : '' }}">
-                    @if($item['active'] && !empty($item['iconFilled']))
-                        <svg class="w-5 h-5 text-orange-600 dark:text-orange-400" fill="currentColor" viewBox="0 0 24 24">
-                            @foreach(explode('|', $item['iconFilled']) as $path)
-                                <path d="{{ $path }}"/>
-                            @endforeach
-                        </svg>
-                    @else
-                        <svg class="w-5 h-5 {{ $item['active'] ? 'text-orange-600 dark:text-orange-400' : 'text-gray-500 dark:text-gray-400' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="{{ $item['active'] ? '2.5' : '2' }}" d="{{ $item['icon'] }}"/></svg>
-                    @endif
-                    @if(!empty($item['badge']) && $item['badge'] > 0)
-                        <span class="absolute -top-1 -right-1 bg-red-500 text-white text-[9px] rounded-full min-w-[16px] h-[16px] px-0.5 flex items-center justify-center font-bold">{{ $item['badge'] > 99 ? '99+' : $item['badge'] }}</span>
-                    @endif
-                </span>
-                <span class="text-[10px] font-medium leading-none {{ $item['active'] ? 'text-orange-600 dark:text-orange-400' : 'text-gray-500 dark:text-gray-400' }}">{{ $item['label'] }}</span>
-            </a>
-        @endforeach
-
-        @auth
-            <a href="{{ route('account.dashboard') }}" class="relative flex flex-col items-center justify-center gap-1 py-2 active:scale-90 tap-spring transition-transform duration-200">
-                <span class="flex items-center justify-center w-11 h-7 rounded-full transition-all {{ request()->routeIs('account.*') && !request()->routeIs('account.notifications*') ? 'bg-gradient-to-b from-orange-400/20 to-orange-500/10 dark:from-orange-500/25 dark:to-orange-500/10 shadow-[0_0_0_1px_rgb(var(--brand-500)/0.15)]' : '' }}">
-                    <span class="w-5 h-5 rounded-full bg-gradient-to-br from-orange-400 to-red-500 flex items-center justify-center">
-                        <span class="text-white font-bold text-[9px] leading-none">{{ strtoupper(substr(auth()->user()->name, 0, 1)) }}</span>
+        @foreach(array_merge($bnLeftItems, [null], $bnRightItems, ['account']) as $i => $item)
+            @if($item === null)
+                {{-- centre: the cart orb --}}
+                <a href="{{ route('cart.index') }}" aria-label="Cart" class="bn-cart" data-cart-target data-bn-i="2">
+                    <span class="bn-orb {{ $bnCartCount > 0 ? 'has-items' : '' }}" data-cart-orb style="--bn-cart: {{ $bnCartGradient }}; color: {{ $bnCartTextColor }};">
+                        <span class="bn-orb-ring" aria-hidden="true"></span>
+                        <svg class="bn-orb-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+                        {{-- always in the DOM (hidden when empty): the AJAX add-to-cart updates it live --}}
+                        <span id="bottom-nav-cart-count" class="bn-count {{ $bnCartCount > 0 ? '' : 'hidden' }}">{{ $bnCartCount > 99 ? '99+' : $bnCartCount }}</span>
                     </span>
-                </span>
-                <span class="text-[10px] font-medium leading-none {{ request()->routeIs('account.*') && !request()->routeIs('account.notifications*') ? 'text-orange-600 dark:text-orange-400' : 'text-gray-500 dark:text-gray-400' }}">Account</span>
-            </a>
-        @else
-            <a href="{{ route('login') }}" class="relative flex flex-col items-center justify-center gap-1 py-2 active:scale-90 tap-spring transition-transform duration-200">
-                <span class="flex items-center justify-center w-11 h-7 rounded-full transition-all {{ request()->routeIs('login') ? 'bg-gradient-to-b from-orange-400/20 to-orange-500/10 dark:from-orange-500/25 dark:to-orange-500/10 shadow-[0_0_0_1px_rgb(var(--brand-500)/0.15)]' : '' }}">
-                    <svg class="w-5 h-5 {{ request()->routeIs('login') ? 'text-orange-600 dark:text-orange-400' : 'text-gray-500 dark:text-gray-400' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
-                </span>
-                <span class="text-[10px] font-medium leading-none {{ request()->routeIs('login') ? 'text-orange-600 dark:text-orange-400' : 'text-gray-500 dark:text-gray-400' }}">Login</span>
-            </a>
-        @endauth
+                    <span class="bn-label {{ request()->routeIs('cart.*') ? 'is-on' : '' }}">Cart</span>
+                </a>
+            @elseif($item === 'account')
+                @auth
+                    <a href="{{ route('account.dashboard') }}" class="bn-tab {{ $bnAccountActive ? 'is-on' : '' }}" data-bn-i="4">
+                        <span class="bn-ico"><span class="bn-avatar">{{ strtoupper(substr(auth()->user()->name, 0, 1)) }}</span></span>
+                        <span class="bn-label">Account</span>
+                    </a>
+                @else
+                    <a href="{{ route('login') }}" class="bn-tab {{ $bnAccountActive ? 'is-on' : '' }}" data-bn-i="4">
+                        <span class="bn-ico"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg></span>
+                        <span class="bn-label">Login</span>
+                    </a>
+                @endauth
+            @else
+                <a href="{{ $item['url'] }}" class="bn-tab {{ $item['active'] ? 'is-on' : '' }}" data-bn-i="{{ $i }}">
+                    <span class="bn-ico">
+                        @if($item['active'] && !empty($item['iconFilled']))
+                            <svg fill="currentColor" viewBox="0 0 24 24">@foreach(explode('|', $item['iconFilled']) as $path)<path d="{{ $path }}"/>@endforeach</svg>
+                        @else
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="{{ $item['icon'] }}"/></svg>
+                        @endif
+                        @if(!empty($item['badge']) && $item['badge'] > 0)
+                            <span class="bn-badge">{{ $item['badge'] > 99 ? '99+' : $item['badge'] }}</span>
+                        @endif
+                    </span>
+                    <span class="bn-label">{{ $item['label'] }}</span>
+                </a>
+            @endif
+        @endforeach
     </div>
 </nav>
+<style>
+    .bn-dock { position: relative; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); align-items: end; height: 3.85rem; border-radius: 1.4rem;
+        background: rgba(255, 255, 255, .82); -webkit-backdrop-filter: blur(18px) saturate(1.6); backdrop-filter: blur(18px) saturate(1.6);
+        box-shadow: 0 12px 32px -12px rgba(15, 23, 42, .35), 0 2px 8px -2px rgba(15, 23, 42, .08), inset 0 0 0 1px rgba(255, 255, 255, .7), 0 0 0 1px rgba(15, 23, 42, .06); }
+    .dark .bn-dock { background: rgba(17, 24, 39, .82); box-shadow: 0 12px 32px -12px rgba(0, 0, 0, .7), inset 0 0 0 1px rgba(255, 255, 255, .06); }
+    /* the sliding highlight: one fifth wide, moved by --bn-active (and instantly on tap) */
+    .bn-pill { position: absolute; top: .4rem; bottom: .4rem; left: calc(var(--bn-active) * 20% + 1.5%); width: 17%; border-radius: 1rem;
+        background: linear-gradient(180deg, rgb(var(--brand-500, 249 115 22) / .16), rgb(var(--brand-500, 249 115 22) / .07)); box-shadow: inset 0 0 0 1px rgb(var(--brand-500, 249 115 22) / .18);
+        transition: left .38s cubic-bezier(.34, 1.4, .64, 1), opacity .2s; }
+    .bn-pill.is-off { opacity: 0; }
+    .bn-tab { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .2rem; height: 100%; color: #6b7280; -webkit-tap-highlight-color: transparent; }
+    .dark .bn-tab { color: #9ca3af; }
+    .bn-tab:active .bn-ico { transform: scale(.82); }
+    .bn-ico { position: relative; width: 1.45rem; height: 1.45rem; display: flex; align-items: center; justify-content: center; transition: transform .25s cubic-bezier(.34, 1.56, .64, 1); }
+    .bn-ico svg { width: 100%; height: 100%; }
+    .bn-tab.is-on { color: rgb(var(--brand-600, 234 88 12)); }
+    .dark .bn-tab.is-on { color: rgb(var(--brand-400, 251 146 60)); }
+    .bn-tab.is-on .bn-ico { transform: translateY(-1px) scale(1.06); }
+    .bn-label { font-size: .64rem; font-weight: 600; line-height: 1; letter-spacing: .01em; }
+    .bn-tab.is-on .bn-label { font-weight: 800; }
+    .bn-badge { position: absolute; top: -.35rem; right: -.55rem; min-width: 1rem; height: 1rem; padding: 0 .2rem; border-radius: 999px; background: #ef4444; color: #fff; font-size: .56rem; font-weight: 800; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 0 2px #fff; }
+    .dark .bn-badge { box-shadow: 0 0 0 2px #111827; }
+    .bn-avatar { width: 1.35rem; height: 1.35rem; border-radius: 999px; display: flex; align-items: center; justify-content: center; font-size: .6rem; font-weight: 800; color: #fff; background: linear-gradient(135deg, #fb923c, #ef4444); }
+    /* the cart orb */
+    .bn-cart { position: relative; z-index: 2; display: flex; flex-direction: column; align-items: center; gap: .25rem; margin-top: -1.65rem; padding-bottom: .5rem; -webkit-tap-highlight-color: transparent; }
+    .bn-cart .bn-label { color: #4b5563; font-weight: 700; } .dark .bn-cart .bn-label { color: #d1d5db; }
+    .bn-cart .bn-label.is-on { color: rgb(var(--brand-600, 234 88 12)); }
+    .bn-orb { position: relative; width: 3.55rem; height: 3.55rem; border-radius: 999px; display: flex; align-items: center; justify-content: center; background-image: var(--bn-cart);
+        box-shadow: 0 10px 22px -6px rgba(15, 23, 42, .45), 0 0 0 4px rgba(255, 255, 255, .95); transition: transform .3s cubic-bezier(.34, 1.56, .64, 1); }
+    .dark .bn-orb { box-shadow: 0 10px 22px -6px rgba(0, 0, 0, .8), 0 0 0 4px rgba(17, 24, 39, .95); }
+    .bn-cart:active .bn-orb { transform: scale(.88); }
+    .bn-orb-icon { position: relative; z-index: 1; width: 1.5rem; height: 1.5rem; }
+    /* a spinning conic glow round the orb while there's something in the cart */
+    .bn-orb-ring { position: absolute; inset: -6px; border-radius: 999px; opacity: 0; transition: opacity .4s;
+        background: conic-gradient(from 0deg, transparent 0 55%, rgba(251, 191, 36, .95) 70%, rgba(249, 115, 22, .9) 85%, transparent 100%);
+        -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 2px)); mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 2px)); }
+    .bn-orb.has-items .bn-orb-ring { opacity: 1; animation: bnSpin 3.2s linear infinite; }
+    @keyframes bnSpin { to { transform: rotate(360deg); } }
+    .bn-count { position: absolute; z-index: 2; top: -.25rem; right: -.3rem; min-width: 1.3rem; height: 1.3rem; padding: 0 .25rem; border-radius: 999px; background: #fff; color: #dc2626; font-size: .68rem; font-weight: 900;
+        display: flex; align-items: center; justify-content: center; box-shadow: 0 0 0 2px #ef4444, 0 4px 10px -2px rgba(239, 68, 68, .6); }
+    .bn-count.hidden { display: none; }
+    @media (prefers-reduced-motion: reduce) { .bn-orb.has-items .bn-orb-ring { animation: none; } .bn-pill { transition: none; } }
+</style>
+<script>
+    // move the highlight the moment a tab is tapped — the next page renders it in the same place
+    (function () {
+        if (window.__bnTap) return; window.__bnTap = 1;
+        document.addEventListener('click', function (e) {
+            var a = e.target.closest && e.target.closest('[data-bottom-nav] [data-bn-i]');
+            if (!a) return;
+            var nav = a.closest('[data-bottom-nav]'), i = +a.dataset.bnI, pill = nav.querySelector('.bn-pill');
+            nav.style.setProperty('--bn-active', i);
+            pill && pill.classList.toggle('is-off', i === 2);
+            nav.querySelectorAll('.bn-tab').forEach(function (t) { t.classList.toggle('is-on', t === a); });
+        });
+    })();
+</script>

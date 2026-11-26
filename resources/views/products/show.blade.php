@@ -801,6 +801,37 @@ function updateQty(delta) {
     const newVal = parseInt(input.value) + delta;
     input.value = Math.max(1, Math.min(newVal, max));
 }
+
+// Add to Cart without leaving the page: the photo flies into the cart (resources/js/cart-fx.js),
+// the count updates, and the shopper keeps browsing. Buy Now still submits normally. Any problem
+// (no fetch, a network error) falls back to the plain form post.
+(function () {
+    var form = document.getElementById('pd-buy-form');
+    if (!form || !window.fetch || form.dataset.ajaxCart) return;
+    form.dataset.ajaxCart = '1';
+    form.addEventListener('submit', function (e) {
+        var btn = e.submitter;
+        if (!btn || btn.hasAttribute('data-buy-now') || btn.getAttribute('formaction') !== form.getAttribute('action') || form.dataset.sending) return;
+        e.preventDefault();
+        e.stopPropagation(); // no full-page "Adding to cart…" loader for this one
+        form.dataset.sending = '1';
+        btn.classList.add('opacity-70');
+        var qty = parseInt((form.querySelector('[name="quantity"]') || {}).value || '1', 10) || 1;
+        fetch(form.getAttribute('action'), {
+            method: 'POST', body: new FormData(form), credentials: 'same-origin',
+            headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+        }).then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
+          .then(function (res) {
+              if (!res.ok || res.d.status !== 'added') { showToast((res.d && res.d.message) || 'Could not add to cart.', 'error'); return; }
+              if (res.d.track && typeof trackAddToCart === 'function') trackAddToCart(res.d.track);
+              var img = document.querySelector('[data-product-hero] img') || form.closest('.grid').querySelector('img[fetchpriority="high"]');
+              showToast('Added to cart!');
+              window.mvCartFx ? window.mvCartFx.fly(img || btn, { count: res.d.cart_count, qty: qty }) : null;
+          })
+          .catch(function () { delete form.dataset.sending; form.submit(); })
+          .finally(function () { delete form.dataset.sending; btn.classList.remove('opacity-70'); });
+    });
+})();
 </script>
 
 @php $trackedValue = $product->isVariable() ? $priceMin : (float) $product->final_price; @endphp

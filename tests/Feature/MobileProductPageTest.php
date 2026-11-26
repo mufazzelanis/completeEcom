@@ -32,6 +32,28 @@ class MobileProductPageTest extends TestCase
         $this->get('/shop')->assertOk()->assertDontSee('Sale! Use code SAVE02');
     }
 
+    /** The product page's Add to Cart now stays on the page — the JSON answer carries what the AddToCart tracking needs. */
+    public function test_in_place_add_to_cart_returns_count_and_tracking(): void
+    {
+        $product = $this->product();
+
+        $this->postJson(route('cart.add'), ['product_id' => $product->id, 'quantity' => 2])->assertOk()
+            ->assertJsonPath('status', 'added')
+            ->assertJsonPath('cart_count', 2)
+            ->assertJsonPath('track.id', $product->id)
+            ->assertJsonPath('track.quantity', 2)
+            ->assertJsonStructure(['fb_event_id', 'track' => ['name', 'price', 'fb_event_id', 'ga']]);
+    }
+
+    public function test_the_bottom_dock_and_its_cart_orb(): void
+    {
+        $this->get('/')->assertOk()
+            ->assertSee('class="bn-dock"', false)
+            ->assertSee('data-cart-orb', false)
+            ->assertSee('id="bottom-nav-cart-count"', false)
+            ->assertSee('--bn-active: 0', false); // Home highlighted
+    }
+
     public function test_product_page_buy_bar_has_cart_and_no_pinned_search_bar(): void
     {
         $product = $this->product();

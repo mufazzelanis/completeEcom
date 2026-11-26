@@ -10,7 +10,7 @@
     "src": "node_modules/flatpickr/dist/flatpickr.min.css"
   },
   "resources/css/app.css": {
-    "file": "assets/app-DKeDnA6b.css",
+    "file": "assets/app-BLE9DQO7.css",
     "name": "app",
     "names": [
       "app.css"
@@ -19,7 +19,7 @@
     "isEntry": true
   },
   "resources/js/app.js": {
-    "file": "assets/app-BWCABU2b.js",
+    "file": "assets/app-V5Q-Kf7V.js",
     "name": "app",
     "src": "resources/js/app.js",
     "isEntry": true,

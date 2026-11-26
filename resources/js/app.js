@@ -3,9 +3,11 @@ import * as Turbo from '@hotwired/turbo';
 import './datepicker';
 import './scroll-reveal';
 import smartSearch from './smart-search';
+import cartFx from './cart-fx';
 
 window.Alpine = Alpine;
 window.Turbo = Turbo;
+window.mvCartFx = cartFx; // add-to-cart fly animation (cart-fx.js)
 
 // Registered once, unconditionally, here — not per-layout behind an alpine:init
 // listener. Alpine.start() (and the one-time alpine:init event it fires) only
