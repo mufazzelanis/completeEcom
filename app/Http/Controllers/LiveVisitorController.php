@@ -55,7 +55,8 @@ class LiveVisitorController extends Controller
         if (!$visitor->exists) {
             [$device, $browser, $platform] = ActivityLog::parseUserAgent((string) $request->userAgent());
             $visitor->fill([
-                'device' => $device, 'browser' => $browser, 'platform' => $platform,
+                // cut to the columns (20 / 40 / 40) — one odd User-Agent must never lose the visit
+                'device' => mb_substr($device, 0, 20), 'browser' => mb_substr($browser, 0, 40), 'platform' => mb_substr($platform, 0, 40),
                 'source' => ActivityLog::channelFromReferrer($data['ref'] ?? null),
                 'first_seen_at' => $now,
             ]);

@@ -108,7 +108,10 @@ class ActivityLog extends Model
         // in the UA string — the closest thing to a real "which phone" signal that's
         // actually available (never from the IP, which carries no device info at all).
         if ($platform === 'Android' && preg_match('/Android[^;]*;\s*([^;)]+)\)/i', $userAgent, $m)) {
-            $model = trim($m[1]);
+            // in-app browsers (Facebook, Instagram…) add the firmware build: "SM-A736B Build/BP2A.250605.031.A3"
+            // — that broke the 40-char live_visitors.platform column (live Error Log, ad visitors lost)
+            $model = trim(preg_replace('/\s*Build\/.*$/i', '', $m[1]));
+            $model = mb_substr($model, 0, 28);
             if ($model !== '' && !str_contains(strtolower($model), 'wv')) {
                 $platform .= " ({$model})";
             }
